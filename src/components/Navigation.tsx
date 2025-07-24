@@ -25,7 +25,7 @@ const Navigation = () => {
             <img 
               src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png" 
               alt="Rebase Recovery" 
-              className="h-8 w-auto"
+              className="h-12 w-auto"
             />
           </Link>
 
