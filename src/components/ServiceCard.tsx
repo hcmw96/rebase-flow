@@ -46,6 +46,12 @@ const ServiceCard = ({
         )}
       </CardHeader>
 
+      <CardContent className="pt-0">
+        <Button className="w-full btn-luxury text-white">
+          Book Now
+        </Button>
+      </CardContent>
+
     </Card>
   );
 };
