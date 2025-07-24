@@ -47,7 +47,7 @@ const ServiceCard = ({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <Button className="w-full btn-luxury text-white">
+        <Button className="w-full btn-luxury text-black">
           Book Now
         </Button>
       </CardContent>
