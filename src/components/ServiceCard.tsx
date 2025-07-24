@@ -46,11 +46,6 @@ const ServiceCard = ({
         )}
       </CardHeader>
 
-      <CardContent className="pt-0">
-        <Button className="w-full btn-luxury group-hover:shadow-gold">
-          Book Now
-        </Button>
-      </CardContent>
     </Card>
   );
 };

@@ -6,12 +6,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 const Services = () => {
   const [activeCategory, setActiveCategory] = useState("All");
-  const [selectedService, setSelectedService] = useState<any>(null);
+  const [openBookingId, setOpenBookingId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
@@ -109,8 +111,15 @@ const Services = () => {
     ? services 
     : services.filter(service => service.category === activeCategory);
 
-  const handleBookNow = (service: any) => {
-    setSelectedService(service);
+  const handleBookNow = (serviceId: number) => {
+    setOpenBookingId(serviceId);
+    setBookingStep(1);
+    setSelectedDate(undefined);
+    setSelectedTime("");
+  };
+
+  const closeBooking = () => {
+    setOpenBookingId(null);
     setBookingStep(1);
     setSelectedDate(undefined);
     setSelectedTime("");
@@ -119,6 +128,13 @@ const Services = () => {
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date) setBookingStep(2);
+  };
+
+
+  const handleBackStep = () => {
+    if (bookingStep > 1) {
+      setBookingStep(bookingStep - 1);
+    }
   };
 
   const handleTimeSelect = (time: string) => {
@@ -170,82 +186,93 @@ const Services = () => {
         <section className="px-4 sm:px-6 lg:px-8 pb-20">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredServices.map((service, index) => (
-                <Drawer key={service.id}>
-                  <DrawerTrigger asChild>
-                    <div onClick={() => handleBookNow(service)}>
-                      <ServiceCard 
-                        {...service}
-                        className="animate-fade-in cursor-pointer"
-                      />
-                    </div>
-                  </DrawerTrigger>
-                  <DrawerContent>
-                    <DrawerHeader>
-                      <DrawerTitle className="text-center font-serif">
-                        {bookingStep === 1 && "Choose Date"}
-                        {bookingStep === 2 && "Select Time"}
-                        {bookingStep === 3 && "Confirm Booking"}
-                      </DrawerTitle>
-                    </DrawerHeader>
-                    
-                    <div className="px-4 pb-8">
-                      {bookingStep === 1 && (
-                        <div className="max-w-sm mx-auto">
-                          <Calendar
-                            mode="single"
-                            selected={selectedDate}
-                            onSelect={handleDateSelect}
-                            disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
-                            initialFocus
-                            className="rounded-xl border-0 shadow-none p-0"
-                          />
-                        </div>
-                      )}
-                      
-                      {bookingStep === 2 && (
-                        <div className="max-w-sm mx-auto space-y-4">
-                          <div className="text-center text-sm text-muted-foreground mb-6">
-                            {selectedDate && format(selectedDate, "EEEE, MMMM d")}
-                          </div>
-                          <div className="grid grid-cols-3 gap-3">
-                            {generateTimeSlots().map((time) => (
-                              <Button
-                                key={time}
-                                variant="outline"
-                                className={`h-12 text-sm transition-all ${
-                                  selectedTime === time 
-                                    ? 'bg-primary text-primary-foreground border-primary' 
-                                    : 'hover:bg-accent hover:text-accent-foreground'
-                                }`}
-                                onClick={() => handleTimeSelect(time)}
-                              >
-                                {time}
-                              </Button>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      
-                      {bookingStep === 3 && (
-                        <div className="max-w-sm mx-auto space-y-6">
-                          <div className="text-center">
-                            <h3 className="font-serif text-lg font-medium mb-2">
-                              {selectedService?.title}
-                            </h3>
-                            <div className="space-y-2 text-sm text-muted-foreground">
-                              <div>{selectedDate && format(selectedDate, "MMM d, yyyy")} at {selectedTime}</div>
-                              <div>{selectedService?.duration} • £{selectedService?.price}</div>
-                            </div>
-                          </div>
-                          <Button className="w-full btn-luxury">
-                            Complete Booking
+              {filteredServices.map((service) => (
+                <div key={service.id} className="space-y-4">
+                  <div onClick={() => handleBookNow(service.id)}>
+                    <ServiceCard 
+                      {...service}
+                      className="animate-fade-in cursor-pointer"
+                    />
+                  </div>
+                  
+                  {openBookingId === service.id && (
+                    <Card className="card-luxury animate-in slide-in-from-top-2 duration-300">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          {bookingStep > 1 && (
+                            <Button variant="ghost" size="icon" onClick={handleBackStep} className="h-8 w-8">
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <CardTitle className="text-center font-serif flex-1">
+                            {bookingStep === 1 && "Choose Date"}
+                            {bookingStep === 2 && "Select Time"}
+                            {bookingStep === 3 && "Confirm Booking"}
+                          </CardTitle>
+                          <Button variant="ghost" size="icon" onClick={closeBooking} className="h-8 w-8">
+                            <X className="h-4 w-4" />
                           </Button>
                         </div>
-                      )}
-                    </div>
-                  </DrawerContent>
-                </Drawer>
+                      </CardHeader>
+                      
+                      <CardContent className="pb-6">
+                        {bookingStep === 1 && (
+                          <div className="max-w-sm mx-auto">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={handleDateSelect}
+                              disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                              initialFocus
+                              className="rounded-xl border-0 shadow-none p-0 w-full"
+                            />
+                          </div>
+                        )}
+                        
+                        {bookingStep === 2 && (
+                          <div className="max-w-sm mx-auto space-y-4">
+                            <div className="text-center text-sm text-muted-foreground mb-6">
+                              {selectedDate && format(selectedDate, "EEEE, MMMM d")}
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              {generateTimeSlots().map((time) => (
+                                <Button
+                                  key={time}
+                                  variant="outline"
+                                  className={`h-12 text-sm transition-all ${
+                                    selectedTime === time 
+                                      ? 'bg-primary text-primary-foreground border-primary' 
+                                      : 'hover:bg-accent hover:text-accent-foreground'
+                                  }`}
+                                  onClick={() => handleTimeSelect(time)}
+                                >
+                                  {time}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {bookingStep === 3 && (
+                          <div className="max-w-sm mx-auto space-y-6">
+                            <div className="text-center">
+                              <h3 className="font-serif text-lg font-medium mb-2">
+                                {service.title}
+                              </h3>
+                              <div className="space-y-2 text-sm text-muted-foreground">
+                                <div>{selectedDate && format(selectedDate, "MMM d, yyyy")} at {selectedTime}</div>
+                                <div>{service.duration} • £{service.price}</div>
+                              </div>
+                            </div>
+                            <Button className="w-full btn-luxury">
+                              Complete Booking
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
               ))}
             </div>
           </div>
