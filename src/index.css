@@ -18,8 +18,8 @@ All colors MUST be HSL.
     --popover: 25 12% 12%;
     --popover-foreground: 35 15% 88%;
 
-    /* Warm gold accent as primary */
-    --primary: 36 85% 55%;                     /* Warm gold */
+    /* Warm neutral primary instead of gold */
+    --primary: 35 15% 75%;                     /* Warm cream/beige */
     --primary-foreground: 25 8% 8%;            /* Dark background for contrast */
 
     /* Warm neutral secondary */
@@ -37,7 +37,7 @@ All colors MUST be HSL.
 
     --border: 25 10% 20%;                      /* Subtle border */
     --input: 25 12% 15%;                       /* Input background */
-    --ring: 36 85% 55%;                        /* Gold focus ring */
+    --ring: 35 15% 75%;                        /* Warm cream focus ring */
 
     /* Luxury design tokens */
     --gold: 36 85% 55%;                        /* Primary gold */
