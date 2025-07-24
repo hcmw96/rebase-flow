@@ -47,6 +47,11 @@ All colors MUST be HSL.
     --warm-gray: 35 8% 55%;                    /* Warm gray text */
     --warm-gray-light: 35 10% 65%;             /* Lighter warm gray */
     
+    /* Detailing color - warm taupe brown */
+    --detail: 25 10% 55%;                      /* Warm taupe for detailing */
+    --detail-light: 25 15% 65%;                /* Lighter detail color */
+    --detail-dark: 25 8% 45%;                  /* Darker detail color */
+    
     /* Gradients */
     --gradient-primary: linear-gradient(135deg, hsl(36, 85%, 55%), hsl(40, 90%, 65%));
     --gradient-dark: linear-gradient(135deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
