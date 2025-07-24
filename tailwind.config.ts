@@ -75,7 +75,7 @@ export default {
 			},
 			fontFamily: {
 				sans: ['Inter', 'system-ui', 'sans-serif'],
-				serif: ['Playfair Display', 'serif'],
+				serif: ['Inter', 'system-ui', 'sans-serif'],
 			},
 			boxShadow: {
 				'luxury': 'var(--shadow-luxury)',
