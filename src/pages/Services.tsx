@@ -23,35 +23,35 @@ const Services = () => {
   const services = [
     {
       id: 1,
-      title: "Ice Baths",
+      title: "Ice Bath",
       category: "Recovery",
       duration: "15 minutes",
       price: 25
     },
     {
       id: 2,
-      title: "Traditional Saunas",
+      title: "Traditional Sauna",
       category: "Recovery",
       duration: "30 minutes",
       price: 35
     },
     {
       id: 3,
-      title: "Infrared Saunas", 
+      title: "Infrared Sauna", 
       category: "Recovery",
       duration: "30 minutes",
       price: 40
     },
     {
       id: 4,
-      title: "Contrast Classes",
+      title: "Contrast Class",
       category: "Movement",
       duration: "60 minutes",
       price: 45
     },
     {
       id: 5,
-      title: "Private Contrast Suites",
+      title: "Private Contrast Suite",
       category: "Recovery",
       duration: "90 minutes",
       price: 120
@@ -100,7 +100,7 @@ const Services = () => {
     },
     {
       id: 12,
-      title: "Recovery Specialists",
+      title: "Recovery Specialist",
       category: "Therapy",
       duration: "30 minutes",
       price: 65
