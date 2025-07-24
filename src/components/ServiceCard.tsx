@@ -26,7 +26,7 @@ const ServiceCard = ({
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
           />
           <div className="absolute top-4 left-4">
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <Badge variant="secondary" className="bg-detail/10 text-detail border-detail/20">
               {category}
             </Badge>
           </div>
@@ -39,7 +39,7 @@ const ServiceCard = ({
         </CardTitle>
         {!image && (
           <div className="flex justify-center">
-            <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+            <Badge variant="secondary" className="bg-detail/10 text-detail border-detail/20">
               {category}
             </Badge>
           </div>

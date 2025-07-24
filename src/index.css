@@ -130,12 +130,12 @@ All colors MUST be HSL.
   }
 
   ::-webkit-scrollbar-thumb {
-    background: hsl(var(--primary));
+    background: hsl(var(--detail));
     border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: hsl(var(--gold-light));
+    background: hsl(var(--detail-light));
   }
 }
 
