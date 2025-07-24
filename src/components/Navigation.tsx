@@ -9,7 +9,6 @@ const Navigation = () => {
   const location = useLocation();
 
   const navItems = [
-    { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
@@ -22,7 +21,7 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/services" className="flex items-center space-x-2">
             <div className="text-2xl font-serif font-bold text-primary tracking-tight">
               REBASE
             </div>
