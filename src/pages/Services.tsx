@@ -71,18 +71,6 @@ const Services = () => {
       <Navigation />
       
       <div className="pt-20">
-        {/* Header */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-7xl mx-auto text-center">
-            <h1 className="text-4xl sm:text-6xl font-serif font-light text-foreground mb-6">
-              Our <span className="text-primary text-glow">Services</span>
-            </h1>
-            <p className="text-xl text-foreground/70 max-w-3xl mx-auto mb-12">
-              Explore our comprehensive menu of rejuvenating services designed to help you find balance, 
-              relaxation, and lasting wellbeing through cutting-edge wellness modalities.
-            </p>
-          </div>
-        </section>
 
         {/* Category Filter */}
         <section className="px-4 sm:px-6 lg:px-8 mb-12">
