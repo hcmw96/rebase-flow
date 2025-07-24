@@ -22,9 +22,11 @@ const Navigation = () => {
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
           <Link to="/services" className="flex items-center space-x-2">
-            <div className="text-2xl font-serif font-bold text-primary tracking-tight">
-              REBASE
-            </div>
+            <img 
+              src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png" 
+              alt="Rebase Recovery" 
+              className="h-8 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
