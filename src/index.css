@@ -142,16 +142,16 @@ All colors MUST be HSL.
 @layer components {
   /* Luxury button variants */
   .btn-luxury {
-    @apply bg-gradient-to-r from-gold to-gold-light text-primary-foreground;
-    @apply shadow-gold hover:shadow-lg transform hover:scale-105;
+    @apply bg-gradient-to-r from-detail to-detail-light text-white;
+    @apply shadow-lg hover:shadow-xl transform hover:scale-105;
     @apply transition-all duration-300 ease-out;
     @apply px-8 py-4 rounded-xl font-medium tracking-wide;
   }
 
   .btn-ghost-luxury {
-    @apply border border-primary/30 text-primary hover:bg-primary/10;
+    @apply border border-detail/30 text-detail hover:bg-detail/10;
     @apply transition-all duration-300 ease-out;
-    @apply backdrop-blur-sm hover:border-primary/60;
+    @apply backdrop-blur-sm hover:border-detail/60;
   }
 
   /* Card luxury styling */
