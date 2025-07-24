@@ -149,7 +149,7 @@ All colors MUST be HSL.
   }
 
   .btn-ghost-luxury {
-    @apply border border-detail/30 text-detail hover:bg-detail/10;
+    @apply border border-detail/30 text-white hover:bg-detail/10;
     @apply transition-all duration-300 ease-out;
     @apply backdrop-blur-sm hover:border-detail/60;
   }
