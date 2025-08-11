@@ -2,8 +2,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import { useNavigate } from "react-router-dom";
 
 interface ServiceCardProps {
+  id: number;
   title: string;
   category: string;
   image?: string;
@@ -11,11 +13,17 @@ interface ServiceCardProps {
 }
 
 const ServiceCard = ({
+  id,
   title,
   category,
   image,
   className
 }: ServiceCardProps) => {
+  const navigate = useNavigate();
+
+  const handleBookNow = () => {
+    navigate(`/book/${id}`);
+  };
   return (
     <Card className={cn("card-luxury group hover:scale-105 transition-all duration-300", className)}>
       {image && (
@@ -47,7 +55,7 @@ const ServiceCard = ({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <Button className="w-full btn-luxury text-black">
+        <Button className="w-full btn-luxury text-black" onClick={handleBookNow}>
           Book Now
         </Button>
       </CardContent>

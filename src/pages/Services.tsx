@@ -188,12 +188,12 @@ const Services = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredServices.map((service) => (
                 <div key={service.id} className="space-y-4">
-                  <div onClick={() => handleBookNow(service.id)}>
-                    <ServiceCard 
-                      {...service}
-                      className="animate-fade-in cursor-pointer"
-                    />
-                  </div>
+                  <ServiceCard 
+                    id={service.id}
+                    title={service.title}
+                    category={service.category}
+                    className="animate-fade-in"
+                  />
                   
                   {openBookingId === service.id && (
                     <Card className="card-luxury animate-in slide-in-from-top-2 duration-300">
