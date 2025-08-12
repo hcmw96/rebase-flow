@@ -228,20 +228,20 @@ const Services = () => {
                       
                       <CardContent className="pb-6">
                         {bookingStep === 1 && (
-                          <div className="max-w-sm mx-auto">
+                          <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-4">
                             <Calendar
                               mode="single"
                               selected={selectedDate}
                               onSelect={handleDateSelect}
                               disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
                               initialFocus
-                              className="rounded-xl border-0 shadow-none p-0 w-full"
+                              className="rounded-xl border-0 shadow-none p-0 w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70"
                             />
                           </div>
                         )}
                         
                         {bookingStep === 2 && (
-                          <div className="max-w-sm mx-auto space-y-4">
+                          <div className="max-w-sm mx-auto space-y-4 glass-morphism rounded-2xl p-4">
                             <div className="text-center text-sm text-white/70 mb-6">
                               {selectedDate && format(selectedDate, "EEEE, MMMM d")}
                             </div>
@@ -265,7 +265,7 @@ const Services = () => {
                         )}
                         
                         {bookingStep === 3 && (
-                          <div className="max-w-sm mx-auto space-y-6">
+                          <div className="max-w-sm mx-auto space-y-6 glass-morphism rounded-2xl p-4">
                             <div className="text-center">
                               <h3 className="font-serif text-lg font-medium mb-2 text-white">
                                 {service.title}
