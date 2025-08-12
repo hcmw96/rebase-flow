@@ -8,59 +8,61 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Dark luxury theme - warm and elegant */
-    --background: 25 8% 8%;                    /* Deep dark brown-black */
-    --foreground: 35 15% 88%;                  /* Warm cream white */
+    /* Warm luxury theme inspired by spa ambience */
+    --background: 30 12% 6%;                      /* Deep warm brown-black */
+    --foreground: 35 20% 92%;                     /* Warm cream white */
 
-    --card: 25 12% 12%;                        /* Dark brown card background */
-    --card-foreground: 35 15% 88%;             /* Warm cream text */
+    --card: 28 15% 10%;                           /* Warm dark brown card */
+    --card-foreground: 35 20% 92%;                /* Warm cream text */
 
-    --popover: 25 12% 12%;
-    --popover-foreground: 35 15% 88%;
+    --popover: 28 15% 10%;
+    --popover-foreground: 35 20% 92%;
 
-    /* Warm neutral primary instead of gold */
-    --primary: 35 15% 75%;                     /* Warm cream/beige */
-    --primary-foreground: 25 8% 8%;            /* Dark background for contrast */
+    /* Golden amber primary from the spa photo */
+    --primary: 42 88% 65%;                        /* Warm golden amber */
+    --primary-foreground: 30 12% 6%;              /* Dark background for contrast */
 
-    /* Warm neutral secondary */
-    --secondary: 25 15% 18%;                   /* Slightly lighter brown */
-    --secondary-foreground: 35 15% 88%;        /* Warm cream */
+    /* Rich warm secondary */
+    --secondary: 32 25% 16%;                      /* Rich warm brown */
+    --secondary-foreground: 35 20% 92%;           /* Warm cream */
 
-    --muted: 25 10% 15%;                       /* Muted dark brown */
-    --muted-foreground: 35 8% 55%;             /* Muted warm gray */
+    --muted: 28 12% 14%;                          /* Muted warm brown */
+    --muted-foreground: 35 15% 60%;               /* Muted warm beige */
 
-    --accent: 30 25% 22%;                      /* Warm brown accent */
-    --accent-foreground: 35 15% 88%;
+    --accent: 38 35% 20%;                         /* Warm amber accent */
+    --accent-foreground: 35 20% 92%;
 
-    --destructive: 0 84% 60%;                  /* Red for errors */
-    --destructive-foreground: 35 15% 88%;
+    --destructive: 0 84% 60%;                     /* Red for errors */
+    --destructive-foreground: 35 20% 92%;
 
-    --border: 25 10% 20%;                      /* Subtle border */
-    --input: 25 12% 15%;                       /* Input background */
-    --ring: 35 15% 75%;                        /* Warm cream focus ring */
+    --border: 32 15% 18%;                         /* Warm border */
+    --input: 28 15% 12%;                          /* Input background */
+    --ring: 42 88% 65%;                           /* Golden focus ring */
 
-    /* Luxury design tokens */
-    --gold: 36 85% 55%;                        /* Primary gold */
-    --gold-light: 40 90% 65%;                  /* Lighter gold for hover */
-    --gold-dark: 32 80% 45%;                   /* Darker gold */
+    /* Spa-inspired luxury design tokens */
+    --gold: 42 88% 65%;                           /* Primary golden amber */
+    --gold-light: 45 92% 72%;                     /* Lighter golden for hover */
+    --gold-dark: 38 85% 58%;                      /* Deeper amber */
     
-    --warm-gray: 35 8% 55%;                    /* Warm gray text */
-    --warm-gray-light: 35 10% 65%;             /* Lighter warm gray */
+    --warm-gray: 35 15% 60%;                      /* Warm beige text */
+    --warm-gray-light: 35 20% 70%;                /* Lighter warm beige */
     
-    /* Detailing color - warm taupe brown */
-    --detail: 25 10% 55%;                      /* Warm taupe for detailing */
-    --detail-light: 25 15% 65%;                /* Lighter detail color */
-    --detail-dark: 25 8% 45%;                  /* Darker detail color */
+    /* Warm copper detailing inspired by spa elements */
+    --detail: 25 35% 50%;                         /* Warm copper brown */
+    --detail-light: 28 40% 60%;                   /* Lighter copper */
+    --detail-dark: 22 30% 40%;                    /* Darker copper */
     
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(36, 85%, 55%), hsl(40, 90%, 65%));
-    --gradient-dark: linear-gradient(135deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
-    --gradient-warm: linear-gradient(180deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
+    /* Warm spa-inspired gradients */
+    --gradient-primary: linear-gradient(135deg, hsl(42, 88%, 65%), hsl(45, 92%, 72%));
+    --gradient-dark: linear-gradient(135deg, hsl(28, 15%, 10%), hsl(30, 12%, 6%));
+    --gradient-warm: linear-gradient(180deg, hsl(32, 25%, 16%), hsl(28, 15%, 10%));
+    --gradient-spa: linear-gradient(135deg, hsl(38, 35%, 20%), hsl(32, 25%, 16%));
     
-    /* Shadows */
-    --shadow-luxury: 0 25px 50px -12px hsl(25 8% 8% / 0.7);
-    --shadow-gold: 0 10px 30px -10px hsl(36 85% 55% / 0.3);
-    --shadow-soft: 0 4px 20px -4px hsl(25 8% 8% / 0.4);
+    /* Warm ambient shadows */
+    --shadow-luxury: 0 25px 50px -12px hsl(30 12% 6% / 0.8);
+    --shadow-gold: 0 10px 30px -10px hsl(42 88% 65% / 0.4);
+    --shadow-soft: 0 4px 20px -4px hsl(30 12% 6% / 0.5);
+    --shadow-warm: 0 8px 32px -8px hsl(38 35% 20% / 0.3);
     
     /* Animation tokens */
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
@@ -105,7 +107,7 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background: var(--gradient-dark);
+    background: var(--gradient-spa);
     min-height: 100vh;
   }
 
@@ -226,5 +228,9 @@ All colors MUST be HSL.
 
   .bg-gradient-warm {
     background: var(--gradient-warm);
+  }
+
+  .bg-gradient-spa {
+    background: var(--gradient-spa);
   }
 }
