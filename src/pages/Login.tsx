@@ -27,7 +27,7 @@ const Login = () => {
       <Navigation />
       
       <div className="pt-20">
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <section className="pt-8 pb-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
               <h1 className="text-4xl font-serif font-light text-foreground mb-4">
