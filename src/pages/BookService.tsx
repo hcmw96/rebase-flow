@@ -176,7 +176,7 @@ const BookService = () => {
         </div>
       )}
       
-      <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-6 flex justify-center">
+      <div className="max-w-md mx-auto glass-morphism rounded-2xl p-6 flex justify-center">
         <Calendar
           mode="single"
           selected={selectedDate}
