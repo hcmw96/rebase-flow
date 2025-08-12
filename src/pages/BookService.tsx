@@ -143,7 +143,7 @@ const BookService = () => {
 
   const renderServiceInfo = () => (
     <Card className="glass-card rounded-3xl border-white/10 mb-6">
-      <CardContent className="p-6">
+      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
         <div className="flex justify-between items-start mb-3">
           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
             {selectedService?.category}
@@ -176,7 +176,7 @@ const BookService = () => {
         </div>
       )}
       
-      <div className="max-w-lg mx-auto glass-morphism rounded-2xl p-8">
+      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-8'}`}>
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -228,7 +228,7 @@ const BookService = () => {
         </div>
       )}
       
-      <div className="max-w-lg mx-auto glass-morphism rounded-2xl p-6">
+      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
         <div className="grid grid-cols-3 gap-3">
           {generateTimeSlots().map((time) => (
             <Button
@@ -259,7 +259,7 @@ const BookService = () => {
         </div>
       )}
       
-      <Card className="glass-card rounded-3xl border-white/10 max-w-lg mx-auto">
+      <Card className={`glass-card rounded-3xl border-white/10 mx-auto ${isMobile ? 'max-w-sm mx-4' : 'max-w-lg'}`}>
         <CardContent className="p-6">
           <div className="space-y-6">
             <div className="text-center">
@@ -330,7 +330,7 @@ const BookService = () => {
             
             {/* Service info always visible on desktop, only on mobile in step 1 */}
             {(!isMobile || step === 1) && (
-              <div className="max-w-lg mx-auto mb-8">
+              <div className={`mx-auto mb-8 ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
                 {renderServiceInfo()}
               </div>
             )}
