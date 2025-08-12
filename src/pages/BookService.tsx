@@ -310,15 +310,15 @@ const BookService = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-left bg-fixed relative"
+      className="min-h-screen bg-cover bg-center bg-fixed relative transition-all duration-700 ease-in-out"
       style={{
-        backgroundImage: `url('/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png')`
+        backgroundImage: `url('/lovable-uploads/8911d1ac-19d7-427a-9138-19c768396ea7.png')`
       }}
     >
-      {/* Dark overlay for text legibility */}
-      <div className="absolute inset-0 bg-black/60 z-0" />
+      {/* Dark overlay for text legibility with smooth transition */}
+      <div className="absolute inset-0 bg-black/50 z-0 transition-opacity duration-500" />
       
-      <div className="relative z-10 min-h-screen">
+      <div className="relative z-10 min-h-screen animate-fade-in">
       {!isMobile && <Navigation />}
       
       {isMobile && renderMobileHeader()}
@@ -326,19 +326,25 @@ const BookService = () => {
       <div className={isMobile ? "pt-0" : "pt-20"}>
         <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
           <div className="max-w-7xl mx-auto">
-            {!isMobile && renderProgressDots()}
+            {!isMobile && (
+              <div className="animate-scale-in">
+                {renderProgressDots()}
+              </div>
+            )}
             
             {/* Service info always visible on desktop, only on mobile in step 1 */}
             {(!isMobile || step === 1) && (
-              <div className={`mx-auto mb-8 ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
+              <div className={`mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
                 {renderServiceInfo()}
               </div>
             )}
             
             <div className="max-w-lg mx-auto">
-              {step === 1 && renderDateSelection()}
-              {step === 2 && renderTimeSelection()}
-              {step === 3 && renderConfirmation()}
+              <div className="transition-all duration-500 ease-in-out">
+                {step === 1 && <div className="animate-fade-in">{renderDateSelection()}</div>}
+                {step === 2 && <div className="animate-fade-in">{renderTimeSelection()}</div>}
+                {step === 3 && <div className="animate-fade-in">{renderConfirmation()}</div>}
+              </div>
             </div>
           </div>
         </section>
