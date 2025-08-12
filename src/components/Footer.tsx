@@ -1,6 +1,5 @@
 import { Link } from "react-router-dom";
 import { Mail, Phone, MapPin, Instagram, Facebook, Twitter } from "lucide-react";
-import Logo from "./Logo";
 
 const Footer = () => {
   return (
@@ -9,7 +8,11 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Logo className="h-10 w-auto" />
+            <img 
+              src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png" 
+              alt="Rebase Recovery" 
+              className="h-12 w-auto"
+            />
             <p className="text-foreground/70 text-sm leading-relaxed">
               London's premier wellness centre offering luxury recovery and rejuvenation experiences.
             </p>
