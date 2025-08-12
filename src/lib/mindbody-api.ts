@@ -1,16 +1,4 @@
-import axios from 'axios';
-
-// Mindbody API configuration
-const MINDBODY_API_BASE = 'https://api.mindbodyonline.com/public/v6';
-
-// Create axios instance with default config
-const mindbodyAPI = axios.create({
-  baseURL: MINDBODY_API_BASE,
-  headers: {
-    'Content-Type': 'application/json',
-    'API-Key': 'YOUR_MINDBODY_API_KEY', // This should be stored securely
-  },
-});
+import { supabase } from '@/integrations/supabase/client';
 
 // Types for Mindbody API responses
 export interface MindbodyClient {
@@ -80,52 +68,39 @@ export interface MindbodyAppointment {
   Status: string;
 }
 
-// Authentication functions
-export const authenticateUser = async (username: string, password: string) => {
+// Helper function to call the Mindbody edge function
+async function callMindbodyAPI(action: string, data: any = {}) {
   try {
-    const response = await mindbodyAPI.post('/usertoken/issue', {
-      Username: username,
-      Password: password,
+    const { data: result, error } = await supabase.functions.invoke('mindbody-api', {
+      body: { action, data }
     });
-    
-    // Store the access token for subsequent requests
-    const accessToken = response.data.AccessToken;
-    mindbodyAPI.defaults.headers['Authorization'] = `Bearer ${accessToken}`;
-    
-    return {
-      success: true,
-      data: response.data,
-      token: accessToken,
-    };
+
+    if (error) {
+      console.error('Edge function error:', error);
+      return {
+        success: false,
+        error: error.message || 'An error occurred while calling the Mindbody API'
+      };
+    }
+
+    return result;
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Network error:', error);
     return {
       success: false,
-      error: 'Invalid credentials',
+      error: 'Network error occurred'
     };
   }
+}
+
+// Authentication functions
+export const authenticateUser = async (username: string, password: string) => {
+  return await callMindbodyAPI('authenticate', { username, password });
 };
 
 // Client management functions
-export const getClientInfo = async (clientId: string) => {
-  try {
-    const response = await mindbodyAPI.get(`/client/clients`, {
-      params: {
-        ClientIds: clientId,
-      },
-    });
-    
-    return {
-      success: true,
-      data: response.data.Clients[0] as MindbodyClient,
-    };
-  } catch (error) {
-    console.error('Error fetching client info:', error);
-    return {
-      success: false,
-      error: 'Failed to fetch client information',
-    };
-  }
+export const getClientInfo = async (clientId: string, token?: string) => {
+  return await callMindbodyAPI('getClient', { clientId, token });
 };
 
 export const createClient = async (clientData: {
@@ -134,160 +109,57 @@ export const createClient = async (clientData: {
   Email: string;
   MobilePhone?: string;
 }) => {
-  try {
-    const response = await mindbodyAPI.post('/client/addclient', {
-      ...clientData,
-      SendAccountEmails: true,
-      SendAccountTexts: false,
-      SendPromotionalEmails: true,
-      SendPromotionalTexts: false,
-    });
-    
-    return {
-      success: true,
-      data: response.data.Client as MindbodyClient,
-    };
-  } catch (error) {
-    console.error('Error creating client:', error);
-    return {
-      success: false,
-      error: 'Failed to create client account',
-    };
-  }
+  return await callMindbodyAPI('createClient', { clientData });
 };
 
 // Service and class functions
-export const getServices = async () => {
-  try {
-    const response = await mindbodyAPI.get('/site/services');
-    
-    return {
-      success: true,
-      data: response.data.Services as MindbodyService[],
-    };
-  } catch (error) {
-    console.error('Error fetching services:', error);
-    return {
-      success: false,
-      error: 'Failed to fetch services',
-    };
-  }
+export const getServices = async (token?: string) => {
+  return await callMindbodyAPI('getServices', { token });
 };
 
-export const getClasses = async (startDate: string, endDate: string) => {
-  try {
-    const response = await mindbodyAPI.get('/class/classes', {
-      params: {
-        StartDateTime: startDate,
-        EndDateTime: endDate,
-        HideCanceledClasses: true,
-      },
-    });
-    
-    return {
-      success: true,
-      data: response.data.Classes as MindbodyClass[],
-    };
-  } catch (error) {
-    console.error('Error fetching classes:', error);
-    return {
-      success: false,
-      error: 'Failed to fetch classes',
-    };
-  }
+export const getClasses = async (startDate: string, endDate: string, token?: string) => {
+  return await callMindbodyAPI('getClasses', { startDate, endDate, token });
 };
 
 // Booking functions
-export const bookAppointment = async (serviceId: number, staffId: number, startDateTime: string, clientId: string) => {
-  try {
-    const response = await mindbodyAPI.post('/appointment/addappointment', {
-      ServiceId: serviceId,
-      StaffId: staffId,
-      StartDateTime: startDateTime,
-      ClientId: clientId,
-      Notes: 'Booked via Rebase Recovery website',
-      SendEmail: true,
-    });
-    
-    return {
-      success: true,
-      data: response.data.Appointment as MindbodyAppointment,
-    };
-  } catch (error) {
-    console.error('Error booking appointment:', error);
-    return {
-      success: false,
-      error: 'Failed to book appointment',
-    };
-  }
+export const bookAppointment = async (
+  serviceId: number, 
+  staffId: number, 
+  startDateTime: string, 
+  clientId: string,
+  token?: string
+) => {
+  return await callMindbodyAPI('bookAppointment', { 
+    serviceId, 
+    staffId, 
+    startDateTime, 
+    clientId, 
+    token 
+  });
 };
 
-export const bookClass = async (classId: number, clientId: string) => {
-  try {
-    const response = await mindbodyAPI.post('/class/addclienttoclass', {
-      ClassId: classId,
-      ClientId: clientId,
-      SendEmail: true,
-      Waitlist: false,
-    });
-    
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error booking class:', error);
-    return {
-      success: false,
-      error: 'Failed to book class',
-    };
-  }
+export const bookClass = async (classId: number, clientId: string, token?: string) => {
+  return await callMindbodyAPI('bookClass', { classId, clientId, token });
 };
 
 // Get client appointments
-export const getClientAppointments = async (clientId: string, startDate?: string, endDate?: string) => {
-  try {
-    const response = await mindbodyAPI.get('/appointment/appointments', {
-      params: {
-        ClientIds: clientId,
-        StartDate: startDate,
-        EndDate: endDate,
-      },
-    });
-    
-    return {
-      success: true,
-      data: response.data.Appointments as MindbodyAppointment[],
-    };
-  } catch (error) {
-    console.error('Error fetching appointments:', error);
-    return {
-      success: false,
-      error: 'Failed to fetch appointments',
-    };
-  }
+export const getClientAppointments = async (
+  clientId: string, 
+  startDate?: string, 
+  endDate?: string,
+  token?: string
+) => {
+  return await callMindbodyAPI('getClientAppointments', { 
+    clientId, 
+    startDate, 
+    endDate, 
+    token 
+  });
 };
 
 // Cancel appointment
-export const cancelAppointment = async (appointmentId: number, notes?: string) => {
-  try {
-    const response = await mindbodyAPI.post('/appointment/updateappointment', {
-      AppointmentId: appointmentId,
-      Action: 'Cancel',
-      Notes: notes || 'Cancelled via Rebase Recovery website',
-    });
-    
-    return {
-      success: true,
-      data: response.data,
-    };
-  } catch (error) {
-    console.error('Error cancelling appointment:', error);
-    return {
-      success: false,
-      error: 'Failed to cancel appointment',
-    };
-  }
+export const cancelAppointment = async (appointmentId: number, notes?: string, token?: string) => {
+  return await callMindbodyAPI('cancelAppointment', { appointmentId, notes, token });
 };
 
 // Payment processing (this would typically integrate with Mindbody's payment system)
@@ -318,5 +190,3 @@ export const processPayment = async (appointmentId: number, paymentInfo: {
     };
   }
 };
-
-export default mindbodyAPI;
