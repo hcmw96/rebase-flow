@@ -48,8 +48,12 @@ const Login = () => {
             </div>
 
             <Card className="card-luxury">
-              <CardHeader className="text-center pb-6">
-                <CardTitle className="text-2xl font-serif">Sign In</CardTitle>
+              <CardHeader className="text-center pb-6 bg-white/10 backdrop-blur-xl border-b border-white/20 relative overflow-hidden">
+                {/* Liquid glass overlay effect */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 via-transparent to-white/5 pointer-events-none" />
+                <div className="relative z-10">
+                  <CardTitle className="text-2xl font-serif">Sign In</CardTitle>
+                </div>
               </CardHeader>
               
               <CardContent className="p-6 pt-0">
