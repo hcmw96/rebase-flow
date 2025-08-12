@@ -40,9 +40,6 @@ const Login = () => {
 
             <Card className="card-luxury">
               <CardHeader className="text-center pb-6">
-                <div className="w-16 h-16 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                  <User className="h-8 w-8 text-primary" />
-                </div>
                 <CardTitle className="text-2xl font-serif">Sign In</CardTitle>
               </CardHeader>
               
