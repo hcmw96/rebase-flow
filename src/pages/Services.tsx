@@ -26,7 +26,8 @@ const Services = () => {
       title: "Ice Bath",
       category: "Recovery",
       duration: "15 minutes",
-      price: 25
+      price: 25,
+      image: "/lovable-uploads/ca3fba7a-cec4-41dc-8899-fd2d4b0d270a.png"
     },
     {
       id: 2,
@@ -192,6 +193,7 @@ const Services = () => {
                     id={service.id}
                     title={service.title}
                     category={service.category}
+                    image={service.image}
                     className="animate-fade-in"
                   />
                   
