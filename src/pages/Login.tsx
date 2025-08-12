@@ -24,7 +24,7 @@ const Login = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-center bg-fixed relative"
+      className="min-h-screen bg-cover bg-left bg-fixed relative"
       style={{
         backgroundImage: `url('/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png')`
       }}
