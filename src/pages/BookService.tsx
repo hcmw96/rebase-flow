@@ -143,7 +143,7 @@ const BookService = () => {
 
   const renderServiceInfo = () => (
     <Card className="glass-card rounded-3xl border-white/10 mb-6">
-      <CardContent className="p-6">
+      <CardContent className="p-6 max-w-sm mx-auto">
         <div className="flex justify-between items-start mb-3">
           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
             {selectedService?.category}
