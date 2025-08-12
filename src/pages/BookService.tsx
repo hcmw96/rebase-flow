@@ -176,7 +176,7 @@ const BookService = () => {
         </div>
       )}
       
-      <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-6">
+      <div className="max-w-xs mx-auto glass-morphism rounded-2xl p-6">
         <Calendar
           mode="single"
           selected={selectedDate}
@@ -330,7 +330,7 @@ const BookService = () => {
             
             {/* Service info always visible on desktop, only on mobile in step 1 */}
             {(!isMobile || step === 1) && (
-              <div className="max-w-sm mx-auto mb-8">
+              <div className="max-w-xs mx-auto mb-8">
                 {renderServiceInfo()}
               </div>
             )}
