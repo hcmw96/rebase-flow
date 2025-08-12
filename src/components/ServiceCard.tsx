@@ -25,7 +25,7 @@ const ServiceCard = ({
     navigate(`/book/${id}`);
   };
   return (
-    <Card className={cn("card-luxury group hover:scale-105 transition-all duration-300", className)}>
+    <Card className={cn("glass-card group hover:scale-105 transition-all duration-300 rounded-3xl border-white/10", className)}>
       {image && (
         <div className="relative h-48 overflow-hidden rounded-t-2xl">
           <img 
@@ -55,7 +55,7 @@ const ServiceCard = ({
       </CardHeader>
 
       <CardContent className="pt-0">
-        <Button className="w-full btn-luxury text-black" onClick={handleBookNow}>
+        <Button className="w-full glass-button text-white rounded-xl font-medium" onClick={handleBookNow}>
           Book Now
         </Button>
       </CardContent>

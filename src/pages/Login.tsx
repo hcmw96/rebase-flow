@@ -47,9 +47,9 @@ const Login = () => {
               </p>
             </div>
 
-            <Card className="card-luxury">
-              <CardHeader className="text-center pb-6">
-                <CardTitle className="text-2xl font-serif">Sign In</CardTitle>
+            <Card className="glass-card rounded-3xl border-white/10">
+              <CardHeader className="text-center pb-6 glass-morphism rounded-t-3xl">
+                <CardTitle className="text-2xl font-serif text-white">Sign In</CardTitle>
               </CardHeader>
               
               <CardContent className="p-6 pt-0">
@@ -60,7 +60,7 @@ const Login = () => {
                       id="email"
                       type="email"
                       placeholder="your.email@example.com"
-                      className="bg-input border-border/50 focus:border-primary"
+                      className="glass-input text-white placeholder:text-white/60 rounded-xl"
                       required
                     />
                   </div>
@@ -71,7 +71,7 @@ const Login = () => {
                       id="password"
                       type="password"
                       placeholder="Enter your password"
-                      className="bg-input border-border/50 focus:border-primary"
+                      className="glass-input text-white placeholder:text-white/60 rounded-xl"
                       required
                     />
                   </div>
@@ -88,7 +88,7 @@ const Login = () => {
                   
                   <Button 
                     type="submit" 
-                    className="w-full btn-luxury"
+                    className="w-full glass-button text-white rounded-xl font-medium"
                     disabled={isLoading}
                   >
                     {isLoading ? (
@@ -108,7 +108,7 @@ const Login = () => {
                       Don't have an account yet?
                     </p>
                     <Link to="/signup">
-                      <Button variant="outline" className="w-full btn-ghost-luxury">
+                      <Button variant="outline" className="w-full glass-button text-white border-white/20 rounded-xl">
                         Create Account
                       </Button>
                     </Link>
