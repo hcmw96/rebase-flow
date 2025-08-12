@@ -104,7 +104,7 @@ const Footer = () => {
 
         <div className="border-t border-border/50 mt-8 pt-8 text-center">
           <p className="text-foreground/60 text-sm">
-            © 2024 Rebase Recovery. All rights reserved.
+            © 2025 Rebase Recovery. All rights reserved.
           </p>
         </div>
       </div>
