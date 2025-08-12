@@ -36,7 +36,7 @@ const Login = () => {
         <Navigation />
         
         <div className="pt-20">
-        <section className="pt-8 pb-20 px-4 sm:px-6 lg:px-8">
+        <section className="pt-8 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto">
 
             <Card className="glass-card rounded-3xl border-white/10">
