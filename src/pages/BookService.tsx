@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
 import { format } from "date-fns";
 
 const BookService = () => {
@@ -159,9 +159,13 @@ const BookService = () => {
         <p className="text-white/70 leading-relaxed mb-4">
           {selectedService?.description}
         </p>
-        <div className="flex items-center text-sm text-white/70">
-          <MapPin className="h-4 w-4 mr-2" />
-          <span>Rebase Wellness Studio</span>
+        <div className="flex items-center justify-center text-sm text-white/70">
+          <div className="flex items-center space-x-1">
+            {[...Array(5)].map((_, i) => (
+              <Star key={i} className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+            ))}
+            <span className="ml-2">Google Reviews</span>
+          </div>
         </div>
       </CardContent>
     </Card>
