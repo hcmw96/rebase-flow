@@ -142,24 +142,24 @@ const BookService = () => {
   );
 
   const renderServiceInfo = () => (
-    <Card className="card-luxury mb-6">
+    <Card className="glass-card rounded-3xl border-white/10 mb-6">
       <CardContent className="p-6">
         <div className="flex justify-between items-start mb-3">
-          <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+          <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
             {selectedService?.category}
           </Badge>
           <div className="text-right">
-            <div className="text-2xl font-bold text-primary">£{selectedService?.price}</div>
-            <div className="text-sm text-muted-foreground">{selectedService?.duration}</div>
+            <div className="text-2xl font-bold text-white">£{selectedService?.price}</div>
+            <div className="text-sm text-white/70">{selectedService?.duration}</div>
           </div>
         </div>
-        <h1 className="font-serif text-2xl font-medium text-foreground mb-3">
+        <h1 className="font-serif text-2xl font-medium text-white mb-3">
           {selectedService?.title}
         </h1>
-        <p className="text-foreground/70 leading-relaxed mb-4">
+        <p className="text-white/70 leading-relaxed mb-4">
           {selectedService?.description}
         </p>
-        <div className="flex items-center text-sm text-muted-foreground">
+        <div className="flex items-center text-sm text-white/70">
           <MapPin className="h-4 w-4 mr-2" />
           <span>Rebase Wellness Studio</span>
         </div>
@@ -171,44 +171,44 @@ const BookService = () => {
     <div className="px-4 pb-8">
       {!isMobile && (
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-foreground mb-2">
+          <h2 className="text-2xl font-serif font-light text-white mb-2">
             Choose Your Date
           </h2>
-          <p className="text-sm text-foreground/70">
+          <p className="text-sm text-white/70">
             Select your preferred date for {selectedService?.title}
           </p>
         </div>
       )}
       
-      <div className="max-w-sm mx-auto">
+      <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-6 flex justify-center">
         <Calendar
           mode="single"
           selected={selectedDate}
           onSelect={handleDateSelect}
           disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
           initialFocus
-          className="rounded-xl border-0 shadow-none p-0"
+          className="rounded-xl border-0 shadow-none p-0 pointer-events-auto mx-auto [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 [&_.rdp-nav_button]:hover:text-white"
           classNames={{
             months: "space-y-0",
             month: "space-y-4",
             caption: "flex justify-center pt-1 relative items-center",
-            caption_label: "text-sm font-medium",
+            caption_label: "text-sm font-medium text-white",
             nav: "space-x-1 flex items-center",
-            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white/70 hover:text-white",
             nav_button_previous: "absolute left-1",
             nav_button_next: "absolute right-1",
             table: "w-full border-collapse space-y-1",
             head_row: "flex",
-            head_cell: "text-muted-foreground rounded-md w-8 font-normal text-[0.8rem]",
+            head_cell: "text-white/70 rounded-md w-8 font-normal text-[0.8rem]",
             row: "flex w-full mt-2",
-            cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50 [&:has([aria-selected].day-range-end)]:rounded-r-md",
-            day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors text-sm",
+            cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-white/20 [&:has([aria-selected].day-outside)]:bg-white/10",
+            day: "h-8 w-8 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-sm text-white",
             day_range_end: "day-range-end",
-            day_selected: "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground",
-            day_today: "bg-accent text-accent-foreground",
-            day_outside: "day-outside text-muted-foreground opacity-50 aria-selected:bg-accent/50 aria-selected:text-muted-foreground aria-selected:opacity-30",
-            day_disabled: "text-muted-foreground opacity-50",
-            day_range_middle: "aria-selected:bg-accent aria-selected:text-accent-foreground",
+            day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
+            day_today: "bg-white/10 text-white",
+            day_outside: "day-outside text-white/50 opacity-50 aria-selected:bg-white/10 aria-selected:text-white/50 aria-selected:opacity-30",
+            day_disabled: "text-white/30 opacity-50",
+            day_range_middle: "aria-selected:bg-white/20 aria-selected:text-white",
             day_hidden: "invisible",
           }}
         />
@@ -220,25 +220,25 @@ const BookService = () => {
     <div className="px-4 pb-8">
       {!isMobile && (
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-foreground mb-2">
+          <h2 className="text-2xl font-serif font-light text-white mb-2">
             Pick Your Time
           </h2>
-          <p className="text-sm text-foreground/70">
+          <p className="text-sm text-white/70">
             {selectedDate && format(selectedDate, "EEEE, MMMM d")}
           </p>
         </div>
       )}
       
-      <div className="max-w-sm mx-auto">
+      <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-4">
         <div className="grid grid-cols-3 gap-3">
           {generateTimeSlots().map((time) => (
             <Button
               key={time}
               variant="outline"
-              className={`h-12 text-sm transition-all ${
+              className={`h-12 text-sm transition-all rounded-xl ${
                 selectedTime === time 
-                  ? 'bg-primary text-primary-foreground border-primary' 
-                  : 'hover:bg-accent hover:text-accent-foreground'
+                  ? 'glass-button text-white border-white/30 bg-white/20' 
+                  : 'glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10'
               }`}
               onClick={() => handleTimeSelect(time)}
             >
@@ -254,49 +254,49 @@ const BookService = () => {
     <div className="px-4 pb-8">
       {!isMobile && (
         <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-foreground mb-4">
+          <h2 className="text-2xl font-serif font-light text-white mb-4">
             Confirm Your Booking
           </h2>
         </div>
       )}
       
-      <Card className="card-luxury max-w-sm mx-auto">
+      <Card className="glass-card rounded-3xl border-white/10 max-w-sm mx-auto">
         <CardContent className="p-6">
           <div className="space-y-6">
             <div className="text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-full mx-auto flex items-center justify-center mb-4">
-                <Check className="h-6 w-6 text-primary" />
+              <div className="w-12 h-12 bg-white/10 rounded-full mx-auto flex items-center justify-center mb-4">
+                <Check className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-serif text-lg font-medium text-foreground mb-2">
+              <h3 className="font-serif text-lg font-medium text-white mb-2">
                 {selectedService?.title}
               </h3>
-              <p className="text-sm text-foreground/70">
+              <p className="text-sm text-white/70">
                 {selectedService?.description}
               </p>
             </div>
             
-            <div className="border-t border-border/50 pt-4 space-y-3">
+            <div className="border-t border-white/20 pt-4 space-y-3">
               <div className="flex justify-between text-sm">
-                <span className="text-foreground/70">Date</span>
-                <span className="font-medium">
+                <span className="text-white/70">Date</span>
+                <span className="font-medium text-white">
                   {selectedDate && format(selectedDate, "MMM d, yyyy")}
                 </span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-foreground/70">Time</span>
-                <span className="font-medium">{selectedTime}</span>
+                <span className="text-white/70">Time</span>
+                <span className="font-medium text-white">{selectedTime}</span>
               </div>
               <div className="flex justify-between text-sm">
-                <span className="text-foreground/70">Duration</span>
-                <span className="font-medium">{selectedService?.duration}</span>
+                <span className="text-white/70">Duration</span>
+                <span className="font-medium text-white">{selectedService?.duration}</span>
               </div>
-              <div className="flex justify-between text-sm font-medium border-t border-border/50 pt-3">
-                <span>Total</span>
-                <span className="text-primary">£{selectedService?.price}</span>
+              <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
+                <span className="text-white">Total</span>
+                <span className="text-white">£{selectedService?.price}</span>
               </div>
             </div>
             
-            <Button className="w-full btn-luxury">
+            <Button className="w-full glass-button text-white rounded-xl font-medium">
               Complete Booking
             </Button>
           </div>
@@ -310,7 +310,16 @@ const BookService = () => {
   }
 
   return (
-    <div className="min-h-screen">
+    <div 
+      className="min-h-screen bg-cover bg-left bg-fixed relative"
+      style={{
+        backgroundImage: `url('/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png')`
+      }}
+    >
+      {/* Dark overlay for text legibility */}
+      <div className="absolute inset-0 bg-black/60 z-0" />
+      
+      <div className="relative z-10 min-h-screen">
       {!isMobile && <Navigation />}
       
       {isMobile && renderMobileHeader()}
@@ -337,6 +346,7 @@ const BookService = () => {
       </div>
 
       {!isMobile && <Footer />}
+      </div>
     </div>
   );
 };
