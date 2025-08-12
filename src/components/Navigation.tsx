@@ -59,7 +59,7 @@ const Navigation = () => {
                   {item.label}
                 </Link>
               ))}
-              <div className="px-3 pt-4 space-y-6">
+              <div className="px-3 pt-4 space-y-24">
                 <Link to="/login" onClick={() => setIsOpen(false)}>
                   <Button variant="ghost" className="w-full glass-button text-white border-white/20">
                     Login
