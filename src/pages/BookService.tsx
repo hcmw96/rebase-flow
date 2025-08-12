@@ -331,7 +331,7 @@ const BookService = () => {
             
             {/* Service info always visible on desktop, only on mobile in step 1 */}
             {(!isMobile || step === 1) && (
-              <div className="max-w-lg mx-auto mb-8">
+              <div className="max-w-sm mx-auto mb-8">
                 {renderServiceInfo()}
               </div>
             )}
