@@ -183,7 +183,7 @@ const BookService = () => {
           onSelect={handleDateSelect}
           disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
           initialFocus
-          className="rounded-xl border-0 shadow-none p-0 pointer-events-auto mx-auto scale-110 [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 [&_.rdp-nav_button]:hover:text-white"
+          className="rounded-xl border-0 shadow-none p-0 pointer-events-auto w-full scale-110 [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 [&_.rdp-nav_button]:hover:text-white"
           classNames={{
             months: "space-y-0",
             month: "space-y-4",
