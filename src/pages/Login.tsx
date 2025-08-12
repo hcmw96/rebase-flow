@@ -5,21 +5,59 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { User, Lock, ArrowRight } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    email: "",
+    password: ""
+  });
+  const { toast } = useToast();
+  const navigate = useNavigate();
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     
-    // Simulate login process - integrate with Mindbody API
-    setTimeout(() => {
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email: formData.email,
+        password: formData.password
+      });
+
+      if (error) {
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Success",
+          description: "Successfully signed in!",
+        });
+        navigate("/services");
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
       setIsLoading(false);
-      // Redirect to dashboard or booking page
-    }, 2000);
+    }
   };
 
   return (
@@ -50,8 +88,11 @@ const Login = () => {
                     <Label htmlFor="email" className="text-foreground">Email</Label>
                     <Input 
                       id="email"
+                      name="email"
                       type="email"
                       placeholder="your.email@example.com"
+                      value={formData.email}
+                      onChange={handleInputChange}
                       className="glass-input text-white placeholder:text-white/60 rounded-xl"
                       required
                     />
@@ -61,8 +102,11 @@ const Login = () => {
                     <Label htmlFor="password" className="text-foreground">Password</Label>
                     <Input 
                       id="password"
+                      name="password"
                       type="password"
                       placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={handleInputChange}
                       className="glass-input text-white placeholder:text-white/60 rounded-xl"
                       required
                     />
