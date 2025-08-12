@@ -38,14 +38,6 @@ const Login = () => {
         <div className="pt-20">
         <section className="pt-8 pb-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-md mx-auto">
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-serif font-light text-foreground mb-4">
-                Welcome <span className="text-primary text-glow">Back</span>
-              </h1>
-              <p className="text-foreground/70">
-                Sign in to your account to manage bookings and access your wellness journey.
-              </p>
-            </div>
 
             <Card className="glass-card rounded-3xl border-white/10">
               <CardHeader className="text-center pb-6 glass-morphism rounded-t-3xl">
