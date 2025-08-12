@@ -29,59 +29,30 @@ const Navigation = () => {
             />
           </Link>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  "text-sm font-medium transition-colors duration-300 hover:text-primary",
-                  isActive(item.href) ? "text-primary" : "text-foreground/80"
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
-            
-            <div className="flex items-center space-x-3">
-              <Link to="/login">
-                <Button variant="ghost" size="sm" className="btn-ghost-luxury">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/book">
-                <Button size="sm" className="btn-luxury">
-                  Book Now
-                </Button>
-              </Link>
-            </div>
-          </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
+          {/* Hamburger menu button - all screen sizes */}
+          <div>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
-              className="text-foreground"
+              className="glass-button text-white border-white/20"
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
         </div>
 
-        {/* Mobile Navigation */}
+        {/* Navigation Menu - all screen sizes */}
         {isOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 border-t border-border/50 bg-background/95 backdrop-blur-xl">
+          <div>
+            <div className="px-2 pt-2 pb-3 space-y-1 border-t border-white/20 glass-morphism backdrop-blur-xl">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
                   to={item.href}
                   className={cn(
                     "block px-3 py-2 text-base font-medium transition-colors duration-300",
-                    isActive(item.href) ? "text-primary" : "text-foreground/80"
+                    isActive(item.href) ? "text-white" : "text-white/80 hover:text-white"
                   )}
                   onClick={() => setIsOpen(false)}
                 >
@@ -90,12 +61,12 @@ const Navigation = () => {
               ))}
               <div className="px-3 pt-4 space-y-2">
                 <Link to="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" className="w-full btn-ghost-luxury">
+                  <Button variant="ghost" className="w-full glass-button text-white border-white/20">
                     Login
                   </Button>
                 </Link>
                 <Link to="/book" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full btn-luxury">
+                  <Button className="w-full glass-button text-white">
                     Book Now
                   </Button>
                 </Link>
