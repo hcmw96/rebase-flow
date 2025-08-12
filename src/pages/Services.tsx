@@ -155,10 +155,19 @@ const Services = () => {
   };
 
   return (
-    <div className="min-h-screen">
-      <Navigation />
+    <div 
+      className="min-h-screen bg-cover bg-left bg-fixed relative"
+      style={{
+        backgroundImage: `url('/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png')`
+      }}
+    >
+      {/* Dark overlay for text legibility */}
+      <div className="absolute inset-0 bg-black/60 z-0" />
       
-      <div className="pt-20">
+      <div className="relative z-10">
+        <Navigation />
+        
+        <div className="pt-20">
 
         {/* Category Filter */}
         <section className="px-4 sm:px-6 lg:px-8 mb-12">
@@ -170,10 +179,10 @@ const Services = () => {
                   variant={activeCategory === category ? "default" : "outline"}
                   onClick={() => setActiveCategory(category)}
                   className={cn(
-                    "transition-all duration-300",
+                    "transition-all duration-300 rounded-xl",
                     activeCategory === category 
-                      ? "btn-luxury" 
-                      : "btn-ghost-luxury"
+                      ? "glass-button text-white" 
+                      : "glass-button text-white/70 hover:text-white border-white/20"
                   )}
                 >
                   {category}
@@ -198,20 +207,20 @@ const Services = () => {
                   />
                   
                   {openBookingId === service.id && (
-                    <Card className="card-luxury animate-in slide-in-from-top-2 duration-300">
+                    <Card className="glass-card rounded-3xl border-white/10 animate-in slide-in-from-top-2 duration-300">
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
                           {bookingStep > 1 && (
-                            <Button variant="ghost" size="icon" onClick={handleBackStep} className="h-8 w-8">
+                            <Button variant="ghost" size="icon" onClick={handleBackStep} className="h-8 w-8 glass-button text-white border-white/20">
                               <ChevronLeft className="h-4 w-4" />
                             </Button>
                           )}
-                          <CardTitle className="text-center font-serif flex-1">
+                          <CardTitle className="text-center font-serif flex-1 text-white">
                             {bookingStep === 1 && "Choose Date"}
                             {bookingStep === 2 && "Select Time"}
                             {bookingStep === 3 && "Confirm Booking"}
                           </CardTitle>
-                          <Button variant="ghost" size="icon" onClick={closeBooking} className="h-8 w-8">
+                          <Button variant="ghost" size="icon" onClick={closeBooking} className="h-8 w-8 glass-button text-white border-white/20">
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -233,7 +242,7 @@ const Services = () => {
                         
                         {bookingStep === 2 && (
                           <div className="max-w-sm mx-auto space-y-4">
-                            <div className="text-center text-sm text-muted-foreground mb-6">
+                            <div className="text-center text-sm text-white/70 mb-6">
                               {selectedDate && format(selectedDate, "EEEE, MMMM d")}
                             </div>
                             <div className="grid grid-cols-3 gap-3">
@@ -241,10 +250,10 @@ const Services = () => {
                                 <Button
                                   key={time}
                                   variant="outline"
-                                  className={`h-12 text-sm transition-all ${
+                                  className={`h-12 text-sm transition-all rounded-xl ${
                                     selectedTime === time 
-                                      ? 'bg-primary text-primary-foreground border-primary' 
-                                      : 'hover:bg-accent hover:text-accent-foreground'
+                                      ? 'glass-button text-white border-white/30 bg-white/20' 
+                                      : 'glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10'
                                   }`}
                                   onClick={() => handleTimeSelect(time)}
                                 >
@@ -258,15 +267,15 @@ const Services = () => {
                         {bookingStep === 3 && (
                           <div className="max-w-sm mx-auto space-y-6">
                             <div className="text-center">
-                              <h3 className="font-serif text-lg font-medium mb-2">
+                              <h3 className="font-serif text-lg font-medium mb-2 text-white">
                                 {service.title}
                               </h3>
-                              <div className="space-y-2 text-sm text-muted-foreground">
+                              <div className="space-y-2 text-sm text-white/70">
                                 <div>{selectedDate && format(selectedDate, "MMM d, yyyy")} at {selectedTime}</div>
                                 <div>{service.duration} • £{service.price}</div>
                               </div>
                             </div>
-                            <Button className="w-full btn-luxury">
+                            <Button className="w-full glass-button text-white rounded-xl font-medium">
                               Complete Booking
                             </Button>
                           </div>
@@ -279,9 +288,10 @@ const Services = () => {
             </div>
           </div>
         </section>
-      </div>
+        </div>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 };
