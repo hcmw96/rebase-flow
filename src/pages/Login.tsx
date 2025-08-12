@@ -40,7 +40,7 @@ const Login = () => {
           <div className="max-w-md mx-auto">
 
             <Card className="glass-card rounded-3xl border-white/10">
-              <CardHeader className="text-center pb-6 glass-morphism rounded-t-3xl">
+              <CardHeader className="text-center pb-6">
                 <CardTitle className="text-2xl font-serif text-white">Sign In</CardTitle>
               </CardHeader>
               
