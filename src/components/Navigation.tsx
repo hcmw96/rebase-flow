@@ -45,7 +45,7 @@ const Navigation = () => {
         {/* Navigation Menu - all screen sizes */}
         {isOpen && (
           <div>
-            <div className="px-2 pt-2 pb-3 space-y-1 border-t border-white/20 glass-morphism backdrop-blur-xl">
+            <div className="px-2 pt-2 pb-3 space-y-1 border-t border-white/20 glass-morphism backdrop-blur-xl rounded-t-lg">
               {navItems.map((item) => (
                 <Link
                   key={item.href}
