@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Mail, Phone, MapPin, Instagram, Facebook, Twitter } from "lucide-react";
+import { Mail, Phone, MapPin, Facebook, Twitter } from "lucide-react";
 
 const Footer = () => {
   return (
@@ -17,9 +17,6 @@ const Footer = () => {
               London's premier wellness centre offering luxury recovery and rejuvenation experiences.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-foreground/60 hover:text-primary transition-colors">
-                <Instagram className="h-5 w-5" />
-              </a>
               <a href="#" className="text-foreground/60 hover:text-primary transition-colors">
                 <Facebook className="h-5 w-5" />
               </a>
