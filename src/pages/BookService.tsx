@@ -18,55 +18,144 @@ const BookService = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
 
-  // Service data from Services page
+  // Service data matching Services page
   const services = [
+    // Classes
     {
       id: 1,
-      title: "Ice Bath",
-      category: "Recovery",
-      duration: "15 minutes",
-      price: 25,
-      description: "Invigorating cold water immersion therapy to reduce inflammation and boost recovery"
+      title: "Contrast Therapy",
+      category: "Classes", 
+      duration: "60 minutes",
+      price: 40
     },
     {
       id: 2,
-      title: "Traditional Sauna",
-      category: "Recovery", 
-      duration: "30 minutes",
-      price: 35,
-      description: "Authentic Finnish sauna experience for deep relaxation and detoxification"
+      title: "Breathwork",
+      category: "Classes",
+      duration: "60 minutes", 
+      price: 40
     },
     {
       id: 3,
-      title: "Infrared Sauna",
-      category: "Recovery",
-      duration: "30 minutes", 
-      price: 40,
-      description: "Gentle infrared heat therapy for muscle relaxation and improved circulation"
+      title: "Yoga",
+      category: "Classes",
+      duration: "60 minutes",
+      price: 40
     },
+
+    // Suites
     {
       id: 4,
-      title: "Contrast Class",
-      category: "Movement",
+      title: "Members Contrast Suite Drop In",
+      category: "Suites",
       duration: "60 minutes",
-      price: 45,
-      description: "Guided hot and cold therapy session combining sauna and ice bath"
+      price: 65
     },
     {
       id: 5,
-      title: "Private Contrast Suite",
-      category: "Recovery",
-      duration: "90 minutes",
-      price: 120,
-      description: "Exclusive private access to our premium contrast therapy facilities"
+      title: "Premium Suite",
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 240 },
+        { duration: "90 minutes", price: 420 }
+      ]
+    },
+    {
+      id: 6,
+      title: "Infrared Suite", 
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 190 },
+        { duration: "90 minutes", price: 330 }
+      ]
+    },
+
+    // Tech Therapies
+    {
+      id: 7,
+      title: "Cryotherapy",
+      category: "Tech Therapies",
+      variants: [
+        { duration: "3 minutes", price: 50, description: "Single session" },
+        { duration: "10 sessions", price: 400, description: "Pack of 10" }
+      ]
+    },
+    {
+      id: 8,
+      title: "HBOT (Hyperbaric Oxygen Therapy)",
+      category: "Tech Therapies", 
+      variants: [
+        { duration: "60 minutes", price: 200, description: "Single session" },
+        { duration: "5 sessions", price: 800, description: "Pack of 5" },
+        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
+      ]
+    },
+
+    // Massage Therapies
+    {
+      id: 9,
+      title: "Total Body Realignment",
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 195,
+      fromPrice: true
+    },
+    {
+      id: 10,
+      title: "Sports Massage", 
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
+    },
+    {
+      id: 11,
+      title: "Lymphatic Drainage",
+      category: "Massage Therapies", 
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
     },
     {
       id: 12,
-      title: "Recovery Specialist",
-      category: "Therapy",
-      duration: "30 minutes", 
-      price: 65,
-      description: "One-on-one session with our certified recovery specialists"
+      title: "Deep Tissue",
+      category: "Massage Therapies",
+      duration: "60-90 minutes", 
+      price: 185,
+      fromPrice: true
+    },
+
+    // Manual Therapies
+    {
+      id: 13,
+      title: "Osteopathy Consultation",
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 210
+    },
+    {
+      id: 14,
+      title: "Structural Fascia Therapy", 
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 200
+    },
+
+    // Other Services
+    {
+      id: 15,
+      title: "IV Drip",
+      category: "Other Services",
+      duration: "45-60 minutes",
+      price: 350,
+      fromPrice: true
+    },
+    {
+      id: 16,
+      title: "Vitamin Infusions",
+      category: "Other Services", 
+      duration: "30 minutes",
+      price: 80
     }
   ];
 
@@ -141,27 +230,66 @@ const BookService = () => {
     </div>
   );
 
-  const renderServiceInfo = () => (
-    <Card className="glass-card rounded-3xl border-white/10 mb-6">
-      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
-        <div className="flex justify-between items-start mb-3">
-          <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-            {selectedService?.category}
-          </Badge>
+  const renderServiceInfo = () => {
+    const renderPricing = () => {
+      if (!selectedService) return null;
+
+      if (selectedService.variants && selectedService.variants.length > 0) {
+        return (
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">£{selectedService?.price}</div>
-            <div className="text-sm text-white/70">{selectedService?.duration}</div>
+            <div className="text-sm text-white/70 mb-1">Multiple options</div>
+            <div className="text-lg font-bold text-white">
+              £{selectedService.variants[0].price} - £{selectedService.variants[selectedService.variants.length - 1].price}
+            </div>
           </div>
+        );
+      }
+
+      if (selectedService.fromPrice) {
+        return (
+          <div className="text-right">
+            <div className="text-sm text-white/70 mb-1">{selectedService.duration}</div>
+            <div className="text-lg font-bold text-white">from £{selectedService.price}</div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="text-right">
+          <div className="text-sm text-white/70 mb-1">{selectedService.duration}</div>
+          <div className="text-lg font-bold text-white">£{selectedService.price}</div>
         </div>
-        <h1 className="font-serif text-2xl font-medium text-white mb-3">
-          {selectedService?.title}
-        </h1>
-        <p className="text-white/70 leading-relaxed mb-4">
-          {selectedService?.description}
-        </p>
-      </CardContent>
-    </Card>
-  );
+      );
+    };
+
+    return (
+      <Card className="glass-card rounded-3xl border-white/10 mb-6">
+        <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+          <div className="flex justify-between items-start mb-3">
+            <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+              {selectedService?.category}
+            </Badge>
+            {renderPricing()}
+          </div>
+          <h1 className="font-serif text-2xl font-medium text-white mb-3">
+            {selectedService?.title}
+          </h1>
+          {selectedService?.variants && selectedService.variants.length > 0 && (
+            <div className="space-y-2">
+              {selectedService.variants.map((variant, index) => (
+                <div key={index} className="flex justify-between items-center text-sm">
+                  <span className="text-white/70">
+                    {variant.description ? variant.description : variant.duration}
+                  </span>
+                  <span className="text-white font-medium">£{variant.price}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  };
 
   const renderDateSelection = () => (
     <div className="px-4 pb-8">
@@ -249,60 +377,101 @@ const BookService = () => {
     </div>
   );
 
-  const renderConfirmation = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-4">
-            Confirm Your Booking
-          </h2>
-        </div>
-      )}
-      
-      <Card className={`glass-card rounded-3xl border-white/10 mx-auto ${isMobile ? 'max-w-sm mx-4' : 'max-w-lg'}`}>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-white/10 rounded-full mx-auto flex items-center justify-center mb-4">
-                <Check className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-serif text-lg font-medium text-white mb-2">
-                {selectedService?.title}
-              </h3>
-              <p className="text-sm text-white/70">
-                {selectedService?.description}
-              </p>
+  const renderConfirmation = () => {
+    const renderPricingInfo = () => {
+      if (!selectedService) return null;
+
+      if (selectedService.variants && selectedService.variants.length > 0) {
+        return (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-white/70">Options</span>
+              <span className="font-medium text-white">Multiple available</span>
             </div>
-            
-            <div className="border-t border-white/20 pt-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Date</span>
-                <span className="font-medium text-white">
-                  {selectedDate && format(selectedDate, "MMM d, yyyy")}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Time</span>
-                <span className="font-medium text-white">{selectedTime}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Duration</span>
-                <span className="font-medium text-white">{selectedService?.duration}</span>
-              </div>
-              <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
-                <span className="text-white">Total</span>
-                <span className="text-white">£{selectedService?.price}</span>
-              </div>
+            <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
+              <span className="text-white">Price Range</span>
+              <span className="text-white">
+                £{selectedService.variants[0].price} - £{selectedService.variants[selectedService.variants.length - 1].price}
+              </span>
             </div>
-            
-            <Button className="w-full glass-button text-white rounded-xl font-medium">
-              Complete Booking
-            </Button>
+          </>
+        );
+      }
+
+      if (selectedService.fromPrice) {
+        return (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="text-white/70">Duration</span>
+              <span className="font-medium text-white">{selectedService.duration}</span>
+            </div>
+            <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
+              <span className="text-white">Starting from</span>
+              <span className="text-white">£{selectedService.price}</span>
+            </div>
+          </>
+        );
+      }
+
+      return (
+        <>
+          <div className="flex justify-between text-sm">
+            <span className="text-white/70">Duration</span>
+            <span className="font-medium text-white">{selectedService.duration}</span>
           </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+          <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
+            <span className="text-white">Total</span>
+            <span className="text-white">£{selectedService.price}</span>
+          </div>
+        </>
+      );
+    };
+
+    return (
+      <div className="px-4 pb-8">
+        {!isMobile && (
+          <div className="text-center mb-8">
+            <h2 className="text-2xl font-serif font-light text-white mb-4">
+              Confirm Your Booking
+            </h2>
+          </div>
+        )}
+        
+        <Card className={`glass-card rounded-3xl border-white/10 mx-auto ${isMobile ? 'max-w-sm mx-4' : 'max-w-lg'}`}>
+          <CardContent className="p-6">
+            <div className="space-y-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-white/10 rounded-full mx-auto flex items-center justify-center mb-4">
+                  <Check className="h-6 w-6 text-white" />
+                </div>
+                <h3 className="font-serif text-lg font-medium text-white mb-2">
+                  {selectedService?.title}
+                </h3>
+              </div>
+              
+              <div className="border-t border-white/20 pt-4 space-y-3">
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/70">Date</span>
+                  <span className="font-medium text-white">
+                    {selectedDate && format(selectedDate, "MMM d, yyyy")}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-white/70">Time</span>
+                  <span className="font-medium text-white">{selectedTime}</span>
+                </div>
+                {renderPricingInfo()}
+              </div>
+              
+              <Button className="w-full glass-button text-white rounded-xl font-medium">
+                Complete Booking
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  };
 
   if (!selectedService) {
     return null;
