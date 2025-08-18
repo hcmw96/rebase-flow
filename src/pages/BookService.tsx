@@ -16,6 +16,7 @@ const BookService = () => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
   const isMobile = useIsMobile();
 
   // Service data matching Services page
@@ -165,18 +166,36 @@ const BookService = () => {
     if (!selectedService) {
       navigate("/services");
     }
+    // Auto-select variant if there's only one or no variants
+    if (selectedService?.variants && selectedService.variants.length === 1) {
+      setSelectedVariant(selectedService.variants[0]);
+    } else if (!selectedService?.variants) {
+      setSelectedVariant(null);
+    }
   }, [selectedService, navigate]);
+
+  // Determine total steps based on service type
+  const getTotalSteps = () => {
+    return selectedService?.variants && selectedService.variants.length > 1 ? 4 : 3;
+  };
+
+  const handleVariantSelect = (variant: any) => {
+    setSelectedVariant(variant);
+    setStep(2);
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     if (date) {
-      setStep(2);
+      const nextStep = selectedService?.variants && selectedService.variants.length > 1 ? 3 : 2;
+      setStep(nextStep);
     }
   };
 
   const handleTimeSelect = (time: string) => {
     setSelectedTime(time);
-    setStep(3);
+    const nextStep = selectedService?.variants && selectedService.variants.length > 1 ? 4 : 3;
+    setStep(nextStep);
   };
 
   const handleBack = () => {
@@ -199,32 +218,51 @@ const BookService = () => {
     return slots;
   };
 
-  const renderMobileHeader = () => (
-    <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
-      <div className="flex items-center justify-between p-4">
-        <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div className="flex-1 text-center">
-          <div className="text-sm font-medium text-foreground">
-            {step === 1 && "Choose Date"}
-            {step === 2 && "Pick Time"}
-            {step === 3 && "Confirm Booking"}
+  const renderMobileHeader = () => {
+    const getStepTitle = () => {
+      if (selectedService?.variants && selectedService.variants.length > 1) {
+        switch (step) {
+          case 1: return "Choose Option";
+          case 2: return "Choose Date";
+          case 3: return "Pick Time";
+          case 4: return "Confirm Booking";
+          default: return "";
+        }
+      } else {
+        switch (step) {
+          case 1: return "Choose Date";
+          case 2: return "Pick Time";
+          case 3: return "Confirm Booking";
+          default: return "";
+        }
+      }
+    };
+
+    return (
+      <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
+        <div className="flex items-center justify-between p-4">
+          <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div className="flex-1 text-center">
+            <div className="text-sm font-medium text-foreground">
+              {getStepTitle()}
+            </div>
+            <div className="text-xs text-muted-foreground">
+              Step {step} of {getTotalSteps()}
+            </div>
           </div>
-          <div className="text-xs text-muted-foreground">
-            Step {step} of 3
-          </div>
+          <div className="w-8" />
         </div>
-        <div className="w-8" />
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderProgressDots = () => (
     <div className="flex items-center justify-center space-x-2 mb-8">
-      {[1, 2, 3].map((stepNum) => (
-        <div key={stepNum} className={`w-2 h-2 rounded-full transition-colors ${
-          step >= stepNum ? 'bg-primary' : 'bg-muted'
+      {Array.from({ length: getTotalSteps() }).map((_, index) => (
+        <div key={index + 1} className={`w-2 h-2 rounded-full transition-colors ${
+          step >= index + 1 ? 'bg-primary' : 'bg-muted'
         }`} />
       ))}
     </div>
@@ -290,6 +328,48 @@ const BookService = () => {
       </Card>
     );
   };
+
+  const renderVariantSelection = () => (
+    <div className="px-4 pb-8">
+      {!isMobile && (
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-serif font-light text-white mb-2">
+            Choose Your Option
+          </h2>
+          <p className="text-sm text-white/70">
+            Select your preferred option for {selectedService?.title}
+          </p>
+        </div>
+      )}
+      
+      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
+        <div className="space-y-3">
+          {selectedService?.variants?.map((variant, index) => (
+            <Button
+              key={index}
+              variant="outline"
+              className={`w-full h-16 text-left flex justify-between items-center rounded-xl transition-all ${
+                selectedVariant === variant
+                  ? 'glass-button text-white border-white/30 bg-white/20' 
+                  : 'glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10'
+              }`}
+              onClick={() => handleVariantSelect(variant)}
+            >
+              <div>
+                <div className="text-sm font-medium">
+                  {variant.description || variant.duration}
+                </div>
+                <div className="text-xs text-white/50">
+                  {variant.description ? variant.duration : `${selectedService.title} session`}
+                </div>
+              </div>
+              <div className="text-lg font-bold">£{variant.price}</div>
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
 
   const renderDateSelection = () => (
     <div className="px-4 pb-8">
@@ -381,18 +461,23 @@ const BookService = () => {
     const renderPricingInfo = () => {
       if (!selectedService) return null;
 
-      if (selectedService.variants && selectedService.variants.length > 0) {
+      // If there's a selected variant, show its details
+      if (selectedVariant) {
         return (
           <>
             <div className="flex justify-between text-sm">
-              <span className="text-white/70">Options</span>
-              <span className="font-medium text-white">Multiple available</span>
+              <span className="text-white/70">Option</span>
+              <span className="font-medium text-white">
+                {selectedVariant.description || selectedVariant.duration}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-white/70">Duration</span>
+              <span className="font-medium text-white">{selectedVariant.duration}</span>
             </div>
             <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
-              <span className="text-white">Price Range</span>
-              <span className="text-white">
-                £{selectedService.variants[0].price} - £{selectedService.variants[selectedService.variants.length - 1].price}
-              </span>
+              <span className="text-white">Total</span>
+              <span className="text-white">£{selectedVariant.price}</span>
             </div>
           </>
         );
@@ -510,9 +595,21 @@ const BookService = () => {
             
             <div className="max-w-lg mx-auto">
               <div className="transition-all duration-500 ease-in-out">
-                {step === 1 && <div className="animate-fade-in">{renderDateSelection()}</div>}
-                {step === 2 && <div className="animate-fade-in">{renderTimeSelection()}</div>}
-                {step === 3 && <div className="animate-fade-in">{renderConfirmation()}</div>}
+                {step === 1 && selectedService?.variants && selectedService.variants.length > 1 && (
+                  <div className="animate-fade-in">{renderVariantSelection()}</div>
+                )}
+                {((step === 1 && (!selectedService?.variants || selectedService.variants.length <= 1)) ||
+                  (step === 2 && selectedService?.variants && selectedService.variants.length > 1)) && (
+                  <div className="animate-fade-in">{renderDateSelection()}</div>
+                )}
+                {((step === 2 && (!selectedService?.variants || selectedService.variants.length <= 1)) ||
+                  (step === 3 && selectedService?.variants && selectedService.variants.length > 1)) && (
+                  <div className="animate-fade-in">{renderTimeSelection()}</div>
+                )}
+                {((step === 3 && (!selectedService?.variants || selectedService.variants.length <= 1)) ||
+                  (step === 4 && selectedService?.variants && selectedService.variants.length > 1)) && (
+                  <div className="animate-fade-in">{renderConfirmation()}</div>
+                )}
               </div>
             </div>
           </div>
