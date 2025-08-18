@@ -18,93 +18,145 @@ const Services = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
 
-  const categories = ["All", "Recovery", "Movement", "Mindfulness", "Therapy"];
+  const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
 
   const services = [
+    // Classes
     {
       id: 1,
-      title: "Ice Bath",
-      category: "Recovery",
-      duration: "15 minutes",
-      price: 25,
-      image: "/lovable-uploads/ca3fba7a-cec4-41dc-8899-fd2d4b0d270a.png"
-    },
-    {
-      id: 2,
-      title: "Traditional Sauna",
-      category: "Recovery",
-      duration: "30 minutes",
-      price: 35
-    },
-    {
-      id: 3,
-      title: "Infrared Sauna", 
-      category: "Recovery",
-      duration: "30 minutes",
+      title: "Contrast Therapy",
+      category: "Classes", 
+      duration: "60 minutes",
       price: 40
     },
     {
-      id: 4,
-      title: "Contrast Class",
-      category: "Movement",
+      id: 2,
+      title: "Breathwork",
+      category: "Classes",
+      duration: "60 minutes", 
+      price: 40
+    },
+    {
+      id: 3,
+      title: "Yoga",
+      category: "Classes",
       duration: "60 minutes",
-      price: 45
+      price: 40
+    },
+
+    // Suites
+    {
+      id: 4,
+      title: "Members Contrast Suite Drop In",
+      category: "Suites",
+      duration: "60 minutes",
+      price: 65
     },
     {
       id: 5,
-      title: "Private Contrast Suite",
-      category: "Recovery",
-      duration: "90 minutes",
-      price: 120
+      title: "Premium Suite",
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 240 },
+        { duration: "90 minutes", price: 420 }
+      ]
     },
     {
       id: 6,
-      title: "Breathwork",
-      category: "Mindfulness",
-      duration: "45 minutes",
-      price: 35
+      title: "Infrared Suite", 
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 190 },
+        { duration: "90 minutes", price: 330 }
+      ]
     },
+
+    // Tech Therapies
     {
       id: 7,
-      title: "Yoga",
-      category: "Movement",
-      duration: "60 minutes",
-      price: 25
+      title: "Cryotherapy",
+      category: "Tech Therapies",
+      variants: [
+        { duration: "3 minutes", price: 50, description: "Single session" },
+        { duration: "10 sessions", price: 400, description: "Pack of 10" }
+      ]
     },
     {
       id: 8,
-      title: "Hyperbaric Oxygen",
-      category: "Therapy",
-      duration: "60 minutes",
-      price: 80
+      title: "HBOT (Hyperbaric Oxygen Therapy)",
+      category: "Tech Therapies", 
+      variants: [
+        { duration: "60 minutes", price: 200, description: "Single session" },
+        { duration: "5 sessions", price: 800, description: "Pack of 5" },
+        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
+      ]
     },
+
+    // Massage Therapies
     {
       id: 9,
-      title: "Cryotherapy",
-      category: "Recovery",
-      duration: "3 minutes",
-      price: 45
+      title: "Total Body Realignment",
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 195,
+      fromPrice: true
     },
     {
       id: 10,
-      title: "IV Vitamin Therapy",
-      category: "Therapy",
-      duration: "45 minutes",
-      price: 95
+      title: "Sports Massage", 
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
     },
     {
       id: 11,
       title: "Lymphatic Drainage",
-      category: "Therapy",
-      duration: "60 minutes",
-      price: 85
+      category: "Massage Therapies", 
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
     },
     {
       id: 12,
-      title: "Recovery Specialist",
-      category: "Therapy",
+      title: "Deep Tissue",
+      category: "Massage Therapies",
+      duration: "60-90 minutes", 
+      price: 185,
+      fromPrice: true
+    },
+
+    // Manual Therapies
+    {
+      id: 13,
+      title: "Osteopathy Consultation",
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 210
+    },
+    {
+      id: 14,
+      title: "Structural Fascia Therapy", 
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 200
+    },
+
+    // Other Services
+    {
+      id: 15,
+      title: "IV Drip",
+      category: "Other Services",
+      duration: "45-60 minutes",
+      price: 350,
+      fromPrice: true
+    },
+    {
+      id: 16,
+      title: "Vitamin Infusions",
+      category: "Other Services", 
       duration: "30 minutes",
-      price: 65
+      price: 80
     }
   ];
 
@@ -198,13 +250,18 @@ const Services = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredServices.map((service) => (
                 <div key={service.id} className="space-y-4">
-                  <ServiceCard 
-                    id={service.id}
-                    title={service.title}
-                    category={service.category}
-                    image={service.image}
-                    className="animate-fade-in"
-                  />
+                   <ServiceCard 
+                     id={service.id}
+                     title={service.title}
+                     category={service.category}
+                     className="animate-fade-in"
+                     service={{
+                       duration: service.duration,
+                       price: service.price,
+                       fromPrice: service.fromPrice,
+                       variants: service.variants
+                     }}
+                   />
                   
                   {openBookingId === service.id && (
                     <Card className="glass-card rounded-3xl border-white/10 animate-in slide-in-from-top-2 duration-300">
