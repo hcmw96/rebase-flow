@@ -4,25 +4,40 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { X } from "lucide-react";
 import { useMindbody } from '@/hooks/useMindbody';
 
-export const MindbodyAuthPrompt = () => {
+interface MindbodyAuthPromptProps {
+  onClose?: () => void;
+}
+
+export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading, error } = useMindbody();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    await login(username, password);
+    const success = await login(username, password);
+    if (success && onClose) {
+      onClose();
+    }
   };
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <Card className="glass-card rounded-3xl border-white/10 w-full max-w-md">
         <CardHeader>
-          <CardTitle className="text-white font-serif text-center">
-            Connect to Mindbody
-          </CardTitle>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-white font-serif text-center flex-1">
+              Connect to Mindbody
+            </CardTitle>
+            {onClose && (
+              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-white hover:bg-white/10">
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
           <p className="text-white/70 text-sm text-center">
             Sign in to access live class schedules and booking
           </p>

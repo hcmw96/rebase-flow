@@ -57,6 +57,7 @@ const Services = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const { services: mindbodyServices, classes: mindbodyClasses, loading, error, refreshData, isAuthenticated } = useMindbody();
 
@@ -66,6 +67,7 @@ const Services = () => {
     // Only try to refresh data if authenticated, otherwise show fallback
     if (isAuthenticated) {
       refreshData();
+      setShowAuthPrompt(false); // Hide auth prompt when authenticated
     }
   }, [isAuthenticated]);
 
@@ -234,7 +236,7 @@ const Services = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => {/* This will be handled by MindbodyAuthPrompt */}}
+                    onClick={() => setShowAuthPrompt(true)}
                     className="text-blue-400 hover:bg-blue-500/20 ml-4"
                   >
                     Connect
@@ -454,8 +456,10 @@ const Services = () => {
         <Footer />
       </div>
 
-      {/* Show auth prompt if not authenticated and no error */}
-      {!isAuthenticated && !error && <MindbodyAuthPrompt />}
+      {/* Show auth prompt when user clicks Connect or if not authenticated on first load */}
+      {(showAuthPrompt || (!isAuthenticated && !error && mindbodyServices.length === 0)) && (
+        <MindbodyAuthPrompt onClose={() => setShowAuthPrompt(false)} />
+      )}
     </div>
   );
 };
