@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
@@ -7,9 +7,48 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { X, ChevronLeft } from "lucide-react";
+import { X, ChevronLeft, AlertCircle, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import { useMindbody } from "@/hooks/useMindbody";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MindbodyAuthPrompt } from "@/components/MindbodyAuthPrompt";
+
+// Types for the UI data structures
+interface ServiceItem {
+  id: number;
+  title: string;
+  category: string;
+  duration: string;
+  price?: number;
+  fromPrice?: boolean;
+  variants?: { duration: string; price: number; description?: string; }[];
+  description?: string;
+}
+
+interface ClassItem {
+  id: number;
+  title: string;
+  category: "Classes";
+  duration: string;
+  startTime: string;
+  endTime: string;
+  instructor: string;
+  capacity: number;
+  booked: number;
+  available: boolean;
+}
+
+type BookableItem = ServiceItem | ClassItem;
+
+// Type guard functions
+const isClass = (item: BookableItem): item is ClassItem => {
+  return 'startTime' in item;
+};
+
+const isService = (item: BookableItem): item is ServiceItem => {
+  return !('startTime' in item);
+};
 
 const Services = () => {
   const [activeCategory, setActiveCategory] = useState("All");
@@ -17,11 +56,21 @@ const Services = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
+  const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
-  const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
+  const { services: mindbodyServices, classes: mindbodyClasses, loading, error, refreshData, isAuthenticated } = useMindbody();
 
-  const services = [
-    // Classes
+  const categories = ["All", "Classes", "Services", "Appointments"];
+
+  useEffect(() => {
+    // Only try to refresh data if authenticated, otherwise show fallback
+    if (isAuthenticated) {
+      refreshData();
+    }
+  }, [isAuthenticated]);
+
+  // Fallback static services for when Mindbody is unavailable
+  const fallbackServices: ServiceItem[] = [
     {
       id: 1,
       title: "Contrast Therapy",
@@ -31,138 +80,92 @@ const Services = () => {
     },
     {
       id: 2,
-      title: "Breathwork",
-      category: "Classes",
-      duration: "60 minutes", 
-      price: 40
-    },
-    {
-      id: 3,
-      title: "Yoga",
-      category: "Classes",
-      duration: "60 minutes",
-      price: 40
-    },
-
-    // Suites
-    {
-      id: 4,
-      title: "Members Contrast Suite Drop In",
-      category: "Suites",
-      duration: "60 minutes",
-      price: 65
-    },
-    {
-      id: 5,
       title: "Premium Suite",
-      category: "Suites",
+      category: "Services",
+      duration: "45-90 minutes",
       variants: [
         { duration: "45 minutes", price: 240 },
         { duration: "90 minutes", price: 420 }
       ]
     },
     {
-      id: 6,
-      title: "Infrared Suite", 
-      category: "Suites",
-      variants: [
-        { duration: "45 minutes", price: 190 },
-        { duration: "90 minutes", price: 330 }
-      ]
-    },
-
-    // Tech Therapies
-    {
-      id: 7,
-      title: "Cryotherapy",
-      category: "Tech Therapies",
-      variants: [
-        { duration: "3 minutes", price: 50, description: "Single session" },
-        { duration: "10 sessions", price: 400, description: "Pack of 10" }
-      ]
-    },
-    {
-      id: 8,
-      title: "HBOT (Hyperbaric Oxygen Therapy)",
-      category: "Tech Therapies", 
-      variants: [
-        { duration: "60 minutes", price: 200, description: "Single session" },
-        { duration: "5 sessions", price: 800, description: "Pack of 5" },
-        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
-      ]
-    },
-
-    // Massage Therapies
-    {
-      id: 9,
-      title: "Total Body Realignment",
-      category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 195,
-      fromPrice: true
-    },
-    {
-      id: 10,
+      id: 3,
       title: "Sports Massage", 
-      category: "Massage Therapies",
+      category: "Services",
       duration: "60-90 minutes",
       price: 185,
       fromPrice: true
-    },
-    {
-      id: 11,
-      title: "Lymphatic Drainage",
-      category: "Massage Therapies", 
-      duration: "60-90 minutes",
-      price: 185,
-      fromPrice: true
-    },
-    {
-      id: 12,
-      title: "Deep Tissue",
-      category: "Massage Therapies",
-      duration: "60-90 minutes", 
-      price: 185,
-      fromPrice: true
-    },
-
-    // Manual Therapies
-    {
-      id: 13,
-      title: "Osteopathy Consultation",
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 210
-    },
-    {
-      id: 14,
-      title: "Structural Fascia Therapy", 
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 200
-    },
-
-    // Other Services
-    {
-      id: 15,
-      title: "IV Drip",
-      category: "Other Services",
-      duration: "45-60 minutes",
-      price: 350,
-      fromPrice: true
-    },
-    {
-      id: 16,
-      title: "Vitamin Infusions",
-      category: "Other Services", 
-      duration: "30 minutes",
-      price: 80
     }
   ];
 
-  const filteredServices = activeCategory === "All" 
-    ? services 
-    : services.filter(service => service.category === activeCategory);
+  // Transform Mindbody services to UI format
+  const transformMindbodyServices = (services: any[]): ServiceItem[] => {
+    return services.map(service => ({
+      id: service.Id,
+      title: service.Name,
+      category: mapMindbodyCategory(service.CategoryName),
+      duration: `${service.Duration} minutes`,
+      price: service.OnlinePrice || service.Price,
+      description: service.Description
+    }));
+  };
+
+  // Transform Mindbody classes to UI format  
+  const transformMindbodyClasses = (classes: any[]): ClassItem[] => {
+    return classes.map(cls => ({
+      id: cls.Id,
+      title: cls.ClassDescription.Name,
+      category: "Classes" as const,
+      duration: `${cls.ClassDescription.Duration} minutes`,
+      startTime: cls.StartDateTime,
+      endTime: cls.EndDateTime,
+      instructor: `${cls.Staff.FirstName} ${cls.Staff.LastName}`,
+      capacity: cls.MaxCapacity,
+      booked: cls.TotalBooked,
+      available: cls.MaxCapacity - cls.TotalBooked > 0
+    }));
+  };
+
+  // Map Mindbody categories to UI categories
+  const mapMindbodyCategory = (categoryName: string) => {
+    const categoryMap: { [key: string]: string } = {
+      'Massage': 'Services',
+      'Therapy': 'Services', 
+      'Treatment': 'Services',
+      'Class': 'Classes',
+      'Workshop': 'Classes',
+      'Session': 'Services'
+    };
+    
+    for (const [key, value] of Object.entries(categoryMap)) {
+      if (categoryName?.toLowerCase().includes(key.toLowerCase())) {
+        return value;
+      }
+    }
+    return 'Services';
+  };
+
+  // Get combined services (Mindbody + fallback)
+  const services = mindbodyServices.length > 0 
+    ? transformMindbodyServices(mindbodyServices)
+    : fallbackServices;
+    
+  const classes = transformMindbodyClasses(mindbodyClasses);
+
+  const getFilteredData = () => {
+    if (activeCategory === "All") {
+      return [...services, ...classes];
+    } else if (activeCategory === "Classes") {
+      return classes;
+    } else if (activeCategory === "Services") {
+      return services.filter(service => service.category === "Services");
+    } else if (activeCategory === "Appointments") {
+      return services; // Could filter for bookable services
+    }
+    return services.filter(service => service.category === activeCategory);
+  };
+
+  const filteredData = getFilteredData();
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
@@ -220,6 +223,63 @@ const Services = () => {
         <Navigation />
         
         <div className="pt-20">
+        
+        {!isAuthenticated && !loading && (
+          <section className="px-4 sm:px-6 lg:px-8 mb-8">
+            <div className="max-w-7xl mx-auto">
+              <Alert className="glass-card border-blue-500/50">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-white flex items-center justify-between">
+                  <span>Connect to Mindbody to see live class schedules and book appointments.</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={() => {/* This will be handled by MindbodyAuthPrompt */}}
+                    className="text-blue-400 hover:bg-blue-500/20 ml-4"
+                  >
+                    Connect
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          </section>
+        )}
+
+        {/* Error Alert */}
+        {error && (
+          <section className="px-4 sm:px-6 lg:px-8 mb-8">
+            <div className="max-w-7xl mx-auto">
+              <Alert className="glass-card border-amber-500/50">
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription className="text-white flex items-center justify-between">
+                  <span>{error} - Showing limited services.</span>
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={refreshData}
+                    className="text-white hover:bg-white/10 ml-4"
+                    disabled={loading}
+                  >
+                    <RefreshCw className={cn("h-4 w-4 mr-2", loading && "animate-spin")} />
+                    Retry
+                  </Button>
+                </AlertDescription>
+              </Alert>
+            </div>
+          </section>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <section className="px-4 sm:px-6 lg:px-8 mb-8">
+            <div className="max-w-7xl mx-auto text-center">
+              <div className="glass-card rounded-3xl border-white/10 p-8">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white mx-auto mb-4"></div>
+                <p className="text-white/70">Loading live services and classes...</p>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Category Filter */}
         <section className="px-4 sm:px-6 lg:px-8 mb-12">
@@ -244,26 +304,70 @@ const Services = () => {
           </div>
         </section>
 
-        {/* Services Grid */}
+        {/* Services and Classes Grid */}
         <section className="px-4 sm:px-6 lg:px-8 pb-20">
           <div className="max-w-7xl mx-auto">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredServices.map((service) => (
-                <div key={service.id} className="space-y-4">
-                   <ServiceCard 
-                     id={service.id}
-                     title={service.title}
-                     category={service.category}
-                     className="animate-fade-in"
-                     service={{
-                       duration: service.duration,
-                       price: service.price,
-                       fromPrice: service.fromPrice,
-                       variants: service.variants
-                     }}
-                   />
+              {filteredData.map((item) => (
+                <div key={item.id} className="space-y-4">
+                  {isClass(item) ? (
+                    // Render class card with live schedule info
+                    <Card className="glass-card rounded-3xl border-white/10 animate-fade-in">
+                      <CardHeader>
+                        <CardTitle className="text-white font-serif">{item.title}</CardTitle>
+                        <Badge variant="outline" className="w-fit glass-button text-white/70 border-white/20">
+                          {item.category}
+                        </Badge>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="space-y-3 text-white/70">
+                          <div className="flex justify-between items-center">
+                            <span>Duration:</span>
+                            <span className="text-white">{item.duration}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Next Class:</span>
+                            <span className="text-white">
+                              {format(new Date(item.startTime), "MMM d, h:mm a")}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Instructor:</span>
+                            <span className="text-white">{item.instructor}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span>Availability:</span>
+                            <span className={cn("font-medium", item.available ? "text-green-400" : "text-red-400")}>
+                              {item.available ? `${item.capacity - item.booked} spots left` : "Full"}
+                            </span>
+                          </div>
+                        </div>
+                        <Button 
+                          className="w-full mt-6 glass-button text-white rounded-xl"
+                          disabled={!item.available}
+                          onClick={() => handleBookNow(item.id)}
+                        >
+                          {item.available ? "Book Class" : "Join Waitlist"}
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    // Render service card
+                    <ServiceCard 
+                      id={item.id}
+                      title={item.title}
+                      category={item.category}
+                      className="animate-fade-in"
+                      service={{
+                        duration: item.duration,
+                        price: item.price,
+                        fromPrice: item.fromPrice,
+                        variants: item.variants
+                      }}
+                    />
+                  )}
                   
-                  {openBookingId === service.id && (
+                  {openBookingId === item.id && (
                     <Card className="glass-card rounded-3xl border-white/10 animate-in slide-in-from-top-2 duration-300">
                       <CardHeader className="pb-4">
                         <div className="flex items-center justify-between">
@@ -325,11 +429,11 @@ const Services = () => {
                           <div className="max-w-sm mx-auto space-y-6 glass-morphism rounded-2xl p-4">
                             <div className="text-center">
                               <h3 className="font-serif text-lg font-medium mb-2 text-white">
-                                {service.title}
+                                {item.title}
                               </h3>
                               <div className="space-y-2 text-sm text-white/70">
                                 <div>{selectedDate && format(selectedDate, "MMM d, yyyy")} at {selectedTime}</div>
-                                <div>{service.duration} • £{service.price}</div>
+                                <div>{item.duration} • £{isService(item) ? item.price || 0 : 'TBD'}</div>
                               </div>
                             </div>
                             <Button className="w-full glass-button text-white rounded-xl font-medium">
@@ -349,6 +453,9 @@ const Services = () => {
 
         <Footer />
       </div>
+
+      {/* Show auth prompt if not authenticated and no error */}
+      {!isAuthenticated && !error && <MindbodyAuthPrompt />}
     </div>
   );
 };
