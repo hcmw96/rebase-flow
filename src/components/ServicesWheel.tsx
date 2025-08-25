@@ -1,5 +1,5 @@
 import { Canvas } from '@react-three/fiber';
-import { OrbitControls, Text, MeshWobbleMaterial } from '@react-three/drei';
+import { OrbitControls, Text } from '@react-three/drei';
 import { useRef, useState } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { Mesh } from 'three';
@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 
 const services = [
-  { name: "Cryotherapy", color: "#8B5CF6", position: [3, 0, 0] },
-  { name: "Red Light Therapy", color: "#EF4444", position: [1.5, 2.6, 0] },
-  { name: "IV Therapy", color: "#10B981", position: [-1.5, 2.6, 0] },
-  { name: "Hyperbaric Oxygen", color: "#3B82F6", position: [-3, 0, 0] },
-  { name: "Salt Therapy", color: "#F59E0B", position: [-1.5, -2.6, 0] },
-  { name: "Wellness Suites", color: "#EC4899", position: [1.5, -2.6, 0] },
+  { name: "Cryotherapy", color: "#8B5CF6", position: [3, 0, 0] as [number, number, number] },
+  { name: "Red Light Therapy", color: "#EF4444", position: [1.5, 2.6, 0] as [number, number, number] },
+  { name: "IV Therapy", color: "#10B981", position: [-1.5, 2.6, 0] as [number, number, number] },
+  { name: "Hyperbaric Oxygen", color: "#3B82F6", position: [-3, 0, 0] as [number, number, number] },
+  { name: "Salt Therapy", color: "#F59E0B", position: [-1.5, -2.6, 0] as [number, number, number] },
+  { name: "Wellness Suites", color: "#EC4899", position: [1.5, -2.6, 0] as [number, number, number] },
 ];
 
 const ServiceSphere = ({ service, index }: { service: any; index: number }) => {
@@ -21,39 +21,45 @@ const ServiceSphere = ({ service, index }: { service: any; index: number }) => {
 
   useFrame((state) => {
     if (meshRef.current) {
-      meshRef.current.rotation.y = state.clock.elapsedTime * 0.5 + (index * Math.PI / 3);
-      meshRef.current.position.y = Math.sin(state.clock.elapsedTime + index) * 0.2;
+      // Circular rotation
+      const radius = 3;
+      const angle = state.clock.elapsedTime * 0.3 + (index * Math.PI * 2) / services.length;
+      meshRef.current.position.x = Math.cos(angle) * radius;
+      meshRef.current.position.z = Math.sin(angle) * radius;
+      meshRef.current.position.y = Math.sin(state.clock.elapsedTime + index) * 0.3;
+      
+      // Sphere rotation
+      meshRef.current.rotation.y = state.clock.elapsedTime * 0.5;
+      meshRef.current.rotation.x = Math.sin(state.clock.elapsedTime * 0.5) * 0.3;
     }
   });
 
   return (
-    <group position={service.position}>
-      <mesh
-        ref={meshRef}
-        onPointerOver={() => setHovered(true)}
-        onPointerOut={() => setHovered(false)}
-        scale={hovered ? 1.2 : 1}
-      >
-        <sphereGeometry args={[0.8, 32, 32]} />
-        <MeshWobbleMaterial 
-          color={service.color} 
-          factor={0.3}
-          speed={2}
-          roughness={0.1}
-          metalness={0.8}
-        />
-      </mesh>
+    <mesh
+      ref={meshRef}
+      onPointerOver={() => setHovered(true)}
+      onPointerOut={() => setHovered(false)}
+      scale={hovered ? 1.3 : 1}
+    >
+      <sphereGeometry args={[0.6, 32, 32]} />
+      <meshStandardMaterial 
+        color={service.color} 
+        roughness={0.1}
+        metalness={0.9}
+        emissive={service.color}
+        emissiveIntensity={0.2}
+      />
       <Text
-        position={[0, -1.5, 0]}
-        fontSize={0.3}
+        position={[0, -1.2, 0]}
+        fontSize={0.25}
         color="white"
         anchorX="center"
         anchorY="middle"
-        font="/fonts/serif.woff"
+        maxWidth={2}
       >
         {service.name}
       </Text>
-    </group>
+    </mesh>
   );
 };
 
@@ -72,11 +78,16 @@ const ServicesWheel = () => {
 
         <div className="relative">
           {/* 3D Canvas */}
-          <div className="h-[600px] w-full">
-            <Canvas camera={{ position: [0, 0, 10], fov: 50 }}>
-              <ambientLight intensity={0.3} />
-              <pointLight position={[10, 10, 10]} intensity={1} />
-              <pointLight position={[-10, -10, -10]} intensity={0.5} color="#8B5CF6" />
+          <div className="h-[600px] w-full relative">
+            <Canvas 
+              camera={{ position: [0, 2, 8], fov: 60 }}
+              gl={{ antialias: true, alpha: true }}
+              style={{ background: 'transparent' }}
+            >
+              <ambientLight intensity={0.4} />
+              <directionalLight position={[5, 5, 5]} intensity={1} />
+              <pointLight position={[0, 0, 0]} intensity={0.8} color="#8B5CF6" />
+              <pointLight position={[5, 5, 5]} intensity={0.6} color="#EC4899" />
               
               {services.map((service, index) => (
                 <ServiceSphere key={service.name} service={service} index={index} />
@@ -85,12 +96,17 @@ const ServicesWheel = () => {
               <OrbitControls 
                 enableZoom={false} 
                 autoRotate 
-                autoRotateSpeed={0.5}
+                autoRotateSpeed={1}
                 enablePan={false}
-                maxPolarAngle={Math.PI / 2}
-                minPolarAngle={Math.PI / 2}
+                maxPolarAngle={Math.PI / 1.8}
+                minPolarAngle={Math.PI / 3}
               />
             </Canvas>
+            
+            {/* Loading fallback */}
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="text-white/50 text-sm">Loading 3D Experience...</div>
+            </div>
           </div>
 
           {/* Overlay Controls */}
