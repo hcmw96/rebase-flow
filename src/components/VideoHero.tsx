@@ -1,28 +1,17 @@
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
-import { Play, ChevronDown } from "lucide-react";
-import { useState } from "react";
+import { ChevronDown } from "lucide-react";
 
 const VideoHero = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
-
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Video Background */}
+      {/* Background Image */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-luxury opacity-70 z-10"></div>
-        <video
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-          poster="/api/placeholder/1920/1080"
-        >
-          <source src="/wellness-hero-video.mp4" type="video/mp4" />
-          {/* Fallback background */}
-          <div className="absolute inset-0 bg-gradient-luxury"></div>
-        </video>
+        <div 
+          className="w-full h-full bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url('/lovable-uploads/bb145d7a-2d9d-4251-98b9-0b7161b6867b.png')` }}
+        />
+        <div className="absolute inset-0 bg-black/30 z-10"></div>
       </div>
 
       {/* Content */}
@@ -43,15 +32,15 @@ const VideoHero = () => {
             </Button>
           </Link>
           
-          <Button 
-            variant="ghost" 
-            size="lg" 
-            className="btn-ghost-luxury text-lg px-10 py-6 h-auto group"
-            onClick={() => setIsPlaying(!isPlaying)}
-          >
-            <Play className="mr-3 h-6 w-6 group-hover:scale-110 transition-transform" />
-            Watch Our Story
-          </Button>
+          <Link to="/book">
+            <Button 
+              variant="ghost" 
+              size="lg" 
+              className="btn-ghost-luxury text-lg px-10 py-6 h-auto"
+            >
+              Book Your Experience
+            </Button>
+          </Link>
         </div>
 
         {/* Floating elements */}
