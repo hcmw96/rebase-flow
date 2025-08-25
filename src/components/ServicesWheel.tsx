@@ -1,51 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 import cryotherapyImg from '@/assets/cryotherapy.jpg';
-import redLightTherapyImg from '@/assets/red-light-therapy.jpg';
-import ivTherapyImg from '@/assets/iv-therapy.jpg';
-import hyperbaricOxygenImg from '@/assets/hyperbaric-oxygen.jpg';
 import saltTherapyImg from '@/assets/salt-therapy.jpg';
 import wellnessSuitesImg from '@/assets/wellness-suites.jpg';
 
 const services = [
   { 
-    name: "Cryotherapy", 
+    name: "Contrast Therapy", 
     image: cryotherapyImg,
-    description: "Experience the power of cold therapy for recovery and wellness",
-    benefits: ["Reduce inflammation", "Boost energy", "Improve recovery"]
+    description: "Hot and cold therapy for optimal recovery and wellness",
+    benefits: ["Reduce inflammation", "Boost circulation", "Improve recovery"]
   },
   { 
-    name: "Red Light Therapy", 
-    image: redLightTherapyImg,
-    description: "Harness the healing power of red light for cellular regeneration",
-    benefits: ["Improve skin health", "Reduce pain", "Enhance healing"]
-  },
-  { 
-    name: "IV Therapy", 
-    image: ivTherapyImg,
-    description: "Direct nutrient delivery for optimal health and vitality",
-    benefits: ["Instant hydration", "Boost immunity", "Increase energy"]
-  },
-  { 
-    name: "Hyperbaric Oxygen", 
-    image: hyperbaricOxygenImg,
-    description: "Enhanced oxygen therapy for accelerated healing",
-    benefits: ["Faster recovery", "Improve circulation", "Boost cognitive function"]
-  },
-  { 
-    name: "Salt Therapy", 
-    image: saltTherapyImg,
-    description: "Natural halotherapy for respiratory and skin wellness",
-    benefits: ["Clear airways", "Improve skin", "Reduce stress"]
-  },
-  { 
-    name: "Wellness Suites", 
+    name: "Premium Suite", 
     image: wellnessSuitesImg,
     description: "Private luxury spaces for personalized recovery",
     benefits: ["Complete privacy", "Customized treatments", "Premium comfort"]
+  },
+  { 
+    name: "Sports Massage", 
+    image: saltTherapyImg,
+    description: "Professional therapeutic massage for recovery and relaxation",
+    benefits: ["Relieve tension", "Improve mobility", "Reduce pain"]
   },
 ];
 
@@ -59,11 +38,6 @@ const ServicesWheel = () => {
   const prevService = () => {
     setCurrentService((prev) => (prev - 1 + services.length) % services.length);
   };
-
-  useEffect(() => {
-    const interval = setInterval(nextService, 5000);
-    return () => clearInterval(interval);
-  }, []);
 
   const currentServiceData = services[currentService];
 
