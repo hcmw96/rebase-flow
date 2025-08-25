@@ -69,42 +69,44 @@ const ServicesWheel = () => {
         <ChevronRight className="w-8 h-8 text-white" />
       </button>
 
-      {/* Content */}
+      {/* Content Card */}
       <div className="relative z-10 h-full flex flex-col justify-center items-center text-center px-8">
-        {/* Service Title */}
-        <h2 className="text-6xl md:text-7xl lg:text-8xl font-light text-white mb-6 animate-fade-in">
-          {currentServiceData.name}
-        </h2>
+        <div className="glass-card rounded-3xl p-8 md:p-12 max-w-2xl mx-auto">
+          {/* Service Title */}
+          <h2 className="text-4xl md:text-5xl lg:text-6xl font-light text-white mb-6 animate-fade-in">
+            {currentServiceData.name}
+          </h2>
 
-        {/* Service Description */}
-        <p className="text-xl md:text-2xl text-white/90 max-w-2xl mb-8 animate-fade-in">
-          {currentServiceData.description}
-        </p>
+          {/* Service Description */}
+          <p className="text-lg md:text-xl text-white/90 mb-8 animate-fade-in">
+            {currentServiceData.description}
+          </p>
 
-        {/* Benefits */}
-        <div className="flex flex-wrap justify-center gap-4 mb-12 animate-fade-in">
-          {currentServiceData.benefits.map((benefit, index) => (
-            <span 
-              key={index}
-              className="glass-morphism px-4 py-2 rounded-full text-white/80 text-sm"
-            >
-              {benefit}
-            </span>
-          ))}
-        </div>
+          {/* Benefits */}
+          <div className="flex flex-wrap justify-center gap-3 mb-10 animate-fade-in">
+            {currentServiceData.benefits.map((benefit, index) => (
+              <span 
+                key={index}
+                className="glass-morphism px-4 py-2 rounded-full text-white/80 text-sm"
+              >
+                {benefit}
+              </span>
+            ))}
+          </div>
 
-        {/* Action Buttons */}
-        <div className="flex gap-6 animate-fade-in">
-          <Link to="/services">
-            <Button className="btn-luxury px-8 py-4 text-lg">
-              Learn More
-            </Button>
-          </Link>
-          <Link to="/book">
-            <Button variant="outline" className="btn-ghost-luxury px-8 py-4 text-lg">
-              Book Now
-            </Button>
-          </Link>
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in">
+            <Link to="/services">
+              <Button className="btn-luxury px-6 py-3">
+                Learn More
+              </Button>
+            </Link>
+            <Link to="/book">
+              <Button variant="outline" className="btn-ghost-luxury px-6 py-3">
+                Book Now
+              </Button>
+            </Link>
+          </div>
         </div>
       </div>
 
