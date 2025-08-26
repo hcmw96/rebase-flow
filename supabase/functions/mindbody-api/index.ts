@@ -299,7 +299,7 @@ async function getServices(token?: string) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const data = await makeMindbodyRequest('/site/services', {
+    const data = await makeMindbodyRequest('/sale/services', {
       method: 'GET',
       headers,
     });
