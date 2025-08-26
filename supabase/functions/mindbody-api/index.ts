@@ -12,6 +12,16 @@ const MINDBODY_SITE_ID = Deno.env.get('MINDBODY_SITE_ID');
 const MINDBODY_CLIENT_ID = Deno.env.get('MINDBODY_CLIENT_ID');
 const MINDBODY_CLIENT_SECRET = Deno.env.get('MINDBODY_CLIENT_SECRET');
 
+// Debug logging
+console.log('Environment variables check:', {
+  hasApiKey: !!MINDBODY_API_KEY,
+  hasSiteId: !!MINDBODY_SITE_ID,
+  hasClientId: !!MINDBODY_CLIENT_ID,
+  hasClientSecret: !!MINDBODY_CLIENT_SECRET,
+  apiKeyLength: MINDBODY_API_KEY?.length,
+  siteIdLength: MINDBODY_SITE_ID?.length
+});
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
