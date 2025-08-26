@@ -388,16 +388,14 @@ async function getOAuthUrl(redirectUri: string) {
       throw new Error('Mindbody Client ID not configured');
     }
 
-    const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issue');
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('client_id', MINDBODY_CLIENT_ID);
-    authUrl.searchParams.set('redirect_uri', redirectUri);
-    authUrl.searchParams.set('scope', 'read write');
+    // For Mindbody API v6, we need to use their proper OAuth flow
+    // which typically involves redirecting to their authorization server
+    const authUrl = `https://signin.mindbodyonline.com/launch?studioid=${MINDBODY_SITE_ID}&redirecturl=${encodeURIComponent(redirectUri)}`;
 
     return {
       success: true,
       data: {
-        authUrl: authUrl.toString(),
+        authUrl: authUrl,
       },
     };
   } catch (error) {
