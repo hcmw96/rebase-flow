@@ -55,7 +55,7 @@ serve(async (req) => {
       result = await authenticateUser(data.username, data.password);
       break;
     case 'validateClient':
-      result = await validateClient(data.email, data.clientId);
+      result = await validateClient(data.email || data.emailOrPhone, data.clientId);
       break;
       case 'getOAuthUrl':
         result = await getOAuthUrl(data.redirectUri);
@@ -171,8 +171,8 @@ async function authenticateUser(username: string, password: string) {
 
 // Client login - V6 API doesn't support direct client authentication
 // Instead, we validate client exists and return client data
-async function validateClient(email: string, clientId?: string) {
-  console.log('Validating client:', email, clientId);
+async function validateClient(emailOrPhone: string, clientId?: string) {
+  console.log('Validating client:', emailOrPhone, clientId);
   
   try {
     let client = null;
@@ -184,18 +184,37 @@ async function validateClient(email: string, clientId?: string) {
         client = response.Client;
       }
     } else {
-      // Search for client by email
-      const response = await makeMindbodyRequest('/client/clients', {
-        method: 'GET',
-        headers: {
-          'SearchText': email,
-          'CrossRegionalLookup': 'true'
-        }
+      // Build search URL with query parameters
+      const searchParams = new URLSearchParams({
+        SearchText: emailOrPhone,
+        CrossRegionalLookup: 'true'
       });
       
+      // Search for client by email/phone using query parameters
+      const response = await makeMindbodyRequest(`/client/clients?${searchParams.toString()}`, {
+        method: 'GET'
+      });
+      
+      console.log('Client search response:', response);
+      
       if (response && response.Clients && response.Clients.length > 0) {
-        // Find exact email match
-        client = response.Clients.find(c => c.Email?.toLowerCase() === email.toLowerCase());
+        // Check if input is email or phone and find match accordingly
+        const isEmail = emailOrPhone.includes('@');
+        if (isEmail) {
+          client = response.Clients.find(c => c.Email?.toLowerCase() === emailOrPhone.toLowerCase());
+        } else {
+          // For phone, check various phone fields
+          client = response.Clients.find(c => 
+            c.MobilePhone === emailOrPhone || 
+            c.HomePhone === emailOrPhone ||
+            c.WorkPhone === emailOrPhone
+          );
+        }
+        
+        // If no exact match found, use first client
+        if (!client && response.Clients.length > 0) {
+          client = response.Clients[0];
+        }
       }
     }
     
@@ -454,9 +473,19 @@ async function getOAuthUrl(redirectUri: string) {
       throw new Error('Mindbody Client ID not configured');
     }
 
-    // For Mindbody API v6, we need to use their proper OAuth flow
-    // which typically involves redirecting to their authorization server
-    const authUrl = `https://signin.mindbodyonline.com/launch?studioid=${MINDBODY_SITE_ID}&redirecturl=${encodeURIComponent(redirectUri)}`;
+    console.log('Building OAuth URL with:', {
+      clientId: MINDBODY_CLIENT_ID,
+      redirectUri: redirectUri
+    });
+
+    // Use the correct Mindbody OAuth 2.0 authorization URL
+    const baseAuthUrl = 'https://api.mindbodyonline.com/public/v6/usertoken/issue';
+    const scope = 'read'; // Basic read scope for client data
+    
+    // Mindbody OAuth 2.0 authorization URL
+    const authUrl = `${baseAuthUrl}?response_type=code&client_id=${encodeURIComponent(MINDBODY_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${Date.now()}`;
+
+    console.log('Generated OAuth URL:', authUrl);
 
     return {
       success: true,
