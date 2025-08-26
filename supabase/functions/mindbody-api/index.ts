@@ -460,6 +460,7 @@ async function getOAuthUrl(redirectUri: string) {
 
     return {
       success: true,
+      url: authUrl,
       data: {
         authUrl: authUrl,
       },
