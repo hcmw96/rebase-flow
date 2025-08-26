@@ -157,11 +157,14 @@ async function authenticateUser(username: string, password: string) {
 // Client management functions
 async function getClientInfo(clientId: string, token: string) {
   try {
-    const data = await makeMindbodyRequest(`/client/clients?ClientIds=${clientId}`, {
-      method: 'GET',
+    const data = await makeMindbodyRequest('/client/clients', {
+      method: 'POST', // Changed from GET to POST
       headers: {
         'Authorization': `Bearer ${token}`,
       },
+      body: JSON.stringify({
+        ClientIds: [clientId], // Send as array in POST body instead of query param
+      }),
     });
 
     return {
@@ -212,8 +215,9 @@ async function getServices(token?: string) {
     }
 
     const data = await makeMindbodyRequest('/site/services', {
-      method: 'GET',
+      method: 'POST', // Changed from GET to POST
       headers,
+      body: JSON.stringify({}), // Empty body for services request
     });
 
     return {
@@ -231,20 +235,19 @@ async function getServices(token?: string) {
 
 async function getClasses(startDate: string, endDate: string, token?: string) {
   try {
-    const params = new URLSearchParams({
-      StartDateTime: startDate,
-      EndDateTime: endDate,
-      HideCanceledClasses: 'true',
-    });
-
     const headers: any = {};
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const data = await makeMindbodyRequest(`/class/classes?${params}`, {
-      method: 'GET',
+    const data = await makeMindbodyRequest('/class/classes', {
+      method: 'POST', // Changed from GET to POST
       headers,
+      body: JSON.stringify({
+        StartDateTime: startDate,
+        EndDateTime: endDate,
+        HideCanceledClasses: true,
+      }),
     });
 
     return {
@@ -322,18 +325,19 @@ async function bookClass(classId: number, clientId: string, token: string) {
 // Get client appointments
 async function getClientAppointments(clientId: string, startDate?: string, endDate?: string, token?: string) {
   try {
-    const params = new URLSearchParams({
-      ClientIds: clientId,
-    });
+    const requestBody: any = {
+      ClientIds: [clientId], // Send as array in POST body
+    };
     
-    if (startDate) params.append('StartDate', startDate);
-    if (endDate) params.append('EndDate', endDate);
+    if (startDate) requestBody.StartDate = startDate;
+    if (endDate) requestBody.EndDate = endDate;
 
-    const data = await makeMindbodyRequest(`/appointment/appointments?${params}`, {
-      method: 'GET',
+    const data = await makeMindbodyRequest('/appointment/appointments', {
+      method: 'POST', // Changed from GET to POST
       headers: token ? {
         'Authorization': `Bearer ${token}`,
       } : {},
+      body: JSON.stringify(requestBody),
     });
 
     return {
