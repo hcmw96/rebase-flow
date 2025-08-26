@@ -132,13 +132,24 @@ async function makeMindbodyRequest(endpoint: string, options: any = {}) {
 // Authentication functions
 async function authenticateUser(username: string, password: string) {
   try {
+    console.log('=== AUTHENTICATION ATTEMPT ===');
+    console.log('Username:', username);
+    console.log('Password length:', password?.length);
+    console.log('API Key present:', !!MINDBODY_API_KEY);
+    console.log('Site ID present:', !!MINDBODY_SITE_ID);
+
+    const requestBody = {
+      Username: username,
+      Password: password,
+    };
+    console.log('Request body:', JSON.stringify(requestBody, null, 2));
+
     const data = await makeMindbodyRequest('/usertoken/issue', {
       method: 'POST',
-      body: JSON.stringify({
-        Username: username,
-        Password: password,
-      }),
+      body: JSON.stringify(requestBody),
     });
+
+    console.log('Mindbody response:', JSON.stringify(data, null, 2));
 
     return {
       success: true,
@@ -146,7 +157,11 @@ async function authenticateUser(username: string, password: string) {
       token: data.AccessToken,
     };
   } catch (error) {
-    console.error('Authentication error:', error);
+    console.error('Authentication error details:', {
+      message: error.message,
+      stack: error.stack,
+      name: error.name
+    });
     return {
       success: false,
       error: 'Invalid credentials',
