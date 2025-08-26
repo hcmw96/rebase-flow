@@ -50,7 +50,7 @@ export const useMindbodyAuth = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Check for existing session on mount
+  // Check for existing session on mount and load public data
   useEffect(() => {
     const storedToken = localStorage.getItem('mindbody_token');
     const storedClient = localStorage.getItem('mindbody_client');
@@ -59,12 +59,14 @@ export const useMindbodyAuth = () => {
       try {
         setClient(JSON.parse(storedClient));
         setIsAuthenticated(true);
-        refreshData();
       } catch (err) {
         console.error('Error parsing stored client data:', err);
         logout();
       }
     }
+    
+    // Always try to load public data (services and classes)
+    refreshData();
   }, []);
 
   const login = async (username: string, password: string): Promise<boolean> => {
@@ -153,37 +155,40 @@ export const useMindbodyAuth = () => {
   };
 
   const refreshData = async () => {
-    if (!isAuthenticated || !client) return;
-    
     setLoading(true);
     
     try {
-      // Load services
-      const servicesResult = await getServices();
+      const token = localStorage.getItem('mindbody_token');
+      
+      // Load services (public data, no auth required)
+      const servicesResult = await getServices(token || undefined);
       if (servicesResult.success) {
         setServices(servicesResult.data);
       }
 
-      // Load classes for the next 30 days
+      // Load classes for the next 30 days (public data, no auth required)
       const today = new Date();
       const endDate = new Date();
       endDate.setDate(today.getDate() + 30);
       
       const classesResult = await getClasses(
         today.toISOString(),
-        endDate.toISOString()
+        endDate.toISOString(),
+        token || undefined
       );
       if (classesResult.success) {
         setClasses(classesResult.data);
       }
 
-      // Load client appointments
-      const appointmentsResult = await getClientAppointments(
-        client.UniqueId || client.Id.toString(),
-        today.toISOString()
-      );
-      if (appointmentsResult.success) {
-        setAppointments(appointmentsResult.data);
+      // Load client appointments (only if authenticated)
+      if (isAuthenticated && client) {
+        const appointmentsResult = await getClientAppointments(
+          client.UniqueId || client.Id.toString(),
+          today.toISOString()
+        );
+        if (appointmentsResult.success) {
+          setAppointments(appointmentsResult.data);
+        }
       }
     } catch (err) {
       console.error('Error refreshing data:', err);

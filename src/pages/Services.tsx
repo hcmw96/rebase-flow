@@ -64,10 +64,9 @@ const Services = () => {
   const categories = ["All", "Classes", "Services", "Appointments"];
 
   useEffect(() => {
-    // Only try to refresh data if authenticated, otherwise show fallback
+    // Hide auth prompt when authenticated
     if (isAuthenticated) {
-      refreshData();
-      setShowAuthPrompt(false); // Hide auth prompt when authenticated
+      setShowAuthPrompt(false);
     }
   }, [isAuthenticated]);
 
@@ -147,10 +146,10 @@ const Services = () => {
     return 'Services';
   };
 
-  // Get combined services (Mindbody + fallback)
+  // Get combined services (prioritize Mindbody data, use fallback only if no data)
   const services = mindbodyServices.length > 0 
     ? transformMindbodyServices(mindbodyServices)
-    : fallbackServices;
+    : (!loading ? fallbackServices : []);
     
   const classes = transformMindbodyClasses(mindbodyClasses);
 

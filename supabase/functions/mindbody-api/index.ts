@@ -172,13 +172,16 @@ async function createClient(clientData: any) {
 }
 
 // Service and class functions
-async function getServices(token: string) {
+async function getServices(token?: string) {
   try {
+    const headers: any = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const data = await makeMindbodyRequest('/site/services', {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
     });
 
     return {
@@ -194,7 +197,7 @@ async function getServices(token: string) {
   }
 }
 
-async function getClasses(startDate: string, endDate: string, token: string) {
+async function getClasses(startDate: string, endDate: string, token?: string) {
   try {
     const params = new URLSearchParams({
       StartDateTime: startDate,
@@ -202,11 +205,14 @@ async function getClasses(startDate: string, endDate: string, token: string) {
       HideCanceledClasses: 'true',
     });
 
+    const headers: any = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
     const data = await makeMindbodyRequest(`/class/classes?${params}`, {
       method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
+      headers,
     });
 
     return {
