@@ -23,7 +23,7 @@ interface MindbodyContextType {
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => void;
   refreshData: () => Promise<void>;
-  setAuthData: (token: string, userData: any) => void;
+  setAuthData: (token: string | null, userData: any) => void;
   createNewClient: (clientData: {
     FirstName: string;
     LastName: string;
@@ -199,9 +199,11 @@ export const useMindbodyAuth = () => {
     }
   };
 
-  const setAuthData = (token: string, userData: any) => {
-    // Store token and user data
-    localStorage.setItem('mindbody_token', token);
+  const setAuthData = (token: string | null, userData: any) => {
+    // Store token if provided (for staff operations)
+    if (token) {
+      localStorage.setItem('mindbody_token', token);
+    }
     
     if (userData && userData.Client) {
       setClient(userData.Client);
@@ -214,7 +216,7 @@ export const useMindbodyAuth = () => {
       localStorage.setItem('mindbody_client', JSON.stringify(userData));
     }
     
-    // Refresh data with the new token
+    // Refresh data with the new authentication
     refreshData();
   };
 

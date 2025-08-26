@@ -51,9 +51,12 @@ serve(async (req) => {
     let result;
 
     switch (action) {
-      case 'authenticate':
-        result = await authenticateUser(data.username, data.password);
-        break;
+    case 'authenticate':
+      result = await authenticateUser(data.username, data.password);
+      break;
+    case 'validateClient':
+      result = await validateClient(data.email, data.clientId);
+      break;
       case 'getOAuthUrl':
         result = await getOAuthUrl(data.redirectUri);
         break;
@@ -129,42 +132,90 @@ async function makeMindbodyRequest(endpoint: string, options: any = {}) {
   return response.json();
 }
 
-// Authentication functions
+// Authentication functions - V6 API uses API key + optional staff tokens
 async function authenticateUser(username: string, password: string) {
+  console.log('Generating staff token for user:', username);
+  
   try {
-    console.log('=== AUTHENTICATION ATTEMPT ===');
-    console.log('Username:', username);
-    console.log('Password length:', password?.length);
-    console.log('API Key present:', !!MINDBODY_API_KEY);
-    console.log('Site ID present:', !!MINDBODY_SITE_ID);
-
-    const requestBody = {
-      Username: username,
-      Password: password,
-    };
-    console.log('Request body:', JSON.stringify(requestBody, null, 2));
-
-    const data = await makeMindbodyRequest('/usertoken/issue', {
+    const response = await makeMindbodyRequest('/usertoken/issue', {
       method: 'POST',
-      body: JSON.stringify(requestBody),
+      body: JSON.stringify({
+        Username: username,
+        Password: password
+      })
     });
 
-    console.log('Mindbody response:', JSON.stringify(data, null, 2));
-
-    return {
-      success: true,
-      data,
-      token: data.AccessToken,
-    };
+    console.log('Staff token response:', response);
+    
+    if (response && response.AccessToken) {
+      return {
+        success: true,
+        token: response.AccessToken,
+        data: response
+      };
+    } else {
+      console.error('No access token in response:', response);
+      return {
+        success: false,
+        error: 'No access token received'
+      };
+    }
   } catch (error) {
-    console.error('Authentication error details:', {
-      message: error.message,
-      stack: error.stack,
-      name: error.name
-    });
+    console.error('Staff token error details:', error);
     return {
       success: false,
-      error: 'Invalid credentials',
+      error: error.message || 'Staff authentication failed'
+    };
+  }
+}
+
+// Client login - V6 API doesn't support direct client authentication
+// Instead, we validate client exists and return client data
+async function validateClient(email: string, clientId?: string) {
+  console.log('Validating client:', email, clientId);
+  
+  try {
+    let client = null;
+    
+    if (clientId) {
+      // Try to get client by ID
+      const response = await makeMindbodyRequest(`/client/clients/${clientId}`);
+      if (response && response.Client) {
+        client = response.Client;
+      }
+    } else {
+      // Search for client by email
+      const response = await makeMindbodyRequest('/client/clients', {
+        method: 'GET',
+        headers: {
+          'SearchText': email,
+          'CrossRegionalLookup': 'true'
+        }
+      });
+      
+      if (response && response.Clients && response.Clients.length > 0) {
+        // Find exact email match
+        client = response.Clients.find(c => c.Email?.toLowerCase() === email.toLowerCase());
+      }
+    }
+    
+    if (client) {
+      return {
+        success: true,
+        client: client,
+        data: { client }
+      };
+    } else {
+      return {
+        success: false,
+        error: 'Client not found'
+      };
+    }
+  } catch (error) {
+    console.error('Client validation error:', error);
+    return {
+      success: false,
+      error: error.message || 'Client validation failed'
     };
   }
 }

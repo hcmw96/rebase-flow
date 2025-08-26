@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { X } from "lucide-react";
-import { authenticateUser } from '@/lib/mindbody-api';
+import { validateClient } from '@/lib/mindbody-api';
 import { useMindbody } from '@/hooks/useMindbody';
 
 interface MindbodyAuthPromptProps {
@@ -13,11 +13,10 @@ interface MindbodyAuthPromptProps {
 }
 
 export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login } = useMindbody();
+  const { setAuthData } = useMindbody();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -25,19 +24,16 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
     setError(null);
 
     try {
-      const result = await authenticateUser(username, password);
-      if (result.success && result.token) {
-        const loginSuccess = await login(username, password);
-        if (loginSuccess) {
-          onClose?.();
-        } else {
-          setError('Failed to complete login process');
-        }
+      const result = await validateClient(email);
+      if (result.success && result.client) {
+        // Set client data and mark as authenticated
+        await setAuthData(null, result.client);
+        onClose?.();
       } else {
-        setError(result.error || 'Authentication failed');
+        setError(result.error || 'Client not found. Please check your email address.');
       }
     } catch (err) {
-      setError('Failed to authenticate with Mindbody');
+      setError('Failed to find client account');
     } finally {
       setLoading(false);
     }
@@ -49,7 +45,7 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
         <CardHeader>
           <div className="flex items-center justify-between">
             <CardTitle className="text-white font-serif text-center flex-1">
-              Sign In to Mindbody
+              Find Your Account
             </CardTitle>
             {onClose && (
               <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8 text-white hover:bg-white/10">
@@ -58,32 +54,19 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
             )}
           </div>
           <p className="text-white/70 text-sm text-center">
-            <strong>Important:</strong> Enter your Mindbody <strong>staff/business owner</strong> credentials. 
-            Client account credentials will not work for API access.
+            Enter your email address to find your Mindbody client account
           </p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="username" className="text-white/90">Username/Email</Label>
+              <Label htmlFor="email" className="text-white/90">Email Address</Label>
               <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Staff/business owner username"
-                className="glass-input text-white placeholder:text-white/50"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-white/90">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter your password"
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="Enter your email address"
                 className="glass-input text-white placeholder:text-white/50"
                 required
               />
@@ -100,12 +83,12 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
               className="w-full glass-button text-white rounded-xl font-medium" 
               disabled={loading}
             >
-              {loading ? 'Signing In...' : 'Sign In'}
+              {loading ? 'Finding Account...' : 'Find My Account'}
             </Button>
             
             <div className="text-center pt-2">
               <p className="text-white/60 text-xs">
-                You need staff-level access to generate API tokens. Client accounts cannot be used for authentication.
+                We'll look up your account using your email address registered with the business.
               </p>
             </div>
           </form>
