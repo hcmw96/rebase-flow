@@ -480,7 +480,7 @@ async function getOAuthUrl(redirectUri: string) {
     });
 
     // Use the correct Mindbody OAuth 2.0 authorization URL
-    const baseAuthUrl = 'https://auth.mindbodyonline.com/connect/authorize';
+    const baseAuthUrl = 'https://auth.mindbodyonline.com/issue/oauth2/authorize';
     const scope = 'read'; // Basic read scope for client data
     
     // Mindbody OAuth 2.0 authorization URL
@@ -512,7 +512,7 @@ async function exchangeOAuthCode(code: string, redirectUri: string) {
 
     console.log('Exchanging OAuth code for token...');
 
-    const response = await fetch('https://auth.mindbodyonline.com/connect/token', {
+    const response = await fetch('https://auth.mindbodyonline.com/issue/oauth2/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
