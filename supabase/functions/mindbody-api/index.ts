@@ -9,6 +9,8 @@ const corsHeaders = {
 const MINDBODY_API_BASE = 'https://api.mindbodyonline.com/public/v6';
 const MINDBODY_API_KEY = Deno.env.get('MINDBODY_API_KEY');
 const MINDBODY_SITE_ID = Deno.env.get('MINDBODY_SITE_ID');
+const MINDBODY_CLIENT_ID = Deno.env.get('MINDBODY_CLIENT_ID');
+const MINDBODY_CLIENT_SECRET = Deno.env.get('MINDBODY_CLIENT_SECRET');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -29,6 +31,12 @@ serve(async (req) => {
     switch (action) {
       case 'authenticate':
         result = await authenticateUser(data.username, data.password);
+        break;
+      case 'getOAuthUrl':
+        result = await getOAuthUrl(data.redirectUri);
+        break;
+      case 'exchangeOAuthCode':
+        result = await exchangeOAuthCode(data.code, data.redirectUri);
         break;
       case 'getClient':
         result = await getClientInfo(data.clientId, data.token);
@@ -343,6 +351,78 @@ async function cancelAppointment(appointmentId: number, notes: string = '', toke
     return {
       success: false,
       error: 'Failed to cancel appointment',
+    };
+  }
+}
+
+// OAuth functions
+async function getOAuthUrl(redirectUri: string) {
+  try {
+    if (!MINDBODY_CLIENT_ID) {
+      throw new Error('Mindbody Client ID not configured');
+    }
+
+    const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issue');
+    authUrl.searchParams.set('response_type', 'code');
+    authUrl.searchParams.set('client_id', MINDBODY_CLIENT_ID);
+    authUrl.searchParams.set('redirect_uri', redirectUri);
+    authUrl.searchParams.set('scope', 'read write');
+
+    return {
+      success: true,
+      data: {
+        authUrl: authUrl.toString(),
+      },
+    };
+  } catch (error) {
+    console.error('Error generating OAuth URL:', error);
+    return {
+      success: false,
+      error: 'Failed to generate OAuth URL',
+    };
+  }
+}
+
+async function exchangeOAuthCode(code: string, redirectUri: string) {
+  try {
+    if (!MINDBODY_CLIENT_ID || !MINDBODY_CLIENT_SECRET) {
+      throw new Error('Mindbody OAuth credentials not configured');
+    }
+
+    const response = await fetch('https://api.mindbodyonline.com/public/v6/usertoken/issue', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'API-Key': MINDBODY_API_KEY,
+        'SiteId': MINDBODY_SITE_ID,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: MINDBODY_CLIENT_ID,
+        client_secret: MINDBODY_CLIENT_SECRET,
+        code: code,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('OAuth token exchange error:', response.status, errorText);
+      throw new Error(`OAuth token exchange failed: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    return {
+      success: true,
+      data,
+      token: data.access_token,
+    };
+  } catch (error) {
+    console.error('Error exchanging OAuth code:', error);
+    return {
+      success: false,
+      error: 'Failed to exchange OAuth code',
     };
   }
 }

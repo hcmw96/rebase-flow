@@ -98,6 +98,15 @@ export const authenticateUser = async (username: string, password: string) => {
   return await callMindbodyAPI('authenticate', { username, password });
 };
 
+// OAuth functions
+export const getOAuthUrl = async (redirectUri: string) => {
+  return await callMindbodyAPI('getOAuthUrl', { redirectUri });
+};
+
+export const exchangeOAuthCode = async (code: string, redirectUri: string) => {
+  return await callMindbodyAPI('exchangeOAuthCode', { code, redirectUri });
+};
+
 // Client management functions
 export const getClientInfo = async (clientId: string, token?: string) => {
   return await callMindbodyAPI('getClient', { clientId, token });

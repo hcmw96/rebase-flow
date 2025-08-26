@@ -1,26 +1,36 @@
 import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { X } from "lucide-react";
-import { useMindbody } from '@/hooks/useMindbody';
+import { getOAuthUrl } from '@/lib/mindbody-api';
 
 interface MindbodyAuthPromptProps {
   onClose?: () => void;
 }
 
 export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const { login, loading, error } = useMindbody();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const success = await login(username, password);
-    if (success && onClose) {
-      onClose();
+  const handleOAuthLogin = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const redirectUri = `${window.location.origin}/oauth/mindbody/callback`;
+      const result = await getOAuthUrl(redirectUri);
+      
+      if (result.success && result.data?.authUrl) {
+        // Redirect to Mindbody OAuth page
+        window.location.href = result.data.authUrl;
+      } else {
+        setError(result.error || 'Failed to generate OAuth URL');
+      }
+    } catch (err) {
+      setError('Failed to initiate OAuth flow');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -39,7 +49,7 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
             )}
           </div>
           <p className="text-white/70 text-sm text-center">
-            Sign in to access live class schedules and booking
+            Sign in securely with your Mindbody account to access live class schedules and booking
           </p>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -51,43 +61,17 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
             </Alert>
           )}
           
-          <form onSubmit={handleLogin} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username" className="text-white/70">Email or Username</Label>
-              <Input
-                id="username"
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className="glass-morphism border-white/20 text-white placeholder:text-white/50"
-                placeholder="Enter your Mindbody username"
-                disabled={loading}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password" className="text-white/70">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="glass-morphism border-white/20 text-white placeholder:text-white/50"
-                placeholder="Enter your password"
-                disabled={loading}
-              />
-            </div>
-            <Button 
-              type="submit" 
-              className="w-full glass-button text-white rounded-xl font-medium"
-              disabled={loading || !username || !password}
-            >
-              {loading ? 'Connecting...' : 'Connect to Mindbody'}
-            </Button>
-          </form>
+          <Button 
+            onClick={handleOAuthLogin}
+            className="w-full glass-button text-white rounded-xl font-medium"
+            disabled={loading}
+          >
+            {loading ? 'Redirecting...' : 'Sign in with Mindbody'}
+          </Button>
           
           <div className="text-center pt-4">
             <p className="text-white/60 text-xs">
-              Don't have a Mindbody account? Contact us to get started.
+              You'll be redirected to Mindbody's secure login page
             </p>
           </div>
         </CardContent>
