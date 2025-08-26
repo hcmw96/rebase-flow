@@ -78,12 +78,12 @@ async function makeMindbodyRequest(endpoint: string, options: any = {}) {
   const url = `${MINDBODY_API_BASE}${endpoint}`;
   const headers = {
     'Content-Type': 'application/json',
-    'Api-Key': MINDBODY_API_KEY,
+    'API-Key': MINDBODY_API_KEY,
     'SiteId': MINDBODY_SITE_ID,
     ...options.headers,
   };
 
-  console.log('Making request to:', url, { headers: Object.keys(headers) });
+  console.log('Making request to:', url, { headers: Object.keys(headers), apiKeyLength: MINDBODY_API_KEY?.length, siteId: MINDBODY_SITE_ID });
 
   const response = await fetch(url, {
     ...options,
