@@ -58,7 +58,8 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
             )}
           </div>
           <p className="text-white/70 text-sm text-center">
-            Enter your Mindbody credentials to access live class schedules and booking
+            <strong>Important:</strong> Enter your Mindbody <strong>staff/business owner</strong> credentials. 
+            Client account credentials will not work for API access.
           </p>
         </CardHeader>
         <CardContent>
@@ -70,7 +71,7 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter your Mindbody username"
+                placeholder="Staff/business owner username"
                 className="glass-input text-white placeholder:text-white/50"
                 required
               />
@@ -104,7 +105,7 @@ export const MindbodyAuthPrompt = ({ onClose }: MindbodyAuthPromptProps) => {
             
             <div className="text-center pt-2">
               <p className="text-white/60 text-xs">
-                Use your regular Mindbody login credentials
+                You need staff-level access to generate API tokens. Client accounts cannot be used for authentication.
               </p>
             </div>
           </form>
