@@ -59,13 +59,8 @@ const Navigation = () => {
                   {item.label}
                 </Link>
               ))}
-              <div className="px-3 pt-4 flex space-x-3">
-                <Link to="/login" onClick={() => setIsOpen(false)} className="flex-1">
-                  <Button variant="ghost" className="w-full glass-button text-white border-white/20">
-                    Login
-                  </Button>
-                </Link>
-                <Link to="/book" onClick={() => setIsOpen(false)} className="flex-1">
+              <div className="px-3 pt-4">
+                <Link to="/book" onClick={() => setIsOpen(false)}>
                   <Button className="w-full glass-button text-white">
                     Book Now
                   </Button>

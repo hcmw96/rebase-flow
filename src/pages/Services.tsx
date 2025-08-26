@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMindbody } from "@/hooks/useMindbody";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MindbodyAuthPrompt } from "@/components/MindbodyAuthPrompt";
+import { getOAuthUrl } from '@/lib/mindbody-api';
 
 // Types for the UI data structures
 interface ServiceItem {
@@ -57,18 +57,23 @@ const Services = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
-  const [showAuthPrompt, setShowAuthPrompt] = useState(false);
 
   const { services: mindbodyServices, classes: mindbodyClasses, loading, error, refreshData, isAuthenticated } = useMindbody();
 
   const categories = ["All", "Classes", "Services", "Appointments"];
 
-  useEffect(() => {
-    // Hide auth prompt when authenticated
-    if (isAuthenticated) {
-      setShowAuthPrompt(false);
+  const handleMindbodyLogin = async () => {
+    try {
+      const redirectUri = `${window.location.origin}/oauth/mindbody/callback`;
+      const result = await getOAuthUrl(redirectUri);
+      
+      if (result.success && result.url) {
+        window.location.href = result.url;
+      }
+    } catch (err) {
+      console.error('Failed to initiate Mindbody login:', err);
     }
-  }, [isAuthenticated]);
+  };
 
   // Fallback static services for when Mindbody is unavailable
   const fallbackServices: ServiceItem[] = [
@@ -235,10 +240,10 @@ const Services = () => {
                   <Button 
                     variant="ghost" 
                     size="sm" 
-                    onClick={() => setShowAuthPrompt(true)}
+                    onClick={handleMindbodyLogin}
                     className="text-blue-400 hover:bg-blue-500/20 ml-4"
                   >
-                    Connect
+                    Login with Mindbody
                   </Button>
                 </AlertDescription>
               </Alert>
@@ -455,10 +460,6 @@ const Services = () => {
         <Footer />
       </div>
 
-      {/* Show auth prompt when user clicks Connect or if not authenticated on first load */}
-      {(showAuthPrompt || (!isAuthenticated && !error && mindbodyServices.length === 0)) && (
-        <MindbodyAuthPrompt onClose={() => setShowAuthPrompt(false)} />
-      )}
     </div>
   );
 };
