@@ -12,14 +12,16 @@ const MINDBODY_SITE_ID = Deno.env.get('MINDBODY_SITE_ID');
 const MINDBODY_CLIENT_ID = Deno.env.get('MINDBODY_CLIENT_ID');
 const MINDBODY_CLIENT_SECRET = Deno.env.get('MINDBODY_CLIENT_SECRET');
 
-// Debug logging
+// Debug logging - check all environment variables
+console.log('All Deno env vars:', Object.keys(Deno.env.toObject()));
 console.log('Environment variables check:', {
   hasApiKey: !!MINDBODY_API_KEY,
   hasSiteId: !!MINDBODY_SITE_ID,
   hasClientId: !!MINDBODY_CLIENT_ID,
   hasClientSecret: !!MINDBODY_CLIENT_SECRET,
-  apiKeyLength: MINDBODY_API_KEY?.length,
-  siteIdLength: MINDBODY_SITE_ID?.length
+  apiKeyValue: MINDBODY_API_KEY ? `${MINDBODY_API_KEY.substring(0, 4)}...` : 'null',
+  siteIdValue: MINDBODY_SITE_ID || 'null',
+  clientIdValue: MINDBODY_CLIENT_ID ? `${MINDBODY_CLIENT_ID.substring(0, 4)}...` : 'null'
 });
 
 serve(async (req) => {
