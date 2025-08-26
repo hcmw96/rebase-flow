@@ -479,7 +479,7 @@ async function getOAuthUrl(redirectUri: string) {
     });
 
     // Use the correct Mindbody OAuth 2.0 authorization URL
-    const baseAuthUrl = 'https://api.mindbodyonline.com/public/v6/usertoken/issue';
+    const baseAuthUrl = 'https://auth.mindbodyonline.com/connect/authorize';
     const scope = 'read'; // Basic read scope for client data
     
     // Mindbody OAuth 2.0 authorization URL
@@ -509,12 +509,12 @@ async function exchangeOAuthCode(code: string, redirectUri: string) {
       throw new Error('Mindbody OAuth credentials not configured');
     }
 
-    const response = await fetch('https://api.mindbodyonline.com/public/v6/usertoken/issue', {
+    console.log('Exchanging OAuth code for token...');
+
+    const response = await fetch('https://auth.mindbodyonline.com/connect/token', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
-        'API-Key': MINDBODY_API_KEY,
-        'SiteId': MINDBODY_SITE_ID,
       },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
@@ -532,10 +532,24 @@ async function exchangeOAuthCode(code: string, redirectUri: string) {
     }
 
     const data = await response.json();
+    console.log('OAuth token exchange successful');
+
+    // Get client info using the access token
+    let clientData = null;
+    try {
+      const clientResponse = await makeMindbodyRequest('sale/clients', {
+        headers: {
+          'Authorization': `Bearer ${data.access_token}`,
+        },
+      });
+      clientData = clientResponse.Clients?.[0] || null;
+    } catch (err) {
+      console.log('Could not fetch client data with token:', err);
+    }
 
     return {
       success: true,
-      data,
+      data: clientData,
       token: data.access_token,
     };
   } catch (error) {
