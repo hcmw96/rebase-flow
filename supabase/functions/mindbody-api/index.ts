@@ -12,17 +12,22 @@ const MINDBODY_SITE_ID = Deno.env.get('MINDBODY_SITE_ID');
 const MINDBODY_CLIENT_ID = Deno.env.get('MINDBODY_CLIENT_ID');
 const MINDBODY_CLIENT_SECRET = Deno.env.get('MINDBODY_CLIENT_SECRET');
 
-// Debug logging - check all environment variables
-console.log('All Deno env vars:', Object.keys(Deno.env.toObject()));
-console.log('Environment variables check:', {
-  hasApiKey: !!MINDBODY_API_KEY,
-  hasSiteId: !!MINDBODY_SITE_ID,
-  hasClientId: !!MINDBODY_CLIENT_ID,
-  hasClientSecret: !!MINDBODY_CLIENT_SECRET,
-  apiKeyValue: MINDBODY_API_KEY ? `${MINDBODY_API_KEY.substring(0, 4)}...` : 'null',
-  siteIdValue: MINDBODY_SITE_ID || 'null',
-  clientIdValue: MINDBODY_CLIENT_ID ? `${MINDBODY_CLIENT_ID.substring(0, 4)}...` : 'null'
+// Comprehensive debug logging
+console.log('=== ENVIRONMENT VARIABLE DEBUG ===');
+console.log('All available env vars:', Object.keys(Deno.env.toObject()).sort());
+console.log('Raw values:', {
+  MINDBODY_API_KEY: MINDBODY_API_KEY,
+  MINDBODY_SITE_ID: MINDBODY_SITE_ID,
+  MINDBODY_CLIENT_ID: MINDBODY_CLIENT_ID,
+  MINDBODY_CLIENT_SECRET: MINDBODY_CLIENT_SECRET
 });
+console.log('Type check:', {
+  apiKeyType: typeof MINDBODY_API_KEY,
+  siteIdType: typeof MINDBODY_SITE_ID,
+  apiKeyLength: MINDBODY_API_KEY?.length,
+  siteIdLength: MINDBODY_SITE_ID?.length
+});
+console.log('=== END DEBUG ===');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -31,7 +36,12 @@ serve(async (req) => {
   }
 
   try {
-    if (!MINDBODY_API_KEY || !MINDBODY_SITE_ID) {
+    // More robust check for environment variables (check for empty strings too)
+    if (!MINDBODY_API_KEY || MINDBODY_API_KEY.trim() === '' || !MINDBODY_SITE_ID || MINDBODY_SITE_ID.trim() === '') {
+      console.error('Missing environment variables:', {
+        MINDBODY_API_KEY: MINDBODY_API_KEY || 'undefined',
+        MINDBODY_SITE_ID: MINDBODY_SITE_ID || 'undefined'
+      });
       throw new Error('Mindbody API key and Site ID not configured');
     }
 
