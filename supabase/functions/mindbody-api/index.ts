@@ -300,9 +300,8 @@ async function getServices(token?: string) {
     }
 
     const data = await makeMindbodyRequest('/site/services', {
-      method: 'POST', // Changed from GET to POST
+      method: 'GET',
       headers,
-      body: JSON.stringify({}), // Empty body for services request
     });
 
     return {
@@ -325,14 +324,16 @@ async function getClasses(startDate: string, endDate: string, token?: string) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const data = await makeMindbodyRequest('/class/classes', {
-      method: 'POST', // Changed from GET to POST
+    // Use query parameters for GET request
+    const searchParams = new URLSearchParams({
+      StartDateTime: startDate,
+      EndDateTime: endDate,
+      HideCanceledClasses: 'true',
+    });
+
+    const data = await makeMindbodyRequest(`/class/classes?${searchParams.toString()}`, {
+      method: 'GET',
       headers,
-      body: JSON.stringify({
-        StartDateTime: startDate,
-        EndDateTime: endDate,
-        HideCanceledClasses: true,
-      }),
     });
 
     return {
