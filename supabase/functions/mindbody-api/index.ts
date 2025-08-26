@@ -8,6 +8,7 @@ const corsHeaders = {
 
 const MINDBODY_API_BASE = 'https://api.mindbodyonline.com/public/v6';
 const MINDBODY_API_KEY = Deno.env.get('MINDBODY_API_KEY');
+const MINDBODY_SITE_ID = Deno.env.get('MINDBODY_SITE_ID');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -16,8 +17,8 @@ serve(async (req) => {
   }
 
   try {
-    if (!MINDBODY_API_KEY) {
-      throw new Error('Mindbody API key not configured');
+    if (!MINDBODY_API_KEY || !MINDBODY_SITE_ID) {
+      throw new Error('Mindbody API key and Site ID not configured');
     }
 
     const { action, data = {} } = await req.json();
@@ -78,6 +79,7 @@ async function makeMindbodyRequest(endpoint: string, options: any = {}) {
   const headers = {
     'Content-Type': 'application/json',
     'API-Key': MINDBODY_API_KEY!,
+    'SiteId': MINDBODY_SITE_ID!,
     ...options.headers,
   };
 
