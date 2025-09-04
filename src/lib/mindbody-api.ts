@@ -93,65 +93,44 @@ async function callMindbodyAPI(action: string, data: any = {}) {
   }
 }
 
-// 🔥 OAUTH FUNCTIONS - VERSION 3.0 - FORCE REFRESH 🔥
+// 🔥 OAUTH FUNCTIONS - VERSION 4.0 - BYPASS EDGE FUNCTION FOR TESTING 🔥
 export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
-  console.log('🚀 getOAuthAuthorizationUrl called - VERSION 3.0');
+  console.log('🚀 getOAuthAuthorizationUrl called - VERSION 4.0 - BYPASS MODE');
   console.log('🚀 Build Timestamp:', Date.now());
+  
   // Generate state parameter for security
   const state = generateRandomState();
   localStorage.setItem('oauth_state', state);
   
-  console.log('=== OAUTH DEBUG v2 ===');
-  console.log('Starting OAuth URL generation...');
-  console.log('Redirect URI:', redirectUri);
+  console.log('🔧 TESTING MODE: Bypassing edge function to test OAuth flow');
+  console.log('🔧 Redirect URI:', redirectUri);
   
-  // Temporarily test with a direct approach to isolate the issue
   try {
-    // Get the OAuth client ID from the backend (since it's stored as a secret)
-    console.log('Calling mindbody-api edge function...');
-    const { data: result, error } = await supabase.functions.invoke('mindbody-api', {
-      body: { action: 'getOAuthConfig' }
-    });
-
-    console.log('Edge function response:', { result, error });
-
-    if (error) {
-      console.error('Supabase function invoke error:', error);
-      throw new Error(`Supabase function error: ${error.message}`);
-    }
-
-    if (!result || !result.success) {
-      console.error('OAuth config failed:', result);
-      throw new Error(result?.error || 'Failed to get OAuth configuration');
-    }
-
-    const clientId = result.data?.clientId;
-    console.log('Retrieved client ID:', clientId ? 'PRESENT' : 'MISSING');
+    // TEMPORARY: Use a placeholder client ID to test the OAuth flow
+    // You'll need to replace 'YOUR_ACTUAL_CLIENT_ID' with your real Mindbody OAuth Client ID
+    const clientId = 'YOUR_ACTUAL_CLIENT_ID'; // Replace this with your actual client ID
     
-    if (!clientId) {
-      throw new Error('Client ID is missing from response');
+    console.log('🔧 Using hardcoded client ID for testing');
+    
+    if (!clientId || clientId === 'YOUR_ACTUAL_CLIENT_ID') {
+      throw new Error('Please replace YOUR_ACTUAL_CLIENT_ID with your actual Mindbody OAuth Client ID in the code');
     }
     
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
       redirect_uri: redirectUri,
-      scope: 'read',  // Start with minimal scope
+      scope: 'read',
       state: state
     });
     
     // Use the correct Mindbody OAuth endpoint
     const authUrl = `https://signin.mindbodyonline.com/launch/oauth?${params.toString()}`;
-    console.log('Generated OAuth URL:', authUrl);
-    console.log('=== END OAUTH DEBUG ===');
+    console.log('🔧 Generated OAuth URL:', authUrl);
     
     return authUrl;
   } catch (error) {
-    console.error('=== OAUTH ERROR ===');
-    console.error('Error details:', error);
-    console.error('Error type:', typeof error);
-    console.error('Error message:', error.message);
-    console.error('=== END OAUTH ERROR ===');
+    console.error('💥 OAUTH ERROR:', error);
     throw error;
   }
 };
