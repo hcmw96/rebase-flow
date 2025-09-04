@@ -121,6 +121,11 @@ const Auth = () => {
                   Sign in with Mindbody OAuth
                 </Button>
                 
+                {/* Version indicator for debugging */}
+                <div className="text-xs text-muted-foreground text-center opacity-50">
+                  v3.0 - Build: {Date.now()}
+                </div>
+                
                 <div className="text-center">
                   <p className="text-sm text-foreground/70">
                     Don't have an account?{" "}

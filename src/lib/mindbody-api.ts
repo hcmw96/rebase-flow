@@ -93,8 +93,10 @@ async function callMindbodyAPI(action: string, data: any = {}) {
   }
 }
 
-// OAuth authentication functions - FORCE REFRESH v2
+// 🔥 OAUTH FUNCTIONS - VERSION 3.0 - FORCE REFRESH 🔥
 export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
+  console.log('🚀 getOAuthAuthorizationUrl called - VERSION 3.0');
+  console.log('🚀 Build Timestamp:', Date.now());
   // Generate state parameter for security
   const state = generateRandomState();
   localStorage.setItem('oauth_state', state);
