@@ -123,8 +123,8 @@ export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
       state: state
     });
     
-    // Use the correct Mindbody OAuth endpoint
-    const authUrl = `https://signin.mindbodyonline.com/launch/oauth?${params.toString()}`;
+    // Use the correct Mindbody OAuth endpoint - Updated URL
+    const authUrl = `https://api.mindbodyonline.com/public/v6/usertoken/oauth2/authorize?${params.toString()}`;
     console.log('🔧 Generated OAuth URL:', authUrl);
     
     return authUrl;
