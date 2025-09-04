@@ -90,6 +90,9 @@ serve(async (req) => {
       case 'refreshOAuthToken':
         result = await refreshOAuthToken(data.refreshToken);
         break;
+      case 'getOAuthConfig':
+        result = await getOAuthConfig();
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -505,6 +508,32 @@ async function cancelAppointment(appointmentId: number, notes: string = '', toke
     return {
       success: false,
       error: 'Failed to cancel appointment',
+    };
+  }
+}
+
+async function getOAuthConfig() {
+  try {
+    console.log('Getting OAuth configuration');
+    
+    if (!MINDBODY_CLIENT_ID) {
+      return {
+        success: false,
+        error: 'OAuth client ID not configured'
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        clientId: MINDBODY_CLIENT_ID
+      }
+    };
+  } catch (error) {
+    console.error('Error getting OAuth config:', error);
+    return {
+      success: false,
+      error: 'Failed to get OAuth configuration'
     };
   }
 }

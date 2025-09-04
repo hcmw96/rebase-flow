@@ -107,13 +107,18 @@ export const useMindbodyAuth = () => {
     }
   };
 
-  const loginWithOAuth = () => {
-    // Generate the redirect URI for the OAuth callback
-    const redirectUri = `${window.location.origin}/auth/callback`;
-    
-    // Get the authorization URL and redirect
-    const authUrl = getOAuthAuthorizationUrl(redirectUri);
-    window.location.href = authUrl;
+  const loginWithOAuth = async () => {
+    try {
+      // Generate the redirect URI for the OAuth callback
+      const redirectUri = `${window.location.origin}/auth/callback`;
+      
+      // Get the authorization URL and redirect
+      const authUrl = await getOAuthAuthorizationUrl(redirectUri);
+      window.location.href = authUrl;
+    } catch (error) {
+      console.error('OAuth login error:', error);
+      setError('Failed to initialize OAuth login. Please try again.');
+    }
   };
 
   const logout = () => {

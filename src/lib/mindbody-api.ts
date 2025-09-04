@@ -94,20 +94,43 @@ async function callMindbodyAPI(action: string, data: any = {}) {
 }
 
 // OAuth authentication functions
-export const getOAuthAuthorizationUrl = (redirectUri: string) => {
+export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
   // Generate state parameter for security
   const state = generateRandomState();
   localStorage.setItem('oauth_state', state);
   
-  const params = new URLSearchParams({
-    response_type: 'code',
-    client_id: 'f660fd3e-a0d6-4f66-878c-871c9860e565', // Your OAuth client ID
-    redirect_uri: redirectUri,
-    scope: 'read write',
-    state: state
-  });
-  
-  return `https://api.mindbodyonline.com/public/v6/usertoken/oauth2/authorize?${params.toString()}`;
+  try {
+    // Get the OAuth client ID from the backend (since it's stored as a secret)
+    const { data: result, error } = await supabase.functions.invoke('mindbody-api', {
+      body: { action: 'getOAuthConfig' }
+    });
+
+    if (error || !result.success) {
+      console.error('OAuth config error:', error, result);
+      throw new Error('Failed to get OAuth configuration');
+    }
+
+    const clientId = result.data.clientId;
+    
+    const params = new URLSearchParams({
+      response_type: 'code',
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      scope: 'read',  // Start with minimal scope
+      state: state
+    });
+    
+    // Use the correct Mindbody OAuth endpoint
+    const authUrl = `https://signin.mindbodyonline.com/launch/oauth?${params.toString()}`;
+    console.log('Generated OAuth URL:', authUrl);
+    console.log('Redirect URI:', redirectUri);
+    console.log('Client ID:', clientId);
+    
+    return authUrl;
+  } catch (error) {
+    console.error('Error generating OAuth URL:', error);
+    throw error;
+  }
 };
 
 export const exchangeOAuthCode = async (code: string, redirectUri: string, state: string) => {
