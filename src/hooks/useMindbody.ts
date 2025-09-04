@@ -109,6 +109,9 @@ export const useMindbodyAuth = () => {
 
   const loginWithOAuth = async () => {
     try {
+      // Force refresh timestamp to bypass caching
+      console.log('Starting OAuth login at:', new Date().toISOString());
+      
       // Generate the redirect URI for the OAuth callback
       const redirectUri = `${window.location.origin}/auth/callback`;
       
