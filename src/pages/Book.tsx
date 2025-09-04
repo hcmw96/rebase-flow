@@ -1,6 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { useMindbody } from "@/hooks/useMindbody";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -15,42 +17,38 @@ const Book = () => {
   const [selectedService, setSelectedService] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
+  const { isAuthenticated, services, classes, loading } = useMindbody();
   const isMobile = useIsMobile();
 
-  const services = [
-    {
-      id: 1,
-      title: "Contrast Therapy Session",
-      description: "Complete sauna and ice bath experience",
-      duration: "60 minutes",
-      price: 120,
-      category: "Recovery"
-    },
-    {
-      id: 2,
-      title: "Cryotherapy",
-      description: "Whole-body cryotherapy session",
-      duration: "3 minutes",
-      price: 45,
-      category: "Recovery"
-    },
-    {
-      id: 3,
-      title: "Breathwork Class",
-      description: "Guided breathwork session",
-      duration: "45 minutes",
-      price: 35,
-      category: "Mindfulness"
-    },
-    {
-      id: 4,
-      title: "IV Vitamin Therapy",
-      description: "Customized vitamin infusion",
-      duration: "45 minutes",
-      price: 95,
-      category: "Therapy"
-    }
-  ];
+  // Redirect to auth if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  // Transform Mindbody services for booking
+  const bookableServices = services.map(service => ({
+    id: service.Id,
+    title: service.Name,
+    description: service.Description || `Professional ${service.Name} service`,
+    duration: "60 minutes",
+    price: service.OnlinePrice || service.Price || 0,
+    category: "Services"
+  }));
+
+  // Add classes as bookable items
+  const bookableClasses = classes.map(cls => ({
+    id: `class_${cls.Id}`,
+    title: cls.ClassDescription?.Name || "Wellness Class",
+    description: cls.ClassDescription?.Description || `Join our ${cls.ClassDescription?.Name} class`,
+    duration: "60 minutes",
+    price: 40,
+    category: "Classes",
+    startDateTime: cls.StartDateTime,
+    endDateTime: cls.EndDateTime,
+    isClass: true
+  }));
+
+  const allServices = [...bookableServices, ...bookableClasses];
 
   const handleServiceSelect = (service: any) => {
     setSelectedService(service);
@@ -135,7 +133,17 @@ const Book = () => {
       )}
       
       <div className="space-y-4 max-w-lg mx-auto">
-        {services.map((service) => (
+        {loading && (
+          <div className="text-center py-8">
+            <p className="text-foreground/70">Loading services...</p>
+          </div>
+        )}
+        {!loading && allServices.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-foreground/70">No services available at the moment.</p>
+          </div>
+        )}
+        {allServices.map((service) => (
           <Card 
             key={service.id} 
             className="card-luxury cursor-pointer active:scale-95 transition-transform" 

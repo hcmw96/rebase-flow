@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Navigate } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { useMindbody } from "@/hooks/useMindbody";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,150 +18,45 @@ const BookService = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const { isAuthenticated, services, classes, loading } = useMindbody();
   const isMobile = useIsMobile();
 
-  // Service data matching Services page
-  const services = [
-    // Classes
-    {
-      id: 1,
-      title: "Contrast Therapy",
-      category: "Classes", 
-      duration: "60 minutes",
-      price: 40
-    },
-    {
-      id: 2,
-      title: "Breathwork",
-      category: "Classes",
-      duration: "60 minutes", 
-      price: 40
-    },
-    {
-      id: 3,
-      title: "Yoga",
-      category: "Classes",
-      duration: "60 minutes",
-      price: 40
-    },
+  // Redirect to auth if not authenticated
+  if (!isAuthenticated) {
+    return <Navigate to="/auth" replace />;
+  }
 
-    // Suites
-    {
-      id: 4,
-      title: "Members Contrast Suite Drop In",
-      category: "Suites",
-      duration: "60 minutes",
-      price: 65
-    },
-    {
-      id: 5,
-      title: "Premium Suite",
-      category: "Suites",
-      variants: [
-        { duration: "45 minutes", price: 240 },
-        { duration: "90 minutes", price: 420 }
-      ]
-    },
-    {
-      id: 6,
-      title: "Infrared Suite", 
-      category: "Suites",
-      variants: [
-        { duration: "45 minutes", price: 190 },
-        { duration: "90 minutes", price: 330 }
-      ]
-    },
+  // Transform Mindbody data for booking
+  const transformedServices = services.map(service => ({
+    id: service.Id,
+    title: service.Name,
+    category: "Services",
+    duration: "60 minutes",
+    price: service.OnlinePrice || service.Price || 0
+  }));
 
-    // Tech Therapies
-    {
-      id: 7,
-      title: "Cryotherapy",
-      category: "Tech Therapies",
-      variants: [
-        { duration: "3 minutes", price: 50, description: "Single session" },
-        { duration: "10 sessions", price: 400, description: "Pack of 10" }
-      ]
-    },
-    {
-      id: 8,
-      title: "HBOT (Hyperbaric Oxygen Therapy)",
-      category: "Tech Therapies", 
-      variants: [
-        { duration: "60 minutes", price: 200, description: "Single session" },
-        { duration: "5 sessions", price: 800, description: "Pack of 5" },
-        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
-      ]
-    },
+  // Add classes
+  const transformedClasses = classes.map(cls => ({
+    id: `class_${cls.Id}`,
+    title: cls.ClassDescription?.Name || "Class",
+    category: "Classes",
+    duration: "60 minutes",
+    price: 40,
+    startDateTime: cls.StartDateTime,
+    endDateTime: cls.EndDateTime,
+    isClass: true
+  }));
 
-    // Massage Therapies
-    {
-      id: 9,
-      title: "Total Body Realignment",
-      category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 195,
-      fromPrice: true
-    },
-    {
-      id: 10,
-      title: "Sports Massage", 
-      category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 185,
-      fromPrice: true
-    },
-    {
-      id: 11,
-      title: "Lymphatic Drainage",
-      category: "Massage Therapies", 
-      duration: "60-90 minutes",
-      price: 185,
-      fromPrice: true
-    },
-    {
-      id: 12,
-      title: "Deep Tissue",
-      category: "Massage Therapies",
-      duration: "60-90 minutes", 
-      price: 185,
-      fromPrice: true
-    },
-
-    // Manual Therapies
-    {
-      id: 13,
-      title: "Osteopathy Consultation",
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 210
-    },
-    {
-      id: 14,
-      title: "Structural Fascia Therapy", 
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 200
-    },
-
-    // Other Services
-    {
-      id: 15,
-      title: "IV Drip",
-      category: "Other Services",
-      duration: "45-60 minutes",
-      price: 350,
-      fromPrice: true
-    },
-    {
-      id: 16,
-      title: "Vitamin Infusions",
-      category: "Other Services", 
-      duration: "30 minutes",
-      price: 80
-    }
-  ];
-
-  const selectedService = services.find(service => service.id === parseInt(serviceId || ""));
+  const allServices = [...transformedServices, ...transformedClasses];
+  
+  // Find selected service - handle both regular services and classes
+  let selectedService;
+  if (serviceId?.startsWith('class_')) {
+    const classId = parseInt(serviceId.replace('class_', ''));
+    selectedService = allServices.find(service => service.id === `class_${classId}`);
+  } else {
+    selectedService = allServices.find(service => service.id === parseInt(serviceId || ""));
+  }
 
   useEffect(() => {
     if (!selectedService) {

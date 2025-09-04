@@ -32,13 +32,13 @@ const VideoHero = () => {
             </Button>
           </Link>
           
-          <Link to="/book">
+          <Link to="/auth">
             <Button 
               variant="ghost" 
               size="lg" 
               className="btn-ghost-luxury text-lg px-10 py-6 h-auto"
             >
-              Book Your Experience
+              Sign In to Book
             </Button>
           </Link>
         </div>
