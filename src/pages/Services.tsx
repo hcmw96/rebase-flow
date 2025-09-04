@@ -240,26 +240,6 @@ const Services = () => {
             </div>
           </section>
 
-          {/* Integration Ready Banner */}
-          <section className="px-4 sm:px-6 lg:px-8 pb-20">
-            <div className="max-w-4xl mx-auto">
-              <Card className="glass-card rounded-3xl border-white/10">
-                <CardContent className="p-8 text-center">
-                  <Sparkles className="h-12 w-12 mx-auto mb-4 text-primary" />
-                  <h2 className="text-2xl font-serif font-medium text-white mb-4">
-                    Ready for Integration
-                  </h2>
-                  <p className="text-white/70 mb-6 max-w-2xl mx-auto">
-                    Our services platform is designed to integrate seamlessly with your existing booking 
-                    and management systems. Get started with configuration today.
-                  </p>
-                  <Button className="glass-button text-white">
-                    Configure Integration
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-          </section>
         </div>
 
         <Footer />
