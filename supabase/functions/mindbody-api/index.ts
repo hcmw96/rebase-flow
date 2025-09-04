@@ -12,8 +12,9 @@ const MINDBODY_SITE_ID = Deno.env.get('MINDBODY_SITE_ID');
 const MINDBODY_CLIENT_ID = Deno.env.get('MINDBODY_CLIENT_ID');
 const MINDBODY_CLIENT_SECRET = Deno.env.get('MINDBODY_CLIENT_SECRET');
 
-// Comprehensive debug logging
+// Comprehensive debug logging  
 console.log('=== ENVIRONMENT VARIABLE DEBUG ===');
+console.log('Force refresh at:', new Date().toISOString());
 console.log('All available env vars:', Object.keys(Deno.env.toObject()).sort());
 console.log('Raw values:', {
   MINDBODY_API_KEY: MINDBODY_API_KEY,
