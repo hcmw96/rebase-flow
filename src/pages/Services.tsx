@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { useMindbody } from "@/hooks/useMindbody";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { getOAuthUrl } from '@/lib/mindbody-api';
+import { Input } from "@/components/ui/input";
 
 // Types for the UI data structures
 interface ServiceItem {
@@ -58,20 +58,25 @@ const Services = () => {
   const [bookingStep, setBookingStep] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
 
-  const { services: mindbodyServices, classes: mindbodyClasses, loading, error, refreshData, isAuthenticated } = useMindbody();
+  const { services: mindbodyServices, classes: mindbodyClasses, loading, error, refreshData, isAuthenticated, loginWithEmail } = useMindbody();
+  const [loginEmail, setLoginEmail] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const categories = ["All", "Classes", "Services", "Appointments"];
 
-  const handleMindbodyLogin = async () => {
+  const handleEmailLogin = async () => {
+    if (!loginEmail.trim()) return;
+    
+    setIsLoggingIn(true);
     try {
-      const redirectUri = `${window.location.origin}/oauth/mindbody/callback`;
-      const result = await getOAuthUrl(redirectUri);
-      
-      if (result.success && result.url) {
-        window.location.href = result.url;
+      const success = await loginWithEmail(loginEmail);
+      if (success) {
+        setLoginEmail("");
       }
     } catch (err) {
-      console.error('Failed to initiate Mindbody login:', err);
+      console.error('Failed to login:', err);
+    } finally {
+      setIsLoggingIn(false);
     }
   };
 
@@ -235,16 +240,29 @@ const Services = () => {
             <div className="max-w-7xl mx-auto">
               <Alert className="glass-card border-blue-500/50">
                 <AlertCircle className="h-4 w-4" />
-                <AlertDescription className="text-white flex items-center justify-between">
-                  <span>Connect to Mindbody to see live class schedules and book appointments.</span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    onClick={handleMindbodyLogin}
-                    className="text-blue-400 hover:bg-blue-500/20 ml-4"
-                  >
-                    Login with Mindbody
-                  </Button>
+                <AlertDescription className="text-white">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                    <span className="flex-grow">Enter your email or phone number to access your Mindbody account:</span>
+                    <div className="flex gap-2 min-w-0 flex-1 sm:flex-initial">
+                      <Input 
+                        placeholder="Email or phone number"
+                        value={loginEmail}
+                        onChange={(e) => setLoginEmail(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleEmailLogin()}
+                        className="glass-card bg-black/20 border-white/20 text-white placeholder:text-white/50"
+                        disabled={isLoggingIn}
+                      />
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        onClick={handleEmailLogin}
+                        className="text-blue-400 hover:bg-blue-500/20 whitespace-nowrap"
+                        disabled={isLoggingIn || !loginEmail.trim()}
+                      >
+                        {isLoggingIn ? "..." : "Login"}
+                      </Button>
+                    </div>
+                  </div>
                 </AlertDescription>
               </Alert>
             </div>

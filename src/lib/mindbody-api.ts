@@ -93,22 +93,17 @@ async function callMindbodyAPI(action: string, data: any = {}) {
   }
 }
 
-// Authentication functions
-export const authenticateUser = async (username: string, password: string) => {
-  return await callMindbodyAPI('authenticate', { username, password });
+// Simplified authentication functions
+export const authenticateStaff = async () => {
+  return await callMindbodyAPI('authenticateStaff');
+};
+
+export const lookupClient = async (emailOrPhone: string) => {
+  return await callMindbodyAPI('lookupClient', { emailOrPhone });
 };
 
 export const validateClient = async (emailOrPhone: string, clientId?: string) => {
   return await callMindbodyAPI('validateClient', { emailOrPhone, clientId });
-};
-
-// OAuth functions
-export const getOAuthUrl = async (redirectUri: string) => {
-  return await callMindbodyAPI('getOAuthUrl', { redirectUri });
-};
-
-export const exchangeOAuthCode = async (code: string, redirectUri: string) => {
-  return await callMindbodyAPI('exchangeOAuthCode', { code, redirectUri });
 };
 
 // Client management functions

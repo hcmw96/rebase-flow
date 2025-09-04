@@ -1,7 +1,6 @@
 import { useState, useEffect, createContext, useContext } from 'react';
 import { 
-  authenticateUser, 
-  getClientInfo, 
+  lookupClient, 
   createClient, 
   getServices, 
   getClasses, 
@@ -20,7 +19,7 @@ interface MindbodyContextType {
   appointments: MindbodyAppointment[];
   loading: boolean;
   error: string | null;
-  login: (username: string, password: string) => Promise<boolean>;
+  loginWithEmail: (emailOrPhone: string) => Promise<boolean>;
   logout: () => void;
   refreshData: () => Promise<void>;
   setAuthData: (token: string | null, userData: any) => void;
@@ -53,10 +52,9 @@ export const useMindbodyAuth = () => {
 
   // Check for existing session on mount and load public data
   useEffect(() => {
-    const storedToken = localStorage.getItem('mindbody_token');
     const storedClient = localStorage.getItem('mindbody_client');
     
-    if (storedToken && storedClient) {
+    if (storedClient) {
       try {
         setClient(JSON.parse(storedClient));
         setIsAuthenticated(true);
@@ -70,35 +68,32 @@ export const useMindbodyAuth = () => {
     refreshData();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const loginWithEmail = async (emailOrPhone: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
     
     try {
-      const authResult = await authenticateUser(username, password);
+      const lookupResult = await lookupClient(emailOrPhone);
       
-      if (authResult.success && authResult.token) {
-        // Store token
-        localStorage.setItem('mindbody_token', authResult.token);
+      if (lookupResult.success && lookupResult.found && lookupResult.data) {
+        // Client found - log them in
+        const { client, staffToken } = lookupResult.data;
         
-        // Get client info - assuming the username is an email or client ID
-        const clientResult = await getClientInfo(username);
+        setClient(client);
+        setIsAuthenticated(true);
+        localStorage.setItem('mindbody_client', JSON.stringify(client));
+        localStorage.setItem('mindbody_staff_token', staffToken);
         
-        if (clientResult.success && clientResult.data) {
-          setClient(clientResult.data);
-          setIsAuthenticated(true);
-          localStorage.setItem('mindbody_client', JSON.stringify(clientResult.data));
-          
-          // Load initial data
-          await refreshData();
-          
-          return true;
-        } else {
-          setError('Failed to fetch client information');
-          return false;
-        }
+        // Load initial data
+        await refreshData();
+        
+        return true;
+      } else if (lookupResult.success && !lookupResult.found) {
+        // Client not found - show error message suggesting account creation
+        setError(lookupResult.message || 'Account not found. Please check your email/phone or create a new account.');
+        return false;
       } else {
-        setError(authResult.error || 'Authentication failed');
+        setError(lookupResult.error || 'Failed to lookup account');
         return false;
       }
     } catch (err) {
@@ -111,7 +106,7 @@ export const useMindbodyAuth = () => {
   };
 
   const logout = () => {
-    localStorage.removeItem('mindbody_token');
+    localStorage.removeItem('mindbody_staff_token');
     localStorage.removeItem('mindbody_client');
     setIsAuthenticated(false);
     setClient(null);
@@ -159,15 +154,15 @@ export const useMindbodyAuth = () => {
     setLoading(true);
     
     try {
-      const token = localStorage.getItem('mindbody_token');
+      const staffToken = localStorage.getItem('mindbody_staff_token');
       
-      // Load services (public data, no auth required)
-      const servicesResult = await getServices(token || undefined);
+      // Load services (uses staff token automatically)
+      const servicesResult = await getServices(staffToken || undefined);
       if (servicesResult.success) {
         setServices(servicesResult.data);
       }
 
-      // Load classes for the next 30 days (public data, no auth required)
+      // Load classes for the next 30 days (uses staff token automatically)
       const today = new Date();
       const endDate = new Date();
       endDate.setDate(today.getDate() + 30);
@@ -175,7 +170,7 @@ export const useMindbodyAuth = () => {
       const classesResult = await getClasses(
         today.toISOString(),
         endDate.toISOString(),
-        token || undefined
+        staffToken || undefined
       );
       if (classesResult.success) {
         setClasses(classesResult.data);
@@ -185,7 +180,9 @@ export const useMindbodyAuth = () => {
       if (isAuthenticated && client) {
         const appointmentsResult = await getClientAppointments(
           client.UniqueId || client.Id.toString(),
-          today.toISOString()
+          today.toISOString(),
+          undefined,
+          staffToken || undefined
         );
         if (appointmentsResult.success) {
           setAppointments(appointmentsResult.data);
@@ -228,7 +225,7 @@ export const useMindbodyAuth = () => {
     appointments,
     loading,
     error,
-    login,
+    loginWithEmail,
     logout,
     refreshData,
     setAuthData,
