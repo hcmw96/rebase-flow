@@ -5,6 +5,7 @@ import {
   getServices, 
   getClasses, 
   getClientAppointments,
+  getOAuthAuthorizationUrl,
   MindbodyClient,
   MindbodyService,
   MindbodyClass,
@@ -20,6 +21,7 @@ interface MindbodyContextType {
   loading: boolean;
   error: string | null;
   loginWithEmail: (emailOrPhone: string) => Promise<boolean>;
+  loginWithOAuth: () => void;
   logout: () => void;
   refreshData: () => Promise<void>;
   setAuthData: (token: string | null, userData: any) => void;
@@ -103,6 +105,15 @@ export const useMindbodyAuth = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const loginWithOAuth = () => {
+    // Generate the redirect URI for the OAuth callback
+    const redirectUri = `${window.location.origin}/auth/callback`;
+    
+    // Get the authorization URL and redirect
+    const authUrl = getOAuthAuthorizationUrl(redirectUri);
+    window.location.href = authUrl;
   };
 
   const logout = () => {
@@ -229,6 +240,7 @@ export const useMindbodyAuth = () => {
     loading,
     error,
     loginWithEmail,
+    loginWithOAuth,
     logout,
     refreshData,
     setAuthData,

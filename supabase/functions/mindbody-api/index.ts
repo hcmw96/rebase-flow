@@ -84,6 +84,12 @@ serve(async (req) => {
       case 'cancelAppointment':
         result = await cancelAppointment(data.appointmentId, data.notes, data.token);
         break;
+      case 'exchangeOAuthCode':
+        result = await exchangeOAuthCode(data.code, data.redirectUri, data.state);
+        break;
+      case 'refreshOAuthToken':
+        result = await refreshOAuthToken(data.refreshToken);
+        break;
       default:
         throw new Error(`Unknown action: ${action}`);
     }
@@ -503,4 +509,118 @@ async function cancelAppointment(appointmentId: number, notes: string = '', toke
   }
 }
 
-// Note: OAuth functionality removed in favor of staff token + client lookup approach
+// OAuth authentication functions
+async function exchangeOAuthCode(code: string, redirectUri: string, state: string) {
+  try {
+    console.log('Exchanging OAuth code for access token:', { code: code.substring(0, 10) + '...', redirectUri, state });
+    
+    if (!MINDBODY_CLIENT_ID || !MINDBODY_CLIENT_SECRET) {
+      return {
+        success: false,
+        error: 'OAuth client credentials not configured'
+      };
+    }
+
+    const tokenUrl = `${MINDBODY_API_BASE}/usertoken/oauth2/token`;
+    
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'API-Key': MINDBODY_API_KEY,
+        'SiteId': MINDBODY_SITE_ID,
+      },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        client_id: MINDBODY_CLIENT_ID,
+        client_secret: MINDBODY_CLIENT_SECRET,
+        code: code,
+        redirect_uri: redirectUri,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('OAuth token exchange failed:', data);
+      return {
+        success: false,
+        error: data.error_description || 'Failed to exchange authorization code'
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in,
+        token_type: data.token_type,
+        scope: data.scope
+      }
+    };
+  } catch (error) {
+    console.error('Error exchanging OAuth code:', error);
+    return {
+      success: false,
+      error: 'OAuth code exchange failed'
+    };
+  }
+}
+
+async function refreshOAuthToken(refreshToken: string) {
+  try {
+    console.log('Refreshing OAuth token');
+    
+    if (!MINDBODY_CLIENT_ID || !MINDBODY_CLIENT_SECRET) {
+      return {
+        success: false,
+        error: 'OAuth client credentials not configured'
+      };
+    }
+
+    const tokenUrl = `${MINDBODY_API_BASE}/usertoken/oauth2/token`;
+    
+    const response = await fetch(tokenUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'API-Key': MINDBODY_API_KEY,
+        'SiteId': MINDBODY_SITE_ID,
+      },
+      body: new URLSearchParams({
+        grant_type: 'refresh_token',
+        client_id: MINDBODY_CLIENT_ID,
+        client_secret: MINDBODY_CLIENT_SECRET,
+        refresh_token: refreshToken,
+      }),
+    });
+
+    const data = await response.json();
+    
+    if (!response.ok) {
+      console.error('OAuth token refresh failed:', data);
+      return {
+        success: false,
+        error: data.error_description || 'Failed to refresh access token'
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token || refreshToken, // Some providers don't send new refresh token
+        expires_in: data.expires_in,
+        token_type: data.token_type,
+        scope: data.scope
+      }
+    };
+  } catch (error) {
+    console.error('Error refreshing OAuth token:', error);
+    return {
+      success: false,
+      error: 'OAuth token refresh failed'
+    };
+  }
+}

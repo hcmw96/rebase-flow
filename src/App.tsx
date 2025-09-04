@@ -12,6 +12,7 @@ import Contact from "./pages/Contact";
 import Book from "./pages/Book";
 import BookService from "./pages/BookService";
 import Auth from "./pages/Auth";
+import OAuthCallback from "./pages/OAuthCallback";
 import NotFound from "./pages/NotFound";
 
 
@@ -30,6 +31,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/auth" element={<Auth />} />
+            <Route path="/auth/callback" element={<OAuthCallback />} />
             <Route path="/book" element={<Book />} />
             <Route path="/book/:serviceId" element={<BookService />} />
             

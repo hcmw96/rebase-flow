@@ -12,7 +12,7 @@ import ClientRegistration from "@/components/ClientRegistration";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [showRegistration, setShowRegistration] = useState(false);
-  const { isAuthenticated, loginWithEmail, loading, error } = useMindbody();
+  const { isAuthenticated, loginWithEmail, loginWithOAuth, loading, error } = useMindbody();
 
   // Redirect if already authenticated
   if (isAuthenticated) {
@@ -103,17 +103,36 @@ const Auth = () => {
                 </Button>
               </form>
 
-              <div className="mt-6 text-center">
-                <p className="text-sm text-foreground/70">
-                  Don't have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setShowRegistration(true)}
-                    className="text-primary hover:text-primary/80 font-medium"
-                  >
-                    Create one here
-                  </button>
-                </p>
+              <div className="mt-6 space-y-4">
+                <div className="relative">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t border-border" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
+                  </div>
+                </div>
+                
+                <Button 
+                  onClick={loginWithOAuth}
+                  variant="outline" 
+                  className="w-full"
+                >
+                  Sign in with Mindbody OAuth
+                </Button>
+                
+                <div className="text-center">
+                  <p className="text-sm text-foreground/70">
+                    Don't have an account?{" "}
+                    <button
+                      type="button"
+                      onClick={() => setShowRegistration(true)}
+                      className="text-primary hover:text-primary/80 font-medium"
+                    >
+                      Create one here
+                    </button>
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>

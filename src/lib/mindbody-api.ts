@@ -93,7 +93,44 @@ async function callMindbodyAPI(action: string, data: any = {}) {
   }
 }
 
-// Simplified authentication functions
+// OAuth authentication functions
+export const getOAuthAuthorizationUrl = (redirectUri: string) => {
+  // Generate state parameter for security
+  const state = generateRandomState();
+  localStorage.setItem('oauth_state', state);
+  
+  const params = new URLSearchParams({
+    response_type: 'code',
+    client_id: 'f660fd3e-a0d6-4f66-878c-871c9860e565', // Your OAuth client ID
+    redirect_uri: redirectUri,
+    scope: 'read write',
+    state: state
+  });
+  
+  return `https://api.mindbodyonline.com/public/v6/usertoken/oauth2/authorize?${params.toString()}`;
+};
+
+export const exchangeOAuthCode = async (code: string, redirectUri: string, state: string) => {
+  // Verify state parameter
+  const storedState = localStorage.getItem('oauth_state');
+  if (state !== storedState) {
+    throw new Error('Invalid state parameter');
+  }
+  localStorage.removeItem('oauth_state');
+  
+  return await callMindbodyAPI('exchangeOAuthCode', { code, redirectUri, state });
+};
+
+export const refreshOAuthToken = async (refreshToken: string) => {
+  return await callMindbodyAPI('refreshOAuthToken', { refreshToken });
+};
+
+// Generate a random state parameter for OAuth security
+const generateRandomState = () => {
+  return Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+};
+
+// Simplified authentication functions (legacy support)
 export const authenticateStaff = async () => {
   return await callMindbodyAPI('authenticateStaff');
 };
