@@ -36,8 +36,15 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-gray-900 dark:to-gray-800">
-      <div className="w-full max-w-md">
+    <div 
+      className="min-h-screen bg-cover bg-left bg-fixed relative flex items-center justify-center p-4"
+      style={{
+        backgroundImage: `url('/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png')`
+      }}
+    >
+      {/* Dark overlay for text legibility */}
+      <div className="absolute inset-0 bg-black/60 z-0" />
+      <div className="relative z-10 w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
           <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-foreground mb-6">
