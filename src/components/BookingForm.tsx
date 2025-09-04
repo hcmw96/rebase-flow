@@ -73,18 +73,18 @@ const BookingForm = ({ service }: BookingFormProps) => {
   };
 
   return (
-    <div className="max-w-2xl mx-auto">
+    <div className="max-w-2xl mx-auto px-4 sm:px-0">
       {/* Progress indicator */}
-      <div className="flex items-center justify-center mb-8">
+      <div className="flex items-center justify-center mb-6 sm:mb-8">
         {[1, 2, 3].map((num) => (
           <div key={num} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+            <div className={`w-6 h-6 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
               step >= num ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
             }`}>
               {num}
             </div>
             {num < 3 && (
-              <div className={`w-12 h-0.5 mx-2 ${
+              <div className={`w-8 sm:w-12 h-0.5 mx-1 sm:mx-2 ${
                 step > num ? 'bg-primary' : 'bg-muted'
               }`} />
             )}
@@ -127,14 +127,14 @@ const BookingForm = ({ service }: BookingFormProps) => {
 
             <div>
               <Label className="text-base font-medium mb-3 block">Choose Time</Label>
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
                 {timeSlots.map((time) => (
                   <Button
                     key={time}
                     variant={selectedTime === time ? "default" : "outline"}
                     size="sm"
                     onClick={() => setSelectedTime(time)}
-                    className="h-10"
+                    className="h-10 text-sm"
                   >
                     {time}
                   </Button>
@@ -211,29 +211,29 @@ const BookingForm = ({ service }: BookingFormProps) => {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              <div className="flex justify-between items-center py-2 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 sm:gap-0">
                 <span className="font-medium">Service</span>
-                <span>{service.title}</span>
+                <span className="text-foreground/80 sm:text-foreground">{service.title}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 sm:gap-0">
                 <span className="font-medium">Date</span>
-                <span>{selectedDate ? format(selectedDate, "PPP") : ""}</span>
+                <span className="text-foreground/80 sm:text-foreground">{selectedDate ? format(selectedDate, "PPP") : ""}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 sm:gap-0">
                 <span className="font-medium">Time</span>
-                <span>{selectedTime}</span>
+                <span className="text-foreground/80 sm:text-foreground">{selectedTime}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 sm:gap-0">
                 <span className="font-medium">Duration</span>
-                <span>{service.duration}</span>
+                <span className="text-foreground/80 sm:text-foreground">{service.duration}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 sm:gap-0">
                 <span className="font-medium">Name</span>
-                <span>{customerName}</span>
+                <span className="text-foreground/80 sm:text-foreground break-words">{customerName}</span>
               </div>
-              <div className="flex justify-between items-center py-2 border-b border-border">
+              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center py-2 border-b border-border gap-1 sm:gap-0">
                 <span className="font-medium">Email</span>
-                <span>{customerEmail}</span>
+                <span className="text-foreground/80 sm:text-foreground break-all text-sm sm:text-base">{customerEmail}</span>
               </div>
               <div className="flex justify-between items-center py-3 text-lg font-semibold">
                 <span>Total Price</span>

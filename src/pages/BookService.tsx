@@ -35,22 +35,22 @@ const BookService = () => {
       <Navigation />
       
       <div className="pt-20">
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
+        <section className="py-12 sm:py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto">
             <Button 
               variant="ghost" 
               onClick={handleBack}
-              className="mb-8 inline-flex items-center text-foreground/70 hover:text-foreground"
+              className="mb-6 sm:mb-8 inline-flex items-center text-foreground/70 hover:text-foreground"
             >
               <ArrowLeft className="h-4 w-4 mr-2" />
               Back to Services
             </Button>
 
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-serif font-light text-foreground mb-6">
+            <div className="text-center mb-8 sm:mb-12">
+              <h1 className="text-2xl sm:text-4xl font-serif font-light text-foreground mb-4 sm:mb-6">
                 Book <span className="text-primary">{service?.title || "Service"}</span>
               </h1>
-              <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg text-foreground/70 max-w-2xl mx-auto">
                 {service ? `${service.duration} • £${service.price}` : "Service not found"}
               </p>
             </div>
