@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,10 +16,12 @@ const Auth = () => {
     if (!email.trim()) return;
     
     setLoading(true);
-    // TODO: Implement authentication logic
+    // Authentication is now handled by AuthGate component
+    // This page can redirect to protected routes
     setTimeout(() => {
       setLoading(false);
-      console.log('Login attempt with:', email);
+      console.log('Login redirect - handled by AuthGate');
+      window.location.href = '/classes';
     }, 1000);
   };
 
@@ -55,38 +58,27 @@ const Auth = () => {
           </CardHeader>
           
           <CardContent className="pb-6">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="email" className="text-foreground/70 text-sm">
-                  Email Address
-                </Label>
-                <div className="relative mt-1">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    id="email"
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                    placeholder="Enter your email"
-                    required
-                  />
+            <div className="space-y-4">
+              <div className="text-center">
+                <p className="text-sm text-foreground/70 mb-4">
+                  Access your wellness journey by visiting our classes page. 
+                  Authentication is handled automatically.
+                </p>
+                
+                <div className="space-y-3">
+                  <Button asChild className="w-full btn-luxury">
+                    <Link to="/classes">
+                      Browse Classes
+                    </Link>
+                  </Button>
+                  
+                  <Button asChild variant="outline" className="w-full">
+                    <Link to="/integrations">
+                      Manage Integrations
+                    </Link>
+                  </Button>
                 </div>
               </div>
-
-              <Button 
-                type="submit" 
-                className="w-full btn-luxury"
-                disabled={loading || !email.trim()}
-              >
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
-
-            <div className="mt-6 text-center">
-              <p className="text-sm text-foreground/70">
-                Authentication system ready for integration
-              </p>
             </div>
           </CardContent>
         </Card>

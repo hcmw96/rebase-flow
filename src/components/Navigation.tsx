@@ -10,6 +10,8 @@ const Navigation = () => {
 
   const navItems = [
     { href: "/services", label: "Services" },
+    { href: "/classes", label: "Classes" },
+    { href: "/integrations", label: "Integrations" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
   ];

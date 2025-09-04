@@ -32,13 +32,13 @@ const VideoHero = () => {
             </Button>
           </Link>
           
-          <Link to="/auth">
+          <Link to="/classes">
             <Button 
               variant="ghost" 
               size="lg" 
               className="btn-ghost-luxury text-lg px-10 py-6 h-auto"
             >
-              Sign In to Book
+              Browse Classes
             </Button>
           </Link>
         </div>
