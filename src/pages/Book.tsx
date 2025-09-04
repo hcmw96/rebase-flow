@@ -3,8 +3,16 @@ import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, Clock, User } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Book = () => {
+  const navigate = useNavigate();
+
+  const services = [
+    "Ice Baths", "Yoga", "Traditional Saunas", "Hyperbaric Oxygen", 
+    "Infrared Saunas", "Cryotherapy", "Contrast Classes", "Vitamin Infusions",
+    "Contrast Suites", "Lymphatic Drainage", "Breathwork", "Recovery Specialists"
+  ];
   return (
     <div className="min-h-screen">
       <Navigation />
@@ -33,15 +41,15 @@ const Book = () => {
                 </CardContent>
               </Card>
 
-              <Card className="card-luxury">
+                <Card className="card-luxury">
                 <CardContent className="p-6 text-center">
                   <User className="h-12 w-12 mx-auto mb-4 text-primary" />
                   <h3 className="text-xl font-serif font-medium mb-3">Services</h3>
                   <p className="text-foreground/70 mb-4">
-                    Service management system ready for your offerings
+                    Choose from our {services.length} wellness and recovery services
                   </p>
-                  <Button variant="outline" className="w-full">
-                    Manage Services
+                  <Button variant="outline" className="w-full" onClick={() => navigate("/services")}>
+                    View All Services
                   </Button>
                 </CardContent>
               </Card>
