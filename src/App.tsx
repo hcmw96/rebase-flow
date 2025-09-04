@@ -10,6 +10,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Book from "./pages/Book";
 import BookService from "./pages/BookService";
+import BookingConfirmation from "./pages/BookingConfirmation";
 import Auth from "./pages/Auth";
 import Integrations from "./pages/Integrations";
 import Classes from "./pages/Classes";
@@ -37,6 +38,7 @@ const App = () => (
           <Route path="/classes" element={<Classes />} />
           <Route path="/book" element={<Book />} />
           <Route path="/book/:serviceId" element={<BookService />} />
+          <Route path="/booking-confirmation" element={<BookingConfirmation />} />
           
           {/* Catch-all route */}
           <Route path="*" element={<NotFound />} />
