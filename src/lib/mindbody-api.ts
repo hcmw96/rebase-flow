@@ -93,24 +93,42 @@ async function callMindbodyAPI(action: string, data: any = {}) {
   }
 }
 
-// OAuth authentication functions
+// OAuth authentication functions - FORCE REFRESH v2
 export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
   // Generate state parameter for security
   const state = generateRandomState();
   localStorage.setItem('oauth_state', state);
   
+  console.log('=== OAUTH DEBUG v2 ===');
+  console.log('Starting OAuth URL generation...');
+  console.log('Redirect URI:', redirectUri);
+  
+  // Temporarily test with a direct approach to isolate the issue
   try {
     // Get the OAuth client ID from the backend (since it's stored as a secret)
+    console.log('Calling mindbody-api edge function...');
     const { data: result, error } = await supabase.functions.invoke('mindbody-api', {
       body: { action: 'getOAuthConfig' }
     });
 
-    if (error || !result.success) {
-      console.error('OAuth config error:', error, result);
-      throw new Error('Failed to get OAuth configuration');
+    console.log('Edge function response:', { result, error });
+
+    if (error) {
+      console.error('Supabase function invoke error:', error);
+      throw new Error(`Supabase function error: ${error.message}`);
     }
 
-    const clientId = result.data.clientId;
+    if (!result || !result.success) {
+      console.error('OAuth config failed:', result);
+      throw new Error(result?.error || 'Failed to get OAuth configuration');
+    }
+
+    const clientId = result.data?.clientId;
+    console.log('Retrieved client ID:', clientId ? 'PRESENT' : 'MISSING');
+    
+    if (!clientId) {
+      throw new Error('Client ID is missing from response');
+    }
     
     const params = new URLSearchParams({
       response_type: 'code',
@@ -123,12 +141,15 @@ export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
     // Use the correct Mindbody OAuth endpoint
     const authUrl = `https://signin.mindbodyonline.com/launch/oauth?${params.toString()}`;
     console.log('Generated OAuth URL:', authUrl);
-    console.log('Redirect URI:', redirectUri);
-    console.log('Client ID:', clientId);
+    console.log('=== END OAUTH DEBUG ===');
     
     return authUrl;
   } catch (error) {
-    console.error('Error generating OAuth URL:', error);
+    console.error('=== OAUTH ERROR ===');
+    console.error('Error details:', error);
+    console.error('Error type:', typeof error);
+    console.error('Error message:', error.message);
+    console.error('=== END OAUTH ERROR ===');
     throw error;
   }
 };
