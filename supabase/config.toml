@@ -43,8 +43,8 @@ file_size_limit = "50MiB"
 [auth]
 enabled = true
 port = 54329
-site_url = "http://127.0.0.1:3000"
-additional_redirect_urls = ["https://127.0.0.1:3000"]
+site_url = "http://127.0.0.1:8080"
+additional_redirect_urls = ["https://127.0.0.1:8080"]
 jwt_expiry = 3600
 refresh_token_rotation_enabled = true
 refresh_token_reuse_interval = 10
@@ -59,3 +59,24 @@ enable_confirmations = false
 enabled = true
 port = 54330
 ip_version = "ipv4"
+
+[functions.mb-oauth-start]
+verify_jwt = true
+
+[functions.mb-oauth-callback]
+verify_jwt = false
+
+[functions.mb-connected]
+verify_jwt = true
+
+[functions.mb-disconnect]
+verify_jwt = true
+
+[functions.classes-public]
+verify_jwt = false
+
+[functions.mb-sync-classes]
+verify_jwt = false
+
+[functions.mb-book-class]
+verify_jwt = true

@@ -14,7 +14,93 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      mb_classes: {
+        Row: {
+          booking_available: boolean | null
+          created_at: string
+          current_bookings: number | null
+          description: string | null
+          end_time: string
+          id: string
+          instructor_name: string | null
+          is_cancelled: boolean | null
+          location_id: string | null
+          location_name: string | null
+          max_capacity: number | null
+          mb_class_id: string
+          name: string
+          start_time: string
+          updated_at: string
+        }
+        Insert: {
+          booking_available?: boolean | null
+          created_at?: string
+          current_bookings?: number | null
+          description?: string | null
+          end_time: string
+          id?: string
+          instructor_name?: string | null
+          is_cancelled?: boolean | null
+          location_id?: string | null
+          location_name?: string | null
+          max_capacity?: number | null
+          mb_class_id: string
+          name: string
+          start_time: string
+          updated_at?: string
+        }
+        Update: {
+          booking_available?: boolean | null
+          created_at?: string
+          current_bookings?: number | null
+          description?: string | null
+          end_time?: string
+          id?: string
+          instructor_name?: string | null
+          is_cancelled?: boolean | null
+          location_id?: string | null
+          location_name?: string | null
+          max_capacity?: number | null
+          mb_class_id?: string
+          name?: string
+          start_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      mb_connections: {
+        Row: {
+          access_token: string
+          created_at: string
+          expires_at: string | null
+          id: string
+          refresh_token: string | null
+          site_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          site_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          refresh_token?: string | null
+          site_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
