@@ -515,18 +515,23 @@ async function cancelAppointment(appointmentId: number, notes: string = '', toke
 async function getOAuthConfig() {
   try {
     console.log('Getting OAuth configuration');
+    console.log('MINDBODY_CLIENT_ID type:', typeof MINDBODY_CLIENT_ID);
+    console.log('MINDBODY_CLIENT_ID length:', MINDBODY_CLIENT_ID?.length);
+    console.log('MINDBODY_CLIENT_ID value (first 10 chars):', MINDBODY_CLIENT_ID?.substring(0, 10));
     
-    if (!MINDBODY_CLIENT_ID) {
+    if (!MINDBODY_CLIENT_ID || MINDBODY_CLIENT_ID.trim() === '') {
+      console.log('OAuth client ID is missing or empty');
       return {
         success: false,
         error: 'OAuth client ID not configured'
       };
     }
 
+    console.log('OAuth client ID found, returning config');
     return {
       success: true,
       data: {
-        clientId: MINDBODY_CLIENT_ID
+        clientId: MINDBODY_CLIENT_ID.trim()
       }
     };
   } catch (error) {
