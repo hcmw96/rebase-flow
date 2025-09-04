@@ -1,38 +1,25 @@
 import { useState } from "react";
-import { Navigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useMindbody } from "@/hooks/useMindbody";
 import { ArrowLeft, Mail, User } from "lucide-react";
 import { Link } from "react-router-dom";
-import ClientRegistration from "@/components/ClientRegistration";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
-  const [showRegistration, setShowRegistration] = useState(false);
-  const { isAuthenticated, loginWithEmail, loginWithOAuth, loading, error } = useMindbody();
-
-  // Redirect if already authenticated
-  if (isAuthenticated) {
-    return <Navigate to="/book" replace />;
-  }
+  const [loading, setLoading] = useState(false);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.trim()) return;
     
-    const success = await loginWithEmail(email.trim());
-    if (!success && error?.includes('not found')) {
-      // If account not found, show registration option
-      setShowRegistration(true);
-    }
-  };
-
-  const handleRegistrationClose = () => {
-    setShowRegistration(false);
-    setEmail("");
+    setLoading(true);
+    // TODO: Implement authentication logic
+    setTimeout(() => {
+      setLoading(false);
+      console.log('Login attempt with:', email);
+    }, 1000);
   };
 
   return (
@@ -60,96 +47,49 @@ const Auth = () => {
         </div>
 
         {/* Login Form */}
-        {!showRegistration && (
-          <Card className="card-luxury">
-            <CardHeader className="pb-4">
-              <CardTitle className="text-center text-xl font-serif font-medium text-foreground">
-                Sign In
-              </CardTitle>
-            </CardHeader>
-            
-            <CardContent className="pb-6">
-              <form onSubmit={handleLogin} className="space-y-4">
-                <div>
-                  <Label htmlFor="email" className="text-foreground/70 text-sm">
-                    Email or Phone Number
-                  </Label>
-                  <div className="relative mt-1">
-                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      id="email"
-                      type="text"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10"
-                      placeholder="Enter your email or phone"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {error && (
-                  <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
-                    <p className="text-red-600 dark:text-red-400 text-sm">{error}</p>
-                  </div>
-                )}
-
-                <Button 
-                  type="submit" 
-                  className="w-full btn-luxury"
-                  disabled={loading || !email.trim()}
-                >
-                  {loading ? "Signing in..." : "Sign In"}
-                </Button>
-              </form>
-
-              <div className="mt-6 space-y-4">
-                <div className="relative">
-                  <div className="absolute inset-0 flex items-center">
-                    <span className="w-full border-t border-border" />
-                  </div>
-                  <div className="relative flex justify-center text-xs uppercase">
-                    <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
-                  </div>
-                </div>
-                
-                <Button 
-                  onClick={loginWithOAuth}
-                  variant="outline" 
-                  className="w-full"
-                >
-                  Sign in with Mindbody OAuth
-                </Button>
-                
-                {/* Version indicator for debugging */}
-                <div className="text-xs text-muted-foreground text-center opacity-50">
-                  v3.0 - Build: {Date.now()}
-                </div>
-                
-                <div className="text-center">
-                  <p className="text-sm text-foreground/70">
-                    Don't have an account?{" "}
-                    <button
-                      type="button"
-                      onClick={() => setShowRegistration(true)}
-                      className="text-primary hover:text-primary/80 font-medium"
-                    >
-                      Create one here
-                    </button>
-                  </p>
+        <Card className="card-luxury">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-center text-xl font-serif font-medium text-foreground">
+              Sign In
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="pb-6">
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <Label htmlFor="email" className="text-foreground/70 text-sm">
+                  Email Address
+                </Label>
+                <div className="relative mt-1">
+                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-10"
+                    placeholder="Enter your email"
+                    required
+                  />
                 </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
 
-        {/* Registration Form */}
-        {showRegistration && (
-          <ClientRegistration 
-            onClose={handleRegistrationClose}
-            initialEmail={email}
-          />
-        )}
+              <Button 
+                type="submit" 
+                className="w-full btn-luxury"
+                disabled={loading || !email.trim()}
+              >
+                {loading ? "Signing in..." : "Sign In"}
+              </Button>
+            </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-foreground/70">
+                Authentication system ready for integration
+              </p>
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Info Section */}
         <div className="mt-8 text-center">
