@@ -129,9 +129,12 @@ export const useMindbodyAuth = () => {
       const result = await createClient(clientData);
       
       if (result.success && result.data) {
-        setClient(result.data);
+        const { client, staffToken } = result.data;
+        
+        setClient(client);
         setIsAuthenticated(true);
-        localStorage.setItem('mindbody_client', JSON.stringify(result.data));
+        localStorage.setItem('mindbody_client', JSON.stringify(client));
+        localStorage.setItem('mindbody_staff_token', staffToken);
         
         // Load initial data
         await refreshData();

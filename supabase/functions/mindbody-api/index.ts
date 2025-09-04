@@ -51,18 +51,15 @@ serve(async (req) => {
     let result;
 
     switch (action) {
-    case 'authenticate':
-      result = await authenticateUser(data.username, data.password);
+    case 'authenticateStaff':
+      result = await authenticateStaff();
+      break;
+    case 'lookupClient':
+      result = await lookupClient(data.emailOrPhone);
       break;
     case 'validateClient':
-      result = await validateClient(data.email || data.emailOrPhone, data.clientId);
+      result = await validateClient(data.emailOrPhone, data.clientId);
       break;
-      case 'getOAuthUrl':
-        result = await getOAuthUrl(data.redirectUri);
-        break;
-      case 'exchangeOAuthCode':
-        result = await exchangeOAuthCode(data.code, data.redirectUri);
-        break;
       case 'getClient':
         result = await getClientInfo(data.clientId, data.token);
         break;
@@ -132,111 +129,120 @@ async function makeMindbodyRequest(endpoint: string, options: any = {}) {
   return response.json();
 }
 
-// Authentication functions - V6 API uses API key + optional staff tokens
-async function authenticateUser(username: string, password: string) {
-  console.log('Generating staff token for user:', username);
-  
+// Staff authentication - get a persistent staff token for API operations
+let staffToken: string | null = null;
+let staffTokenExpiry: number = 0;
+
+async function authenticateStaff() {
   try {
+    // Check if we have a valid cached token
+    if (staffToken && Date.now() < staffTokenExpiry) {
+      return {
+        success: true,
+        token: staffToken,
+        cached: true
+      };
+    }
+
+    console.log('Authenticating staff user...');
+    
+    // Use staff credentials from environment
+    const staffUsername = Deno.env.get('MINDBODY_STAFF_USERNAME');
+    const staffPassword = Deno.env.get('MINDBODY_STAFF_PASSWORD');
+    
+    if (!staffUsername || !staffPassword) {
+      return {
+        success: false,
+        error: 'Staff credentials not configured'
+      };
+    }
+
     const response = await makeMindbodyRequest('/usertoken/issue', {
       method: 'POST',
       body: JSON.stringify({
-        Username: username,
-        Password: password
-      })
+        Username: staffUsername,
+        Password: staffPassword,
+      }),
     });
 
-    console.log('Staff token response:', response);
-    
-    if (response && response.AccessToken) {
+    if (response.AccessToken) {
+      // Cache the token for 23 hours (Mindbody tokens typically last 24h)
+      staffToken = response.AccessToken;
+      staffTokenExpiry = Date.now() + (23 * 60 * 60 * 1000);
+      
       return {
         success: true,
         token: response.AccessToken,
         data: response
       };
-    } else {
-      console.error('No access token in response:', response);
-      return {
-        success: false,
-        error: 'No access token received'
-      };
     }
-  } catch (error) {
-    console.error('Staff token error details:', error);
+
     return {
       success: false,
-      error: error.message || 'Staff authentication failed'
+      error: 'Staff authentication failed'
+    };
+  } catch (error) {
+    console.error('Error in authenticateStaff:', error);
+    return {
+      success: false,
+      error: 'Staff authentication failed'
     };
   }
 }
 
-// Client login - V6 API doesn't support direct client authentication
-// Instead, we validate client exists and return client data
-async function validateClient(emailOrPhone: string, clientId?: string) {
-  console.log('Validating client:', emailOrPhone, clientId);
-  
+async function lookupClient(emailOrPhone: string) {
   try {
-    let client = null;
-    
-    if (clientId) {
-      // Try to get client by ID
-      const response = await makeMindbodyRequest(`/client/clients/${clientId}`);
-      if (response && response.Client) {
-        client = response.Client;
-      }
-    } else {
-      // Build search URL with query parameters
-      const searchParams = new URLSearchParams({
-        SearchText: emailOrPhone,
-        CrossRegionalLookup: 'true'
-      });
-      
-      // Search for client by email/phone using query parameters
-      const response = await makeMindbodyRequest(`/client/clients?${searchParams.toString()}`, {
-        method: 'GET'
-      });
-      
-      console.log('Client search response:', response);
-      
-      if (response && response.Clients && response.Clients.length > 0) {
-        // Check if input is email or phone and find match accordingly
-        const isEmail = emailOrPhone.includes('@');
-        if (isEmail) {
-          client = response.Clients.find(c => c.Email?.toLowerCase() === emailOrPhone.toLowerCase());
-        } else {
-          // For phone, check various phone fields
-          client = response.Clients.find(c => 
-            c.MobilePhone === emailOrPhone || 
-            c.HomePhone === emailOrPhone ||
-            c.WorkPhone === emailOrPhone
-          );
-        }
-        
-        // If no exact match found, use first client
-        if (!client && response.Clients.length > 0) {
-          client = response.Clients[0];
-        }
-      }
+    // Ensure we have a valid staff token
+    const staffAuth = await authenticateStaff();
+    if (!staffAuth.success) {
+      return staffAuth;
     }
+
+    console.log('Looking up client by email/phone:', emailOrPhone);
     
-    if (client) {
+    // Search for client by email or phone using staff token
+    const searchParams = new URLSearchParams({
+      SearchText: emailOrPhone
+    });
+    
+    const response = await makeMindbodyRequest(`/client/clients?${searchParams}`, {
+      method: 'GET',
+      headers: {
+        'Authorization': staffAuth.token
+      }
+    });
+
+    if (response.Clients && response.Clients.length > 0) {
+      // Return the first matching client with staff token for booking operations
+      const client = response.Clients[0];
       return {
         success: true,
-        client: client,
-        data: { client }
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Client not found'
+        data: {
+          client: client,
+          staffToken: staffAuth.token
+        },
+        found: true
       };
     }
+
+    return {
+      success: true,
+      data: null,
+      found: false,
+      message: 'Client not found - would you like to create a new account?'
+    };
   } catch (error) {
-    console.error('Client validation error:', error);
+    console.error('Error in lookupClient:', error);
     return {
       success: false,
-      error: error.message || 'Client validation failed'
+      error: 'Failed to lookup client'
     };
   }
+}
+
+// Legacy client validation function - redirect to lookupClient
+async function validateClient(emailOrPhone: string, clientId?: string) {
+  return await lookupClient(emailOrPhone);
 }
 
 // Client management functions
@@ -267,8 +273,17 @@ async function getClientInfo(clientId: string, token: string) {
 
 async function createClient(clientData: any) {
   try {
+    // Ensure we have a valid staff token
+    const staffAuth = await authenticateStaff();
+    if (!staffAuth.success) {
+      return staffAuth;
+    }
+
     const data = await makeMindbodyRequest('/client/addclient', {
       method: 'POST',
+      headers: {
+        'Authorization': staffAuth.token
+      },
       body: JSON.stringify({
         ...clientData,
         SendAccountEmails: true,
@@ -280,7 +295,10 @@ async function createClient(clientData: any) {
 
     return {
       success: true,
-      data: data.Client,
+      data: {
+        client: data.Client,
+        staffToken: staffAuth.token
+      }
     };
   } catch (error) {
     console.error('Error creating client:', error);
@@ -294,9 +312,18 @@ async function createClient(clientData: any) {
 // Service and class functions
 async function getServices(token?: string) {
   try {
+    // Use staff token if no token provided
+    let authToken = token;
+    if (!authToken) {
+      const staffAuth = await authenticateStaff();
+      if (staffAuth.success) {
+        authToken = staffAuth.token;
+      }
+    }
+    
     const headers: any = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (authToken) {
+      headers['Authorization'] = authToken;
     }
 
     const data = await makeMindbodyRequest('/sale/services', {
@@ -319,9 +346,18 @@ async function getServices(token?: string) {
 
 async function getClasses(startDate: string, endDate: string, token?: string) {
   try {
+    // Use staff token if no token provided
+    let authToken = token;
+    if (!authToken) {
+      const staffAuth = await authenticateStaff();
+      if (staffAuth.success) {
+        authToken = staffAuth.token;
+      }
+    }
+    
     const headers: any = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (authToken) {
+      headers['Authorization'] = authToken;
     }
 
     // Use query parameters for GET request
@@ -467,97 +503,4 @@ async function cancelAppointment(appointmentId: number, notes: string = '', toke
   }
 }
 
-// OAuth functions
-async function getOAuthUrl(redirectUri: string) {
-  try {
-    if (!MINDBODY_CLIENT_ID) {
-      throw new Error('Mindbody Client ID not configured');
-    }
-
-    console.log('Building OAuth URL with:', {
-      clientId: MINDBODY_CLIENT_ID,
-      redirectUri: redirectUri
-    });
-
-    // Use the correct Mindbody OAuth 2.0 authorization URL
-    const baseAuthUrl = 'https://auth.mindbodyonline.com/issue/oauth2/authorize';
-    const scope = 'read'; // Basic read scope for client data
-    
-    // Mindbody OAuth 2.0 authorization URL
-    const authUrl = `${baseAuthUrl}?response_type=code&client_id=${encodeURIComponent(MINDBODY_CLIENT_ID)}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=${encodeURIComponent(scope)}&state=${Date.now()}`;
-
-    console.log('Generated OAuth URL:', authUrl);
-
-    return {
-      success: true,
-      url: authUrl,
-      data: {
-        authUrl: authUrl,
-      },
-    };
-  } catch (error) {
-    console.error('Error generating OAuth URL:', error);
-    return {
-      success: false,
-      error: 'Failed to generate OAuth URL',
-    };
-  }
-}
-
-async function exchangeOAuthCode(code: string, redirectUri: string) {
-  try {
-    if (!MINDBODY_CLIENT_ID || !MINDBODY_CLIENT_SECRET) {
-      throw new Error('Mindbody OAuth credentials not configured');
-    }
-
-    console.log('Exchanging OAuth code for token...');
-
-    const response = await fetch('https://auth.mindbodyonline.com/issue/oauth2/token', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams({
-        grant_type: 'authorization_code',
-        client_id: MINDBODY_CLIENT_ID,
-        client_secret: MINDBODY_CLIENT_SECRET,
-        code: code,
-        redirect_uri: redirectUri,
-      }),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error('OAuth token exchange error:', response.status, errorText);
-      throw new Error(`OAuth token exchange failed: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('OAuth token exchange successful');
-
-    // Get client info using the access token
-    let clientData = null;
-    try {
-      const clientResponse = await makeMindbodyRequest('sale/clients', {
-        headers: {
-          'Authorization': `Bearer ${data.access_token}`,
-        },
-      });
-      clientData = clientResponse.Clients?.[0] || null;
-    } catch (err) {
-      console.log('Could not fetch client data with token:', err);
-    }
-
-    return {
-      success: true,
-      data: clientData,
-      token: data.access_token,
-    };
-  } catch (error) {
-    console.error('Error exchanging OAuth code:', error);
-    return {
-      success: false,
-      error: 'Failed to exchange OAuth code',
-    };
-  }
-}
+// Note: OAuth functionality removed in favor of staff token + client lookup approach

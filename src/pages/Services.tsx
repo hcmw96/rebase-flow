@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { useMindbody } from "@/hooks/useMindbody";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Input } from "@/components/ui/input";
+import ClientRegistration from "@/components/ClientRegistration";
 
 // Types for the UI data structures
 interface ServiceItem {
@@ -61,6 +62,7 @@ const Services = () => {
   const { services: mindbodyServices, classes: mindbodyClasses, loading, error, refreshData, isAuthenticated, loginWithEmail } = useMindbody();
   const [loginEmail, setLoginEmail] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  const [showRegistration, setShowRegistration] = useState(false);
 
   const categories = ["All", "Classes", "Services", "Appointments"];
 
@@ -78,6 +80,10 @@ const Services = () => {
     } finally {
       setIsLoggingIn(false);
     }
+  };
+
+  const handleCreateAccount = () => {
+    setShowRegistration(true);
   };
 
   // Fallback static services for when Mindbody is unavailable
@@ -235,7 +241,7 @@ const Services = () => {
         
         <div className="pt-20">
         
-        {!isAuthenticated && !loading && (
+        {!isAuthenticated && !loading && !showRegistration && (
           <section className="px-4 sm:px-6 lg:px-8 mb-8">
             <div className="max-w-7xl mx-auto">
               <Alert className="glass-card border-blue-500/50">
@@ -263,8 +269,31 @@ const Services = () => {
                       </Button>
                     </div>
                   </div>
+                  <div className="mt-3 pt-3 border-t border-white/10">
+                    <p className="text-white/60 text-sm mb-2">Don't have a Mindbody account?</p>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      onClick={handleCreateAccount}
+                      className="text-green-400 hover:bg-green-500/20"
+                    >
+                      Create New Account
+                    </Button>
+                  </div>
                 </AlertDescription>
               </Alert>
+            </div>
+          </section>
+        )}
+
+        {/* Client Registration Form */}
+        {showRegistration && (
+          <section className="px-4 sm:px-6 lg:px-8 mb-8">
+            <div className="max-w-md mx-auto">
+              <ClientRegistration 
+                onClose={() => setShowRegistration(false)}
+                initialEmail={loginEmail}
+              />
             </div>
           </section>
         )}

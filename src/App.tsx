@@ -12,7 +12,7 @@ import Contact from "./pages/Contact";
 import Book from "./pages/Book";
 import BookService from "./pages/BookService";
 import NotFound from "./pages/NotFound";
-import { MindbodyOAuthCallback } from "./pages/MindbodyOAuthCallback";
+
 
 const queryClient = new QueryClient();
 
@@ -30,7 +30,7 @@ const App = () => (
             <Route path="/contact" element={<Contact />} />
             <Route path="/book" element={<Book />} />
             <Route path="/book/:serviceId" element={<BookService />} />
-            <Route path="/oauth/mindbody/callback" element={<MindbodyOAuthCallback />} />
+            
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
