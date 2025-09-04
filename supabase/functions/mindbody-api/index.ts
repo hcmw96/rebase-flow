@@ -15,6 +15,7 @@ const MINDBODY_CLIENT_SECRET = Deno.env.get('MINDBODY_CLIENT_SECRET');
 // Comprehensive debug logging  
 console.log('=== ENVIRONMENT VARIABLE DEBUG ===');
 console.log('Force refresh at:', new Date().toISOString());
+console.log('Deployment version: v3.1 - Secret updated');
 console.log('All available env vars:', Object.keys(Deno.env.toObject()).sort());
 console.log('Raw values:', {
   MINDBODY_API_KEY: MINDBODY_API_KEY,
