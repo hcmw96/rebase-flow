@@ -106,14 +106,13 @@ export const getOAuthAuthorizationUrl = async (redirectUri: string) => {
   console.log('🔧 Redirect URI:', redirectUri);
   
   try {
-    // TEMPORARY: Use a placeholder client ID to test the OAuth flow
-    // You'll need to replace 'YOUR_ACTUAL_CLIENT_ID' with your real Mindbody OAuth Client ID
-    const clientId = 'YOUR_ACTUAL_CLIENT_ID'; // Replace this with your actual client ID
+    // TEMPORARY: Use the actual client ID to test the OAuth flow
+    const clientId = 'f660fd3e-a0d6-4f66-878c-871c9860e565'; // Your actual Mindbody OAuth Client ID
     
-    console.log('🔧 Using hardcoded client ID for testing');
+    console.log('🔧 Using actual client ID for testing');
     
-    if (!clientId || clientId === 'YOUR_ACTUAL_CLIENT_ID') {
-      throw new Error('Please replace YOUR_ACTUAL_CLIENT_ID with your actual Mindbody OAuth Client ID in the code');
+    if (!clientId) {
+      throw new Error('Client ID is missing');
     }
     
     const params = new URLSearchParams({
