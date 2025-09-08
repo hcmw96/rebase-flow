@@ -1,126 +1,210 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
+import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
-import { Card, CardContent } from "@/components/ui/card";
-import { Sparkles } from "lucide-react";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
-
-interface ServiceItem {
-  id: number;
-  title: string;
-  description: string;
-  duration: string;
-  price: number;
-  benefits: string[];
-}
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { X, ChevronLeft } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { format } from "date-fns";
 
 const Services = () => {
-  const navigate = useNavigate();
-  
-  const services: ServiceItem[] = [
+  const [activeCategory, setActiveCategory] = useState("All");
+  const [openBookingId, setOpenBookingId] = useState<number | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedTime, setSelectedTime] = useState<string>("");
+  const [bookingStep, setBookingStep] = useState(1);
+
+  const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
+
+  const services = [
+    // Classes
     {
       id: 1,
-      title: "ICE BATHS",
-      description: "Therapeutic cold water immersion for enhanced recovery and mental resilience",
-      duration: "3-5 minutes",
-      price: 35,
-      benefits: ["Reduced inflammation", "Enhanced recovery", "Improved circulation", "Mental resilience"]
+      title: "Contrast Therapy",
+      category: "Classes", 
+      duration: "60 minutes",
+      price: 40
     },
     {
       id: 2,
-      title: "YOGA",
-      description: "Mindful movement and breath work for flexibility and inner balance",
-      duration: "60 minutes",
-      price: 25,
-      benefits: ["Increased flexibility", "Stress reduction", "Mind-body connection", "Enhanced strength"]
+      title: "Breathwork",
+      category: "Classes",
+      duration: "60 minutes", 
+      price: 40
     },
     {
       id: 3,
-      title: "TRADITIONAL SAUNAS",
-      description: "Classic dry heat therapy for deep relaxation and detoxification",
-      duration: "20-30 minutes",
-      price: 30,
-      benefits: ["Deep detoxification", "Muscle relaxation", "Improved cardiovascular health", "Stress relief"]
+      title: "Yoga",
+      category: "Classes",
+      duration: "60 minutes",
+      price: 40
     },
+
+    // Suites
     {
       id: 4,
-      title: "HYPERBARIC OXYGEN",
-      description: "Pressurized oxygen therapy for enhanced healing and performance",
-      duration: "60-90 minutes",
-      price: 75,
-      benefits: ["Enhanced healing", "Increased oxygen levels", "Improved cognitive function", "Anti-aging benefits"]
+      title: "Members Contrast Suite Drop In",
+      category: "Suites",
+      duration: "60 minutes",
+      price: 65
     },
     {
       id: 5,
-      title: "INFRARED SAUNAS",
-      description: "Gentle heat therapy using infrared technology for deep tissue warming",
-      duration: "30-40 minutes",
-      price: 35,
-      benefits: ["Deep tissue warming", "Pain relief", "Improved circulation", "Skin health"]
+      title: "Premium Suite",
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 240 },
+        { duration: "90 minutes", price: 420 }
+      ]
     },
     {
       id: 6,
-      title: "CRYOTHERAPY",
-      description: "Whole body cooling therapy for rapid recovery and rejuvenation",
-      duration: "2-3 minutes",
-      price: 40,
-      benefits: ["Rapid recovery", "Increased energy", "Reduced muscle soreness", "Boosted metabolism"]
+      title: "Infrared Suite", 
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 190 },
+        { duration: "90 minutes", price: 330 }
+      ]
     },
+
+    // Tech Therapies
     {
       id: 7,
-      title: "CONTRAST CLASSES",
-      description: "Alternating hot and cold therapy sessions in guided group settings",
-      duration: "45 minutes",
-      price: 45,
-      benefits: ["Enhanced circulation", "Community support", "Guided instruction", "Optimal timing"]
+      title: "Cryotherapy",
+      category: "Tech Therapies",
+      variants: [
+        { duration: "3 minutes", price: 50, description: "Single session" },
+        { duration: "10 sessions", price: 400, description: "Pack of 10" }
+      ]
     },
     {
       id: 8,
-      title: "VITAMIN INFUSIONS",
-      description: "Customized IV vitamin therapy for optimal nutrient absorption",
-      duration: "30-45 minutes",
-      price: 85,
-      benefits: ["Direct nutrient delivery", "Enhanced immunity", "Increased energy", "Customized formulations"]
+      title: "HBOT (Hyperbaric Oxygen Therapy)",
+      category: "Tech Therapies", 
+      variants: [
+        { duration: "60 minutes", price: 200, description: "Single session" },
+        { duration: "5 sessions", price: 800, description: "Pack of 5" },
+        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
+      ]
     },
+
+    // Massage Therapies
     {
       id: 9,
-      title: "CONTRAST SUITES",
-      description: "Private hot and cold therapy suites for personalized contrast therapy",
-      duration: "30-60 minutes",
-      price: 65,
-      benefits: ["Private setting", "Flexible timing", "Personalized experience", "Enhanced privacy"]
+      title: "Total Body Realignment",
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 195,
+      fromPrice: true
     },
     {
       id: 10,
-      title: "LYMPHATIC DRAINAGE",
-      description: "Gentle massage therapy to promote lymphatic system function",
-      duration: "60 minutes",
-      price: 80,
-      benefits: ["Detoxification support", "Reduced swelling", "Improved immunity", "Relaxation"]
+      title: "Sports Massage", 
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
     },
     {
       id: 11,
-      title: "BREATHWORK",
-      description: "Guided breathing techniques for stress reduction and mental clarity",
-      duration: "45-60 minutes",
-      price: 30,
-      benefits: ["Stress reduction", "Mental clarity", "Emotional balance", "Increased focus"]
+      title: "Lymphatic Drainage",
+      category: "Massage Therapies", 
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
     },
     {
       id: 12,
-      title: "RECOVERY SPECIALISTS",
-      description: "One-on-one consultation with certified recovery specialists",
-      duration: "30-60 minutes",
-      price: 95,
-      benefits: ["Personalized guidance", "Expert assessment", "Customized protocols", "Ongoing support"]
+      title: "Deep Tissue",
+      category: "Massage Therapies",
+      duration: "60-90 minutes", 
+      price: 185,
+      fromPrice: true
+    },
+
+    // Manual Therapies
+    {
+      id: 13,
+      title: "Osteopathy Consultation",
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 210
+    },
+    {
+      id: 14,
+      title: "Structural Fascia Therapy", 
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 200
+    },
+
+    // Other Services
+    {
+      id: 15,
+      title: "IV Drip",
+      category: "Other Services",
+      duration: "45-60 minutes",
+      price: 350,
+      fromPrice: true
+    },
+    {
+      id: 16,
+      title: "Vitamin Infusions",
+      category: "Other Services", 
+      duration: "30 minutes",
+      price: 80
     }
   ];
+
+  const filteredServices = activeCategory === "All" 
+    ? services 
+    : services.filter(service => service.category === activeCategory);
+
+  const handleBookNow = (serviceId: number) => {
+    setOpenBookingId(serviceId);
+    setBookingStep(1);
+    setSelectedDate(undefined);
+    setSelectedTime("");
+  };
+
+  const closeBooking = () => {
+    setOpenBookingId(null);
+    setBookingStep(1);
+    setSelectedDate(undefined);
+    setSelectedTime("");
+  };
+
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (date) setBookingStep(2);
+  };
+
+
+  const handleBackStep = () => {
+    if (bookingStep > 1) {
+      setBookingStep(bookingStep - 1);
+    }
+  };
+
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
+    setBookingStep(3);
+  };
+
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour <= 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        slots.push(time);
+      }
+    }
+    return slots;
+  };
 
   return (
     <div 
@@ -136,110 +220,131 @@ const Services = () => {
         <Navigation />
         
         <div className="pt-20">
-          {/* Hero Section */}
-          <section className="px-4 sm:px-6 lg:px-8 mb-16">
-            <div className="max-w-4xl mx-auto text-center">
-              <h1 className="text-4xl md:text-5xl font-serif font-light text-white mb-6">
-                Our <span className="text-primary">Services</span>
-              </h1>
-              <p className="text-lg text-white/70 max-w-2xl mx-auto">
-                Discover our comprehensive range of wellness and recovery services, 
-                designed to optimize your health and performance.
-              </p>
-            </div>
-          </section>
 
-          {/* Services Accordion */}
-          <section className="px-4 sm:px-6 lg:px-8 pb-20">
-            <div className="max-w-6xl mx-auto">
-              <div className="grid md:grid-cols-2 gap-8">
-                {/* Left Column */}
-                <div className="space-y-4">
-                  <Accordion type="single" collapsible className="space-y-4">
-                    {services.slice(0, 6).map((service) => (
-                      <AccordionItem key={service.id} value={`service-${service.id}`} className="glass-card border-white/10 rounded-xl px-6">
-                        <AccordionTrigger className="text-left hover:no-underline py-6">
-                          <div className="flex justify-between items-center w-full">
-                            <span className="text-lg font-light text-white tracking-wide">
-                              {service.title}
-                            </span>
+        {/* Category Filter */}
+        <section className="px-4 sm:px-6 lg:px-8 mb-12">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex flex-wrap justify-center gap-3">
+              {categories.map((category) => (
+                <Button
+                  key={category}
+                  variant={activeCategory === category ? "default" : "outline"}
+                  onClick={() => setActiveCategory(category)}
+                  className={cn(
+                    "transition-all duration-300 rounded-xl",
+                    activeCategory === category 
+                      ? "glass-button text-white" 
+                      : "glass-button text-white/70 hover:text-white border-white/20"
+                  )}
+                >
+                  {category}
+                </Button>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Services Grid */}
+        <section className="px-4 sm:px-6 lg:px-8 pb-20">
+          <div className="max-w-7xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredServices.map((service) => (
+                <div key={service.id} className="space-y-4">
+                   <ServiceCard 
+                     id={service.id}
+                     title={service.title}
+                     category={service.category}
+                     className="animate-fade-in"
+                     service={{
+                       duration: service.duration,
+                       price: service.price,
+                       fromPrice: service.fromPrice,
+                       variants: service.variants
+                     }}
+                   />
+                  
+                  {openBookingId === service.id && (
+                    <Card className="glass-card rounded-3xl border-white/10 animate-in slide-in-from-top-2 duration-300">
+                      <CardHeader className="pb-4">
+                        <div className="flex items-center justify-between">
+                          {bookingStep > 1 && (
+                            <Button variant="ghost" size="icon" onClick={handleBackStep} className="h-8 w-8 glass-button text-white border-white/20">
+                              <ChevronLeft className="h-4 w-4" />
+                            </Button>
+                          )}
+                          <CardTitle className="text-center font-serif flex-1 text-white">
+                            {bookingStep === 1 && "Choose Date"}
+                            {bookingStep === 2 && "Select Time"}
+                            {bookingStep === 3 && "Confirm Booking"}
+                          </CardTitle>
+                          <Button variant="ghost" size="icon" onClick={closeBooking} className="h-8 w-8 glass-button text-white border-white/20">
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </CardHeader>
+                      
+                      <CardContent className="pb-6">
+                        {bookingStep === 1 && (
+                          <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-4">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={handleDateSelect}
+                              disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                              initialFocus
+                              className="rounded-xl border-0 shadow-none p-0 w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70"
+                            />
                           </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="pb-6">
-                          <div className="space-y-4">
-                            <p className="text-white/70 leading-relaxed">
-                              {service.description}
-                            </p>
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="text-white/60">{service.duration}</span>
-                              <span className="text-white font-medium">£{service.price}</span>
+                        )}
+                        
+                        {bookingStep === 2 && (
+                          <div className="max-w-sm mx-auto space-y-4 glass-morphism rounded-2xl p-4">
+                            <div className="text-center text-sm text-white/70 mb-6">
+                              {selectedDate && format(selectedDate, "EEEE, MMMM d")}
                             </div>
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-white">Benefits:</h4>
-                              <div className="grid grid-cols-2 gap-1 text-xs text-white/60">
-                                {service.benefits.map((benefit, index) => (
-                                  <span key={index}>• {benefit}</span>
-                                ))}
+                            <div className="grid grid-cols-3 gap-3">
+                              {generateTimeSlots().map((time) => (
+                                <Button
+                                  key={time}
+                                  variant="outline"
+                                  className={`h-12 text-sm transition-all rounded-xl ${
+                                    selectedTime === time 
+                                      ? 'glass-button text-white border-white/30 bg-white/20' 
+                                      : 'glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10'
+                                  }`}
+                                  onClick={() => handleTimeSelect(time)}
+                                >
+                                  {time}
+                                </Button>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        {bookingStep === 3 && (
+                          <div className="max-w-sm mx-auto space-y-6 glass-morphism rounded-2xl p-4">
+                            <div className="text-center">
+                              <h3 className="font-serif text-lg font-medium mb-2 text-white">
+                                {service.title}
+                              </h3>
+                              <div className="space-y-2 text-sm text-white/70">
+                                <div>{selectedDate && format(selectedDate, "MMM d, yyyy")} at {selectedTime}</div>
+                                <div>{service.duration} • £{service.price}</div>
                               </div>
                             </div>
-                            <Button 
-                              className="w-full mt-4 glass-button text-white"
-                              onClick={() => navigate(`/book/${service.id}`)}
-                            >
-                              Book Now
+                            <Button className="w-full glass-button text-white rounded-xl font-medium">
+                              Complete Booking
                             </Button>
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
+                        )}
+                      </CardContent>
+                    </Card>
+                  )}
                 </div>
-
-                {/* Right Column */}
-                <div className="space-y-4">
-                  <Accordion type="single" collapsible className="space-y-4">
-                    {services.slice(6, 12).map((service) => (
-                      <AccordionItem key={service.id} value={`service-${service.id}`} className="glass-card border-white/10 rounded-xl px-6">
-                        <AccordionTrigger className="text-left hover:no-underline py-6">
-                          <div className="flex justify-between items-center w-full">
-                            <span className="text-lg font-light text-white tracking-wide">
-                              {service.title}
-                            </span>
-                          </div>
-                        </AccordionTrigger>
-                        <AccordionContent className="pb-6">
-                          <div className="space-y-4">
-                            <p className="text-white/70 leading-relaxed">
-                              {service.description}
-                            </p>
-                            <div className="flex justify-between items-center text-sm">
-                              <span className="text-white/60">{service.duration}</span>
-                              <span className="text-white font-medium">£{service.price}</span>
-                            </div>
-                            <div className="space-y-2">
-                              <h4 className="text-sm font-medium text-white">Benefits:</h4>
-                              <div className="grid grid-cols-2 gap-1 text-xs text-white/60">
-                                {service.benefits.map((benefit, index) => (
-                                  <span key={index}>• {benefit}</span>
-                                ))}
-                              </div>
-                            </div>
-                            <Button 
-                              className="w-full mt-4 glass-button text-white"
-                              onClick={() => navigate(`/book/${service.id}`)}
-                            >
-                              Book Now
-                            </Button>
-                          </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    ))}
-                  </Accordion>
-                </div>
-              </div>
+              ))}
             </div>
-          </section>
-
+          </div>
+        </section>
         </div>
 
         <Footer />
