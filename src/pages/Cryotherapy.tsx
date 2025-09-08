@@ -21,7 +21,7 @@ const Cryotherapy = () => {
     title: 'Whole Body Cryotherapy',
     category: 'Recovery',
     duration: 3,
-    price: 45,
+    price: 50,
     description: 'Experience the transformative power of cold therapy. Boost recovery, reduce inflammation, and enhance your wellbeing in our state-of-the-art cryotherapy chambers.',
   };
 
