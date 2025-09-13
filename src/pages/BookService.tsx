@@ -18,55 +18,163 @@ const BookService = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
 
-  // Service data from Services page
+  // Complete service data matching Services page
   const services = [
+    // Classes
     {
       id: 1,
-      title: "Ice Bath",
-      category: "Recovery",
-      duration: "15 minutes",
-      price: 25,
-      description: "Invigorating cold water immersion therapy to reduce inflammation and boost recovery"
+      title: "Contrast Therapy",
+      category: "Classes", 
+      duration: "60 minutes",
+      price: 40,
+      description: "Guided hot and cold therapy session combining sauna and ice bath for optimal recovery"
     },
     {
       id: 2,
-      title: "Traditional Sauna",
-      category: "Recovery", 
-      duration: "30 minutes",
-      price: 35,
-      description: "Authentic Finnish sauna experience for deep relaxation and detoxification"
+      title: "Breathwork",
+      category: "Classes",
+      duration: "60 minutes", 
+      price: 40,
+      description: "Mindful breathing techniques to enhance relaxation and mental clarity"
     },
     {
       id: 3,
-      title: "Infrared Sauna",
-      category: "Recovery",
-      duration: "30 minutes", 
+      title: "Yoga",
+      category: "Classes",
+      duration: "60 minutes",
       price: 40,
-      description: "Gentle infrared heat therapy for muscle relaxation and improved circulation"
+      description: "Restorative yoga sessions designed to complement your wellness journey"
     },
+
+    // Suites
     {
       id: 4,
-      title: "Contrast Class",
-      category: "Movement",
+      title: "Members Contrast Suite Drop In",
+      category: "Suites",
       duration: "60 minutes",
-      price: 45,
-      description: "Guided hot and cold therapy session combining sauna and ice bath"
+      price: 65,
+      description: "Drop-in access to our premium contrast therapy suite for members"
     },
     {
       id: 5,
-      title: "Private Contrast Suite",
-      category: "Recovery",
-      duration: "90 minutes",
-      price: 120,
-      description: "Exclusive private access to our premium contrast therapy facilities"
+      title: "Premium Suite",
+      category: "Suites",
+      duration: "45-90 minutes",
+      price: 240,
+      description: "Exclusive access to our luxury wellness suite with premium amenities",
+      variants: [
+        { duration: "45 minutes", price: 240 },
+        { duration: "90 minutes", price: 420 }
+      ]
+    },
+    {
+      id: 6,
+      title: "Infrared Suite", 
+      category: "Suites",
+      duration: "45-90 minutes",
+      price: 190,
+      description: "Private infrared sauna suite for deep relaxation and detoxification",
+      variants: [
+        { duration: "45 minutes", price: 190 },
+        { duration: "90 minutes", price: 330 }
+      ]
+    },
+
+    // Tech Therapies
+    {
+      id: 7,
+      title: "Cryotherapy",
+      category: "Tech Therapies",
+      duration: "3 minutes",
+      price: 50,
+      description: "Advanced whole-body cryotherapy for rapid recovery and inflammation reduction",
+      variants: [
+        { duration: "3 minutes", price: 50, description: "Single session" },
+        { duration: "10 sessions", price: 400, description: "Pack of 10" }
+      ]
+    },
+    {
+      id: 8,
+      title: "HBOT (Hyperbaric Oxygen Therapy)",
+      category: "Tech Therapies", 
+      duration: "60 minutes",
+      price: 200,
+      description: "Advanced oxygen therapy to enhance healing and cellular regeneration",
+      variants: [
+        { duration: "60 minutes", price: 200, description: "Single session" },
+        { duration: "5 sessions", price: 800, description: "Pack of 5" },
+        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
+      ]
+    },
+
+    // Massage Therapies
+    {
+      id: 9,
+      title: "Total Body Realignment",
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 195,
+      description: "Comprehensive bodywork to restore balance and alignment throughout your body"
+    },
+    {
+      id: 10,
+      title: "Sports Massage", 
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 185,
+      description: "Targeted massage therapy for athletes and active individuals"
+    },
+    {
+      id: 11,
+      title: "Lymphatic Drainage",
+      category: "Massage Therapies", 
+      duration: "60-90 minutes",
+      price: 185,
+      description: "Gentle massage to stimulate lymphatic flow and reduce swelling"
     },
     {
       id: 12,
-      title: "Recovery Specialist",
-      category: "Therapy",
-      duration: "30 minutes", 
-      price: 65,
-      description: "One-on-one session with our certified recovery specialists"
+      title: "Deep Tissue",
+      category: "Massage Therapies",
+      duration: "60-90 minutes", 
+      price: 185,
+      description: "Intensive massage targeting deep muscle layers for chronic tension relief"
+    },
+
+    // Manual Therapies
+    {
+      id: 13,
+      title: "Osteopathy Consultation",
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 210,
+      description: "Comprehensive assessment and treatment by qualified osteopathic practitioners"
+    },
+    {
+      id: 14,
+      title: "Structural Fascia Therapy", 
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 200,
+      description: "Specialized therapy targeting fascial restrictions and structural imbalances"
+    },
+
+    // Other Services
+    {
+      id: 15,
+      title: "IV Drip",
+      category: "Other Services",
+      duration: "45-60 minutes",
+      price: 350,
+      description: "Customized intravenous nutrient therapy for optimal wellness and recovery"
+    },
+    {
+      id: 16,
+      title: "Vitamin Infusions",
+      category: "Other Services", 
+      duration: "30 minutes",
+      price: 80,
+      description: "Targeted vitamin and mineral infusions to support your health goals"
     }
   ];
 
