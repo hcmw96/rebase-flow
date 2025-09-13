@@ -290,9 +290,29 @@ const Services = () => {
                               mode="single"
                               selected={selectedDate}
                               onSelect={handleDateSelect}
-                              disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+                              disabled={(date) => date < new Date()}
                               initialFocus
-                              className="rounded-xl border-0 shadow-none p-0 w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70"
+                              className="p-3 pointer-events-auto"
+                              classNames={{
+                                months: "text-white",
+                                month: "text-white",
+                                caption: "text-white",
+                                caption_label: "text-white text-sm font-medium",
+                                nav: "text-white",
+                                nav_button: "text-white/70 hover:text-white h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
+                                nav_button_previous: "absolute left-1",
+                                nav_button_next: "absolute right-1",
+                                table: "text-white w-full",
+                                head_row: "text-white",
+                                head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem]",
+                                row: "text-white",
+                                cell: "text-white relative p-0 text-center text-sm focus-within:relative focus-within:z-20 h-9 w-9",
+                                day: "text-white h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-sm",
+                                day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
+                                day_today: "bg-white/10 text-white",
+                                day_outside: "text-white/50 opacity-50",
+                                day_disabled: "text-white/30 opacity-50",
+                              }}
                             />
                           </div>
                         )}

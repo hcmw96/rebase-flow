@@ -181,34 +181,28 @@ const BookService = () => {
           mode="single"
           selected={selectedDate}
           onSelect={handleDateSelect}
-          disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+          disabled={(date) => date < new Date()}
           initialFocus
-          className="rounded-xl border-0 shadow-none p-0 pointer-events-auto w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 [&_.rdp-nav_button]:hover:text-white"
-          style={{
-            width: '100%'
-          }}
+          className="p-3 pointer-events-auto"
           classNames={{
-            months: "space-y-0 w-full",
-            month: "space-y-4 w-full",
-            caption: "flex justify-center pt-1 relative items-center w-full",
-            caption_label: "text-sm font-medium text-white",
-            nav: "space-x-1 flex items-center",
-            nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white/70 hover:text-white",
+            months: "text-white",
+            month: "text-white",
+            caption: "text-white",
+            caption_label: "text-white text-sm font-medium",
+            nav: "text-white",
+            nav_button: "text-white/70 hover:text-white h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
             nav_button_previous: "absolute left-1",
             nav_button_next: "absolute right-1",
-            table: "w-full border-collapse space-y-1",
-            head_row: "flex w-full",
-            head_cell: "text-white/70 rounded-md flex-1 font-normal text-[0.8rem] text-center",
-            row: "flex w-full mt-2",
-            cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 [&:has([aria-selected])]:bg-white/20 [&:has([aria-selected].day-outside)]:bg-white/10 flex-1",
-            day: "h-8 w-full p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-sm text-white",
-            day_range_end: "day-range-end",
+            table: "text-white w-full",
+            head_row: "text-white",
+            head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem]",
+            row: "text-white",
+            cell: "text-white relative p-0 text-center text-sm focus-within:relative focus-within:z-20 h-9 w-9",
+            day: "text-white h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-sm",
             day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
             day_today: "bg-white/10 text-white",
-            day_outside: "day-outside text-white/50 opacity-50 aria-selected:bg-white/10 aria-selected:text-white/50 aria-selected:opacity-30",
+            day_outside: "text-white/50 opacity-50",
             day_disabled: "text-white/30 opacity-50",
-            day_range_middle: "aria-selected:bg-white/20 aria-selected:text-white",
-            day_hidden: "invisible",
           }}
         />
       </div>
