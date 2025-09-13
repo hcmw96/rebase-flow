@@ -139,7 +139,7 @@ const Cryotherapy = () => {
               head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem] text-center",
               row: "flex w-full mt-2",
               cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-white/20 [&:has([aria-selected].day-outside)]:bg-white/10",
-              day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-white",
+              day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-white flex items-center justify-center",
               day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
               day_today: "bg-white/10 text-white",
               day_outside: "text-white/50 opacity-50",
