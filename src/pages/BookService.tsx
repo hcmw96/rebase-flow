@@ -304,7 +304,7 @@ const BookService = () => {
               nav_button_next: "absolute right-1",
               table: "w-full border-collapse space-y-1",
               head_row: "flex w-full",
-              head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem] text-center",
+              head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem] text-center flex items-center justify-center",
               row: "flex w-full mt-2",
               cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-white/20 [&:has([aria-selected].day-outside)]:bg-white/10",
               day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-white flex items-center justify-center",

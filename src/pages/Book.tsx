@@ -196,7 +196,7 @@ const Book = () => {
             nav_button_next: "absolute right-1",
             table: "w-full border-collapse space-y-1",
             head_row: "flex w-full",
-              head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center",
+              head_cell: "text-muted-foreground rounded-md w-9 font-normal text-[0.8rem] text-center flex items-center justify-center",
               row: "flex w-full mt-2",
               cell: "h-9 w-9 text-center text-sm p-0 relative [&:has([aria-selected])]:bg-accent [&:has([aria-selected].day-outside)]:bg-accent/50",
               day: "h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-accent hover:text-accent-foreground rounded-md transition-colors flex items-center justify-center",
