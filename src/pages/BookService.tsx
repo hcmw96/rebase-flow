@@ -183,7 +183,7 @@ const BookService = () => {
           onSelect={handleDateSelect}
           disabled={(date) => date < new Date()}
           initialFocus
-          className="p-0 pointer-events-auto"
+          className="p-0 pointer-events-auto [&_.rdp-day]:text-white [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 hover:[&_.rdp-nav_button]:text-white [&_.rdp-day_selected]:bg-white/30 [&_.rdp-day_selected]:text-white [&_.rdp-day]:hover:bg-white/20 [&_.rdp-day_today]:bg-white/10"
         />
       </div>
     </div>

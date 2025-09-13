@@ -290,9 +290,9 @@ const Services = () => {
               mode="single"
               selected={selectedDate}
               onSelect={handleDateSelect}
-              disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+              disabled={(date) => date < new Date()}
               initialFocus
-              className="p-3 pointer-events-auto rounded-xl border-0 shadow-none w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70"
+              className="p-0 pointer-events-auto [&_.rdp-day]:text-white [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 hover:[&_.rdp-nav_button]:text-white [&_.rdp-day_selected]:bg-white/30 [&_.rdp-day_selected]:text-white [&_.rdp-day]:hover:bg-white/20 [&_.rdp-day_today]:bg-white/10"
             />
                           </div>
                         )}

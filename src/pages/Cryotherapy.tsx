@@ -123,7 +123,7 @@ const Cryotherapy = () => {
           selected={selectedDate}
           onSelect={handleDateSelect}
           disabled={(date) => date < new Date() || date.getDay() === 0}
-          className="p-3 pointer-events-auto w-full text-white [&_.rdp-day_selected]:bg-primary [&_.rdp-day_selected]:text-primary-foreground [&_.rdp-day]:text-white [&_.rdp-head_cell]:text-white/70 [&_.rdp-nav_button]:text-white hover:[&_.rdp-nav_button]:text-primary [&_.rdp-caption]:text-white"
+          className="p-0 pointer-events-auto [&_.rdp-day]:text-white [&_.rdp-head_cell]:text-white/70 [&_.rdp-caption_label]:text-white [&_.rdp-nav_button]:text-white/70 hover:[&_.rdp-nav_button]:text-white [&_.rdp-day_selected]:bg-primary [&_.rdp-day_selected]:text-primary-foreground [&_.rdp-day]:hover:bg-white/20 [&_.rdp-day_today]:bg-white/10"
         />
       </CardContent>
     </Card>
