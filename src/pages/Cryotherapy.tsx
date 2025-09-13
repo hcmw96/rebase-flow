@@ -118,13 +118,35 @@ const Cryotherapy = () => {
   const renderDateSelection = () => (
     <Card className="glass-card border-white/10">
       <CardContent className="p-6">
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleDateSelect}
-          disabled={(date) => date < new Date() || date.getDay() === 0}
-          className="w-full [&_.rdp-day_selected]:bg-primary [&_.rdp-day_selected]:text-primary-foreground [&_.rdp-day]:text-white [&_.rdp-head_cell]:text-white/70 [&_.rdp-nav_button]:text-white hover:[&_.rdp-nav_button]:text-primary [&_.rdp-caption]:text-white"
-        />
+        <div className="max-w-sm mx-auto">
+          <Calendar
+            mode="single"
+            selected={selectedDate}
+            onSelect={handleDateSelect}
+            disabled={(date) => date < new Date() || date.getDay() === 0}
+            className="w-full pointer-events-auto border-0 shadow-none p-0"
+            classNames={{
+              months: "space-y-0 w-full",
+              month: "space-y-4 w-full",
+              caption: "flex justify-center pt-1 relative items-center w-full",
+              caption_label: "text-sm font-medium text-white",
+              nav: "space-x-1 flex items-center",
+              nav_button: "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 text-white/70 hover:text-white border-white/20",
+              nav_button_previous: "absolute left-1",
+              nav_button_next: "absolute right-1",
+              table: "w-full border-collapse space-y-1",
+              head_row: "flex w-full",
+              head_cell: "text-white/70 rounded-md flex-1 font-normal text-[0.8rem] text-center",
+              row: "flex w-full mt-2",
+              cell: "relative p-0 text-center text-sm focus-within:relative focus-within:z-20 flex-1",
+              day: "h-8 w-full p-0 font-normal text-white hover:bg-white/20 hover:text-white rounded-md transition-colors aria-selected:opacity-100",
+              day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
+              day_today: "bg-white/10 text-white",
+              day_outside: "text-white/50 opacity-50",
+              day_disabled: "text-white/30 opacity-50",
+            }}
+          />
+        </div>
       </CardContent>
     </Card>
   );
