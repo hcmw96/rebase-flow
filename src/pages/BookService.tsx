@@ -18,55 +18,146 @@ const BookService = () => {
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
 
-  // Service data from Services page
+  // Complete service data matching Services page
   const services = [
+    // Classes
     {
       id: 1,
-      title: "Ice Bath",
-      category: "Recovery",
-      duration: "15 minutes",
-      price: 25,
-      description: "Invigorating cold water immersion therapy to reduce inflammation and boost recovery"
-    },
-    {
-      id: 2,
-      title: "Traditional Sauna",
-      category: "Recovery", 
-      duration: "30 minutes",
-      price: 35,
-      description: "Authentic Finnish sauna experience for deep relaxation and detoxification"
-    },
-    {
-      id: 3,
-      title: "Infrared Sauna",
-      category: "Recovery",
-      duration: "30 minutes", 
-      price: 40,
-      description: "Gentle infrared heat therapy for muscle relaxation and improved circulation"
-    },
-    {
-      id: 4,
-      title: "Contrast Class",
-      category: "Movement",
+      title: "Contrast Therapy",
+      category: "Classes", 
       duration: "60 minutes",
-      price: 45,
+      price: 40,
       description: "Guided hot and cold therapy session combining sauna and ice bath"
     },
     {
+      id: 2,
+      title: "Breathwork",
+      category: "Classes",
+      duration: "60 minutes", 
+      price: 40,
+      description: "Mindful breathing techniques to enhance wellness and reduce stress"
+    },
+    {
+      id: 3,
+      title: "Yoga",
+      category: "Classes",
+      duration: "60 minutes",
+      price: 40,
+      description: "Restorative yoga sessions to improve flexibility and mental clarity"
+    },
+
+    // Suites
+    {
+      id: 4,
+      title: "Members Contrast Suite Drop In",
+      category: "Suites",
+      duration: "60 minutes",
+      price: 65,
+      description: "Access to our contrast therapy suite with sauna and ice bath facilities"
+    },
+    {
       id: 5,
-      title: "Private Contrast Suite",
-      category: "Recovery",
-      duration: "90 minutes",
-      price: 120,
-      description: "Exclusive private access to our premium contrast therapy facilities"
+      title: "Premium Suite",
+      category: "Suites",
+      duration: "45-90 minutes",
+      price: 240,
+      description: "Exclusive private access to our premium wellness facilities"
+    },
+    {
+      id: 6,
+      title: "Infrared Suite", 
+      category: "Suites",
+      duration: "45-90 minutes",
+      price: 190,
+      description: "Private infrared sauna suite for deep relaxation and detoxification"
+    },
+
+    // Tech Therapies
+    {
+      id: 7,
+      title: "Cryotherapy",
+      category: "Tech Therapies",
+      duration: "3 minutes",
+      price: 50,
+      description: "Whole-body cryotherapy for recovery and inflammation reduction"
+    },
+    {
+      id: 8,
+      title: "HBOT (Hyperbaric Oxygen Therapy)",
+      category: "Tech Therapies", 
+      duration: "60 minutes",
+      price: 200,
+      description: "Accelerated healing and recovery through pressurized oxygen therapy"
+    },
+
+    // Massage Therapies
+    {
+      id: 9,
+      title: "Total Body Realignment",
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 195,
+      description: "Comprehensive bodywork to restore balance and alignment"
+    },
+    {
+      id: 10,
+      title: "Sports Massage", 
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 185,
+      description: "Targeted massage therapy for athletes and active individuals"
+    },
+    {
+      id: 11,
+      title: "Lymphatic Drainage",
+      category: "Massage Therapies", 
+      duration: "60-90 minutes",
+      price: 185,
+      description: "Gentle massage technique to support lymphatic system function"
     },
     {
       id: 12,
-      title: "Recovery Specialist",
-      category: "Therapy",
-      duration: "30 minutes", 
-      price: 65,
-      description: "One-on-one session with our certified recovery specialists"
+      title: "Deep Tissue",
+      category: "Massage Therapies",
+      duration: "60-90 minutes", 
+      price: 185,
+      description: "Intensive massage therapy targeting deep muscle tension"
+    },
+
+    // Manual Therapies
+    {
+      id: 13,
+      title: "Osteopathy Consultation",
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 210,
+      description: "Comprehensive assessment and treatment by certified osteopaths"
+    },
+    {
+      id: 14,
+      title: "Structural Fascia Therapy", 
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 200,
+      description: "Specialized therapy targeting fascial restrictions and mobility"
+    },
+
+    // Other Services
+    {
+      id: 15,
+      title: "IV Drip",
+      category: "Other Services",
+      duration: "45-60 minutes",
+      price: 350,
+      description: "Intravenous vitamin and nutrient therapy for optimal wellness"
+    },
+    {
+      id: 16,
+      title: "Vitamin Infusions",
+      category: "Other Services", 
+      duration: "30 minutes",
+      price: 80,
+      description: "Targeted vitamin injections for enhanced health and energy"
     }
   ];
 
