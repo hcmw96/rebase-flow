@@ -286,14 +286,14 @@ const Services = () => {
                       <CardContent className="pb-6">
                         {bookingStep === 1 && (
                           <div className="max-w-sm mx-auto glass-morphism rounded-2xl p-4">
-                            <Calendar
-                              mode="single"
-                              selected={selectedDate}
-                              onSelect={handleDateSelect}
-                              disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
-                              initialFocus
-                              className="rounded-xl border-0 shadow-none p-0 w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70"
-                            />
+            <Calendar
+              mode="single"
+              selected={selectedDate}
+              onSelect={handleDateSelect}
+              disabled={(date) => date < new Date() || date < new Date("1900-01-01")}
+              initialFocus
+              className="p-3 pointer-events-auto rounded-xl border-0 shadow-none w-full [&_.rdp-day]:text-white [&_.rdp-day_button]:hover:bg-white/20 [&_.rdp-day_selected]:bg-white/30 [&_.rdp-head_cell]:text-white/70"
+            />
                           </div>
                         )}
                         
