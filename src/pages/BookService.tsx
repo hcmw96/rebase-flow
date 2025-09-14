@@ -162,9 +162,24 @@ const BookService = () => {
       id: 15,
       title: "IV Drip",
       category: "Other Services",
-      duration: "45-60 minutes",
-      price: 350,
-      description: "Intravenous vitamin and nutrient therapy for optimal wellness"
+      description: "Intravenous vitamin and nutrient therapy for optimal wellness",
+      options: [
+        { duration: "30 minutes", price: 150, description: "Blood Test - Comprehensive health screening" },
+        { duration: "45 minutes", price: 200, description: "First Consultation - Initial assessment and treatment plan" },
+        { duration: "45 minutes", price: 320, description: "Anti-Inflammatory - Reduce inflammation and promote healing" },
+        { duration: "45 minutes", price: 300, description: "Energy - Boost vitality and combat fatigue" },
+        { duration: "45 minutes", price: 320, description: "Focus - Enhance mental clarity and concentration" },
+        { duration: "45 minutes", price: 340, description: "Glow - Promote healthy skin and radiance" },
+        { duration: "45 minutes", price: 300, description: "Immunity - Strengthen your immune system" },
+        { duration: "60 minutes", price: 380, description: "Immunity Plus - Enhanced immune system support" },
+        { duration: "60 minutes", price: 420, description: "Neuro-Regan - Support neurological health and regeneration" },
+        { duration: "45 minutes", price: 340, description: "Recovery - Accelerate post-workout and injury recovery" },
+        { duration: "45 minutes", price: 320, description: "Rest & Sleep - Promote relaxation and better sleep" },
+        { duration: "45 minutes", price: 350, description: "Revive - Complete rejuvenation and restoration" },
+        { duration: "60 minutes", price: 450, description: "NAD+ (250MG) - Cellular regeneration and anti-aging" },
+        { duration: "90 minutes", price: 650, description: "NAD+ (500MG) - Advanced cellular regeneration therapy" },
+        { duration: "15 minutes", price: 80, description: "Vitamin Shots - Quick targeted vitamin injections" }
+      ]
     },
     {
       id: 16,
