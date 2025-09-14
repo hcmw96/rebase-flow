@@ -100,7 +100,7 @@ async function getOAuthAuthorizationUrl(redirectUri: string, state?: string) {
     response_type: 'code',
     client_id: MINDBODY_OAUTH_CLIENT_ID,
     redirect_uri: redirectUri,
-    scope: 'offline_access PG.ConsumerActivity.Api.Read',
+    scope: 'openid profile email Mindbody.Api.Public.v6',
     nonce: crypto.randomUUID(),
   });
 
