@@ -13,7 +13,8 @@ import { format } from "date-fns";
 const BookService = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
+  const [selectedOption, setSelectedOption] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
@@ -59,17 +60,23 @@ const BookService = () => {
       id: 5,
       title: "Premium Suite",
       category: "Suites",
-      duration: "45-90 minutes",
-      price: 240,
-      description: "Exclusive private access to our premium wellness facilities"
+      description: "Exclusive private access to our premium wellness facilities",
+      options: [
+        { duration: "45 minutes", price: 190, description: "Standard session" },
+        { duration: "60 minutes", price: 240, description: "Extended session" },
+        { duration: "90 minutes", price: 290, description: "Full experience" }
+      ]
     },
     {
       id: 6,
       title: "Infrared Suite", 
       category: "Suites",
-      duration: "45-90 minutes",
-      price: 190,
-      description: "Private infrared sauna suite for deep relaxation and detoxification"
+      description: "Private infrared sauna suite for deep relaxation and detoxification",
+      options: [
+        { duration: "45 minutes", price: 150, description: "Standard session" },
+        { duration: "60 minutes", price: 190, description: "Extended session" },
+        { duration: "90 minutes", price: 240, description: "Full experience" }
+      ]
     },
 
     // Tech Therapies
@@ -95,33 +102,41 @@ const BookService = () => {
       id: 9,
       title: "Total Body Realignment",
       category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 195,
-      description: "Comprehensive bodywork to restore balance and alignment"
+      description: "Comprehensive bodywork to restore balance and alignment",
+      options: [
+        { duration: "60 minutes", price: 165, description: "Standard treatment" },
+        { duration: "90 minutes", price: 195, description: "Extended treatment" }
+      ]
     },
     {
       id: 10,
       title: "Sports Massage", 
       category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 185,
-      description: "Targeted massage therapy for athletes and active individuals"
+      description: "Targeted massage therapy for athletes and active individuals",
+      options: [
+        { duration: "60 minutes", price: 155, description: "Standard treatment" },
+        { duration: "90 minutes", price: 185, description: "Extended treatment" }
+      ]
     },
     {
       id: 11,
       title: "Lymphatic Drainage",
       category: "Massage Therapies", 
-      duration: "60-90 minutes",
-      price: 185,
-      description: "Gentle massage technique to support lymphatic system function"
+      description: "Gentle massage technique to support lymphatic system function",
+      options: [
+        { duration: "60 minutes", price: 155, description: "Standard treatment" },
+        { duration: "90 minutes", price: 185, description: "Extended treatment" }
+      ]
     },
     {
       id: 12,
       title: "Deep Tissue",
       category: "Massage Therapies",
-      duration: "60-90 minutes", 
-      price: 185,
-      description: "Intensive massage therapy targeting deep muscle tension"
+      description: "Intensive massage therapy targeting deep muscle tension",
+      options: [
+        { duration: "60 minutes", price: 155, description: "Standard treatment" },
+        { duration: "90 minutes", price: 185, description: "Extended treatment" }
+      ]
     },
 
     // Manual Therapies
@@ -166,8 +181,21 @@ const BookService = () => {
   useEffect(() => {
     if (!selectedService) {
       navigate("/services");
+      return;
+    }
+    
+    // If service has options, start at step 0, otherwise step 1
+    if (selectedService.options) {
+      setStep(0);
+    } else {
+      setStep(1);
     }
   }, [selectedService, navigate]);
+
+  const handleOptionSelect = (option: any) => {
+    setSelectedOption(option);
+    setStep(1);
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -182,7 +210,7 @@ const BookService = () => {
   };
 
   const handleBack = () => {
-    if (step > 1) {
+    if (step > (selectedService?.options ? 0 : 1)) {
       setStep(step - 1);
     } else {
       navigate("/services");
@@ -209,12 +237,13 @@ const BookService = () => {
         </Button>
         <div className="flex-1 text-center">
           <div className="text-sm font-medium text-foreground">
+            {step === 0 && "Choose Option"}
             {step === 1 && "Choose Date"}
             {step === 2 && "Pick Time"}
             {step === 3 && "Confirm Booking"}
           </div>
           <div className="text-xs text-muted-foreground">
-            Step {step} of 3
+            Step {selectedService?.options ? step + 1 : step} of {selectedService?.options ? 4 : 3}
           </div>
         </div>
         <div className="w-8" />
@@ -224,7 +253,7 @@ const BookService = () => {
 
   const renderProgressDots = () => (
     <div className="flex items-center justify-center space-x-2 mb-8">
-      {[1, 2, 3].map((stepNum) => (
+      {Array.from({ length: selectedService?.options ? 4 : 3 }, (_, i) => i).map((stepNum) => (
         <div key={stepNum} className={`w-2 h-2 rounded-full transition-colors ${
           step >= stepNum ? 'bg-primary' : 'bg-muted'
         }`} />
@@ -240,8 +269,12 @@ const BookService = () => {
             {selectedService?.category}
           </Badge>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">£{selectedService?.price}</div>
-            <div className="text-sm text-white/70">{selectedService?.duration}</div>
+            <div className="text-2xl font-bold text-white">
+              £{selectedOption ? selectedOption.price : selectedService?.price}
+            </div>
+            <div className="text-sm text-white/70">
+              {selectedOption ? selectedOption.duration : selectedService?.duration}
+            </div>
           </div>
         </div>
         <h1 className="font-serif text-2xl font-medium text-white mb-3">
@@ -250,8 +283,49 @@ const BookService = () => {
         <p className="text-white/70 leading-relaxed mb-4">
           {selectedService?.description}
         </p>
+        {selectedOption && (
+          <div className="text-sm text-white/60">
+            {selectedOption.description}
+          </div>
+        )}
       </CardContent>
     </Card>
+  );
+
+  const renderOptionSelection = () => (
+    <div className="px-4 pb-8">
+      {!isMobile && (
+        <div className="text-center mb-8">
+          <h2 className="text-2xl font-serif font-light text-white mb-2">
+            Choose Your Option
+          </h2>
+          <p className="text-sm text-white/70">
+            Select your preferred duration for {selectedService?.title}
+          </p>
+        </div>
+      )}
+      
+      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
+        <div className="space-y-4">
+          {selectedService?.options?.map((option: any, index: number) => (
+            <Button
+              key={index}
+              variant="outline"
+              className="w-full h-auto p-4 text-left glass-button text-white border-white/20 hover:text-white hover:bg-white/10 rounded-xl"
+              onClick={() => handleOptionSelect(option)}
+            >
+              <div className="flex justify-between items-center w-full">
+                <div>
+                  <div className="font-medium">{option.duration}</div>
+                  <div className="text-sm text-white/70">{option.description}</div>
+                </div>
+                <div className="text-lg font-bold">£{option.price}</div>
+              </div>
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 
   const renderDateSelection = () => (
@@ -372,11 +446,15 @@ const BookService = () => {
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-white/70">Duration</span>
-                <span className="font-medium text-white">{selectedService?.duration}</span>
+                <span className="font-medium text-white">
+                  {selectedOption ? selectedOption.duration : selectedService?.duration}
+                </span>
               </div>
               <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
                 <span className="text-white">Total</span>
-                <span className="text-white">£{selectedService?.price}</span>
+                <span className="text-white">
+                  £{selectedOption ? selectedOption.price : selectedService?.price}
+                </span>
               </div>
             </div>
             
@@ -417,8 +495,8 @@ const BookService = () => {
               </div>
             )}
             
-            {/* Service info always visible on desktop, only on mobile in step 1 */}
-            {(!isMobile || step === 1) && (
+            {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
+            {(!isMobile || step <= 1) && (
               <div className={`mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
                 {renderServiceInfo()}
               </div>
@@ -426,6 +504,7 @@ const BookService = () => {
             
             <div className="max-w-lg mx-auto">
               <div className="transition-all duration-500 ease-in-out">
+                {step === 0 && <div className="animate-fade-in">{renderOptionSelection()}</div>}
                 {step === 1 && <div className="animate-fade-in">{renderDateSelection()}</div>}
                 {step === 2 && <div className="animate-fade-in">{renderTimeSelection()}</div>}
                 {step === 3 && <div className="animate-fade-in">{renderConfirmation()}</div>}
