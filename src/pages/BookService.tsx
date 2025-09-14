@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
 import { format } from "date-fns";
@@ -315,30 +316,37 @@ const BookService = () => {
             Choose Your Option
           </h2>
           <p className="text-sm text-white/70">
-            Select your preferred duration for {selectedService?.title}
+            Select your preferred option for {selectedService?.title}
           </p>
         </div>
       )}
       
       <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
-        <div className="space-y-4">
-          {selectedService?.options?.map((option: any, index: number) => (
-            <Button
-              key={index}
-              variant="outline"
-              className="w-full h-auto p-4 text-left glass-button text-white border-white/20 hover:text-white hover:bg-white/10 rounded-xl"
-              onClick={() => handleOptionSelect(option)}
-            >
-              <div className="flex justify-between items-center w-full">
-                <div>
-                  <div className="font-medium">{option.duration}</div>
-                  <div className="text-sm text-white/70">{option.description}</div>
+        <Select onValueChange={(value) => {
+          const option = selectedService?.options?.[parseInt(value)];
+          if (option) handleOptionSelect(option);
+        }}>
+          <SelectTrigger className="w-full h-14 glass-button text-white border-white/20 hover:bg-white/10 rounded-xl bg-white/5 backdrop-blur-sm">
+            <SelectValue placeholder="Select an option..." className="text-white" />
+          </SelectTrigger>
+          <SelectContent className="bg-background/95 backdrop-blur-sm border-white/20 rounded-xl z-50">
+            {selectedService?.options?.map((option: any, index: number) => (
+              <SelectItem 
+                key={index} 
+                value={index.toString()}
+                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer"
+              >
+                <div className="flex justify-between items-center w-full">
+                  <div>
+                    <div className="font-medium">{option.duration}</div>
+                    <div className="text-sm text-muted-foreground">{option.description}</div>
+                  </div>
+                  <div className="text-lg font-bold ml-4">£{option.price}</div>
                 </div>
-                <div className="text-lg font-bold">£{option.price}</div>
-              </div>
-            </Button>
-          ))}
-        </div>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );
