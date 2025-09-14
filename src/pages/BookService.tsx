@@ -165,21 +165,21 @@ const BookService = () => {
       category: "Other Services",
       description: "Intravenous vitamin and nutrient therapy for optimal wellness",
       options: [
-        { duration: "45 minutes", price: 200, description: "Initial assessment and treatment plan", name: "First Consultation" },
+        { duration: "45 minutes", price: 200, description: "Initial assessment & treatment plan", name: "First Consultation" },
         { duration: "30 minutes", price: 150, description: "Comprehensive health screening", name: "Blood Test" },
-        { duration: "45 minutes", price: 320, description: "Reduce inflammation and promote healing", name: "Anti-Inflammatory" },
-        { duration: "45 minutes", price: 300, description: "Boost vitality and combat fatigue", name: "Energy" },
-        { duration: "45 minutes", price: 320, description: "Enhance mental clarity and concentration", name: "Focus" },
-        { duration: "45 minutes", price: 340, description: "Promote healthy skin and radiance", name: "Glow" },
-        { duration: "45 minutes", price: 300, description: "Strengthen your immune system", name: "Immunity" },
-        { duration: "60 minutes", price: 380, description: "Enhanced immune system support", name: "Immunity Plus" },
-        { duration: "60 minutes", price: 420, description: "Support neurological health and regeneration", name: "Neuro-Regan" },
-        { duration: "45 minutes", price: 340, description: "Accelerate post-workout and injury recovery", name: "Recovery" },
-        { duration: "45 minutes", price: 320, description: "Promote relaxation and better sleep", name: "Rest & Sleep" },
-        { duration: "45 minutes", price: 350, description: "Complete rejuvenation and restoration", name: "Revive" },
-        { duration: "60 minutes", price: 450, description: "Cellular regeneration and anti-aging", name: "NAD+ (250MG)" },
-        { duration: "90 minutes", price: 650, description: "Advanced cellular regeneration therapy", name: "NAD+ (500MG)" },
-        { duration: "15 minutes", price: 80, description: "Quick targeted vitamin injections", name: "Vitamin Shots" }
+        { duration: "45 minutes", price: 320, description: "Reduce inflammation", name: "Anti-Inflammatory" },
+        { duration: "45 minutes", price: 300, description: "Boost vitality & energy", name: "Energy" },
+        { duration: "45 minutes", price: 320, description: "Mental clarity & focus", name: "Focus" },
+        { duration: "45 minutes", price: 340, description: "Healthy skin & radiance", name: "Glow" },
+        { duration: "45 minutes", price: 300, description: "Strengthen immune system", name: "Immunity" },
+        { duration: "60 minutes", price: 380, description: "Enhanced immune support", name: "Immunity Plus" },
+        { duration: "60 minutes", price: 420, description: "Neurological health support", name: "Neuro-Regan" },
+        { duration: "45 minutes", price: 340, description: "Post-workout recovery", name: "Recovery" },
+        { duration: "45 minutes", price: 320, description: "Relaxation & better sleep", name: "Rest & Sleep" },
+        { duration: "45 minutes", price: 350, description: "Complete rejuvenation", name: "Revive" },
+        { duration: "60 minutes", price: 450, description: "Cellular regeneration", name: "NAD+ (250MG)" },
+        { duration: "90 minutes", price: 650, description: "Advanced regeneration", name: "NAD+ (500MG)" },
+        { duration: "15 minutes", price: 80, description: "Targeted vitamin injections", name: "Vitamin Shots" }
       ]
     },
     {
@@ -334,14 +334,18 @@ const BookService = () => {
               <SelectItem 
                 key={index} 
                 value={index.toString()}
-                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer p-3"
+                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer p-4 border-b border-border/10 last:border-0"
               >
-                <div className="flex justify-between items-center w-full min-w-0">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium">{option.name}</div>
-                    <div className="text-sm text-muted-foreground">{option.duration} • {option.description}</div>
+                <div className="flex justify-between items-start w-full min-w-0">
+                  <div className="flex-1 min-w-0 pr-4">
+                    <div className="font-semibold text-base">{option.name}</div>
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <span className="font-medium">{option.duration}</span>
+                      <span className="mx-2">•</span>
+                      <span>{option.description}</span>
+                    </div>
                   </div>
-                  <div className="text-lg font-bold ml-4 flex-shrink-0">£{option.price}</div>
+                  <div className="text-xl font-bold flex-shrink-0">£{option.price}</div>
                 </div>
               </SelectItem>
             ))}
