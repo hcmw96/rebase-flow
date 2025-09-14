@@ -334,14 +334,14 @@ const BookService = () => {
               <SelectItem 
                 key={index} 
                 value={index.toString()}
-                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer"
+                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer p-3"
               >
-                <div className="flex justify-between items-center w-full">
-                  <div>
+                <div className="flex justify-between items-center w-full min-w-0">
+                  <div className="flex-1 min-w-0">
                     <div className="font-medium">{option.name}</div>
                     <div className="text-sm text-muted-foreground">{option.duration} • {option.description}</div>
                   </div>
-                  <div className="text-lg font-bold ml-4">£{option.price}</div>
+                  <div className="text-lg font-bold ml-4 flex-shrink-0">£{option.price}</div>
                 </div>
               </SelectItem>
             ))}
