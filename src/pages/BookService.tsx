@@ -336,8 +336,8 @@ const BookService = () => {
                 value={index.toString()}
                 className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer p-4 border-b border-border/10 last:border-0"
               >
-                <div className="flex justify-between items-start w-full min-w-0">
-                  <div className="flex-1 min-w-0 pr-4">
+                <div className="grid grid-cols-[1fr_auto] gap-4 w-full items-start">
+                  <div className="min-w-0">
                     <div className="font-semibold text-base">{option.name}</div>
                     <div className="text-sm text-muted-foreground mt-1">
                       <span className="font-medium">{option.duration}</span>
@@ -345,7 +345,7 @@ const BookService = () => {
                       <span>{option.description}</span>
                     </div>
                   </div>
-                  <div className="text-xl font-bold flex-shrink-0">£{option.price}</div>
+                  <div className="text-xl font-bold text-right w-16">£{option.price}</div>
                 </div>
               </SelectItem>
             ))}
