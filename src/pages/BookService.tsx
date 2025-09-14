@@ -16,7 +16,6 @@ const BookService = () => {
   const [step, setStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
-  const [selectedOption, setSelectedOption] = useState<any>(null);
   const isMobile = useIsMobile();
 
   // Complete service data matching Services page
@@ -60,14 +59,9 @@ const BookService = () => {
       id: 5,
       title: "Premium Suite",
       category: "Suites",
-      duration: "30-90 minutes",
-      price: 120,
-      description: "Exclusive private access to our premium wellness facilities",
-      options: [
-        { id: 1, name: "Recovery Pod", duration: "30 min", price: 120 },
-        { id: 2, name: "Massage", duration: "60 min", price: 180 },
-        { id: 3, name: "Combination", duration: "90 min", price: 250 }
-      ]
+      duration: "45-90 minutes",
+      price: 240,
+      description: "Exclusive private access to our premium wellness facilities"
     },
     {
       id: 6,
@@ -75,11 +69,7 @@ const BookService = () => {
       category: "Suites",
       duration: "45-90 minutes",
       price: 190,
-      description: "Private infrared sauna suite for deep relaxation and detoxification",
-      options: [
-        { id: 1, name: "Standard Session", duration: "45 min", price: 190 },
-        { id: 2, name: "Extended Session", duration: "90 min", price: 280 }
-      ]
+      description: "Private infrared sauna suite for deep relaxation and detoxification"
     },
 
     // Tech Therapies
@@ -177,16 +167,7 @@ const BookService = () => {
     if (!selectedService) {
       navigate("/services");
     }
-    // If service has options, start at option selection step
-    if (selectedService?.options && !selectedOption) {
-      setStep(0);
-    }
-  }, [selectedService, navigate, selectedOption]);
-
-  const handleOptionSelect = (option: any) => {
-    setSelectedOption(option);
-    setStep(1);
-  };
+  }, [selectedService, navigate]);
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
@@ -201,7 +182,7 @@ const BookService = () => {
   };
 
   const handleBack = () => {
-    if (step > 0) {
+    if (step > 1) {
       setStep(step - 1);
     } else {
       navigate("/services");
@@ -228,13 +209,12 @@ const BookService = () => {
         </Button>
         <div className="flex-1 text-center">
           <div className="text-sm font-medium text-foreground">
-            {step === 0 && "Choose Option"}
             {step === 1 && "Choose Date"}
             {step === 2 && "Pick Time"}
             {step === 3 && "Confirm Booking"}
           </div>
           <div className="text-xs text-muted-foreground">
-            Step {step + 1} of {selectedService?.options ? 4 : 3}
+            Step {step} of 3
           </div>
         </div>
         <div className="w-8" />
@@ -242,20 +222,15 @@ const BookService = () => {
     </div>
   );
 
-  const renderProgressDots = () => {
-    const totalSteps = selectedService?.options ? 4 : 3;
-    const steps = selectedService?.options ? [0, 1, 2, 3] : [1, 2, 3];
-    
-    return (
-      <div className="flex items-center justify-center space-x-2 mb-8">
-        {steps.map((stepNum) => (
-          <div key={stepNum} className={`w-2 h-2 rounded-full transition-colors ${
-            step >= stepNum ? 'bg-primary' : 'bg-muted'
-          }`} />
-        ))}
-      </div>
-    );
-  };
+  const renderProgressDots = () => (
+    <div className="flex items-center justify-center space-x-2 mb-8">
+      {[1, 2, 3].map((stepNum) => (
+        <div key={stepNum} className={`w-2 h-2 rounded-full transition-colors ${
+          step >= stepNum ? 'bg-primary' : 'bg-muted'
+        }`} />
+      ))}
+    </div>
+  );
 
   const renderServiceInfo = () => (
     <Card className="glass-card rounded-3xl border-white/10 mb-6">
@@ -265,17 +240,12 @@ const BookService = () => {
             {selectedService?.category}
           </Badge>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">
-              £{selectedOption ? selectedOption.price : selectedService?.price}
-            </div>
-            <div className="text-sm text-white/70">
-              {selectedOption ? selectedOption.duration : selectedService?.duration}
-            </div>
+            <div className="text-2xl font-bold text-white">£{selectedService?.price}</div>
+            <div className="text-sm text-white/70">{selectedService?.duration}</div>
           </div>
         </div>
         <h1 className="font-serif text-2xl font-medium text-white mb-3">
           {selectedService?.title}
-          {selectedOption && <span className="text-lg text-white/80"> - {selectedOption.name}</span>}
         </h1>
         <p className="text-white/70 leading-relaxed mb-4">
           {selectedService?.description}
@@ -406,7 +376,7 @@ const BookService = () => {
               </div>
               <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
                 <span className="text-white">Total</span>
-                <span className="text-white">£{selectedOption ? selectedOption.price : selectedService?.price}</span>
+                <span className="text-white">£{selectedService?.price}</span>
               </div>
             </div>
             
@@ -416,43 +386,6 @@ const BookService = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
-  );
-
-  const renderOptionSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Choose Your Option
-          </h2>
-          <p className="text-sm text-white/70">
-            Select the option that best suits your needs
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto space-y-4 ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
-        {selectedService?.options?.map((option: any) => (
-          <Card 
-            key={option.id}
-            className="glass-card rounded-xl border-white/10 cursor-pointer transition-all hover:bg-white/10"
-            onClick={() => handleOptionSelect(option)}
-          >
-            <CardContent className="p-4">
-              <div className="flex justify-between items-center">
-                <div>
-                  <h3 className="font-medium text-white mb-1">{option.name}</h3>
-                  <p className="text-sm text-white/70">{option.duration}</p>
-                </div>
-                <div className="text-right">
-                  <div className="text-xl font-bold text-white">£{option.price}</div>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
     </div>
   );
 
@@ -484,8 +417,8 @@ const BookService = () => {
               </div>
             )}
             
-            {/* Service info always visible on desktop, only on mobile in step 1 or when option selected */}
-            {(!isMobile || step === 1 || (step === 0 && selectedService?.options)) && (
+            {/* Service info always visible on desktop, only on mobile in step 1 */}
+            {(!isMobile || step === 1) && (
               <div className={`mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
                 {renderServiceInfo()}
               </div>
@@ -493,7 +426,6 @@ const BookService = () => {
             
             <div className="max-w-lg mx-auto">
               <div className="transition-all duration-500 ease-in-out">
-                {step === 0 && <div className="animate-fade-in">{renderOptionSelection()}</div>}
                 {step === 1 && <div className="animate-fade-in">{renderDateSelection()}</div>}
                 {step === 2 && <div className="animate-fade-in">{renderTimeSelection()}</div>}
                 {step === 3 && <div className="animate-fade-in">{renderConfirmation()}</div>}
