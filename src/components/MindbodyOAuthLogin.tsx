@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import React, { useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useMindbody } from '@/hooks/useMindbody';
@@ -14,61 +14,98 @@ interface MindbodyOAuthLoginProps {
 export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({ 
   redirectPath = '/services' 
 }) => {
-  const location = useLocation();
   const navigate = useNavigate();
   const { loading, error, loginWithOAuth } = useMindbody();
   const { toast } = useToast();
+  const popupRef = useRef<Window | null>(null);
 
-  // Handle OAuth callback
+  // Handle popup messages
   useEffect(() => {
-    const urlParams = new URLSearchParams(location.search);
-    const code = urlParams.get('code');
-    const state = urlParams.get('state');
-    const error = urlParams.get('error');
-    const errorDescription = urlParams.get('error_description');
+    const handleMessage = (event: MessageEvent) => {
+      // Verify origin for security
+      if (event.origin !== window.location.origin) return;
 
-    if (error) {
-      console.error('OAuth error:', error, errorDescription);
-      toast({
-        title: 'Authentication failed',
-        description: errorDescription || error,
-        variant: 'destructive',
-      });
-      return;
-    }
+      const { type, data } = event.data;
 
-    if (code) {
-      console.log('Received OAuth code, exchanging for tokens...');
-      const redirectUri = 'https://rebase.echo.london/services';
-      loginWithOAuth(code, redirectUri)
-        .then((success) => {
-          if (success) {
+      if (type === 'MINDBODY_OAUTH_SUCCESS' && data.code) {
+        console.log('Received OAuth code from popup, exchanging for tokens...');
+        const redirectUri = 'https://rebase.echo.london/oauth-callback';
+        
+        loginWithOAuth(data.code, redirectUri)
+          .then((success) => {
+            if (success) {
+              toast({
+                title: 'Successfully logged in',
+                description: 'Welcome to your Mindbody account!',
+              });
+              navigate(redirectPath);
+            }
+          })
+          .catch((err) => {
+            console.error('OAuth login failed:', err);
             toast({
-              title: 'Successfully logged in',
-              description: 'Welcome to your Mindbody account!',
+              title: 'Login failed',
+              description: 'Failed to complete authentication. Please try again.',
+              variant: 'destructive',
             });
-            navigate(redirectPath);
-          }
-        })
-        .catch((err) => {
-          console.error('OAuth login failed:', err);
-          toast({
-            title: 'Login failed',
-            description: 'Failed to complete authentication. Please try again.',
-            variant: 'destructive',
           });
+
+        // Close popup
+        if (popupRef.current) {
+          popupRef.current.close();
+          popupRef.current = null;
+        }
+      } else if (type === 'MINDBODY_OAUTH_ERROR') {
+        console.error('OAuth error from popup:', data.error);
+        toast({
+          title: 'Authentication failed',
+          description: data.error_description || data.error,
+          variant: 'destructive',
         });
-    }
-  }, [location.search, location.pathname, loginWithOAuth, navigate, redirectPath, toast]);
+
+        // Close popup
+        if (popupRef.current) {
+          popupRef.current.close();
+          popupRef.current = null;
+        }
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, [loginWithOAuth, navigate, redirectPath, toast]);
 
   const handleMindbodyLogin = async () => {
     try {
-      const redirectUri = 'https://rebase.echo.london/services';
+      const redirectUri = 'https://rebase.echo.london/oauth-callback';
       const result = await getMindbodyOAuthUrl(redirectUri);
       
       if (result.success && result.data?.authUrl) {
-        // Redirect to Mindbody OAuth page
-        window.location.href = result.data.authUrl;
+        // Open OAuth page in popup
+        const popup = window.open(
+          result.data.authUrl,
+          'mindbody-oauth',
+          'width=500,height=600,scrollbars=yes,resizable=yes'
+        );
+
+        if (!popup) {
+          toast({
+            title: 'Popup blocked',
+            description: 'Please allow popups for this site and try again.',
+            variant: 'destructive',
+          });
+          return;
+        }
+
+        popupRef.current = popup;
+
+        // Monitor popup for closure
+        const checkClosed = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(checkClosed);
+            popupRef.current = null;
+          }
+        }, 1000);
       } else {
         toast({
           title: 'Authentication error',
@@ -102,7 +139,7 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
               To complete setup, add this URL to your Mindbody OAuth client:
             </p>
             <p className="font-mono text-xs bg-yellow-100 p-2 rounded mt-1 break-all">
-              https://rebase.echo.london/services
+              https://rebase.echo.london/oauth-callback
             </p>
           </div>
         </div>
@@ -144,7 +181,7 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
               <p><strong>1.</strong> Go to <a href="https://developers.mindbodyonline.com" target="_blank" rel="noopener" className="text-blue-600 underline">developers.mindbodyonline.com</a></p>
               <p><strong>2.</strong> Navigate to your OAuth Client settings</p>
               <p><strong>3.</strong> Add this redirect URI:</p>
-              <code className="block bg-white p-1 border rounded">https://rebase.echo.london/services</code>
+              <code className="block bg-white p-1 border rounded">https://rebase.echo.london/oauth-callback</code>
               <p><strong>4.</strong> Save and try signing in again</p>
             </div>
           </details>
