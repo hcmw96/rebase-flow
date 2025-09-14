@@ -96,8 +96,8 @@ async function getOAuthAuthorizationUrl(redirectUri: string, state?: string) {
   }
 
   const params = new URLSearchParams({
-    response_mode: 'form_post',
-    response_type: 'code id_token',
+    response_mode: 'query',
+    response_type: 'code',
     client_id: MINDBODY_OAUTH_CLIENT_ID,
     redirect_uri: redirectUri,
     scope: 'offline_access PG.ConsumerActivity.Api.Read',

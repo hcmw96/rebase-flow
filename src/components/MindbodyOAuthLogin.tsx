@@ -25,17 +25,20 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
     const code = urlParams.get('code');
     const state = urlParams.get('state');
     const error = urlParams.get('error');
+    const errorDescription = urlParams.get('error_description');
 
     if (error) {
+      console.error('OAuth error:', error, errorDescription);
       toast({
         title: 'Authentication failed',
-        description: error,
+        description: errorDescription || error,
         variant: 'destructive',
       });
       return;
     }
 
     if (code) {
+      console.log('Received OAuth code, exchanging for tokens...');
       const redirectUri = `${window.location.origin}${location.pathname}`;
       loginWithOAuth(code, redirectUri)
         .then((success) => {
@@ -90,6 +93,19 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
         <CardDescription>
           Connect your Mindbody account to book appointments and manage your wellness journey
         </CardDescription>
+        
+        {/* Configuration Notice */}
+        <div className="mt-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="text-sm">
+            <p className="font-medium text-yellow-800 mb-1">⚠️ Setup Required</p>
+            <p className="text-yellow-700">
+              To complete setup, add this URL to your Mindbody OAuth client:
+            </p>
+            <p className="font-mono text-xs bg-yellow-100 p-2 rounded mt-1 break-all">
+              {window.location.origin}/login
+            </p>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="space-y-4">
         {error && (
@@ -116,9 +132,22 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
           )}
         </Button>
 
-        <div className="text-xs text-muted-foreground text-center">
-          By signing in, you'll be redirected to Mindbody's secure authentication page.
-          Your login credentials are handled directly by Mindbody for your security.
+        <div className="text-xs text-muted-foreground text-center space-y-2">
+          <p>By signing in, you'll be redirected to Mindbody's secure authentication page.</p>
+          <p>Your login credentials are handled directly by Mindbody for your security.</p>
+          
+          <details className="text-left">
+            <summary className="cursor-pointer text-blue-600 hover:text-blue-800">
+              🔧 Mindbody Setup Instructions
+            </summary>
+            <div className="mt-2 p-3 bg-gray-50 rounded text-xs space-y-2">
+              <p><strong>1.</strong> Go to <a href="https://developers.mindbodyonline.com" target="_blank" rel="noopener" className="text-blue-600 underline">developers.mindbodyonline.com</a></p>
+              <p><strong>2.</strong> Navigate to your OAuth Client settings</p>
+              <p><strong>3.</strong> Add this redirect URI:</p>
+              <code className="block bg-white p-1 border rounded">{window.location.origin}/login</code>
+              <p><strong>4.</strong> Save and try signing in again</p>
+            </div>
+          </details>
         </div>
       </CardContent>
     </Card>
