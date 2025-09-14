@@ -27,7 +27,7 @@ const Login = () => {
                 </p>
               </div>
               
-              <MindbodyOAuthLogin redirectPath="/dashboard" />
+              <MindbodyOAuthLogin redirectPath="/services" />
             </div>
           </section>
         </div>

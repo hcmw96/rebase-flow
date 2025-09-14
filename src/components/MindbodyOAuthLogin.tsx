@@ -12,7 +12,7 @@ interface MindbodyOAuthLoginProps {
 }
 
 export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({ 
-  redirectPath = '/dashboard' 
+  redirectPath = '/services' 
 }) => {
   const location = useLocation();
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
 
     if (code) {
       console.log('Received OAuth code, exchanging for tokens...');
-      const redirectUri = `${window.location.origin}${location.pathname}`;
+      const redirectUri = 'https://rebase.echo.london/services';
       loginWithOAuth(code, redirectUri)
         .then((success) => {
           if (success) {
@@ -63,7 +63,7 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
 
   const handleMindbodyLogin = async () => {
     try {
-      const redirectUri = `${window.location.origin}${location.pathname}`;
+      const redirectUri = 'https://rebase.echo.london/services';
       const result = await getMindbodyOAuthUrl(redirectUri);
       
       if (result.success && result.data?.authUrl) {
@@ -102,7 +102,7 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
               To complete setup, add this URL to your Mindbody OAuth client:
             </p>
             <p className="font-mono text-xs bg-yellow-100 p-2 rounded mt-1 break-all">
-              {window.location.origin}/login
+              https://rebase.echo.london/services
             </p>
           </div>
         </div>
@@ -144,7 +144,7 @@ export const MindbodyOAuthLogin: React.FC<MindbodyOAuthLoginProps> = ({
               <p><strong>1.</strong> Go to <a href="https://developers.mindbodyonline.com" target="_blank" rel="noopener" className="text-blue-600 underline">developers.mindbodyonline.com</a></p>
               <p><strong>2.</strong> Navigate to your OAuth Client settings</p>
               <p><strong>3.</strong> Add this redirect URI:</p>
-              <code className="block bg-white p-1 border rounded">{window.location.origin}/login</code>
+              <code className="block bg-white p-1 border rounded">https://rebase.echo.london/services</code>
               <p><strong>4.</strong> Save and try signing in again</p>
             </div>
           </details>
