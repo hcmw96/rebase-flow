@@ -21,6 +21,7 @@ interface MindbodyContextType {
   loading: boolean;
   error: string | null;
   login: (username: string, password: string) => Promise<boolean>;
+  loginWithOAuth: (code: string, redirectUri: string) => Promise<boolean>;
   logout: () => void;
   refreshData: () => Promise<void>;
   createNewClient: (clientData: {
@@ -52,20 +53,96 @@ export const useMindbodyAuth = () => {
 
   // Check for existing session on mount
   useEffect(() => {
-    const storedToken = localStorage.getItem('mindbody_token');
+    const storedToken = localStorage.getItem('mindbody_access_token');
+    const storedRefreshToken = localStorage.getItem('mindbody_refresh_token');
     const storedClient = localStorage.getItem('mindbody_client');
+    const tokenExpiry = localStorage.getItem('mindbody_token_expiry');
     
     if (storedToken && storedClient) {
       try {
-        setClient(JSON.parse(storedClient));
-        setIsAuthenticated(true);
-        refreshData();
+        const client = JSON.parse(storedClient);
+        const expiry = tokenExpiry ? parseInt(tokenExpiry) : 0;
+        
+        // Check if token is expired
+        if (expiry > Date.now()) {
+          setClient(client);
+          setIsAuthenticated(true);
+          refreshData();
+        } else if (storedRefreshToken) {
+          // Try to refresh the token
+          refreshTokens(storedRefreshToken);
+        } else {
+          logout();
+        }
       } catch (err) {
         console.error('Error parsing stored client data:', err);
         logout();
       }
     }
   }, []);
+
+  const refreshTokens = async (refreshToken: string) => {
+    try {
+      const { refreshMindbodyOAuthToken } = await import('@/lib/mindbody-api');
+      const result = await refreshMindbodyOAuthToken(refreshToken);
+      
+      if (result.success && result.data) {
+        const { access_token, refresh_token, expires_in } = result.data;
+        const expiry = Date.now() + (expires_in * 1000);
+        
+        localStorage.setItem('mindbody_access_token', access_token);
+        localStorage.setItem('mindbody_refresh_token', refresh_token);
+        localStorage.setItem('mindbody_token_expiry', expiry.toString());
+        
+        setIsAuthenticated(true);
+        refreshData();
+      } else {
+        logout();
+      }
+    } catch (err) {
+      console.error('Token refresh failed:', err);
+      logout();
+    }
+  };
+
+  const loginWithOAuth = async (code: string, redirectUri: string): Promise<boolean> => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const { exchangeMindbodyOAuthCode } = await import('@/lib/mindbody-api');
+      const tokenResult = await exchangeMindbodyOAuthCode(code, redirectUri);
+      
+      if (tokenResult.success && tokenResult.data) {
+        const { access_token, refresh_token, expires_in } = tokenResult.data;
+        const expiry = Date.now() + (expires_in * 1000);
+        
+        // Store OAuth tokens
+        localStorage.setItem('mindbody_access_token', access_token);
+        localStorage.setItem('mindbody_refresh_token', refresh_token);
+        localStorage.setItem('mindbody_token_expiry', expiry.toString());
+        
+        // Get client info using the access token
+        // Note: This might need to be updated based on how client info is retrieved with OAuth
+        // For now, we'll set a basic authenticated state and let refreshData handle the rest
+        setIsAuthenticated(true);
+        
+        // Load initial data
+        await refreshData();
+        
+        return true;
+      } else {
+        setError(tokenResult.error || 'Failed to exchange authorization code');
+        return false;
+      }
+    } catch (err) {
+      setError('An unexpected error occurred during OAuth login');
+      console.error('OAuth login error:', err);
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const login = async (username: string, password: string): Promise<boolean> => {
     setLoading(true);
@@ -109,6 +186,9 @@ export const useMindbodyAuth = () => {
 
   const logout = () => {
     localStorage.removeItem('mindbody_token');
+    localStorage.removeItem('mindbody_access_token');
+    localStorage.removeItem('mindbody_refresh_token');
+    localStorage.removeItem('mindbody_token_expiry');
     localStorage.removeItem('mindbody_client');
     setIsAuthenticated(false);
     setClient(null);
@@ -153,13 +233,21 @@ export const useMindbodyAuth = () => {
   };
 
   const refreshData = async () => {
-    if (!isAuthenticated || !client) return;
+    if (!isAuthenticated) return;
     
     setLoading(true);
     
     try {
+      // Get the current access token
+      const accessToken = localStorage.getItem('mindbody_access_token') || localStorage.getItem('mindbody_token');
+      
+      if (!accessToken) {
+        logout();
+        return;
+      }
+
       // Load services
-      const servicesResult = await getServices();
+      const servicesResult = await getServices(accessToken);
       if (servicesResult.success) {
         setServices(servicesResult.data);
       }
@@ -171,19 +259,24 @@ export const useMindbodyAuth = () => {
       
       const classesResult = await getClasses(
         today.toISOString(),
-        endDate.toISOString()
+        endDate.toISOString(),
+        accessToken
       );
       if (classesResult.success) {
         setClasses(classesResult.data);
       }
 
-      // Load client appointments
-      const appointmentsResult = await getClientAppointments(
-        client.UniqueId || client.Id.toString(),
-        today.toISOString()
-      );
-      if (appointmentsResult.success) {
-        setAppointments(appointmentsResult.data);
+      // Load client appointments if we have client info
+      if (client) {
+        const appointmentsResult = await getClientAppointments(
+          client.UniqueId || client.Id.toString(),
+          today.toISOString(),
+          undefined,
+          accessToken
+        );
+        if (appointmentsResult.success) {
+          setAppointments(appointmentsResult.data);
+        }
       }
     } catch (err) {
       console.error('Error refreshing data:', err);
@@ -202,6 +295,7 @@ export const useMindbodyAuth = () => {
     loading,
     error,
     login,
+    loginWithOAuth,
     logout,
     refreshData,
     createNewClient,

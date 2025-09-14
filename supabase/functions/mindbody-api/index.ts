@@ -7,7 +7,10 @@ const corsHeaders = {
 };
 
 const MINDBODY_API_BASE = 'https://api.mindbodyonline.com/public/v6';
+const MINDBODY_AUTH_BASE = 'https://signin.mindbodyonline.com';
 const MINDBODY_API_KEY = Deno.env.get('MINDBODY_API_KEY');
+const MINDBODY_OAUTH_CLIENT_ID = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
+const MINDBODY_OAUTH_CLIENT_SECRET = Deno.env.get('MINDBODY_OAUTH_CLIENT_SECRET');
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -26,6 +29,15 @@ serve(async (req) => {
     let result;
 
     switch (action) {
+      case 'getOAuthUrl':
+        result = await getOAuthAuthorizationUrl(data.redirectUri, data.state);
+        break;
+      case 'exchangeOAuthCode':
+        result = await exchangeOAuthCode(data.code, data.redirectUri);
+        break;
+      case 'refreshOAuthToken':
+        result = await refreshOAuthToken(data.refreshToken);
+        break;
       case 'authenticate':
         result = await authenticateUser(data.username, data.password);
         break;
@@ -71,6 +83,151 @@ serve(async (req) => {
     });
   }
 });
+
+// OAuth Functions
+async function getOAuthAuthorizationUrl(redirectUri: string, state?: string) {
+  console.log('Generating OAuth authorization URL');
+  
+  if (!MINDBODY_OAUTH_CLIENT_ID) {
+    return {
+      success: false,
+      error: 'OAuth client ID not configured'
+    };
+  }
+
+  const params = new URLSearchParams({
+    response_mode: 'form_post',
+    response_type: 'code id_token',
+    client_id: MINDBODY_OAUTH_CLIENT_ID,
+    redirect_uri: redirectUri,
+    scope: 'offline_access PG.ConsumerActivity.Api.Read',
+    nonce: crypto.randomUUID(),
+  });
+
+  if (state) {
+    params.append('state', state);
+  }
+
+  const authUrl = `${MINDBODY_AUTH_BASE}/connect/authorize?${params.toString()}`;
+  
+  return {
+    success: true, 
+    data: { authUrl }
+  };
+}
+
+async function exchangeOAuthCode(code: string, redirectUri: string) {
+  console.log('Exchanging OAuth code for tokens');
+  
+  if (!MINDBODY_OAUTH_CLIENT_ID || !MINDBODY_OAUTH_CLIENT_SECRET) {
+    return {
+      success: false,
+      error: 'OAuth credentials not configured'
+    };
+  }
+
+  try {
+    const tokenData = new URLSearchParams({
+      grant_type: 'authorization_code',
+      client_id: MINDBODY_OAUTH_CLIENT_ID,
+      client_secret: MINDBODY_OAUTH_CLIENT_SECRET,
+      code: code,
+      redirect_uri: redirectUri,
+      scope: 'offline_access PG.ConsumerActivity.Api.Read'
+    });
+
+    const response = await fetch(`${MINDBODY_AUTH_BASE}/connect/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: tokenData.toString(),
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error('Token exchange failed:', result);
+      return {
+        success: false, 
+        error: result.error || 'Failed to exchange authorization code'
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        access_token: result.access_token,
+        refresh_token: result.refresh_token,
+        id_token: result.id_token,
+        expires_in: result.expires_in,
+        token_type: result.token_type
+      }
+    };
+  } catch (error) {
+    console.error('Error exchanging OAuth code:', error);
+    return {
+      success: false,
+      error: 'Failed to exchange authorization code'
+    };
+  }
+}
+
+async function refreshOAuthToken(refreshToken: string) {
+  console.log('Refreshing OAuth token');
+  
+  if (!MINDBODY_OAUTH_CLIENT_ID || !MINDBODY_OAUTH_CLIENT_SECRET) {
+    return {
+      success: false,
+      error: 'OAuth credentials not configured'
+    };
+  }
+
+  try {
+    const tokenData = new URLSearchParams({
+      grant_type: 'refresh_token',
+      client_id: MINDBODY_OAUTH_CLIENT_ID,
+      client_secret: MINDBODY_OAUTH_CLIENT_SECRET,
+      refresh_token: refreshToken,
+      scope: 'offline_access PG.ConsumerActivity.Api.Read'
+    });
+
+    const response = await fetch(`${MINDBODY_AUTH_BASE}/connect/token`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: tokenData.toString(),
+    });
+
+    const result = await response.json();
+    
+    if (!response.ok) {
+      console.error('Token refresh failed:', result);
+      return {
+        success: false,
+        error: result.error || 'Failed to refresh token'
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        access_token: result.access_token,
+        refresh_token: result.refresh_token || refreshToken,
+        id_token: result.id_token,
+        expires_in: result.expires_in,
+        token_type: result.token_type
+      }
+    };
+  } catch (error) {
+    console.error('Error refreshing OAuth token:', error);
+    return {
+      success: false,
+      error: 'Failed to refresh token'
+    };
+  }
+}
 
 // Helper function to make Mindbody API requests
 async function makeMindbodyRequest(endpoint: string, options: any = {}) {

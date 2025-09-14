@@ -1,6 +1,14 @@
 import { supabase } from '@/integrations/supabase/client';
 
 // Types for Mindbody API responses
+interface MindbodyOAuthTokens {
+  access_token: string;
+  refresh_token: string;
+  id_token: string;
+  expires_in: number;
+  token_type: string;
+}
+
 export interface MindbodyClient {
   Id: number;
   UniqueId: string;
@@ -93,7 +101,20 @@ async function callMindbodyAPI(action: string, data: any = {}) {
   }
 }
 
-// Authentication functions
+// OAuth authentication functions
+export const getMindbodyOAuthUrl = async (redirectUri: string, state?: string) => {
+  return await callMindbodyAPI('getOAuthUrl', { redirectUri, state });
+};
+
+export const exchangeMindbodyOAuthCode = async (code: string, redirectUri: string) => {
+  return await callMindbodyAPI('exchangeOAuthCode', { code, redirectUri });
+};
+
+export const refreshMindbodyOAuthToken = async (refreshToken: string) => {
+  return await callMindbodyAPI('refreshOAuthToken', { refreshToken });
+};
+
+// Legacy authentication (username/password)
 export const authenticateUser = async (username: string, password: string) => {
   return await callMindbodyAPI('authenticate', { username, password });
 };
