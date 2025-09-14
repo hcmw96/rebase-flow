@@ -165,21 +165,21 @@ const BookService = () => {
       category: "Other Services",
       description: "Intravenous vitamin and nutrient therapy for optimal wellness",
       options: [
-        { duration: "30 minutes", price: 150, description: "Blood Test - Comprehensive health screening" },
-        { duration: "45 minutes", price: 200, description: "First Consultation - Initial assessment and treatment plan" },
-        { duration: "45 minutes", price: 320, description: "Anti-Inflammatory - Reduce inflammation and promote healing" },
-        { duration: "45 minutes", price: 300, description: "Energy - Boost vitality and combat fatigue" },
-        { duration: "45 minutes", price: 320, description: "Focus - Enhance mental clarity and concentration" },
-        { duration: "45 minutes", price: 340, description: "Glow - Promote healthy skin and radiance" },
-        { duration: "45 minutes", price: 300, description: "Immunity - Strengthen your immune system" },
-        { duration: "60 minutes", price: 380, description: "Immunity Plus - Enhanced immune system support" },
-        { duration: "60 minutes", price: 420, description: "Neuro-Regan - Support neurological health and regeneration" },
-        { duration: "45 minutes", price: 340, description: "Recovery - Accelerate post-workout and injury recovery" },
-        { duration: "45 minutes", price: 320, description: "Rest & Sleep - Promote relaxation and better sleep" },
-        { duration: "45 minutes", price: 350, description: "Revive - Complete rejuvenation and restoration" },
-        { duration: "60 minutes", price: 450, description: "NAD+ (250MG) - Cellular regeneration and anti-aging" },
-        { duration: "90 minutes", price: 650, description: "NAD+ (500MG) - Advanced cellular regeneration therapy" },
-        { duration: "15 minutes", price: 80, description: "Vitamin Shots - Quick targeted vitamin injections" }
+        { duration: "45 minutes", price: 200, description: "Initial assessment and treatment plan", name: "First Consultation" },
+        { duration: "30 minutes", price: 150, description: "Comprehensive health screening", name: "Blood Test" },
+        { duration: "45 minutes", price: 320, description: "Reduce inflammation and promote healing", name: "Anti-Inflammatory" },
+        { duration: "45 minutes", price: 300, description: "Boost vitality and combat fatigue", name: "Energy" },
+        { duration: "45 minutes", price: 320, description: "Enhance mental clarity and concentration", name: "Focus" },
+        { duration: "45 minutes", price: 340, description: "Promote healthy skin and radiance", name: "Glow" },
+        { duration: "45 minutes", price: 300, description: "Strengthen your immune system", name: "Immunity" },
+        { duration: "60 minutes", price: 380, description: "Enhanced immune system support", name: "Immunity Plus" },
+        { duration: "60 minutes", price: 420, description: "Support neurological health and regeneration", name: "Neuro-Regan" },
+        { duration: "45 minutes", price: 340, description: "Accelerate post-workout and injury recovery", name: "Recovery" },
+        { duration: "45 minutes", price: 320, description: "Promote relaxation and better sleep", name: "Rest & Sleep" },
+        { duration: "45 minutes", price: 350, description: "Complete rejuvenation and restoration", name: "Revive" },
+        { duration: "60 minutes", price: 450, description: "Cellular regeneration and anti-aging", name: "NAD+ (250MG)" },
+        { duration: "90 minutes", price: 650, description: "Advanced cellular regeneration therapy", name: "NAD+ (500MG)" },
+        { duration: "15 minutes", price: 80, description: "Quick targeted vitamin injections", name: "Vitamin Shots" }
       ]
     },
     {
@@ -338,8 +338,8 @@ const BookService = () => {
               >
                 <div className="flex justify-between items-center w-full">
                   <div>
-                    <div className="font-medium">{option.duration}</div>
-                    <div className="text-sm text-muted-foreground">{option.description}</div>
+                    <div className="font-medium">{option.name}</div>
+                    <div className="text-sm text-muted-foreground">{option.duration} • {option.description}</div>
                   </div>
                   <div className="text-lg font-bold ml-4">£{option.price}</div>
                 </div>
