@@ -107,7 +107,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ userRole }) => {
       });
 
       const topServices = Object.entries(serviceCount)
-        .map(([name, count]) => ({ name, bookings: count }))
+        .map(([name, count]) => ({ name, bookings: Number(count) }))
         .sort((a, b) => b.bookings - a.bookings)
         .slice(0, 5);
 

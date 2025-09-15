@@ -250,7 +250,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ userRole }) => {
 
   const filteredBookings = bookings.filter(booking => {
     if (filterStatus !== 'all' && booking.status !== filterStatus) return false;
-    if (filterStaff !== 'all' && booking.staff_id !== filterStaff) return false;
+    if (filterStaff !== 'all' && (!booking.staff || booking.staff.first_name + ' ' + booking.staff.last_name !== filterStaff)) return false;
     return true;
   });
 
