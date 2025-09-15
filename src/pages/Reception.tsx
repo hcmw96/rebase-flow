@@ -27,7 +27,13 @@ const Reception = () => {
   const [activeTab, setActiveTab] = useState('schedule');
 
   useEffect(() => {
-    // Set up auth state listener
+    // Demo mode - bypass authentication for development
+    setUser({ email: 'demo@example.com' } as User);
+    setUserRole('admin');
+    setLoading(false);
+
+    // Original auth code (commented for demo)
+    /*
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -43,7 +49,6 @@ const Reception = () => {
       }
     );
 
-    // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
@@ -56,6 +61,7 @@ const Reception = () => {
     });
 
     return () => subscription.unsubscribe();
+    */
   }, [navigate]);
 
   const fetchUserRole = async (userId: string) => {
