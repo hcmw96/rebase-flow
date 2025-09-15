@@ -10,7 +10,7 @@ import { MapPin, Phone, Mail, Clock } from "lucide-react";
 const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission - integrate with Mindbody or email service
+    // Handle form submission - integrate with backend service
     console.log("Form submitted");
   };
 
@@ -182,7 +182,7 @@ const Contact = () => {
                   {[
                     {
                       question: "Do I need to book in advance?",
-                      answer: "Yes, we recommend booking in advance to secure your preferred time slot. You can book online through our Mindbody integration or call us directly."
+                      answer: "Yes, we recommend booking in advance to secure your preferred time slot. You can book online through our website or call us directly."
                     },
                     {
                       question: "What should I bring for my first visit?",
@@ -194,7 +194,7 @@ const Contact = () => {
                     },
                     {
                       question: "Can I cancel or reschedule my appointment?",
-                      answer: "Yes, you can cancel or reschedule up to 24 hours before your appointment through your Mindbody account or by contacting us directly."
+                      answer: "Yes, you can cancel or reschedule up to 24 hours before your appointment through your account or by contacting us directly."
                     },
                     {
                       question: "Do you offer membership packages?",
