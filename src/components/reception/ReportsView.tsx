@@ -98,7 +98,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ userRole }) => {
       const uniqueClients = new Set(bookings?.map(b => b.client_id)).size;
 
       // Top services
-      const serviceCount = {};
+      const serviceCount: Record<string, number> = {};
       bookings?.forEach(booking => {
         const serviceName = booking.services?.name;
         if (serviceName) {
@@ -107,7 +107,7 @@ const ReportsView: React.FC<ReportsViewProps> = ({ userRole }) => {
       });
 
       const topServices = Object.entries(serviceCount)
-        .map(([name, count]) => ({ name, bookings: Number(count) }))
+        .map(([name, count]) => ({ name, bookings: count }))
         .sort((a, b) => b.bookings - a.bookings)
         .slice(0, 5);
 
