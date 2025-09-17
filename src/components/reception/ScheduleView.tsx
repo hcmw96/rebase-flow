@@ -388,7 +388,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ userRole }) => {
                             console.log('🔄 Rendering service item:', service);
                             return (
                               <SelectItem key={service.id} value={service.id}>
-                                {service.name} - ${service.price} ({service.duration_minutes}min)
+                                {service.name} - £{service.price} ({service.duration_minutes}min)
                               </SelectItem>
                             );
                           });
