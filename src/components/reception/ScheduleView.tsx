@@ -61,6 +61,7 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ userRole }) => {
   const canManageBookings = ['admin', 'manager', 'receptionist'].includes(userRole);
 
   useEffect(() => {
+    console.log('🔄 ScheduleView useEffect triggered, selectedDate:', selectedDate);
     fetchBookings();
     fetchClients();
     fetchServices();
@@ -119,17 +120,27 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ userRole }) => {
   };
 
   const fetchServices = async () => {
+    console.log('🔍 fetchServices called');
     try {
+      console.log('🌐 Making Supabase request for services...');
       const { data, error } = await supabase
         .from('services')
         .select('*')
         .eq('is_active', true)
         .order('name');
 
-      if (error) throw error;
+      console.log('📊 Supabase services response:', { data, error });
+      
+      if (error) {
+        console.error('❌ Supabase services error:', error);
+        throw error;
+      }
+      
+      console.log('✅ Setting services state with data:', data);
+      console.log('📊 Services count:', data?.length || 0);
       setServices(data || []);
     } catch (error) {
-      console.error('Error fetching services:', error);
+      console.error('💥 Error fetching services:', error);
     }
   };
 
@@ -361,18 +372,27 @@ const ScheduleView: React.FC<ScheduleViewProps> = ({ userRole }) => {
                   <div className="space-y-2">
                     <Label htmlFor="service">Service *</Label>
                     <Select value={newBooking.service_id} onValueChange={(value) => {
+                      console.log('🎯 Service selected:', value);
                       const service = services.find(s => s.id === value);
+                      console.log('📋 Found service:', service);
                       setNewBooking({...newBooking, service_id: value, price: service?.price || 0});
                     }}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select service" />
                       </SelectTrigger>
                       <SelectContent>
-                        {services.map((service) => (
-                          <SelectItem key={service.id} value={service.id}>
-                            {service.name} - ${service.price} ({service.duration_minutes}min)
-                          </SelectItem>
-                        ))}
+                        {(() => {
+                          console.log('🎨 Rendering services dropdown, services array:', services);
+                          console.log('🔢 Services array length:', services.length);
+                          return services.map((service) => {
+                            console.log('🔄 Rendering service item:', service);
+                            return (
+                              <SelectItem key={service.id} value={service.id}>
+                                {service.name} - ${service.price} ({service.duration_minutes}min)
+                              </SelectItem>
+                            );
+                          });
+                        })()}
                       </SelectContent>
                     </Select>
                   </div>
