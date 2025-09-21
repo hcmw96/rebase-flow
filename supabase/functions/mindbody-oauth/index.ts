@@ -84,8 +84,26 @@ serve(async (req) => {
       }
 
       // Get the correct app URL - use the actual project subdomain from request headers
-      const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-      const projectUrl = origin || 'https://c536b9fb-8c1f-4fa2-810c-33c53bae7340.lovableproject.com';
+      let projectUrl = req.headers.get('origin') || req.headers.get('referer');
+      
+      if (projectUrl && projectUrl.includes('?')) {
+        projectUrl = projectUrl.split('?')[0];
+      }
+      if (projectUrl && projectUrl.endsWith('/')) {
+        projectUrl = projectUrl.slice(0, -1);
+      }
+      
+      if (!projectUrl) {
+        // Extract from referer if available
+        const referer = req.headers.get('referer');
+        if (referer) {
+          const refererUrl = new URL(referer);
+          projectUrl = refererUrl.origin;
+        } else {
+          throw new Error('Unable to determine project URL from request headers');
+        }
+      }
+      
       const redirectUri = `${projectUrl}/reception?oauth_callback=true`;
       
       // Mindbody OAuth authorization endpoint
@@ -171,8 +189,26 @@ serve(async (req) => {
       }
 
       // Use the same redirect URI - get actual project URL from request headers
-      const origin = req.headers.get('origin') || req.headers.get('referer') || '';
-      const projectUrl = origin || 'https://c536b9fb-8c1f-4fa2-810c-33c53bae7340.lovableproject.com';
+      let projectUrl = req.headers.get('origin') || req.headers.get('referer');
+      
+      if (projectUrl && projectUrl.includes('?')) {
+        projectUrl = projectUrl.split('?')[0];
+      }
+      if (projectUrl && projectUrl.endsWith('/')) {
+        projectUrl = projectUrl.slice(0, -1);
+      }
+      
+      if (!projectUrl) {
+        // Extract from referer if available
+        const referer = req.headers.get('referer');
+        if (referer) {
+          const refererUrl = new URL(referer);
+          projectUrl = refererUrl.origin;
+        } else {
+          throw new Error('Unable to determine project URL from request headers');
+        }
+      }
+      
       const redirectUri = `${projectUrl}/reception?oauth_callback=true`;
 
       console.log('🔄 Exchanging code for token...');
