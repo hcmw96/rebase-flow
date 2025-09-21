@@ -28,13 +28,6 @@ const Reception = () => {
   const [activeTab, setActiveTab] = useState('schedule');
 
   useEffect(() => {
-    // Demo mode - bypass authentication for development
-    setUser({ email: 'demo@example.com' } as User);
-    setUserRole('admin');
-    setLoading(false);
-
-    // OAuth will work without auth - real auth code commented for demo
-    /*
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setSession(session);
@@ -62,7 +55,6 @@ const Reception = () => {
     });
 
     return () => subscription.unsubscribe();
-    */
   }, [navigate]);
 
   const fetchUserRole = async (userId: string) => {
