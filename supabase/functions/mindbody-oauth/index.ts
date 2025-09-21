@@ -33,14 +33,22 @@ serve(async (req) => {
 
     const url = new URL(req.url);
     let action = url.searchParams.get('action');
+    let requestBody = null;
     
-    // If no action in query params, check request body
-    if (!action && req.method === 'POST') {
+    // Read request body only once if it's a POST request
+    if (req.method === 'POST') {
       try {
-        const body = await req.json();
-        action = body.action;
-      } catch {
-        // Ignore JSON parsing errors
+        requestBody = await req.json();
+        // If no action in query params, check request body
+        if (!action) {
+          action = requestBody.action;
+        }
+      } catch (error) {
+        console.error('❌ Failed to parse request body:', error);
+        return new Response(JSON.stringify({ error: 'Failed to parse request body', details: error.message }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
       }
     }
 
@@ -53,18 +61,9 @@ serve(async (req) => {
       console.log('🔍 Request method:', req.method);
       console.log('🔍 Request headers:', Object.fromEntries(req.headers.entries()));
       
-      try {
-        if (req.method === 'POST') {
-          const body = await req.json();
-          console.log('📥 Request body:', body);
-          userId = body.userId;
-        }
-      } catch (error) {
-        console.error('❌ Failed to parse request body:', error);
-        return new Response(JSON.stringify({ error: 'Failed to parse request body', details: error.message }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
+      if (requestBody) {
+        console.log('📥 Request body:', requestBody);
+        userId = requestBody.userId;
       }
 
       if (!userId) {
@@ -111,11 +110,10 @@ serve(async (req) => {
     } else if (action === 'callback') {
       // Handle OAuth callback - get code and state from request body (called from frontend)
       let code, state;
-      try {
-        const body = await req.json();
-        code = body.code;
-        state = body.state;
-      } catch {
+      if (requestBody) {
+        code = requestBody.code;
+        state = requestBody.state;
+      } else {
         return new Response(JSON.stringify({ error: 'Code and state required' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -238,7 +236,16 @@ serve(async (req) => {
       });
 
     } else if (action === 'refresh') {
-      // Refresh access token
+      // Refresh access token - verify user authentication first
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      if (userError || !user) {
+        console.error('Authentication required for refresh');
+        return new Response(JSON.stringify({ error: 'Authentication required' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const { data: connection } = await supabaseClient
         .from('mb_connections')
         .select('*')
