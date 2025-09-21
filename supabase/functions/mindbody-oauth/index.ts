@@ -32,7 +32,19 @@ serve(async (req) => {
     );
 
     const url = new URL(req.url);
-    const action = url.searchParams.get('action');
+    let action = url.searchParams.get('action');
+    
+    // If no action in query params, check request body
+    if (!action && req.method === 'POST') {
+      try {
+        const body = await req.json();
+        action = body.action;
+      } catch {
+        // Ignore JSON parsing errors
+      }
+    }
+
+    console.log('📝 Processing action:', action);
 
     if (action === 'initiate') {
       // Initiate OAuth flow - no auth required
