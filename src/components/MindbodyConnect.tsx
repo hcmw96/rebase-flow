@@ -71,16 +71,25 @@ export const MindbodyConnect = () => {
     try {
       setConnecting(true);
       
-      const { data, error } = await supabase.functions.invoke('mindbody-oauth', {
-        body: { action: 'initiate' }
+      // Call the edge function without authentication for initiation
+      const response = await fetch(`https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbody-oauth?action=initiate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo',
+        },
+        body: JSON.stringify({ action: 'initiate' })
       });
 
-      if (error) {
-        console.error('Error initiating OAuth:', error);
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Error initiating OAuth:', errorData);
         toast.error('Failed to initiate Mindbody connection');
         return;
       }
 
+      const data = await response.json();
+      
       // Redirect to Mindbody OAuth
       window.location.href = data.authUrl;
       

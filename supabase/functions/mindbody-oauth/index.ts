@@ -31,21 +31,11 @@ serve(async (req) => {
       }
     );
 
-    // Get the current user
-    const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
-    if (userError || !user) {
-      console.error('Authentication error:', userError);
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
 
     if (action === 'initiate') {
-      // Initiate OAuth flow
+      // Initiate OAuth flow - no auth required
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
       const redirectUri = `${url.origin}/api/mindbody-oauth?action=callback`;
       
@@ -54,9 +44,9 @@ serve(async (req) => {
       authUrl.searchParams.set('client_id', clientId!);
       authUrl.searchParams.set('redirect_uri', redirectUri);
       authUrl.searchParams.set('scope', 'read write');
-      authUrl.searchParams.set('state', user.id); // Use user ID as state parameter
+      authUrl.searchParams.set('state', Math.random().toString(36).substring(7)); // Random state for security
 
-      console.log('🚀 Initiating OAuth flow for user:', user.id);
+      console.log('🚀 Initiating OAuth flow');
       console.log('🔗 Auth URL:', authUrl.toString());
 
       return new Response(JSON.stringify({ 
@@ -67,7 +57,15 @@ serve(async (req) => {
       });
 
     } else if (action === 'callback') {
-      // Handle OAuth callback
+      // Handle OAuth callback - requires auth context
+      const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
+      if (userError || !user) {
+        console.error('Authentication required for callback');
+        return new Response(JSON.stringify({ error: 'Authentication required' }), {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
       const error = url.searchParams.get('error');

@@ -61,4 +61,4 @@ port = 54330
 ip_version = "ipv4"
 
 [functions.mindbody-oauth]
-verify_jwt = true
+verify_jwt = false

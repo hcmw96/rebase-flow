@@ -33,7 +33,7 @@ const Reception = () => {
     setUserRole('admin');
     setLoading(false);
 
-    // Original auth code (commented for demo)
+    // OAuth will work without auth - real auth code commented for demo
     /*
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
