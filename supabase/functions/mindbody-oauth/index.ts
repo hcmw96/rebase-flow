@@ -83,9 +83,10 @@ serve(async (req) => {
         });
       }
 
-      // Get the correct app URL - use the project subdomain format
-      const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0] || 'wdgyuxkqqmtxcltsfkel';
-      const redirectUri = `https://${projectId}.lovableproject.com/reception?oauth_callback=true`;
+      // Get the correct app URL - use the actual project subdomain from request headers
+      const origin = req.headers.get('origin') || req.headers.get('referer') || '';
+      const projectUrl = origin || 'https://c536b9fb-8c1f-4fa2-810c-33c53bae7340.lovableproject.com';
+      const redirectUri = `${projectUrl}/reception?oauth_callback=true`;
       
       // Mindbody OAuth authorization endpoint
       const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issuetoken');
@@ -169,9 +170,10 @@ serve(async (req) => {
         });
       }
 
-      // Use the same redirect URI that was used in initiate
-      const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0] || 'wdgyuxkqqmtxcltsfkel';
-      const redirectUri = `https://${projectId}.lovableproject.com/reception?oauth_callback=true`;
+      // Use the same redirect URI - get actual project URL from request headers
+      const origin = req.headers.get('origin') || req.headers.get('referer') || '';
+      const projectUrl = origin || 'https://c536b9fb-8c1f-4fa2-810c-33c53bae7340.lovableproject.com';
+      const redirectUri = `${projectUrl}/reception?oauth_callback=true`;
 
       console.log('🔄 Exchanging code for token...');
       console.log('📍 Using redirect URI:', redirectUri);
