@@ -14,6 +14,7 @@ import ScheduleView from '@/components/reception/ScheduleView';
 import ClientManagement from '@/components/reception/ClientManagement';
 import PointOfSale from '@/components/reception/PointOfSale';
 import ReportsView from '@/components/reception/ReportsView';
+import { MindbodyConnect } from '@/components/MindbodyConnect';
 
 type UserRole = 'admin' | 'manager' | 'receptionist' | 'practitioner';
 
@@ -166,6 +167,10 @@ const Reception = () => {
 
       {/* Main Content */}
       <main className="p-6">
+        <div className="mb-6">
+          <MindbodyConnect />
+        </div>
+
         <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="schedule" className="flex items-center gap-2">
