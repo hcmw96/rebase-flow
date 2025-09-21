@@ -83,12 +83,11 @@ serve(async (req) => {
         });
       }
 
-      // Redirect back to the frontend app, not the function
-      const appUrl = url.origin.includes('supabase.co') 
-        ? url.origin.replace('supabase.co', 'lovableproject.com')
-        : 'http://localhost:3000';
-      const redirectUri = `${appUrl}/reception?oauth_callback=true`;
+      // Get the correct app URL - use the project subdomain format
+      const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0] || 'wdgyuxkqqmtxcltsfkel';
+      const redirectUri = `https://${projectId}.lovableproject.com/reception?oauth_callback=true`;
       
+      // Mindbody OAuth authorization endpoint
       const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issuetoken');
       authUrl.searchParams.set('response_type', 'code');
       authUrl.searchParams.set('client_id', clientId);
@@ -160,24 +159,33 @@ serve(async (req) => {
       // Exchange code for access token
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
       const clientSecret = Deno.env.get('MINDBODY_OAUTH_CLIENT_SECRET');
+      const apiKey = Deno.env.get('MINDBODY_API_KEY');
+      
+      if (!clientId || !clientSecret || !apiKey) {
+        console.error('❌ Missing OAuth credentials');
+        return new Response(JSON.stringify({ error: 'OAuth configuration incomplete' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Use the same redirect URI that was used in initiate
-      const appUrl = url.origin.includes('supabase.co') 
-        ? url.origin.replace('supabase.co', 'lovableproject.com')
-        : 'http://localhost:3000';
-      const redirectUri = `${appUrl}/reception?oauth_callback=true`;
+      const projectId = Deno.env.get('SUPABASE_URL')?.split('//')[1]?.split('.')[0] || 'wdgyuxkqqmtxcltsfkel';
+      const redirectUri = `https://${projectId}.lovableproject.com/reception?oauth_callback=true`;
 
       console.log('🔄 Exchanging code for token...');
+      console.log('📍 Using redirect URI:', redirectUri);
 
+      // Mindbody token exchange endpoint with proper authentication
       const tokenResponse = await fetch('https://api.mindbodyonline.com/public/v6/usertoken/issue', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Api-Key': Deno.env.get('MINDBODY_API_KEY')!,
+          'Api-Key': apiKey,
+          'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
         },
         body: new URLSearchParams({
           grant_type: 'authorization_code',
-          client_id: clientId!,
-          client_secret: clientSecret!,
           code: code,
           redirect_uri: redirectUri,
         }),
@@ -261,16 +269,19 @@ serve(async (req) => {
 
       console.log('🔄 Refreshing access token...');
 
+      const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
+      const clientSecret = Deno.env.get('MINDBODY_OAUTH_CLIENT_SECRET');
+      const apiKey = Deno.env.get('MINDBODY_API_KEY');
+
       const refreshResponse = await fetch('https://api.mindbodyonline.com/public/v6/usertoken/issue', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
-          'Api-Key': Deno.env.get('MINDBODY_API_KEY')!,
+          'Api-Key': apiKey!,
+          'Authorization': `Basic ${btoa(`${clientId}:${clientSecret}`)}`,
         },
         body: new URLSearchParams({
           grant_type: 'refresh_token',
-          client_id: Deno.env.get('MINDBODY_OAUTH_CLIENT_ID')!,
-          client_secret: Deno.env.get('MINDBODY_OAUTH_CLIENT_SECRET')!,
           refresh_token: connection.refresh_token,
         }),
       });
