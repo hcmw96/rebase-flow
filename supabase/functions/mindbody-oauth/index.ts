@@ -49,24 +49,41 @@ serve(async (req) => {
     if (action === 'initiate') {
       // Initiate OAuth flow - requires user ID from request body
       let userId;
+      
+      console.log('🔍 Request method:', req.method);
+      console.log('🔍 Request headers:', Object.fromEntries(req.headers.entries()));
+      
       try {
-        const body = await req.json();
-        userId = body.userId;
-      } catch {
-        return new Response(JSON.stringify({ error: 'User ID required' }), {
+        if (req.method === 'POST') {
+          const body = await req.json();
+          console.log('📥 Request body:', body);
+          userId = body.userId;
+        }
+      } catch (error) {
+        console.error('❌ Failed to parse request body:', error);
+        return new Response(JSON.stringify({ error: 'Failed to parse request body', details: error.message }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       if (!userId) {
-        return new Response(JSON.stringify({ error: 'User ID required' }), {
+        console.error('❌ Missing userId in request');
+        return new Response(JSON.stringify({ error: 'User ID required in request body' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
+      if (!clientId) {
+        console.error('❌ Missing MINDBODY_OAUTH_CLIENT_ID environment variable');
+        return new Response(JSON.stringify({ error: 'OAuth client configuration missing' }), {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       // Redirect back to the frontend app, not the function
       const appUrl = url.origin.includes('supabase.co') 
         ? url.origin.replace('supabase.co', 'lovableproject.com')
@@ -75,7 +92,7 @@ serve(async (req) => {
       
       const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issuetoken');
       authUrl.searchParams.set('response_type', 'code');
-      authUrl.searchParams.set('client_id', clientId!);
+      authUrl.searchParams.set('client_id', clientId);
       authUrl.searchParams.set('redirect_uri', redirectUri);
       authUrl.searchParams.set('scope', 'read write');
       authUrl.searchParams.set('state', userId); // Use user ID as state for validation
