@@ -49,7 +49,7 @@ serve(async (req) => {
     if (action === 'initiate') {
       // Initiate OAuth flow - no auth required
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
-      const redirectUri = `${url.origin}/api/mindbody-oauth?action=callback`;
+      const redirectUri = `${url.origin}/functions/v1/mindbody-oauth?action=callback`;
       
       const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issuetoken');
       authUrl.searchParams.set('response_type', 'code');
@@ -110,7 +110,7 @@ serve(async (req) => {
       // Exchange code for access token
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
       const clientSecret = Deno.env.get('MINDBODY_OAUTH_CLIENT_SECRET');
-      const redirectUri = `${url.origin}/api/mindbody-oauth?action=callback`;
+      const redirectUri = `${url.origin}/functions/v1/mindbody-oauth?action=callback`;
 
       console.log('🔄 Exchanging code for token...');
 
