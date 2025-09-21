@@ -26,15 +26,52 @@ export const MindbodyConnect = () => {
   useEffect(() => {
     checkConnection();
     
-    // Check for OAuth success in URL
+    // Handle OAuth callback
     const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('oauth') === 'success') {
+    const code = urlParams.get('code');
+    const state = urlParams.get('state');
+    const oauthCallback = urlParams.get('oauth_callback');
+    
+    if (oauthCallback === 'true' && code && state) {
+      handleOAuthCallback(code, state);
+    } else if (urlParams.get('oauth') === 'success') {
       toast.success('Successfully connected to Mindbody!');
       // Clean up URL
       window.history.replaceState({}, '', window.location.pathname);
       checkConnection();
     }
   }, []);
+
+  const handleOAuthCallback = async (code: string, state: string) => {
+    try {
+      setConnecting(true);
+      
+      const { data, error } = await supabase.functions.invoke('mindbody-oauth', {
+        body: { 
+          action: 'callback',
+          code,
+          state
+        }
+      });
+
+      if (error) {
+        console.error('OAuth callback error:', error);
+        toast.error('Failed to complete Mindbody connection');
+        return;
+      }
+
+      toast.success('Successfully connected to Mindbody!');
+      // Clean up URL
+      window.history.replaceState({}, '', window.location.pathname);
+      await checkConnection();
+      
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      toast.error('Failed to complete connection');
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   const checkConnection = async () => {
     try {
@@ -71,9 +108,19 @@ export const MindbodyConnect = () => {
     try {
       setConnecting(true);
       
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        toast.error('You must be logged in to connect to Mindbody');
+        return;
+      }
+      
       // Use the proper Supabase function invoke method
       const { data, error } = await supabase.functions.invoke('mindbody-oauth', {
-        body: { action: 'initiate' }
+        body: { 
+          action: 'initiate',
+          userId: user.id
+        }
       });
 
       if (error) {

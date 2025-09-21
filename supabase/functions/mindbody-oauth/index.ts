@@ -47,19 +47,42 @@ serve(async (req) => {
     console.log('📝 Processing action:', action);
 
     if (action === 'initiate') {
-      // Initiate OAuth flow - no auth required
+      // Initiate OAuth flow - requires user ID from request body
+      let userId;
+      try {
+        const body = await req.json();
+        userId = body.userId;
+      } catch {
+        return new Response(JSON.stringify({ error: 'User ID required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      if (!userId) {
+        return new Response(JSON.stringify({ error: 'User ID required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
-      const redirectUri = `${url.origin}/functions/v1/mindbody-oauth?action=callback`;
+      // Redirect back to the frontend app, not the function
+      const appUrl = url.origin.includes('supabase.co') 
+        ? url.origin.replace('supabase.co', 'lovableproject.com')
+        : 'http://localhost:3000';
+      const redirectUri = `${appUrl}/reception?oauth_callback=true`;
       
       const authUrl = new URL('https://api.mindbodyonline.com/public/v6/usertoken/issuetoken');
       authUrl.searchParams.set('response_type', 'code');
       authUrl.searchParams.set('client_id', clientId!);
       authUrl.searchParams.set('redirect_uri', redirectUri);
       authUrl.searchParams.set('scope', 'read write');
-      authUrl.searchParams.set('state', Math.random().toString(36).substring(7)); // Random state for security
+      authUrl.searchParams.set('state', userId); // Use user ID as state for validation
 
-      console.log('🚀 Initiating OAuth flow');
+      console.log('🚀 Initiating OAuth flow for user:', userId);
       console.log('🔗 Auth URL:', authUrl.toString());
+      console.log('📍 Redirect URI:', redirectUri);
 
       return new Response(JSON.stringify({ 
         authUrl: authUrl.toString(),
@@ -69,7 +92,20 @@ serve(async (req) => {
       });
 
     } else if (action === 'callback') {
-      // Handle OAuth callback - requires auth context
+      // Handle OAuth callback - get code and state from request body (called from frontend)
+      let code, state;
+      try {
+        const body = await req.json();
+        code = body.code;
+        state = body.state;
+      } catch {
+        return new Response(JSON.stringify({ error: 'Code and state required' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      // Verify user authentication using state (user ID)
       const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
       if (userError || !user) {
         console.error('Authentication required for callback');
@@ -78,9 +114,8 @@ serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
-      const code = url.searchParams.get('code');
-      const state = url.searchParams.get('state');
-      const error = url.searchParams.get('error');
+
+      const error = null; // No error parameter in this flow
 
       if (error) {
         console.error('❌ OAuth error:', error);
@@ -110,7 +145,11 @@ serve(async (req) => {
       // Exchange code for access token
       const clientId = Deno.env.get('MINDBODY_OAUTH_CLIENT_ID');
       const clientSecret = Deno.env.get('MINDBODY_OAUTH_CLIENT_SECRET');
-      const redirectUri = `${url.origin}/functions/v1/mindbody-oauth?action=callback`;
+      // Use the same redirect URI that was used in initiate
+      const appUrl = url.origin.includes('supabase.co') 
+        ? url.origin.replace('supabase.co', 'lovableproject.com')
+        : 'http://localhost:3000';
+      const redirectUri = `${appUrl}/reception?oauth_callback=true`;
 
       console.log('🔄 Exchanging code for token...');
 
@@ -170,13 +209,15 @@ serve(async (req) => {
 
       console.log('✅ OAuth connection stored successfully');
 
-      // Redirect back to the app with success
-      return new Response(null, {
-        status: 302,
-        headers: {
-          ...corsHeaders,
-          'Location': `${Deno.env.get('SUPABASE_URL')?.replace('supabase.co', 'lovableproject.com') || 'http://localhost:3000'}/reception?oauth=success`,
-        },
+      // Return success response (no redirect needed since this is called from frontend)
+      return new Response(JSON.stringify({ 
+        success: true,
+        connection: {
+          site_id: Deno.env.get('MINDBODY_SITE_ID')!,
+          expires_at: expiresAt.toISOString()
+        }
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
 
     } else if (action === 'refresh') {
