@@ -29,7 +29,7 @@ const Services = () => {
       const nonce = "randomStringSeguro123";
       const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
 
-      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=query&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
+      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
 
       window.location.href = authUrl;
     }
