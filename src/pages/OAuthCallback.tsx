@@ -1,83 +1,22 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 
 const OAuthCallback = () => {
-  const [status, setStatus] = useState("Processando login...");
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
-    let code: string | null = null;
-  let state: string | null = null;
+    const searchParams = new URLSearchParams(location.search);
+    const code = searchParams.get("code");
+    const idToken = searchParams.get("id_token");
 
-  // Tenta pegar da query string
-  const params = new URLSearchParams(window.location.search);
-  code = params.get("code");
-  state = params.get("state");
+    if (code) {
+      console.log("Code recebido:", code);
+      // aqui você pode chamar outra Supabase Function para trocar o code por access_token
+    }
+  }, [location, navigate]);
 
-  // Se não estiver na query string, tenta pegar do form POST
-  if (!code && document.forms.length > 0) {
-    const form = document.forms[0];
-    code = (form.elements.namedItem("code") as HTMLInputElement)?.value || null;
-    state = (form.elements.namedItem("state") as HTMLInputElement)?.value || null;
-  }
-
-  if (!code) {
-    console.error("Authorization code não encontrado.");
-    setStatus("❌ Authorization code não encontrado.");
-    return;
-  }
-
-    const fetchToken = async () => {
-      try {
-        setStatus("🔄 Validando com servidor...");
-
-        const response = await fetch(
-          `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbody-oauth`,
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              // Substitua pelo token anônimo ou de serviço válido
-              Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo',
-            },
-            body: JSON.stringify({
-              action: "callback",
-              code,
-              state,
-            }),
-          }
-        );
-
-        const data = await response.json();
-        console.log("Callback Response:", data);
-
-        if (response.ok && data.success) {
-          // Salva tokens no localStorage
-          if (data.connection) {
-            localStorage.setItem("access_token", data.connection.access_token || "");
-            localStorage.setItem("refresh_token", data.connection.refresh_token || "");
-            localStorage.setItem("expires_at", data.connection.expires_at || "");
-          }
-
-          setStatus("✅ Login concluído! Redirecionando...");
-          setTimeout(() => navigate("/services"), 1500);
-        } else {
-          console.error("Erro do servidor:", data);
-          setStatus("❌ Erro no login com Mindbody");
-        }
-      } catch (err) {
-        console.error("Erro ao processar callback:", err);
-        setStatus("❌ Erro interno no callback");
-      }
-    };
-
-    fetchToken();
-  }, [navigate]);
-
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-black text-white">
-      <p>{status}</p>
-    </div>
-  );
+  return <div>Processando login...</div>;
 };
+
 export default OAuthCallback;
