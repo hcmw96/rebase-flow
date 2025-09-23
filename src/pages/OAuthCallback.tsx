@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const OAuthCallback= () => {
+const Callback = () => {
   const [status, setStatus] = useState("Processando login...");
   const navigate = useNavigate();
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const code = params.get("code");
-    const state = params.get("state"); // usado como userId
+    const state = params.get("state");
 
     if (!code) {
       setStatus("❌ Authorization code não encontrado.");
@@ -26,7 +26,8 @@ const OAuthCallback= () => {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${localStorage.getItem("supabase_token")}`, // opcional, se precisar validar usuário
+              // Substitua pelo token anônimo ou de serviço válido
+              Authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo',
             },
             body: JSON.stringify({
               action: "callback",
@@ -50,6 +51,7 @@ const OAuthCallback= () => {
           setStatus("✅ Login concluído! Redirecionando...");
           setTimeout(() => navigate("/services"), 1500);
         } else {
+          console.error("Erro do servidor:", data);
           setStatus("❌ Erro no login com Mindbody");
         }
       } catch (err) {
@@ -62,9 +64,9 @@ const OAuthCallback= () => {
   }, [navigate]);
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background text-foreground">
+    <div className="flex items-center justify-center min-h-screen bg-black text-white">
       <p>{status}</p>
     </div>
   );
 };
-export default OAuthCallback;
+export default Callback;
