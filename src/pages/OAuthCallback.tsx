@@ -1,49 +1,40 @@
 import { useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const OAuthCallback = () => {
-  const location = useLocation();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    console.log("OAuthCallback carregado. Location:", location);
+    const fetchToken = async () => {
+      try {
+        const response = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyToken",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ name: "Functions" }),
+          }
+        );
 
-    // Pegar query string
-    const searchParams = new URLSearchParams(location.search);
-    const code = searchParams.get("code");
-    console.log("Code extraído da URL:", code);
+        if (!response.ok) throw new Error(`Erro ${response.status}`);
 
-    if (!code) {
-      console.error("Nenhum 'code' encontrado na URL. Verifique se o Mindbody redirecionou corretamente.");
-      return;
-    }
+        const data = await response.json();
+        console.log("Token recebido:", data.access_token);
 
-    // Requisição para função Supabase
-    fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyToken", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo", 
-      },
-      body: JSON.stringify({ code }),
-    })
-      .then(async res => {
-        console.log("Status da resposta:", res.status);
-        const text = await res.text();
-        console.log("Resposta bruta:", text);
-        try {
-          return JSON.parse(text);
-        } catch (e) {
-          throw new Error("Falha ao parsear JSON da resposta: " + e.message);
-        }
-      })
-      .then(data => {
-        console.log("Access token recebido:", data.access_token);
-        // Aqui você pode salvar o token no estado, localStorage ou contexto
-      })
-      .catch(err => console.error("Erro ao obter token:", err));
-  }, [location]);
+        // Redireciona para seu app passando o token (opcional)
+        navigate(`/app?access_token=${data.access_token}`);
+      } catch (err: any) {
+        console.error("Erro ao obter token:", err.message);
+      }
+    };
 
-  return <div>Loading OAuth callback...</div>;
+    fetchToken();
+  }, [navigate]);
+
+  return <div>Carregando token do Mindbody...</div>;
 };
 
 export default OAuthCallback;
