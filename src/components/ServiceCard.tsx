@@ -33,8 +33,17 @@ const ServiceCard = ({
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    navigate(`/book/${id}`);
-  };
+  const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565"; // pegue no Mindbody Developer Portal
+  const redirectUri = encodeURIComponent("https://rebase.echo.london/services"); // precisa estar registrado no OAuth client
+  const scope = encodeURIComponent("email profile openid offline_access Mindbody.Api.Public.v6");
+  const nonce = "randomStringSeguro123"; // gere dinamicamente de preferência
+  const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565"; // fornecido pela Mindbody
+
+  const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
+
+  // redireciona o usuário para a tela de login do Mindbody
+  window.location.href = authUrl;
+};
 
   const renderPricing = () => {
     if (!service) return null;
