@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
@@ -17,6 +17,23 @@ const Services = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
+
+  // Check for access token on component mount
+  useEffect(() => {
+    const accessToken = localStorage.getItem("access_token");
+    
+    if (!accessToken) {
+      const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+      const redirectUri = encodeURIComponent("https://rebase.echo.london/oauth-callback");
+      const scope = encodeURIComponent("email profile openid offline_access Mindbody.Api.Public.v6");
+      const nonce = "randomStringSeguro123";
+      const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+
+      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
+
+      window.location.href = authUrl;
+    }
+  }, []);
 
   const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
 
