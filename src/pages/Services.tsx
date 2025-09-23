@@ -31,7 +31,7 @@ const Services = () => {
 
       const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
 console.log("URL de autenticação Mindbody:", authUrl);
-      //window.location.href = authUrl;
+    
     }
   }, []);
 
