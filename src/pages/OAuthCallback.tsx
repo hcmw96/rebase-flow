@@ -1,20 +1,31 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-const Callback = () => {
+const OAuthCallback = () => {
   const [status, setStatus] = useState("Processando login...");
   const navigate = useNavigate();
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const state = params.get("state");
+    let code: string | null = null;
+  let state: string | null = null;
 
-    if (!code) {
-      setStatus("❌ Authorization code não encontrado.");
-      console.error("Authorization code não encontrado.");
-      return;
-    }
+  // Tenta pegar da query string
+  const params = new URLSearchParams(window.location.search);
+  code = params.get("code");
+  state = params.get("state");
+
+  // Se não estiver na query string, tenta pegar do form POST
+  if (!code && document.forms.length > 0) {
+    const form = document.forms[0];
+    code = (form.elements.namedItem("code") as HTMLInputElement)?.value || null;
+    state = (form.elements.namedItem("state") as HTMLInputElement)?.value || null;
+  }
+
+  if (!code) {
+    console.error("Authorization code não encontrado.");
+    setStatus("❌ Authorization code não encontrado.");
+    return;
+  }
 
     const fetchToken = async () => {
       try {
@@ -69,4 +80,4 @@ const Callback = () => {
     </div>
   );
 };
-export default Callback;
+export default OAuthCallback;
