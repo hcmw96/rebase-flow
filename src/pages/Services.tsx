@@ -19,21 +19,18 @@ const Services = () => {
   const [bookingStep, setBookingStep] = useState(1);
 
   // Check for access token on component mount
-  useEffect(() => {
-    const accessToken = localStorage.getItem("access_token");
-    
-    if (!accessToken) {
-      const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-      const redirectUri = encodeURIComponent("https://rebase.echo.london/oauth-callback");
-      const scope = encodeURIComponent("email profile openid offline_access Mindbody.Api.Public.v6");
-      const nonce = "randomStringSeguro123";
-      const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+   useEffect(() => {
+    const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+    const redirectUri = encodeURIComponent("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste"); 
+    const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+    const nonce = crypto.randomUUID();
+    console.log("Generated nonce:", nonce);
+    const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
 
-      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
-console.log("URL de autenticação Mindbody:", authUrl);
+    // redireciona imediatamente ao carregar
     window.location.href = authUrl;
-    }
   }, []);
+
 
   const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
 
