@@ -22,8 +22,7 @@ const Services = () => {
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>(["All"]);
 
-
-   useEffect(() => {
+  useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   const accessToken = params.get("access_token");
