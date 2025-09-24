@@ -188,14 +188,13 @@ const BookService = () => {
                       selected={selectedDate}
                       onSelect={handleDateSelect}
                       disabled={(date) =>
-                        date < new Date(new Date().setHours(0, 0, 0, 0)) ||
-                        !availableDates.some(
-                          (d) =>
-                            d.getFullYear() === date.getFullYear() &&
-                            d.getMonth() === date.getMonth() &&
-                            d.getDate() === date.getDate()
-                        )
-                      }
+  !availableDates.some(
+    (d) =>
+      d.getFullYear() === date.getFullYear() &&
+      d.getMonth() === date.getMonth() &&
+      d.getDate() === date.getDate()
+  )
+}
                       className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
                     />
                   </div>
