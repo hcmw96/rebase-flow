@@ -20,59 +20,20 @@ const Services = () => {
 
   // Check for access token on component mount
   useEffect(() => {
-  console.log("=== useEffect /services iniciado ===");
-  
-  const params = new URLSearchParams(window.location.search);
-  const accessToken = params.get("access_token");
-  const code = params.get("code");
+    const accessToken = localStorage.getItem("access_token");
+    
+    if (!accessToken) {
+      const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+      const redirectUri = encodeURIComponent("https://rebase.echo.london/oauth-callback");
+      const scope = encodeURIComponent("email profile openid offline_access Mindbody.Api.Public.v6");
+      const nonce = "randomStringSeguro123";
+      const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
 
-  console.log("Parâmetros da URL:", Object.fromEntries(params.entries()));
-  console.log("Access Token na URL:", accessToken);
-  console.log("Code na URL:", code);
-
-  if (!accessToken && !code) {
-    console.log("Nenhum token ou code encontrado. Redirecionando para authUrl...");
-
-    const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-    const redirectUri = encodeURIComponent("https://rebase.echo.london/services"); 
-    const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-    const nonce = crypto.randomUUID();
-
-    const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
-
-    console.log("Auth URL gerada:", authUrl);
-
+      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=${scope}&subscriberId=${subscriberId}&nonce=${nonce}`;
+console.log("URL de autenticação Mindbody:", authUrl);
     window.location.href = authUrl;
-    return;
-  }
-
-  if (code && !accessToken) {
-    console.log("Code recebido da URL. Chamando Edge Function para trocar pelo token...", code);
-
-    fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste", {
-      method: "POST",
-      body: new URLSearchParams({ code })
-    })
-      .then(res => {
-        console.log("Resposta da Edge Function:", res);
-        if (res.redirected) {
-          console.log("Edge Function redirecionou para:", res.url);
-          window.location.href = res.url;
-        } else {
-          return res.json();
-        }
-      })
-      .then(data => {
-        if (data?.access_token) {
-          console.log("Access token recebido da Edge Function:", data.access_token);
-        } else if (data) {
-          console.log("Resposta da Edge Function (sem token):", data);
-        }
-      })
-      .catch(err => console.error("Erro ao chamar Edge Function:", err));
-  }
-
-}, []);
+    }
+  }, []);
 
   const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
 
