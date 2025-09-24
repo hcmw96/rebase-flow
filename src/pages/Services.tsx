@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
@@ -17,10 +17,64 @@ const Services = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<string[]>(["All"]);
 
-  const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
+  useEffect(() => {
+    const fetchSessionTypes = async () => {
+      try {
+        const res = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyClasses-v1",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
+              "Content-Type": "application/json",
+            }
+          }
+        );
 
-  const services = [
+        if (!res.ok) throw new Error("Error fetching session types");
+
+        const data = await res.json();
+        console.log("API response:", data);
+
+        // Transform the sessionTypes object into a flat array
+        const sessionTypes = data.sessionTypes || {};
+        const allServices: any[] = [];
+        const categorySet = new Set<string>(["All"]);
+
+        Object.entries(sessionTypes).forEach(([category, serviceList]: [string, any]) => {
+          categorySet.add(category);
+          if (Array.isArray(serviceList)) {
+            serviceList.forEach((service: any) => {
+              allServices.push({
+                ...service,
+                title: service.name,
+                category: category,
+                description: service.onlineDescription
+              });
+            });
+          }
+        });
+
+        setServices(allServices);
+        setCategories(Array.from(categorySet));
+      } catch (err: any) {
+        setError(err.message);
+        console.error("Error fetching services:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSessionTypes();
+  }, []);
+
+  // Fallback static services in case API fails
+  const staticServices = [
     // Classes
     {
       id: 1,
@@ -160,9 +214,12 @@ const Services = () => {
     }
   ];
 
+  // Use fetched services or fallback to static services
+  const allServices = services.length > 0 ? services : staticServices;
+  
   const filteredServices = activeCategory === "All" 
-    ? services 
-    : services.filter(service => service.category === activeCategory);
+    ? allServices 
+    : allServices.filter(service => service.category === activeCategory);
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
@@ -220,6 +277,24 @@ const Services = () => {
         <Navigation />
         
         <div className="pt-20">
+          {/* Loading State */}
+          {loading && (
+            <section className="px-4 sm:px-6 lg:px-8 mb-12">
+              <div className="max-w-7xl mx-auto text-center">
+                <div className="text-white text-lg">Loading services...</div>
+              </div>
+            </section>
+          )}
+
+          {/* Error State */}
+          {error && !loading && (
+            <section className="px-4 sm:px-6 lg:px-8 mb-12">
+              <div className="max-w-7xl mx-auto text-center">
+                <div className="text-red-400 text-lg">Error: {error}</div>
+                <div className="text-white/70 text-sm mt-2">Showing fallback services</div>
+              </div>
+            </section>
+          )}
 
         {/* Category Filter */}
         <section className="px-4 sm:px-6 lg:px-8 mb-12">
