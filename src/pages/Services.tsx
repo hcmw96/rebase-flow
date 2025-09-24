@@ -17,168 +17,42 @@ const Services = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
+  const [services, setServices] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Check for access token on component mount
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
-  const accessToken = params.get("access_token");
+  useEffect(() => {
+    const fetchSessionTypes = async () => {
+      try {
+        const res = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyClasses-v1",
+          {
+            method: "POST",
+            headers: {
+              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
+              "Content-Type": "application/json",
+            }
+          }
+        );
 
-  // Se já temos token ou code, não redireciona
-  if (!code && !accessToken) {
-    const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-    const redirectUri = encodeURIComponent("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste"); 
-    const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-    const nonce = crypto.randomUUID();
-    const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
+        if (!res.ok) throw new Error("Erro ao buscar sessionTypes");
 
-    window.location.href = authUrl;
-  } else {
-    console.log("Já existe code ou access_token, não redirecionando");
-  }
-}, []);
+        const data = await res.json();
+        console.log("API response:", data);
+
+        // agora vem data.sessionTypes
+        setServices(data.sessionTypes || []);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSessionTypes();
+  }, []);
 
   const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
-
-  const services = [
-    // Classes
-    {
-      id: 1,
-      title: "Contrast Therapy",
-      category: "Classes", 
-      duration: "60 minutes",
-      price: 40
-    },
-    {
-      id: 2,
-      title: "Breathwork",
-      category: "Classes",
-      duration: "60 minutes", 
-      price: 40
-    },
-    {
-      id: 3,
-      title: "Yoga",
-      category: "Classes",
-      duration: "60 minutes",
-      price: 40
-    },
-
-    // Suites
-    {
-      id: 4,
-      title: "Members Contrast Suite Drop In",
-      category: "Suites",
-      duration: "60 minutes",
-      price: 65
-    },
-    {
-      id: 5,
-      title: "Premium Suite",
-      category: "Suites",
-      variants: [
-        { duration: "45 minutes", price: 240 },
-        { duration: "90 minutes", price: 420 }
-      ]
-    },
-    {
-      id: 6,
-      title: "Infrared Suite", 
-      category: "Suites",
-      variants: [
-        { duration: "45 minutes", price: 190 },
-        { duration: "90 minutes", price: 330 }
-      ]
-    },
-
-    // Tech Therapies
-    {
-      id: 7,
-      title: "Cryotherapy",
-      category: "Tech Therapies",
-      variants: [
-        { duration: "3 minutes", price: 50, description: "Single session" },
-        { duration: "10 sessions", price: 400, description: "Pack of 10" }
-      ]
-    },
-    {
-      id: 8,
-      title: "HBOT (Hyperbaric Oxygen Therapy)",
-      category: "Tech Therapies", 
-      variants: [
-        { duration: "60 minutes", price: 200, description: "Single session" },
-        { duration: "5 sessions", price: 800, description: "Pack of 5" },
-        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
-      ]
-    },
-
-    // Massage Therapies
-    {
-      id: 9,
-      title: "Total Body Realignment",
-      category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 195,
-      fromPrice: true
-    },
-    {
-      id: 10,
-      title: "Sports Massage", 
-      category: "Massage Therapies",
-      duration: "60-90 minutes",
-      price: 185,
-      fromPrice: true
-    },
-    {
-      id: 11,
-      title: "Lymphatic Drainage",
-      category: "Massage Therapies", 
-      duration: "60-90 minutes",
-      price: 185,
-      fromPrice: true
-    },
-    {
-      id: 12,
-      title: "Deep Tissue",
-      category: "Massage Therapies",
-      duration: "60-90 minutes", 
-      price: 185,
-      fromPrice: true
-    },
-
-    // Manual Therapies
-    {
-      id: 13,
-      title: "Osteopathy Consultation",
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 210
-    },
-    {
-      id: 14,
-      title: "Structural Fascia Therapy", 
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 200
-    },
-
-    // Other Services
-    {
-      id: 15,
-      title: "IV Drip",
-      category: "Other Services",
-      duration: "45-60 minutes",
-      price: 350,
-      fromPrice: true
-    },
-    {
-      id: 16,
-      title: "Vitamin Infusions",
-      category: "Other Services", 
-      duration: "30 minutes",
-      price: 80
-    }
-  ];
 
   const filteredServices = activeCategory === "All" 
     ? services 
@@ -267,7 +141,16 @@ useEffect(() => {
         {/* Services Grid */}
         <section className="px-4 sm:px-6 lg:px-8 pb-20">
           <div className="max-w-7xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {loading && (
+              <div className="text-center text-white">Loading services...</div>
+            )}
+            
+            {error && (
+              <div className="text-center text-red-400">Error: {error}</div>
+            )}
+            
+            {!loading && !error && (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredServices.map((service) => (
                 <div key={service.id} className="space-y-4">
                    <ServiceCard 
@@ -380,9 +263,10 @@ useEffect(() => {
                       </CardContent>
                     </Card>
                   )}
-                </div>
-              ))}
-            </div>
+                 </div>
+               ))}
+              </div>
+            )}
           </div>
         </section>
         </div>
