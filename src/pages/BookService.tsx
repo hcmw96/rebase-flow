@@ -32,7 +32,7 @@ const BookService = () => {
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
               "Content-Type": "application/json",
             },
           }
@@ -148,6 +148,12 @@ const BookService = () => {
     </Card>
   );
 
+
+
+
+
+
+
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed relative transition-all duration-700 ease-in-out"
@@ -177,15 +183,18 @@ const BookService = () => {
                 <div className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
                   {renderServiceInfo()}
 
-                  {/* Dentro do JSX, só renderiza o calendário se houver datas disponíveis */}
+                
+
+                  
                   {availableDates.length > 0 ? (
                     <div className="flex justify-center mx-auto min-w-[510px]">
                       <Calendar
                         mode="single"
                         selected={selectedDate}
                         onSelect={handleDateSelect}
+                        minDate={new Date()}
                         disabled={(date) =>
-                          date < new Date() || !availableDates.some(
+                          !availableDates.some(
                             (d) =>
                               d.getFullYear() === date.getFullYear() &&
                               d.getMonth() === date.getMonth() &&
@@ -243,6 +252,8 @@ const BookService = () => {
                   )}
                 </div>
               )}
+
+
 
             </div>
           </section>
