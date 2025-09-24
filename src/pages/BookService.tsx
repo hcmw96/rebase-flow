@@ -9,497 +9,171 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 
 const BookService = () => {
   const { serviceId } = useParams();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<any>(null);
+  const [service, setService] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [availabilities, setAvailabilities] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
 
-  // Complete service data matching Services page
-  const services = [
-    // Classes
-    {
-      id: 1,
-      title: "Contrast Therapy",
-      category: "Classes", 
-      duration: "60 minutes",
-      price: 40,
-      description: "Guided hot and cold therapy session combining sauna and ice bath"
-    },
-    {
-      id: 2,
-      title: "Breathwork",
-      category: "Classes",
-      duration: "60 minutes", 
-      price: 40,
-      description: "Mindful breathing techniques to enhance wellness and reduce stress"
-    },
-    {
-      id: 3,
-      title: "Yoga",
-      category: "Classes",
-      duration: "60 minutes",
-      price: 40,
-      description: "Restorative yoga sessions to improve flexibility and mental clarity"
-    },
-
-    // Suites
-    {
-      id: 4,
-      title: "Members Contrast Suite Drop In",
-      category: "Suites",
-      duration: "60 minutes",
-      price: 65,
-      description: "Access to our contrast therapy suite with sauna and ice bath facilities"
-    },
-    {
-      id: 5,
-      title: "Premium Suite",
-      category: "Suites",
-      description: "Exclusive private access to our premium wellness facilities",
-      options: [
-        { duration: "45 minutes", price: 190, description: "Standard session" },
-        { duration: "60 minutes", price: 240, description: "Extended session" },
-        { duration: "90 minutes", price: 290, description: "Full experience" }
-      ]
-    },
-    {
-      id: 6,
-      title: "Infrared Suite", 
-      category: "Suites",
-      description: "Private infrared sauna suite for deep relaxation and detoxification",
-      options: [
-        { duration: "45 minutes", price: 150, description: "Standard session" },
-        { duration: "60 minutes", price: 190, description: "Extended session" },
-        { duration: "90 minutes", price: 240, description: "Full experience" }
-      ]
-    },
-
-    // Tech Therapies
-    {
-      id: 7,
-      title: "Cryotherapy",
-      category: "Tech Therapies",
-      duration: "3 minutes",
-      price: 50,
-      description: "Whole-body cryotherapy for recovery and inflammation reduction"
-    },
-    {
-      id: 8,
-      title: "HBOT (Hyperbaric Oxygen Therapy)",
-      category: "Tech Therapies", 
-      duration: "60 minutes",
-      price: 200,
-      description: "Accelerated healing and recovery through pressurized oxygen therapy"
-    },
-
-    // Massage Therapies
-    {
-      id: 9,
-      title: "Total Body Realignment",
-      category: "Massage Therapies",
-      description: "Comprehensive bodywork to restore balance and alignment",
-      options: [
-        { duration: "60 minutes", price: 165, description: "Standard treatment" },
-        { duration: "90 minutes", price: 195, description: "Extended treatment" }
-      ]
-    },
-    {
-      id: 10,
-      title: "Sports Massage", 
-      category: "Massage Therapies",
-      description: "Targeted massage therapy for athletes and active individuals",
-      options: [
-        { duration: "60 minutes", price: 155, description: "Standard treatment" },
-        { duration: "90 minutes", price: 185, description: "Extended treatment" }
-      ]
-    },
-    {
-      id: 11,
-      title: "Lymphatic Drainage",
-      category: "Massage Therapies", 
-      description: "Gentle massage technique to support lymphatic system function",
-      options: [
-        { duration: "60 minutes", price: 155, description: "Standard treatment" },
-        { duration: "90 minutes", price: 185, description: "Extended treatment" }
-      ]
-    },
-    {
-      id: 12,
-      title: "Deep Tissue",
-      category: "Massage Therapies",
-      description: "Intensive massage therapy targeting deep muscle tension",
-      options: [
-        { duration: "60 minutes", price: 155, description: "Standard treatment" },
-        { duration: "90 minutes", price: 185, description: "Extended treatment" }
-      ]
-    },
-
-    // Manual Therapies
-    {
-      id: 13,
-      title: "Osteopathy Consultation",
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 210,
-      description: "Comprehensive assessment and treatment by certified osteopaths"
-    },
-    {
-      id: 14,
-      title: "Structural Fascia Therapy", 
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 200,
-      description: "Specialized therapy targeting fascial restrictions and mobility"
-    },
-
-    // Other Services
-    {
-      id: 15,
-      title: "IV Drip",
-      category: "Other Services",
-      description: "Intravenous vitamin and nutrient therapy for optimal wellness",
-      options: [
-        { duration: "45 minutes", price: 200, description: "Initial assessment & treatment plan", name: "First Consultation" },
-        { duration: "30 minutes", price: 150, description: "Comprehensive health screening", name: "Blood Test" },
-        { duration: "45 minutes", price: 320, description: "Reduce inflammation", name: "Anti-Inflammatory" },
-        { duration: "45 minutes", price: 300, description: "Boost vitality & energy", name: "Energy" },
-        { duration: "45 minutes", price: 320, description: "Mental clarity & focus", name: "Focus" },
-        { duration: "45 minutes", price: 340, description: "Healthy skin & radiance", name: "Glow" },
-        { duration: "45 minutes", price: 300, description: "Strengthen immune system", name: "Immunity" },
-        { duration: "60 minutes", price: 380, description: "Enhanced immune support", name: "Immunity Plus" },
-        { duration: "60 minutes", price: 420, description: "Neurological health support", name: "Neuro-Regan" },
-        { duration: "45 minutes", price: 340, description: "Post-workout recovery", name: "Recovery" },
-        { duration: "45 minutes", price: 320, description: "Relaxation & better sleep", name: "Rest & Sleep" },
-        { duration: "45 minutes", price: 350, description: "Complete rejuvenation", name: "Revive" },
-        { duration: "60 minutes", price: 450, description: "Cellular regeneration", name: "NAD+ (250MG)" },
-        { duration: "90 minutes", price: 650, description: "Advanced regeneration", name: "NAD+ (500MG)" },
-        { duration: "15 minutes", price: 80, description: "Targeted vitamin injections", name: "Vitamin Shots" }
-      ]
-    },
-    {
-      id: 16,
-      title: "Vitamin Infusions",
-      category: "Other Services", 
-      duration: "30 minutes",
-      price: 80,
-      description: "Targeted vitamin injections for enhanced health and energy"
-    }
-  ];
-
-  const selectedService = services.find(service => service.id === parseInt(serviceId || ""));
-
   useEffect(() => {
-    if (!selectedService) {
-      navigate("/services");
-      return;
-    }
-    
-    // If service has options, start at step 0, otherwise step 1
-    if (selectedService.options) {
-      setStep(0);
-    } else {
-      setStep(1);
-    }
-  }, [selectedService, navigate]);
+    const fetchService = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyClasses-v1",
+          {
+            method: "POST",
+            headers: {
+              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Erro ao buscar serviço");
+        const data = await res.json();
+        const serviceIdNum = parseInt(serviceId || "");
+        const allServices = Object.values(data.sessionTypes).flat();
+        const foundService = allServices.find((s: any) => s.id === serviceIdNum);
+        if (!foundService) {
+          navigate("/services");
+          return;
+        }
+        setService(foundService);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchService();
+  }, [serviceId, navigate]);
 
-  const handleOptionSelect = (option: any) => {
-    setSelectedOption(option);
-    setStep(1);
-  };
+  // Fetch availabilities
+  useEffect(() => {
+    const fetchAvailabilities = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionTypeIds: [parseInt(serviceId || "0")] }),
+          }
+        );
+        if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
+        const data = await res.json();
+        setAvailabilities(data.Availabilities);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (serviceId) fetchAvailabilities();
+  }, [serviceId]);
 
+  if (loading) return <p>Loading...</p>;
+  if (error) return <p>{error}</p>;
+  if (!service) return <p>Serviço não encontrado</p>;
+
+  // Datas disponíveis para o calendário
+  const availableDates = availabilities.map((a) => parseISO(a.StartDateTime));
+
+  // Quando seleciona um dia, pegar horários disponíveis
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-    if (date) {
-      setStep(2);
-    }
+    if (!date) return;
+    const slots = availabilities
+      .filter((a) => {
+        const start = parseISO(a.StartDateTime);
+        return (
+          start.getFullYear() === date.getFullYear() &&
+          start.getMonth() === date.getMonth() &&
+          start.getDate() === date.getDate()
+        );
+      })
+      .map((a) => format(parseISO(a.StartDateTime), "HH:mm"));
+    setTimeSlots(slots);
+    setSelectedTime("");
   };
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
-    setStep(3);
-  };
-
-  const handleBack = () => {
-    if (step > (selectedService?.options ? 0 : 1)) {
-      setStep(step - 1);
-    } else {
-      navigate("/services");
-    }
-  };
-
-  // Generate available time slots
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour <= 18; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(time);
-      }
-    }
-    return slots;
-  };
 
   const renderMobileHeader = () => (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
       <div className="flex items-center justify-between p-4">
-        <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1 text-center">
-          <div className="text-sm font-medium text-foreground">
-            {step === 0 && "Choose Option"}
-            {step === 1 && "Choose Date"}
-            {step === 2 && "Pick Time"}
-            {step === 3 && "Confirm Booking"}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Step {selectedService?.options ? step + 1 : step} of {selectedService?.options ? 4 : 3}
-          </div>
-        </div>
+
         <div className="w-8" />
       </div>
     </div>
   );
 
-  const renderProgressDots = () => (
-    <div className="flex items-center justify-center space-x-2 mb-8">
-      {Array.from({ length: selectedService?.options ? 4 : 3 }, (_, i) => i).map((stepNum) => (
-        <div key={stepNum} className={`w-2 h-2 rounded-full transition-colors ${
-          step >= stepNum ? 'bg-primary' : 'bg-muted'
-        }`} />
-      ))}
-    </div>
-  );
+
 
   const renderServiceInfo = () => (
     <Card className="glass-card rounded-3xl border-white/10 mb-6">
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
         <div className="flex justify-between items-start mb-3">
           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-            {selectedService?.category}
+            {service?.category} {/* <-- usando service do fetch */}
           </Badge>
           <div className="text-right">
             <div className="text-2xl font-bold text-white">
-              £{selectedOption ? selectedOption.price : selectedService?.price}
+              £
             </div>
             <div className="text-sm text-white/70">
-              {selectedOption ? selectedOption.duration : selectedService?.duration}
+
             </div>
           </div>
         </div>
         <h1 className="font-serif text-2xl font-medium text-white mb-3">
-          {selectedService?.title}
+          {service?.title}
         </h1>
         <p className="text-white/70 leading-relaxed mb-4">
-          {selectedService?.description}
+          {service?.description}
         </p>
-        {selectedOption && (
-          <div className="text-sm text-white/60">
-            {selectedOption.description}
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );
 
-  const renderOptionSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Choose Your Option
-          </h2>
-          <p className="text-sm text-white/70">
-            Select your preferred option for {selectedService?.title}
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
-        <Select onValueChange={(value) => {
-          const option = selectedService?.options?.[parseInt(value)];
-          if (option) handleOptionSelect(option);
-        }}>
-          <SelectTrigger className="w-full h-14 glass-button text-white border-white/20 hover:bg-white/10 rounded-xl bg-white/5 backdrop-blur-sm">
-            <SelectValue placeholder="Select an option..." className="text-white" />
-          </SelectTrigger>
-          <SelectContent className="bg-background/95 backdrop-blur-sm border-white/20 rounded-xl z-50">
-            {selectedService?.options?.map((option: any, index: number) => (
-              <SelectItem 
-                key={index} 
-                value={index.toString()}
-                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer p-4 border-b border-border/10 last:border-0"
-              >
-                <div className="grid grid-cols-[1fr_auto] gap-4 w-full items-start">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-base">{option.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      <span className="font-medium">{option.duration}</span>
-                      <span className="mx-2">•</span>
-                      <span>{option.description}</span>
-                    </div>
-                  </div>
-                  <div className="text-xl font-bold text-right w-16">£{option.price}</div>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
 
-  const renderDateSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Choose Your Date
-          </h2>
-          <p className="text-sm text-white/70">
-            Select your preferred date for {selectedService?.title}
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-8'}`}>
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleDateSelect}
-          disabled={(date) => date < new Date()}
-          
-          className="p-3 pointer-events-auto"
-          classNames={{
-            months: "text-white",
-            month: "text-white",
-            caption: "text-white",
-            caption_label: "text-white text-sm font-medium",
-            nav: "text-white",
-            nav_button: "text-white/70 hover:text-white h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-            nav_button_previous: "absolute left-1",
-            nav_button_next: "absolute right-1",
-            table: "text-white w-full",
-            head_row: "text-white",
-            head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem]",
-            row: "text-white",
-            cell: "text-white relative p-0 text-center text-sm focus-within:relative focus-within:z-20 h-9 w-9",
-            day: "text-white h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-sm",
-            day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
-            day_today: "bg-white/10 text-white",
-            day_outside: "text-white/50 opacity-50",
-            day_disabled: "text-white/30 opacity-50",
-          }}
-        />
-      </div>
-    </div>
-  );
+    const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
 
-  const renderTimeSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Pick Your Time
-          </h2>
-          <p className="text-sm text-white/70">
-            {selectedDate && format(selectedDate, "EEEE, MMMM d")}
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
-        <div className="grid grid-cols-3 gap-3">
-          {generateTimeSlots().map((time) => (
-            <Button
-              key={time}
-              variant="outline"
-              className={`h-12 text-sm transition-all rounded-xl ${
-                selectedTime === time 
-                  ? 'glass-button text-white border-white/30 bg-white/20' 
-                  : 'glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10'
-              }`}
-              onClick={() => handleTimeSelect(time)}
-            >
-              {time}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
+    // Verifica se já existe code ou access_token na URL
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const accessToken = params.get("access_token");
 
-  const renderConfirmation = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-4">
-            Confirm Your Booking
-          </h2>
-        </div>
-      )}
-      
-      <Card className={`glass-card rounded-3xl border-white/10 mx-auto ${isMobile ? 'max-w-sm mx-4' : 'max-w-lg'}`}>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-white/10 rounded-full mx-auto flex items-center justify-center mb-4">
-                <Check className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-serif text-lg font-medium text-white mb-2">
-                {selectedService?.title}
-              </h3>
-              <p className="text-sm text-white/70">
-                {selectedService?.description}
-              </p>
-            </div>
-            
-            <div className="border-t border-white/20 pt-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Date</span>
-                <span className="font-medium text-white">
-                  {selectedDate && format(selectedDate, "MMM d, yyyy")}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Time</span>
-                <span className="font-medium text-white">{selectedTime}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Duration</span>
-                <span className="font-medium text-white">
-                  {selectedOption ? selectedOption.duration : selectedService?.duration}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
-                <span className="text-white">Total</span>
-                <span className="text-white">
-                  £{selectedOption ? selectedOption.price : selectedService?.price}
-                </span>
-              </div>
-            </div>
-            
-            <Button className="w-full glass-button text-white rounded-xl font-medium">
-              Complete Booking
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
-
-  if (!selectedService) {
-    return null;
-  }
+    if (!code && !accessToken) {
+      const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+      const redirectUri = encodeURIComponent(
+        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste"
+      );
+      const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+      const nonce = crypto.randomUUID();
+      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
+      window.location.href = authUrl;
+    } else {
+      console.log("Já existe code ou access_token, não redirecionando");
+      // Aqui você pode continuar para criar a reserva usando o accessToken
+    }
+  };
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-fixed relative transition-all duration-700 ease-in-out"
       style={{
         backgroundImage: `url('/lovable-uploads/8911d1ac-19d7-427a-9138-19c768396ea7.png')`
@@ -507,41 +181,97 @@ const BookService = () => {
     >
       {/* Dark overlay for text legibility with smooth transition */}
       <div className="absolute inset-0 bg-black/50 z-0 transition-opacity duration-500" />
-      
-      <div className="relative z-10 min-h-screen animate-fade-in">
-      {!isMobile && <Navigation />}
-      
-      {isMobile && renderMobileHeader()}
-      
-      <div className={isMobile ? "pt-0" : "pt-20"}>
-        <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
-          <div className="max-w-7xl mx-auto">
-            {!isMobile && (
-              <div className="animate-scale-in">
-                {renderProgressDots()}
-              </div>
-            )}
-            
-            {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
-            {(!isMobile || step <= 1) && (
-              <div className={`mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
-                {renderServiceInfo()}
-              </div>
-            )}
-            
-            <div className="max-w-lg mx-auto">
-              <div className="transition-all duration-500 ease-in-out">
-                {step === 0 && <div className="animate-fade-in">{renderOptionSelection()}</div>}
-                {step === 1 && <div className="animate-fade-in">{renderDateSelection()}</div>}
-                {step === 2 && <div className="animate-fade-in">{renderTimeSelection()}</div>}
-                {step === 3 && <div className="animate-fade-in">{renderConfirmation()}</div>}
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
 
-      {!isMobile && <Footer />}
+      <div className="relative z-10 min-h-screen animate-fade-in">
+        {!isMobile && <Navigation />}
+
+        {isMobile && renderMobileHeader()}
+
+        <div className={isMobile ? "pt-0" : "pt-20"}>
+          <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
+            <div className="max-w-7xl mx-auto">
+              {!isMobile && (
+                <div className="animate-scale-in">
+
+                </div>
+              )}
+
+              {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
+              {!isMobile && (
+                <div className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
+                  {renderServiceInfo()}
+
+                  {/* Centraliza o calendário */}
+                  <div className="flex justify-center mx-auto min-w-[510px]">
+                    <Calendar
+                      mode="single"
+                      selected={selectedDate}
+                      onSelect={handleDateSelect}
+                      minDate={new Date()}
+                      disabled={(date) =>
+                        !availableDates.some(
+                          (d) =>
+                            d.getFullYear() === date.getFullYear() &&
+                            d.getMonth() === date.getMonth() &&
+                            d.getDate() === date.getDate()
+                        )
+                      }
+                      className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
+                    />
+                  </div>
+
+                  {/* Horários disponíveis com professor */}
+                  {timeSlots.length > 0 && (
+                    <div className="mt-4">
+                      <h2 className="text-xl mb-2">Horários disponíveis:</h2>
+                      <div className="grid grid-cols-3 gap-2">
+                        {timeSlots.map((t) => {
+                          // encontra a disponibilidade correspondente
+                          const availability = availabilities.find((a) => {
+                            const start = parseISO(a.StartDateTime);
+                            return (
+                              format(start, "HH:mm") === t &&
+                              selectedDate &&
+                              start.getFullYear() === selectedDate.getFullYear() &&
+                              start.getMonth() === selectedDate.getMonth() &&
+                              start.getDate() === selectedDate.getDate()
+                            );
+                          });
+
+                          const staffName = availability?.Staff?.DisplayName || "Indisponível";
+
+                          return (
+                            <Button
+                              key={t}
+                              variant={selectedTime === t ? "default" : "outline"}
+                               onClick={() => handleTimeSelect(t)}
+                              className="text-white flex flex-col"
+                            >
+                              <span>{t}</span>
+                              <span className="text-xs text-white/70">{staffName}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Seleção final */}
+                  {selectedDate && selectedTime && (
+                    <p className="mt-4">
+                      Você selecionou: {format(selectedDate, "dd/MM/yyyy")} às {selectedTime}
+                    </p>
+                  )}
+                </div>
+              )}
+
+
+
+            </div>
+          </section>
+        </div>
+
+        {!isMobile && <Footer />}
       </div>
     </div>
   );
