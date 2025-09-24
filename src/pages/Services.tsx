@@ -46,6 +46,25 @@ const Services = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const accessToken = params.get("access_token");
+
+    // Se já temos token ou code, não redireciona
+    if (!code && !accessToken) {
+      const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+      const redirectUri = encodeURIComponent("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste"); 
+      const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+      const nonce = crypto.randomUUID();
+      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
+
+      window.location.href = authUrl;
+    } else {
+      console.log("Já existe code ou access_token, não redirecionando");
+    }
+  }, []);
+
+  useEffect(() => {
     const fetchSessionTypes = async () => {
       try {
         const res = await fetch(
