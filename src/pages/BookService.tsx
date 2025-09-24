@@ -86,7 +86,7 @@ const BookService = () => {
   if (!service) return <p>Serviço não encontrado</p>;
 
   // Datas disponíveis para o calendário
-  const availableDates = availabilities.map((a) => parseISO(a.StartDateTime));
+   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter(d => !isNaN(d.getTime()));
 
   // Quando seleciona um dia, pegar horários disponíveis
   const handleDateSelect = (date: Date | undefined) => {
@@ -148,10 +148,6 @@ const BookService = () => {
     </Card>
   );
 
-
-
-
-
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed relative transition-all duration-700 ease-in-out"
@@ -181,23 +177,27 @@ const BookService = () => {
                 <div className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
                   {renderServiceInfo()}
 
-                  {/* Centraliza o calendário */}
-                  <div className="flex justify-center mx-auto min-w-[510px]">
-                    <Calendar
-                      mode="single"
-                      selected={selectedDate}
-                      onSelect={handleDateSelect}
-                      disabled={(date) =>
-  !availableDates.some(
-    (d) =>
-      d.getFullYear() === date.getFullYear() &&
-      d.getMonth() === date.getMonth() &&
-      d.getDate() === date.getDate()
-  )
-}
-                      className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
-                    />
-                  </div>
+                  {/* Dentro do JSX, só renderiza o calendário se houver datas disponíveis */}
+                  {availableDates.length > 0 ? (
+                    <div className="flex justify-center mx-auto min-w-[510px]">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        disabled={(date) =>
+                          date < new Date() || !availableDates.some(
+                            (d) =>
+                              d.getFullYear() === date.getFullYear() &&
+                              d.getMonth() === date.getMonth() &&
+                              d.getDate() === date.getDate()
+                          )
+                        }
+                        className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
+                      />
+                    </div>
+                  ) : (
+                    <p>Carregando calendário...</p>
+                  )}
 
                   {/* Horários disponíveis com professor */}
                   {timeSlots.length > 0 && (
@@ -243,8 +243,6 @@ const BookService = () => {
                   )}
                 </div>
               )}
-
-
 
             </div>
           </section>
