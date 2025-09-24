@@ -15,7 +15,6 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Reception from "./pages/Reception";
 import NotFound from "./pages/NotFound";
-import OAuthCallback from "./pages/OAuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -36,7 +35,6 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reception" element={<Reception />} />
-          <Route path="/oauth-callback" element={<OAuthCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
