@@ -149,28 +149,30 @@ const BookService = () => {
   );
 
 
-    const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
+  const handleTimeSelect = (time: string) => {
+  setSelectedTime(time);
 
-    // Verifica se já existe code ou access_token na URL
-    const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
-    const accessToken = params.get("access_token");
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const accessToken = params.get("access_token");
 
-    if (!code && !accessToken) {
-      const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-      const redirectUri = encodeURIComponent(
-        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste"
-      );
-      const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-      const nonce = crypto.randomUUID();
-      const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
-      window.location.href = authUrl;
-    } else {
-      console.log("Já existe code ou access_token, não redirecionando");
-      // Aqui você pode continuar para criar a reserva usando o accessToken
-    }
-  };
+  if (!code && !accessToken) {
+    const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+    const redirectUri = encodeURIComponent(
+      `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste` // sem query params
+    );
+    const subscriberId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+    const nonce = crypto.randomUUID();
+
+    localStorage.setItem("pendingServiceId", serviceId); // salva serviceId
+
+    const authUrl = `https://signin.mindbodyonline.com/connect/authorize?response_mode=form_post&response_type=code%20id_token&client_id=${clientId}&redirect_uri=${redirectUri}&scope=email profile openid offline_access Mindbody.Api.Public.v6&subscriberId=${subscriberId}&nonce=${nonce}`;
+
+    window.location.href = authUrl;
+  } else {
+    console.log("Já existe code ou access_token, continue com a reserva usando o token do Edge Function");
+  }
+};
 
   return (
     <div
@@ -244,7 +246,7 @@ const BookService = () => {
                             <Button
                               key={t}
                               variant={selectedTime === t ? "default" : "outline"}
-                               onClick={() => handleTimeSelect(t)}
+                              onClick={() => handleTimeSelect(t)}
                               className="text-white flex flex-col"
                             >
                               <span>{t}</span>
