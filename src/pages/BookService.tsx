@@ -32,7 +32,7 @@ const BookService = () => {
           {
             method: "POST",
             headers: {
-              Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+              Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
               "Content-Type": "application/json",
             },
           }
@@ -187,8 +187,8 @@ const BookService = () => {
                       mode="single"
                       selected={selectedDate}
                       onSelect={handleDateSelect}
-                      minDate={new Date()}
                       disabled={(date) =>
+                        date < new Date(new Date().setHours(0, 0, 0, 0)) ||
                         !availableDates.some(
                           (d) =>
                             d.getFullYear() === date.getFullYear() &&
