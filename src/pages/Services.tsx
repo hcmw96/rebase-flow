@@ -22,10 +22,21 @@ const Services = () => {
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>(["All"]);
 
+  function parseJwt(token: string) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    console.error("Erro ao decodificar id_token:", e);
+    return null;
+  }
+}
+
+
   useEffect(() => {
   const params = new URLSearchParams(window.location.search);
   const code = params.get("code");
   const accessToken = params.get("access_token");
+  const idToken = params.get("id_token"); // <- adiciona isso
 
   if (!code && !accessToken) {
     const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
@@ -41,8 +52,14 @@ const Services = () => {
     console.log("Já existe code ou access_token, não redirecionando");
 
     if (accessToken) {
-      // Salva no localStorage
       localStorage.setItem("access_token", accessToken);
+    }
+
+    if (idToken) {
+      const decoded = parseJwt(idToken);
+      console.log("Decoded id_token:", decoded);
+      localStorage.setItem("id_token", idToken);
+      localStorage.setItem("clientId", decoded?.sub); // guarda o sub (clientId do usuário)
     }
   }
 }, []);
