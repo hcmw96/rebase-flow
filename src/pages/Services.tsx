@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
@@ -17,84 +17,152 @@ const Services = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const [bookingStep, setBookingStep] = useState(1);
-  const [services, setServices] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>(["All"]);
 
-  function parseJwt(token: string) {
-  try {
-    return JSON.parse(atob(token.split('.')[1]));
-  } catch (e) {
-    console.error("Erro ao decodificar id_token:", e);
-    return null;
-  }
-}
+  const categories = ["All", "Classes", "Suites", "Tech Therapies", "Massage Therapies", "Manual Therapies", "Other Services"];
 
+  const services = [
+    // Classes
+    {
+      id: 1,
+      title: "Contrast Therapy",
+      category: "Classes", 
+      duration: "60 minutes",
+      price: 40
+    },
+    {
+      id: 2,
+      title: "Breathwork",
+      category: "Classes",
+      duration: "60 minutes", 
+      price: 40
+    },
+    {
+      id: 3,
+      title: "Yoga",
+      category: "Classes",
+      duration: "60 minutes",
+      price: 40
+    },
 
-useEffect(() => {
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get("code");
-  const accessToken = params.get("access_token");
-  const idToken = params.get("id_token");
+    // Suites
+    {
+      id: 4,
+      title: "Members Contrast Suite Drop In",
+      category: "Suites",
+      duration: "60 minutes",
+      price: 65
+    },
+    {
+      id: 5,
+      title: "Premium Suite",
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 240 },
+        { duration: "90 minutes", price: 420 }
+      ]
+    },
+    {
+      id: 6,
+      title: "Infrared Suite", 
+      category: "Suites",
+      variants: [
+        { duration: "45 minutes", price: 190 },
+        { duration: "90 minutes", price: 330 }
+      ]
+    },
 
-  if (!code && !accessToken) {
-    // Redireciona para login Mindbody
-    const authUrl = `https://signin.mindbodyonline.com/connect/authorize?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565&response_type=code&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access&nonce=10&redirect_uri=https://rebase.echo.london/services&subscriberId=5736189`; 
-    window.location.href = authUrl;
-  } else if (code) {
-    // Se houver code, troca por access_token
-    const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
-    const clientSecret = "uZ4WVnHgm9ZNd5esSy1EVMw3TwdQJKWW4my30Oj8FLA="; // ⚠️ não exponha em produção
-    const redirectUri = "https://rebase.echo.london/services&subscriberId=5736189";
+    // Tech Therapies
+    {
+      id: 7,
+      title: "Cryotherapy",
+      category: "Tech Therapies",
+      variants: [
+        { duration: "3 minutes", price: 50, description: "Single session" },
+        { duration: "10 sessions", price: 400, description: "Pack of 10" }
+      ]
+    },
+    {
+      id: 8,
+      title: "HBOT (Hyperbaric Oxygen Therapy)",
+      category: "Tech Therapies", 
+      variants: [
+        { duration: "60 minutes", price: 200, description: "Single session" },
+        { duration: "5 sessions", price: 800, description: "Pack of 5" },
+        { duration: "10 sessions", price: 1600, description: "Pack of 10" }
+      ]
+    },
 
-    const body = new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: redirectUri,
-      client_id: clientId,
-      client_secret: clientSecret,
-      scope: "email profile openid offline_access Mindbody.Api.Public.v6",
-      subscriberId: "5736189"
-    });
+    // Massage Therapies
+    {
+      id: 9,
+      title: "Total Body Realignment",
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 195,
+      fromPrice: true
+    },
+    {
+      id: 10,
+      title: "Sports Massage", 
+      category: "Massage Therapies",
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
+    },
+    {
+      id: 11,
+      title: "Lymphatic Drainage",
+      category: "Massage Therapies", 
+      duration: "60-90 minutes",
+      price: 185,
+      fromPrice: true
+    },
+    {
+      id: 12,
+      title: "Deep Tissue",
+      category: "Massage Therapies",
+      duration: "60-90 minutes", 
+      price: 185,
+      fromPrice: true
+    },
 
-    fetch("https://signin.mindbodyonline.com/connect/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body
-    })
-    .then(res => res.json())
-    .then(data => {
-      if (data.access_token) {
-        localStorage.setItem("access_token", data.access_token);
-        console.log("Access Token recebido:", data.access_token);
-      } else {
-        console.error("Erro ao receber access_token:", data);
-      }
-    })
-    .catch(err => console.error("Erro na requisição do token:", err));
-  } else if (accessToken) {
-    localStorage.setItem("access_token", accessToken);
-  }
+    // Manual Therapies
+    {
+      id: 13,
+      title: "Osteopathy Consultation",
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 210
+    },
+    {
+      id: 14,
+      title: "Structural Fascia Therapy", 
+      category: "Manual Therapies",
+      duration: "60 minutes",
+      price: 200
+    },
 
-  if (idToken) {
-    const decoded = parseJwt(idToken);
-    console.log("Decoded id_token:", decoded);
-    localStorage.setItem("id_token", idToken);
-    localStorage.setItem("clientId", decoded?.sub);
-  }
-}, []);
+    // Other Services
+    {
+      id: 15,
+      title: "IV Drip",
+      category: "Other Services",
+      duration: "45-60 minutes",
+      price: 350,
+      fromPrice: true
+    },
+    {
+      id: 16,
+      title: "Vitamin Infusions",
+      category: "Other Services", 
+      duration: "30 minutes",
+      price: 80
+    }
+  ];
 
-
-  // Fallback static services in case API fails
-  
-
-  // Use fetched services or fallback to static services
-  const allServices = services ;
-  
   const filteredServices = activeCategory === "All" 
-    ? allServices 
-    : allServices.filter(service => service.category === activeCategory);
+    ? services 
+    : services.filter(service => service.category === activeCategory);
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
@@ -152,24 +220,6 @@ useEffect(() => {
         <Navigation />
         
         <div className="pt-20">
-          {/* Loading State */}
-          {loading && (
-            <section className="px-4 sm:px-6 lg:px-8 mb-12">
-              <div className="max-w-7xl mx-auto text-center">
-                <div className="text-white text-lg">Loading services...</div>
-              </div>
-            </section>
-          )}
-
-          {/* Error State */}
-          {error && !loading && (
-            <section className="px-4 sm:px-6 lg:px-8 mb-12">
-              <div className="max-w-7xl mx-auto text-center">
-                <div className="text-red-400 text-lg">Error: {error}</div>
-                <div className="text-white/70 text-sm mt-2">Showing fallback services</div>
-              </div>
-            </section>
-          )}
 
         {/* Category Filter */}
         <section className="px-4 sm:px-6 lg:px-8 mb-12">
