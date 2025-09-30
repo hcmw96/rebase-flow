@@ -66,55 +66,57 @@ const Services = () => {
 
 
   useEffect(() => {
-    const fetchSessionTypes = async () => {
-      try {
-        const res = await fetch(
-          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyClasses-v1",
-          {
-            method: "POST",
-            headers: {
-              "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
-              "Content-Type": "application/json",
-            }
-          }
-        );
+  const params = new URLSearchParams(window.location.search);
+  const code = params.get("code");
+  const accessToken = params.get("access_token");
+  const idToken = params.get("id_token");
 
-        if (!res.ok) throw new Error("Error fetching session types");
+  if (!code && !accessToken) {
+    // Redireciona para login Mindbody
+    const authUrl = `https://signin.mindbodyonline.com/connect/authorize?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565&response_type=code&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access&nonce=10&redirect_uri=https://rebase.echo.london/services&subscriberId=5736189`; 
+    window.location.href = authUrl;
+  } else if (code) {
+    // Se houver code, troca por access_token
+    const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
+    const clientSecret = "uZ4WVnHgm9ZNd5esSy1EVMw3TwdQJKWW4my30Oj8FLA="; // ⚠️ não exponha em produção
+    const redirectUri = "https://rebase.echo.london/services";
 
-        const data = await res.json();
-        console.log("API response:", data);
+    const body = new URLSearchParams({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: redirectUri,
+      client_id: clientId,
+      client_secret: clientSecret,
+      scope: "email profile openid offline_access Mindbody.Api.Public.v6",
+      subscriberId: "5736189"
+    });
 
-        // Transform the sessionTypes object into a flat array
-        const sessionTypes = data.sessionTypes || {};
-        const allServices: any[] = [];
-        const categorySet = new Set<string>(["All"]);
-
-        Object.entries(sessionTypes).forEach(([category, serviceList]: [string, any]) => {
-          categorySet.add(category);
-          if (Array.isArray(serviceList)) {
-            serviceList.forEach((service: any) => {
-              allServices.push({
-                ...service,
-                title: service.name,
-                category: category,
-                description: service.onlineDescription
-              });
-            });
-          }
-        });
-
-        setServices(allServices);
-        setCategories(Array.from(categorySet));
-      } catch (err: any) {
-        setError(err.message);
-        console.error("Error fetching services:", err);
-      } finally {
-        setLoading(false);
+    fetch("https://signin.mindbodyonline.com/connect/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.access_token) {
+        localStorage.setItem("access_token", data.access_token);
+        console.log("Access Token recebido:", data.access_token);
+      } else {
+        console.error("Erro ao receber access_token:", data);
       }
-    };
+    })
+    .catch(err => console.error("Erro na requisição do token:", err));
+  } else if (accessToken) {
+    localStorage.setItem("access_token", accessToken);
+  }
 
-    fetchSessionTypes();
-  }, []);
+  if (idToken) {
+    const decoded = parseJwt(idToken);
+    console.log("Decoded id_token:", decoded);
+    localStorage.setItem("id_token", idToken);
+    localStorage.setItem("clientId", decoded?.sub);
+  }
+}, []);
 
   // Fallback static services in case API fails
   
