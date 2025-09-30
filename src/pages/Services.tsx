@@ -46,7 +46,7 @@ useEffect(() => {
     // Se houver code, troca por access_token
     const clientId = "f660fd3e-a0d6-4f66-878c-871c9860e565";
     const clientSecret = "uZ4WVnHgm9ZNd5esSy1EVMw3TwdQJKWW4my30Oj8FLA="; // ⚠️ não exponha em produção
-    const redirectUri = "https://rebase.echo.london/services";
+    const redirectUri = "https://rebase.echo.london/services&subscriberId=5736189";
 
     const body = new URLSearchParams({
       grant_type: "authorization_code",
