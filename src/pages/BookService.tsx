@@ -62,6 +62,10 @@ const BookService = () => {
     state: "",
     country: "",
     postalCode: "",
+    emergencyContactName: "",
+    emergencyContactEmail: "",
+    emergencyContactPhone: "",
+    emergencyContactRelationship: "",
   });
   const [userInfo, setUserInfo] = useState<any>(null);
   const [locationId, setLocationId] = useState<string>("");
@@ -652,6 +656,29 @@ const BookService = () => {
                   placeholder="Postal code"
                   value={profileData.postalCode}
                   onChange={(e) => setProfileData({ ...profileData, postalCode: e.target.value })}
+                />
+
+                {/* Emergency contact fields */}
+                <Input
+                  placeholder="Emergency contact name"
+                  value={profileData.emergencyContactName}
+                  onChange={(e) => setProfileData({ ...profileData, emergencyContactName: e.target.value })}
+                />
+                <Input
+                  type="email"
+                  placeholder="Emergency contact email"
+                  value={profileData.emergencyContactEmail}
+                  onChange={(e) => setProfileData({ ...profileData, emergencyContactEmail: e.target.value })}
+                />
+                <Input
+                  placeholder="Emergency contact phone"
+                  value={profileData.emergencyContactPhone}
+                  onChange={(e) => setProfileData({ ...profileData, emergencyContactPhone: e.target.value })}
+                />
+                <Input
+                  placeholder="Emergency contact relationship"
+                  value={profileData.emergencyContactRelationship}
+                  onChange={(e) => setProfileData({ ...profileData, emergencyContactRelationship: e.target.value })}
                 />
               </div>
 
