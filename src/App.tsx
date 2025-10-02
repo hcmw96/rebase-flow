@@ -15,6 +15,8 @@ import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
 import Reception from "./pages/Reception";
 import NotFound from "./pages/NotFound";
+import OAuthCallback from "./callbacks/oauthCallBack";
+import Callback from "./pages/callback";
 
 const queryClient = new QueryClient();
 
@@ -32,9 +34,11 @@ const App = () => (
           <Route path="/book" element={<Book />} />
           <Route path="/book/:serviceId" element={<BookService />} />
           <Route path="/login" element={<Login />} />
+          <Route path="/callback" element={<Callback />} />
           <Route path="/signup" element={<Signup />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/reception" element={<Reception />} />
+          <Route path="/oauth-callback" element={<OAuthCallback />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
