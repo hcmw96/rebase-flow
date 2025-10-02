@@ -496,7 +496,7 @@ const BookService = () => {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Erro ao salvar perfil");
 
-      alert("Perfil cadastrado com sucesso!");
+      toast.success("Profile saved successfully!");
       setShowProfileModal(false);
     } catch (err: any) {
       alert(`Erro ao cadastrar perfil: ${err.message}`);
