@@ -362,7 +362,7 @@ const BookService = () => {
         const root = ReactDOM.createRoot(modalRoot);
 
         const handleClose = () => {
-          toast.error("Payment canceled"); // exibe o toast
+          toast.error("Payment canceled");
           root.unmount();
           modalRoot.remove();
         };
@@ -448,7 +448,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": mindbodyToken.trim(), // token obtido via mindbodyStaffToken
+            "Authorization": mindbodyToken.trim(),
           },
           body: JSON.stringify(checkoutBody),
         }
@@ -458,7 +458,6 @@ const BookService = () => {
 
       toast.success("Scheduling completed successfully!");
       navigate("/services");
-      // 2️⃣ Agora chamamos a Edge Function de checkout para marcar o appointment
 
     } catch (err: any) {
       console.error(err);
@@ -482,7 +481,7 @@ const BookService = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
-          businessId: "5736189", // coloque o real
+          businessId: "5736189",
           userId: userId,
           profileData,
         }),
@@ -596,7 +595,7 @@ const BookService = () => {
                   {/* Seleção final */}
                   {selectedDate && selectedTime && (
                     <p className="mt-4">
-                     You selected: {format(selectedDate, "dd/MM/yyyy")} às {selectedTime}
+                      You selected: {format(selectedDate, "dd/MM/yyyy")} às {selectedTime}
                     </p>
                   )}
                 </div>
@@ -614,44 +613,43 @@ const BookService = () => {
           <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
-                <DialogTitle>Complete your profile
-                </DialogTitle>
+                <DialogTitle>Complete your profile</DialogTitle>
               </DialogHeader>
 
               <div className="space-y-3 mt-2">
                 <Input
                   type="date"
-                  placeholder="Data de nascimento"
+                  placeholder="Date of Birth"
                   value={profileData.birthDate}
                   onChange={(e) => setProfileData({ ...profileData, birthDate: e.target.value })}
                 />
                 <Input
-                  placeholder="Celular"
+                  placeholder="Mobile phone"
                   value={profileData.mobilePhone}
                   onChange={(e) => setProfileData({ ...profileData, mobilePhone: e.target.value })}
                 />
                 <Input
-                  placeholder="Endereço"
+                  placeholder="Address"
                   value={profileData.address}
                   onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
                 />
                 <Input
-                  placeholder="Cidade"
+                  placeholder="City"
                   value={profileData.city}
                   onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
                 />
                 <Input
-                  placeholder="Estado"
+                  placeholder="State"
                   value={profileData.state}
                   onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
                 />
                 <Input
-                  placeholder="País"
+                  placeholder="Country"
                   value={profileData.country}
                   onChange={(e) => setProfileData({ ...profileData, country: e.target.value })}
                 />
                 <Input
-                  placeholder="CEP"
+                  placeholder="Postal code"
                   value={profileData.postalCode}
                   onChange={(e) => setProfileData({ ...profileData, postalCode: e.target.value })}
                 />
