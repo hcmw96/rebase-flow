@@ -9,497 +9,502 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, set } from "date-fns";
+import { useLocation } from "react-router-dom";
+import CardFormDialog from "@/components/CardFormDialog";
+import ReactDOM from "react-dom/client";
+import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+
+interface ProfileModalProps {
+  open: boolean;
+  onClose: () => void;
+  onSave: (profileData: {
+    birthDate: string;
+    mobilePhone: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  }) => void;
+  initialData?: {
+    birthDate: string;
+    mobilePhone: string;
+    address: string;
+    city: string;
+    state: string;
+    country: string;
+    postalCode: string;
+  };
+}
 
 const BookService = () => {
-  const { serviceId } = useParams();
+
+  const location = useLocation();
   const navigate = useNavigate();
-  const [step, setStep] = useState(0);
-  const [selectedOption, setSelectedOption] = useState<any>(null);
+  const [service, setService] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [availabilities, setAvailabilities] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [userId, setUserId] = useState<string>("");
+  const [profileData, setProfileData] = useState({
+    birthDate: "",
+    mobilePhone: "",
+    address: "",
+    city: "",
+    state: "",
+    country: "",
+    postalCode: "",
+  });
+  const [userInfo, setUserInfo] = useState<any>(null);
+  const [locationId, setLocationId] = useState<string>("");
+  const [staffId, setStaffId] = useState<string>("");
+  const { title } = location.state || {};
+  const { price } = location.state || {};
+  const { duration } = location.state || {};
+  const { category } = location.state || {};
+  const { serviceId } = useParams<{ serviceId: string }>();
+  const productId = serviceId;
 
-  // Complete service data matching Services page
-  const services = [
-    // Classes
-    {
-      id: 1,
-      title: "Contrast Therapy",
-      category: "Classes", 
-      duration: "60 minutes",
-      price: 40,
-      description: "Guided hot and cold therapy session combining sauna and ice bath"
-    },
-    {
-      id: 2,
-      title: "Breathwork",
-      category: "Classes",
-      duration: "60 minutes", 
-      price: 40,
-      description: "Mindful breathing techniques to enhance wellness and reduce stress"
-    },
-    {
-      id: 3,
-      title: "Yoga",
-      category: "Classes",
-      duration: "60 minutes",
-      price: 40,
-      description: "Restorative yoga sessions to improve flexibility and mental clarity"
-    },
 
-    // Suites
-    {
-      id: 4,
-      title: "Members Contrast Suite Drop In",
-      category: "Suites",
-      duration: "60 minutes",
-      price: 65,
-      description: "Access to our contrast therapy suite with sauna and ice bath facilities"
-    },
-    {
-      id: 5,
-      title: "Premium Suite",
-      category: "Suites",
-      description: "Exclusive private access to our premium wellness facilities",
-      options: [
-        { duration: "45 minutes", price: 190, description: "Standard session" },
-        { duration: "60 minutes", price: 240, description: "Extended session" },
-        { duration: "90 minutes", price: 290, description: "Full experience" }
-      ]
-    },
-    {
-      id: 6,
-      title: "Infrared Suite", 
-      category: "Suites",
-      description: "Private infrared sauna suite for deep relaxation and detoxification",
-      options: [
-        { duration: "45 minutes", price: 150, description: "Standard session" },
-        { duration: "60 minutes", price: 190, description: "Extended session" },
-        { duration: "90 minutes", price: 240, description: "Full experience" }
-      ]
-    },
 
-    // Tech Therapies
-    {
-      id: 7,
-      title: "Cryotherapy",
-      category: "Tech Therapies",
-      duration: "3 minutes",
-      price: 50,
-      description: "Whole-body cryotherapy for recovery and inflammation reduction"
-    },
-    {
-      id: 8,
-      title: "HBOT (Hyperbaric Oxygen Therapy)",
-      category: "Tech Therapies", 
-      duration: "60 minutes",
-      price: 200,
-      description: "Accelerated healing and recovery through pressurized oxygen therapy"
-    },
 
-    // Massage Therapies
-    {
-      id: 9,
-      title: "Total Body Realignment",
-      category: "Massage Therapies",
-      description: "Comprehensive bodywork to restore balance and alignment",
-      options: [
-        { duration: "60 minutes", price: 165, description: "Standard treatment" },
-        { duration: "90 minutes", price: 195, description: "Extended treatment" }
-      ]
-    },
-    {
-      id: 10,
-      title: "Sports Massage", 
-      category: "Massage Therapies",
-      description: "Targeted massage therapy for athletes and active individuals",
-      options: [
-        { duration: "60 minutes", price: 155, description: "Standard treatment" },
-        { duration: "90 minutes", price: 185, description: "Extended treatment" }
-      ]
-    },
-    {
-      id: 11,
-      title: "Lymphatic Drainage",
-      category: "Massage Therapies", 
-      description: "Gentle massage technique to support lymphatic system function",
-      options: [
-        { duration: "60 minutes", price: 155, description: "Standard treatment" },
-        { duration: "90 minutes", price: 185, description: "Extended treatment" }
-      ]
-    },
-    {
-      id: 12,
-      title: "Deep Tissue",
-      category: "Massage Therapies",
-      description: "Intensive massage therapy targeting deep muscle tension",
-      options: [
-        { duration: "60 minutes", price: 155, description: "Standard treatment" },
-        { duration: "90 minutes", price: 185, description: "Extended treatment" }
-      ]
-    },
-
-    // Manual Therapies
-    {
-      id: 13,
-      title: "Osteopathy Consultation",
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 210,
-      description: "Comprehensive assessment and treatment by certified osteopaths"
-    },
-    {
-      id: 14,
-      title: "Structural Fascia Therapy", 
-      category: "Manual Therapies",
-      duration: "60 minutes",
-      price: 200,
-      description: "Specialized therapy targeting fascial restrictions and mobility"
-    },
-
-    // Other Services
-    {
-      id: 15,
-      title: "IV Drip",
-      category: "Other Services",
-      description: "Intravenous vitamin and nutrient therapy for optimal wellness",
-      options: [
-        { duration: "45 minutes", price: 200, description: "Initial assessment & treatment plan", name: "First Consultation" },
-        { duration: "30 minutes", price: 150, description: "Comprehensive health screening", name: "Blood Test" },
-        { duration: "45 minutes", price: 320, description: "Reduce inflammation", name: "Anti-Inflammatory" },
-        { duration: "45 minutes", price: 300, description: "Boost vitality & energy", name: "Energy" },
-        { duration: "45 minutes", price: 320, description: "Mental clarity & focus", name: "Focus" },
-        { duration: "45 minutes", price: 340, description: "Healthy skin & radiance", name: "Glow" },
-        { duration: "45 minutes", price: 300, description: "Strengthen immune system", name: "Immunity" },
-        { duration: "60 minutes", price: 380, description: "Enhanced immune support", name: "Immunity Plus" },
-        { duration: "60 minutes", price: 420, description: "Neurological health support", name: "Neuro-Regan" },
-        { duration: "45 minutes", price: 340, description: "Post-workout recovery", name: "Recovery" },
-        { duration: "45 minutes", price: 320, description: "Relaxation & better sleep", name: "Rest & Sleep" },
-        { duration: "45 minutes", price: 350, description: "Complete rejuvenation", name: "Revive" },
-        { duration: "60 minutes", price: 450, description: "Cellular regeneration", name: "NAD+ (250MG)" },
-        { duration: "90 minutes", price: 650, description: "Advanced regeneration", name: "NAD+ (500MG)" },
-        { duration: "15 minutes", price: 80, description: "Targeted vitamin injections", name: "Vitamin Shots" }
-      ]
-    },
-    {
-      id: 16,
-      title: "Vitamin Infusions",
-      category: "Other Services", 
-      duration: "30 minutes",
-      price: 80,
-      description: "Targeted vitamin injections for enhanced health and energy"
-    }
-  ];
-
-  const selectedService = services.find(service => service.id === parseInt(serviceId || ""));
 
   useEffect(() => {
-    if (!selectedService) {
-      navigate("/services");
-      return;
-    }
-    
-    // If service has options, start at step 0, otherwise step 1
-    if (selectedService.options) {
-      setStep(0);
-    } else {
-      setStep(1);
-    }
-  }, [selectedService, navigate]);
+    const fetchService = async () => {
+      try {
 
-  const handleOptionSelect = (option: any) => {
-    setSelectedOption(option);
-    setStep(1);
-  };
+        setLoading(true);
+        const res = await fetch(
+          `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${title || ""}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
+              "Content-Type": "application/json",
+            },
+          }
+        );
+        if (!res.ok) throw new Error("Erro ao buscar serviço");
+        const data = await res.json();
 
+
+        if (!data) {
+          navigate("/services");
+          return;
+        }
+        setService(data);
+
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchService();
+  }, [navigate]);
+
+  // Fetch availabilities
+  useEffect(() => {
+    if (!service) return;
+    const fetchAvailabilities = async () => {
+      try {
+        setLoading(true);
+        const res = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionTypeIds: [parseInt(service.Id || "0")] }),
+          }
+        );
+        if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
+        const data = await res.json();
+
+
+        setAvailabilities(data.Availabilities);
+      } catch (err: any) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchAvailabilities();
+  }, [service]);
+
+  if (loading)
+    return (
+      <div style={{
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        height: "100vh",
+        width: "100%",
+      }}>
+        <p>Loading...</p>
+      </div>
+    );
+
+  if (error) return <p>{error}</p>;
+
+
+  // Datas disponíveis para o calendário
+  const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter(d => !isNaN(d.getTime()));
+
+
+  // Quando seleciona um dia, pegar horários disponíveis
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-    if (date) {
-      setStep(2);
-    }
+    if (!date) return;
+    const slots = availabilities
+      .filter((a) => {
+        const start = parseISO(a.StartDateTime);
+        return (
+          start.getFullYear() === date.getFullYear() &&
+          start.getMonth() === date.getMonth() &&
+          start.getDate() === date.getDate()
+        );
+      })
+      .map((a) => format(parseISO(a.StartDateTime), "HH:mm"));
+    setTimeSlots(slots);
+    setSelectedTime("");
   };
 
-  const handleTimeSelect = (time: string) => {
-    setSelectedTime(time);
-    setStep(3);
-  };
-
-  const handleBack = () => {
-    if (step > (selectedService?.options ? 0 : 1)) {
-      setStep(step - 1);
-    } else {
-      navigate("/services");
-    }
-  };
-
-  // Generate available time slots
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let hour = 9; hour <= 18; hour++) {
-      for (let minute = 0; minute < 60; minute += 30) {
-        const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        slots.push(time);
-      }
-    }
-    return slots;
-  };
 
   const renderMobileHeader = () => (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
       <div className="flex items-center justify-between p-4">
-        <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
+        <Button variant="ghost" size="icon" className="h-8 w-8">
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <div className="flex-1 text-center">
-          <div className="text-sm font-medium text-foreground">
-            {step === 0 && "Choose Option"}
-            {step === 1 && "Choose Date"}
-            {step === 2 && "Pick Time"}
-            {step === 3 && "Confirm Booking"}
-          </div>
-          <div className="text-xs text-muted-foreground">
-            Step {selectedService?.options ? step + 1 : step} of {selectedService?.options ? 4 : 3}
-          </div>
-        </div>
+
         <div className="w-8" />
       </div>
     </div>
   );
 
-  const renderProgressDots = () => (
-    <div className="flex items-center justify-center space-x-2 mb-8">
-      {Array.from({ length: selectedService?.options ? 4 : 3 }, (_, i) => i).map((stepNum) => (
-        <div key={stepNum} className={`w-2 h-2 rounded-full transition-colors ${
-          step >= stepNum ? 'bg-primary' : 'bg-muted'
-        }`} />
-      ))}
-    </div>
-  );
+
 
   const renderServiceInfo = () => (
     <Card className="glass-card rounded-3xl border-white/10 mb-6">
       <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
         <div className="flex justify-between items-start mb-3">
           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-            {selectedService?.category}
+            {category}
           </Badge>
           <div className="text-right">
             <div className="text-2xl font-bold text-white">
-              £{selectedOption ? selectedOption.price : selectedService?.price}
+              £ {price}
             </div>
             <div className="text-sm text-white/70">
-              {selectedOption ? selectedOption.duration : selectedService?.duration}
+
             </div>
           </div>
         </div>
         <h1 className="font-serif text-2xl font-medium text-white mb-3">
-          {selectedService?.title}
+          {title}
         </h1>
         <p className="text-white/70 leading-relaxed mb-4">
-          {selectedService?.description}
+          {service?.description}
         </p>
-        {selectedOption && (
-          <div className="text-sm text-white/60">
-            {selectedOption.description}
-          </div>
-        )}
+
       </CardContent>
     </Card>
   );
+  const handleTimeSelect = (time: string) => {
+    setSelectedTime(time);
 
-  const renderOptionSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Choose Your Option
-          </h2>
-          <p className="text-sm text-white/70">
-            Select your preferred option for {selectedService?.title}
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
-        <Select onValueChange={(value) => {
-          const option = selectedService?.options?.[parseInt(value)];
-          if (option) handleOptionSelect(option);
-        }}>
-          <SelectTrigger className="w-full h-14 glass-button text-white border-white/20 hover:bg-white/10 rounded-xl bg-white/5 backdrop-blur-sm">
-            <SelectValue placeholder="Select an option..." className="text-white" />
-          </SelectTrigger>
-          <SelectContent className="bg-background/95 backdrop-blur-sm border-white/20 rounded-xl z-50">
-            {selectedService?.options?.map((option: any, index: number) => (
-              <SelectItem 
-                key={index} 
-                value={index.toString()}
-                className="text-foreground hover:bg-accent/50 focus:bg-accent/50 rounded-lg cursor-pointer p-4 border-b border-border/10 last:border-0"
-              >
-                <div className="grid grid-cols-[1fr_auto] gap-4 w-full items-start">
-                  <div className="min-w-0">
-                    <div className="font-semibold text-base">{option.name}</div>
-                    <div className="text-sm text-muted-foreground mt-1">
-                      <span className="font-medium">{option.duration}</span>
-                      <span className="mx-2">•</span>
-                      <span>{option.description}</span>
-                    </div>
-                  </div>
-                  <div className="text-xl font-bold text-right w-16">£{option.price}</div>
-                </div>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-    </div>
-  );
+    if (!selectedDate) return;
 
-  const renderDateSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Choose Your Date
-          </h2>
-          <p className="text-sm text-white/70">
-            Select your preferred date for {selectedService?.title}
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-8'}`}>
-        <Calendar
-          mode="single"
-          selected={selectedDate}
-          onSelect={handleDateSelect}
-          disabled={(date) => date < new Date()}
-          
-          className="p-3 pointer-events-auto"
-          classNames={{
-            months: "text-white",
-            month: "text-white",
-            caption: "text-white",
-            caption_label: "text-white text-sm font-medium",
-            nav: "text-white",
-            nav_button: "text-white/70 hover:text-white h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100",
-            nav_button_previous: "absolute left-1",
-            nav_button_next: "absolute right-1",
-            table: "text-white w-full",
-            head_row: "text-white",
-            head_cell: "text-white/70 rounded-md w-9 font-normal text-[0.8rem]",
-            row: "text-white",
-            cell: "text-white relative p-0 text-center text-sm focus-within:relative focus-within:z-20 h-9 w-9",
-            day: "text-white h-9 w-9 p-0 font-normal aria-selected:opacity-100 hover:bg-white/20 hover:text-white rounded-md transition-colors text-sm",
-            day_selected: "bg-white/30 text-white hover:bg-white/40 hover:text-white focus:bg-white/30 focus:text-white",
-            day_today: "bg-white/10 text-white",
-            day_outside: "text-white/50 opacity-50",
-            day_disabled: "text-white/30 opacity-50",
-          }}
-        />
-      </div>
-    </div>
-  );
 
-  const renderTimeSelection = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-2">
-            Pick Your Time
-          </h2>
-          <p className="text-sm text-white/70">
-            {selectedDate && format(selectedDate, "EEEE, MMMM d")}
-          </p>
-        </div>
-      )}
-      
-      <div className={`mx-auto glass-morphism rounded-2xl ${isMobile ? 'max-w-sm p-4 mx-4' : 'max-w-lg p-6'}`}>
-        <div className="grid grid-cols-3 gap-3">
-          {generateTimeSlots().map((time) => (
-            <Button
-              key={time}
-              variant="outline"
-              className={`h-12 text-sm transition-all rounded-xl ${
-                selectedTime === time 
-                  ? 'glass-button text-white border-white/30 bg-white/20' 
-                  : 'glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10'
-              }`}
-              onClick={() => handleTimeSelect(time)}
-            >
-              {time}
-            </Button>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
 
-  const renderConfirmation = () => (
-    <div className="px-4 pb-8">
-      {!isMobile && (
-        <div className="text-center mb-8">
-          <h2 className="text-2xl font-serif font-light text-white mb-4">
-            Confirm Your Booking
-          </h2>
-        </div>
-      )}
-      
-      <Card className={`glass-card rounded-3xl border-white/10 mx-auto ${isMobile ? 'max-w-sm mx-4' : 'max-w-lg'}`}>
-        <CardContent className="p-6">
-          <div className="space-y-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-white/10 rounded-full mx-auto flex items-center justify-center mb-4">
-                <Check className="h-6 w-6 text-white" />
-              </div>
-              <h3 className="font-serif text-lg font-medium text-white mb-2">
-                {selectedService?.title}
-              </h3>
-              <p className="text-sm text-white/70">
-                {selectedService?.description}
-              </p>
-            </div>
-            
-            <div className="border-t border-white/20 pt-4 space-y-3">
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Date</span>
-                <span className="font-medium text-white">
-                  {selectedDate && format(selectedDate, "MMM d, yyyy")}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Time</span>
-                <span className="font-medium text-white">{selectedTime}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-white/70">Duration</span>
-                <span className="font-medium text-white">
-                  {selectedOption ? selectedOption.duration : selectedService?.duration}
-                </span>
-              </div>
-              <div className="flex justify-between text-sm font-medium border-t border-white/20 pt-3">
-                <span className="text-white">Total</span>
-                <span className="text-white">
-                  £{selectedOption ? selectedOption.price : selectedService?.price}
-                </span>
-              </div>
-            </div>
-            
-            <Button className="w-full glass-button text-white rounded-xl font-medium">
-              Complete Booking
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
-  );
+    // encontra a disponibilidade correspondente
+    const availability = availabilities.find((a) => {
+      const start = parseISO(a.StartDateTime);
+      return (
+        format(start, "HH:mm") === time &&
+        start.getFullYear() === selectedDate.getFullYear() &&
+        start.getMonth() === selectedDate.getMonth() &&
+        start.getDate() === selectedDate.getDate()
+      );
+    });
 
-  if (!selectedService) {
-    return null;
-  }
+    if (!availability) {
+      alert("Disponibilidade não encontrada.");
+      return;
+    }
+
+    const staffId = availability.Staff?.Id;
+    if (!availability.Location?.Id) {
+      alert("Local da aula não encontrado");
+      return;
+    }
+    const locationId = availability.Location?.Id;
+
+    const bookAbleDate = availability.BookableEndDateTime;
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      alert("Token não encontrado, favor logar novamente.");
+      return;
+    }
+    const clientId = localStorage.getItem("clientId");
+
+    console.log('serviço', service)
+    const sessionTypeId = service.Id;
+
+    setStaffId(staffId);
+    setLocationId(locationId);
+
+    // Continuar workflow do Mindbody
+    proceedMindbodyWorkflow(token, bookAbleDate, time, staffId, locationId, sessionTypeId, clientId);
+    console.log("Selected time:", time, "Staff ID:", staffId, "Location ID:", locationId, "Session Type ID:", sessionTypeId);
+  };
+
+
+  const proceedMindbodyWorkflow = async (
+    token: string,
+    date: Date,
+    time: string,
+    staffId: string,
+    locationId: string,
+    sessionTypeId: string,
+    clientId: string
+  ) => {
+    try {
+
+
+
+      // 🔎 chama sua função no Supabase para obter o usuário
+      const meRes = await fetch(
+        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token }),
+        }
+      );
+
+      // Se retornar 403, remove token e redireciona
+      if (meRes.status === 403) {
+        localStorage.removeItem("access_token");
+        navigate("/services");
+        return; // interrompe o fluxo
+      }
+
+      if (meRes.status === 401) {
+        // Token expirado -> buscar refreshToken
+        const refreshToken = localStorage.getItem("refresh_token");
+        if (!refreshToken) {
+          localStorage.removeItem("access_token");
+          navigate("/services");
+          return;
+        }
+
+        const refreshRes = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/refreshMindbodyToken",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+          }
+        );
+
+        if (!refreshRes.ok) {
+          localStorage.removeItem("access_token");
+          navigate("/services");
+          return;
+        }
+
+        const newTokens = await refreshRes.json();
+
+        // Atualiza localStorage com novo access_token
+        localStorage.setItem("access_token", newTokens.access_token);
+        localStorage.setItem("refresh_token", newTokens.refresh_token);
+
+      }
+
+      if (!meRes.ok) {
+        const errorText = await meRes.text();
+        throw new Error(`Erro ao validar usuário Mindbody: ${errorText}`);
+      }
+      const { user } = await meRes.json();
+      console.log("Mindbody user:", user);
+
+      if (!user.businessProfiles || user.businessProfiles.length === 0) {
+        setShowProfileModal(true);
+        toast.error("Complete your profile before continuing");
+        return;
+      }
+
+      const userId = user.businessProfiles[0]?.profileId;
+
+
+
+      const cardData = await new Promise<{
+        creditCardNumber: string;
+        expMonth: string;
+        expYear: string;
+        cvv: string;
+        billingName: string;
+        billingPostalCode: string;
+        saveInfo: boolean;
+      }>((resolve, reject) => {
+        const modalRoot = document.createElement("div");
+        document.body.appendChild(modalRoot);
+
+        const root = ReactDOM.createRoot(modalRoot);
+
+        const handleClose = () => {
+          toast.error("Payment canceled"); // exibe o toast
+          root.unmount();
+          modalRoot.remove();
+        };
+
+        const handleSubmit = (metadata: any) => {
+          resolve(metadata);
+          root.unmount();
+          modalRoot.remove();
+        };
+
+        root.render(<CardFormDialog amount={price} onCancel={handleClose} onSubmit={handleSubmit} />);
+      });
+
+      const getMindbodyToken = async () => {
+        const res = await fetch(
+          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyStaffToken",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              username: "henry@xeniasocial.com",
+              password: "Loveablefix!",
+              siteId: "5736189",
+            }),
+          }
+        );
+        if (!res.ok) throw new Error("Erro ao obter token via Supabase");
+        const { AccessToken: rawToken } = await res.json();
+        const cleanToken = rawToken.replace(/\s+/g, '');
+        return cleanToken;
+      };
+
+      const mindbodyToken = await getMindbodyToken();
+
+      const checkoutBody = {
+        CartId: null,
+        ClientId: userId,
+        PayerClientId: "",
+        Test: true,
+        Items: [
+          {
+            Item: {
+              Type: "Service",
+              Metadata: { Id: productId },
+            },
+            Quantity: 1,
+            AppointmentBookingRequests: [
+              {
+                StaffId: staffId,
+                LocationId: locationId,
+                SessionTypeId: sessionTypeId,
+                StartDateTime: date,
+              },
+            ],
+          },
+        ],
+        InStore: false,
+        CalculateTax: true,
+        Payments: [
+          {
+            Type: "CreditCard",
+            Metadata: {
+              amount: price,
+              creditCardNumber: cardData.creditCardNumber,
+              expMonth: cardData.expMonth,
+              expYear: cardData.expYear,
+              cvv: cardData.cvv,
+              billingName: cardData.billingName,
+              billingPostalCode: cardData.billingPostalCode,
+              saveInfo: cardData.saveInfo,
+            },
+          },
+        ],
+        SendEmail: false,
+      };
+
+      console.log("Checkout body (JSON):", JSON.stringify(checkoutBody, null, 2));
+
+      // chama a Edge Function de checkout
+      const checkoutRes = await fetch(
+        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyCheckout",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": mindbodyToken.trim(), // token obtido via mindbodyStaffToken
+          },
+          body: JSON.stringify(checkoutBody),
+        }
+      );
+      const checkoutData = await checkoutRes.json();
+      if (!checkoutRes.ok) throw new Error(checkoutData.error || "Erro no checkout");
+
+      toast.success("Scheduling completed successfully!");
+      navigate("/services");
+      // 2️⃣ Agora chamamos a Edge Function de checkout para marcar o appointment
+
+    } catch (err: any) {
+      console.error(err);
+      toast.error(`Error on Mindbody workflow : ${err.message}`);
+    }
+  };
+
+
+
+
+  const handleSaveProfile = async () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      alert("Token não encontrado");
+      return;
+    }
+
+    try {
+      const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyProfile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          token,
+          businessId: "5736189", // coloque o real
+          userId: userId,
+          profileData,
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Erro ao salvar perfil");
+
+      alert("Perfil cadastrado com sucesso!");
+      setShowProfileModal(false);
+    } catch (err: any) {
+      alert(`Erro ao cadastrar perfil: ${err.message}`);
+    }
+  };
+
+
+
+
+
 
   return (
-    <div 
+    <div
       className="min-h-screen bg-cover bg-center bg-fixed relative transition-all duration-700 ease-in-out"
       style={{
         backgroundImage: `url('/lovable-uploads/8911d1ac-19d7-427a-9138-19c768396ea7.png')`
@@ -507,41 +512,159 @@ const BookService = () => {
     >
       {/* Dark overlay for text legibility with smooth transition */}
       <div className="absolute inset-0 bg-black/50 z-0 transition-opacity duration-500" />
-      
-      <div className="relative z-10 min-h-screen animate-fade-in">
-      {!isMobile && <Navigation />}
-      
-      {isMobile && renderMobileHeader()}
-      
-      <div className={isMobile ? "pt-0" : "pt-20"}>
-        <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
-          <div className="max-w-7xl mx-auto">
-            {!isMobile && (
-              <div className="animate-scale-in">
-                {renderProgressDots()}
-              </div>
-            )}
-            
-            {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
-            {(!isMobile || step <= 1) && (
-              <div className={`mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
-                {renderServiceInfo()}
-              </div>
-            )}
-            
-            <div className="max-w-lg mx-auto">
-              <div className="transition-all duration-500 ease-in-out">
-                {step === 0 && <div className="animate-fade-in">{renderOptionSelection()}</div>}
-                {step === 1 && <div className="animate-fade-in">{renderDateSelection()}</div>}
-                {step === 2 && <div className="animate-fade-in">{renderTimeSelection()}</div>}
-                {step === 3 && <div className="animate-fade-in">{renderConfirmation()}</div>}
-              </div>
-            </div>
-          </div>
-        </section>
-      </div>
 
-      {!isMobile && <Footer />}
+      <div className="relative z-10 min-h-screen animate-fade-in">
+        {!isMobile && <Navigation />}
+
+        {isMobile && renderMobileHeader()}
+
+        <div className={isMobile ? "pt-0" : "pt-20"}>
+          <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
+            <div className="max-w-7xl mx-auto">
+              {!isMobile && (
+                <div className="animate-scale-in">
+
+                </div>
+              )}
+
+              {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
+              {!isMobile && (
+                <div className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
+                  {renderServiceInfo()}
+
+
+
+
+                  {availableDates.length > 0 ? (
+                    <div className="flex justify-center mx-auto min-w-[510px]">
+                      <Calendar
+                        mode="single"
+                        selected={selectedDate}
+                        onSelect={handleDateSelect}
+                        disabled={(date) =>
+                          date < new Date() ||
+                          !availableDates.some(
+                            (d) =>
+                              d.getFullYear() === date.getFullYear() &&
+                              d.getMonth() === date.getMonth() &&
+                              d.getDate() === date.getDate()
+                          )
+                        }
+                        className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
+                      />
+                    </div>
+                  ) : (
+                    <p>Loading Calendar...</p>
+                  )}
+
+                  {/* Horários disponíveis com professor */}
+                  {timeSlots.length > 0 && (
+                    <div className="mt-4">
+                      <h2 className="text-xl mb-2">Available times:</h2>
+                      <div className="grid grid-cols-3 gap-2">
+                        {timeSlots.map((t) => {
+                          // encontra a disponibilidade correspondente
+                          const availability = availabilities.find((a) => {
+                            const start = parseISO(a.StartDateTime);
+                            return (
+                              format(start, "HH:mm") === t &&
+                              selectedDate &&
+                              start.getFullYear() === selectedDate.getFullYear() &&
+                              start.getMonth() === selectedDate.getMonth() &&
+                              start.getDate() === selectedDate.getDate()
+                            );
+                          });
+
+                          const staffName = availability?.Staff?.DisplayName || "Indisponível";
+
+                          return (
+                            <Button
+                              key={t}
+                              variant={selectedTime === t ? "default" : "outline"}
+                              onClick={() => handleTimeSelect(t)}
+                              className="text-white flex flex-col"
+                            >
+                              <span>{t}</span>
+                              <span className="text-xs text-white/70">{staffName}</span>
+                            </Button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Seleção final */}
+                  {selectedDate && selectedTime && (
+                    <p className="mt-4">
+                     You selected: {format(selectedDate, "dd/MM/yyyy")} às {selectedTime}
+                    </p>
+                  )}
+                </div>
+              )}
+
+
+
+            </div>
+          </section>
+        </div>
+
+        {!isMobile && <Footer />}
+
+        {showProfileModal && (
+          <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
+            <DialogContent className="sm:max-w-lg">
+              <DialogHeader>
+                <DialogTitle>Complete your profile
+                </DialogTitle>
+              </DialogHeader>
+
+              <div className="space-y-3 mt-2">
+                <Input
+                  type="date"
+                  placeholder="Data de nascimento"
+                  value={profileData.birthDate}
+                  onChange={(e) => setProfileData({ ...profileData, birthDate: e.target.value })}
+                />
+                <Input
+                  placeholder="Celular"
+                  value={profileData.mobilePhone}
+                  onChange={(e) => setProfileData({ ...profileData, mobilePhone: e.target.value })}
+                />
+                <Input
+                  placeholder="Endereço"
+                  value={profileData.address}
+                  onChange={(e) => setProfileData({ ...profileData, address: e.target.value })}
+                />
+                <Input
+                  placeholder="Cidade"
+                  value={profileData.city}
+                  onChange={(e) => setProfileData({ ...profileData, city: e.target.value })}
+                />
+                <Input
+                  placeholder="Estado"
+                  value={profileData.state}
+                  onChange={(e) => setProfileData({ ...profileData, state: e.target.value })}
+                />
+                <Input
+                  placeholder="País"
+                  value={profileData.country}
+                  onChange={(e) => setProfileData({ ...profileData, country: e.target.value })}
+                />
+                <Input
+                  placeholder="CEP"
+                  value={profileData.postalCode}
+                  onChange={(e) => setProfileData({ ...profileData, postalCode: e.target.value })}
+                />
+              </div>
+
+              <DialogFooter className="mt-4 flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowProfileModal(false)}>Cancel</Button>
+                <Button onClick={handleSaveProfile}>Save</Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        )}
+
       </div>
     </div>
   );
