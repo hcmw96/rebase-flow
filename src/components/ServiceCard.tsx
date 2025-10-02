@@ -33,7 +33,16 @@ const ServiceCard = ({
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    navigate(`/book/${id}`);
+
+    navigate(`/book/${id}`, {
+      state: {
+        title,
+        price: service?.price,
+        duration: service?.duration,
+        category,
+
+      }
+    });
   };
 
   const renderPricing = () => {
