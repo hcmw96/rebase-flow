@@ -76,6 +76,7 @@ const BookService = () => {
   const { category } = location.state || {};
   const { serviceId } = useParams<{ serviceId: string }>();
   const productId = serviceId;
+  const [userIdFromProfile, setUserIdFromProfile] = useState<string>("");
 
 
 
@@ -340,6 +341,7 @@ const BookService = () => {
       }
       const { user } = await meRes.json();
       console.log("Mindbody user:", user);
+      setUserIdFromProfile(user.id);
 
       if (!user.businessProfiles || user.businessProfiles.length === 0) {
         setShowProfileModal(true);
@@ -486,7 +488,7 @@ const BookService = () => {
         body: JSON.stringify({
           token,
           businessId: "5736189",
-          userId: userId,
+          userId: userIdFromProfile,
           profileData,
         }),
       });
