@@ -6,46 +6,22 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format, parseISO, set } from "date-fns";
+import { ArrowLeft } from "lucide-react";
+import { format, parseISO } from "date-fns";
 import { useLocation } from "react-router-dom";
-import CardFormDialog from "@/components/CardFormDialog";
 import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
-interface ProfileModalProps {
-  open: boolean;
-  onClose: () => void;
-  onSave: (profileData: {
-    birthDate: string;
-    mobilePhone: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-  }) => void;
-  initialData?: {
-    birthDate: string;
-    mobilePhone: string;
-    address: string;
-    city: string;
-    state: string;
-    country: string;
-    postalCode: string;
-  };
-}
-
 const BookService = () => {
-
   const location = useLocation();
   const navigate = useNavigate();
   const [service, setService] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loadingService, setLoadingService] = useState(false); // Carregando serviço
+  const [loadingAvailabilities, setLoadingAvailabilities] = useState(false); // Carregando disponibilidades
+  const [loadingCalendar, setLoadingCalendar] = useState(false); // Carregando calendário
   const [error, setError] = useState<string | null>(null);
   const [availabilities, setAvailabilities] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -67,26 +43,16 @@ const BookService = () => {
     emergencyContactPhone: "",
     emergencyContactRelationship: "",
   });
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [locationId, setLocationId] = useState<string>("");
-  const [staffId, setStaffId] = useState<string>("");
   const { title } = location.state || {};
   const { price } = location.state || {};
-  const { duration } = location.state || {};
   const { category } = location.state || {};
   const { serviceId } = useParams<{ serviceId: string }>();
   const productId = serviceId;
-  const [userIdFromProfile, setUserIdFromProfile] = useState<string>("");
-
-
-
-
 
   useEffect(() => {
     const fetchService = async () => {
       try {
-
-        setLoading(true);
+        setLoadingService(true); // Inicia o carregamento do serviço
         const res = await fetch(
           `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${title || ""}`,
           {
@@ -99,18 +65,15 @@ const BookService = () => {
         );
         if (!res.ok) throw new Error("Erro ao buscar serviço");
         const data = await res.json();
-
-
         if (!data) {
           navigate("/services");
           return;
         }
         setService(data);
-
       } catch (err: any) {
         setError(err.message);
       } finally {
-        setLoading(false);
+        setLoadingService(false); // Finaliza o carregamento do serviço
       }
     };
     fetchService();
@@ -121,7 +84,7 @@ const BookService = () => {
     if (!service) return;
     const fetchAvailabilities = async () => {
       try {
-        setLoading(true);
+        setLoadingAvailabilities(true); // Inicia o carregamento das disponibilidades
         const res = await fetch(
           "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
           {
@@ -132,32 +95,48 @@ const BookService = () => {
         );
         if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
         const data = await res.json();
-
-
         setAvailabilities(data.Availabilities);
       } catch (err: any) {
         setError(err.message);
       } finally {
-        setLoading(false);
+        setLoadingAvailabilities(false); // Finaliza o carregamento das disponibilidades
       }
     };
     fetchAvailabilities();
   }, [service]);
 
-  if (loading)
-    return (
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        width: "100%",
-      }}>
-        <p>Loading...</p>
-      </div>
-    );
+  // Quando seleciona um dia, pegar horários disponíveis
+  const handleDateSelect = (date: Date | undefined) => {
+    setSelectedDate(date);
+    if (!date) return;
+    setLoadingCalendar(true); // Inicia o carregamento do calendário
+    const slots = availabilities
+      .filter((a) => {
+        const start = parseISO(a.StartDateTime);
+        return (
+          start.getFullYear() === date.getFullYear() &&
+          start.getMonth() === date.getMonth() &&
+          start.getDate() === date.getDate()
+        );
+      })
+      .map((a) => format(parseISO(a.StartDateTime), "HH:mm"));
+    setTimeSlots(slots);
+    setSelectedTime("");
+    setLoadingCalendar(false); // Finaliza o carregamento do calendário
+  };
 
-  if (error) return <p>{error}</p>;
+  const renderLoadingState = () => {
+    if (loadingService) {
+      return <p>Loading Service...</p>;
+    }
+    if (loadingAvailabilities) {
+      return <p>Loading Availability...</p>;
+    }
+    if (loadingCalendar) {
+      return <p>Loading Calendar...</p>;
+    }
+    return null;
+  };
 
 
   // Datas disponíveis para o calendário
