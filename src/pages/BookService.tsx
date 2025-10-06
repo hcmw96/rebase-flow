@@ -83,66 +83,57 @@ const BookService = () => {
 
 
   useEffect(() => {
-    const fetchService = async () => {
-      try {
+  const fetchServiceAndAvailabilities = async () => {
+    try {
+      setLoading(true);
 
-        setLoading(true);
-        const res = await fetch(
-          `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${title || ""}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
-              "Content-Type": "application/json",
-            },
-          }
-        );
-        if (!res.ok) throw new Error("Erro ao buscar serviço");
-        const data = await res.json();
-
-
-        if (!data) {
-          navigate("/services");
-          return;
+      // 1. Buscar o serviço
+      const res = await fetch(
+        `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${title || ""}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: "Bearer ...", // seu token aqui
+            "Content-Type": "application/json",
+          },
         }
-        setService(data);
+      );
 
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (!res.ok) throw new Error("Erro ao buscar serviço");
+      const data = await res.json();
+
+      if (!data || !data.Id) {
+        navigate("/services");
+        return;
       }
-    };
-    fetchService();
-  }, [navigate]);
 
-  // Fetch availabilities
-  useEffect(() => {
-    if (!service) return;
-    const fetchAvailabilities = async () => {
-      try {
-        setLoading(true);
-        const res = await fetch(
-          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionTypeIds: [parseInt(service.Id || "0")] }),
-          }
-        );
-        if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
-        const data = await res.json();
+      setService(data);
 
+      // 2. Buscar disponibilidades APÓS ter o serviço
+      const availRes = await fetch(
+        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ sessionTypeIds: [parseInt(data.Id || "0")] }),
+        }
+      );
 
-        setAvailabilities(data.Availabilities);
-      } catch (err: any) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchAvailabilities();
-  }, [service]);
+      if (!availRes.ok) throw new Error("Erro ao buscar disponibilidades");
+      const availData = await availRes.json();
+
+      setAvailabilities(availData.Availabilities);
+
+    } catch (err: any) {
+      setError(err.message || "Erro inesperado");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchServiceAndAvailabilities();
+}, [title, navigate]);
+
 
   if (loading)
     return (
