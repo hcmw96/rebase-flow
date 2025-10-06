@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
 import { format, parseISO, set } from "date-fns";
 import { useLocation } from "react-router-dom";
-import CardFormDialog from "@/components/CardFormDialog";
+import CardFormDialog from "@/components/CardFormModal";
 import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -81,72 +81,67 @@ const BookService = () => {
 
 
 
-
   useEffect(() => {
-  const fetchServiceAndAvailabilities = async () => {
+  const fetchData = async () => {
     try {
       setLoading(true);
 
-      // 1. Buscar o serviço
-      const res = await fetch(
-        `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${title || ""}`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: "Bearer ...", // seu token aqui
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // Se já veio via state, evita novo fetch
+      let serviceData = service;
+      if (!serviceData && title) {
+        const servicePromise = fetch(
+          `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(title)}`,
+          {
+            method: "GET",
+            headers: {
+              Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
+              "Content-Type": "application/json",
+            },
+          }
+        ).then(async (res) => {
+          if (!res.ok) throw new Error("Erro ao buscar serviço");
+          const data = await res.json();
+          if (!data) throw new Error("Serviço não encontrado");
+          return data;
+        });
 
-      if (!res.ok) throw new Error("Erro ao buscar serviço");
-      const data = await res.json();
+        serviceData = await servicePromise;
+        setService(serviceData);
+      }
 
-      if (!data || !data.Id) {
+      if (!serviceData) {
         navigate("/services");
         return;
       }
 
-      setService(data);
-
-      // 2. Buscar disponibilidades APÓS ter o serviço
-      const availRes = await fetch(
+      // 🔹 Faz o fetch das disponibilidades em paralelo
+      const availabilitiesPromise = fetch(
         "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionTypeIds: [parseInt(data.Id || "0")] }),
+          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id || "0")] }),
         }
-      );
+      ).then(async (res) => {
+        if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
+        const data = await res.json();
+        return data.Availabilities;
+      });
 
-      if (!availRes.ok) throw new Error("Erro ao buscar disponibilidades");
-      const availData = await availRes.json();
-
-      setAvailabilities(availData.Availabilities);
-
+      // Aguarda tudo em paralelo
+      const [availabilitiesData] = await Promise.all([availabilitiesPromise]);
+      setAvailabilities(availabilitiesData);
     } catch (err: any) {
-      setError(err.message || "Erro inesperado");
+      console.error("Erro ao carregar dados:", err);
+      setError(err.message);
     } finally {
       setLoading(false);
     }
   };
 
-  fetchServiceAndAvailabilities();
-}, [title, navigate]);
+  fetchData();
+}, [navigate, title]);
 
-
-  if (loading)
-    return (
-      <div style={{
-        display: "flex",
-        justifyContent: "center",
-        alignItems: "center",
-        height: "100vh",
-        width: "100%",
-      }}>
-        <p>Loading...</p>
-      </div>
-    );
 
   if (error) return <p>{error}</p>;
 
@@ -287,6 +282,8 @@ const BookService = () => {
         }
       );
 
+     
+
       // Se retornar 403, remove token e redireciona
       if (meRes.status === 403) {
         localStorage.removeItem("access_token");
@@ -359,7 +356,7 @@ const BookService = () => {
         const root = ReactDOM.createRoot(modalRoot);
 
         const handleClose = () => {
-          toast.error("Payment canceled");
+          toast.error("Payment canceled"); // exibe o toast
           root.unmount();
           modalRoot.remove();
         };
@@ -445,7 +442,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            "Authorization": mindbodyToken.trim(),
+            "Authorization": mindbodyToken.trim(), // token obtido via mindbodyStaffToken
           },
           body: JSON.stringify(checkoutBody),
         }
@@ -455,6 +452,7 @@ const BookService = () => {
 
       toast.success("Scheduling completed successfully!");
       navigate("/services");
+      // 2️⃣ Agora chamamos a Edge Function de checkout para marcar o appointment
 
     } catch (err: any) {
       console.error(err);
@@ -478,7 +476,7 @@ const BookService = () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           token,
-          businessId: "5736189",
+          businessId: "5736189", // coloque o real
           userId: userIdFromProfile,
           profileData,
         }),
@@ -537,8 +535,8 @@ const BookService = () => {
                         mode="single"
                         selected={selectedDate}
                         onSelect={handleDateSelect}
+                        minDate={new Date()}
                         disabled={(date) =>
-                          date < new Date() ||
                           !availableDates.some(
                             (d) =>
                               d.getFullYear() === date.getFullYear() &&
