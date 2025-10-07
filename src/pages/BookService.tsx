@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
 import { format, parseISO, set } from "date-fns";
 import { useLocation } from "react-router-dom";
-import CardFormDialog from "@/components/CardFormDialog";
+import CardFormDialog from "@/components/CardFormModal";
 import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -40,8 +40,21 @@ interface ProfileModalProps {
   };
 }
 
-const BookService = () => {
+export interface ClientCreditCard {
+  Address: string | null;
+  CardHolder: string | null;
+  CardNumber: string;
+  CardType: string;
+  City: string | null;
+  ExpMonth: string;
+  ExpYear: string;
+  LastFour: string;
+  PostalCode: string | null;
+  State: string | null;
+  isStoredCard?: boolean;
+}
 
+const BookService = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [service, setService] = useState<any>(null);
@@ -77,78 +90,72 @@ const BookService = () => {
   const { serviceId } = useParams<{ serviceId: string }>();
   const productId = serviceId;
   const [userIdFromProfile, setUserIdFromProfile] = useState<string>("");
-
-
-
+  const [clientCardInfo, setClientCardInfo] = useState<ClientCreditCard[] | null>(null);
 
   useEffect(() => {
-  const fetchData = async () => {
-    try {
-      setLoading(true);
+    const fetchData = async () => {
+      try {
+        setLoading(true);
 
-      // Se já veio via state, evita novo fetch
-      let serviceData = service;
-      if (!serviceData && title) {
-        const servicePromise = fetch(
-          `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(title)}`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
-              "Content-Type": "application/json",
+        // Se já veio via state, evita novo fetch
+        let serviceData = service;
+        if (!serviceData && title) {
+          const servicePromise = fetch(
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(title)}`,
+            {
+              method: "GET",
+              headers: {
+                Authorization:
+                  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
+                "Content-Type": "application/json",
+              },
             },
-          }
-        ).then(async (res) => {
-          if (!res.ok) throw new Error("Erro ao buscar serviço");
-          const data = await res.json();
-          if (!data) throw new Error("Serviço não encontrado");
-          return data;
-        });
+          ).then(async (res) => {
+            if (!res.ok) throw new Error("Erro ao buscar serviço");
+            const data = await res.json();
+            console.log("Fetched service data:", data);
+            if (!data) throw new Error("Serviço não encontrado");
+            return data;
+          });
 
-        serviceData = await servicePromise;
-        setService(serviceData);
-      }
+          serviceData = await servicePromise;
+          setService(serviceData);
+        }
 
-      if (!serviceData) {
-        navigate("/services");
-        return;
-      }
+        if (!serviceData) {
+          navigate("/services");
+          return;
+        }
 
-      // 🔹 Faz o fetch das disponibilidades em paralelo
-      const availabilitiesPromise = fetch(
-        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems",
-        {
+        // 🔹 Faz o fetch das disponibilidades em paralelo
+        const availabilitiesPromise = fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id || "0")] }),
-        }
-      ).then(async (res) => {
-        if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
-        const data = await res.json();
-        return data.Availabilities;
-      });
+        }).then(async (res) => {
+          if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
+          const data = await res.json();
+          return data.Availabilities;
+        });
 
-      // Aguarda tudo em paralelo
-      const [availabilitiesData] = await Promise.all([availabilitiesPromise]);
-      setAvailabilities(availabilitiesData);
-    } catch (err: any) {
-      console.error("Erro ao carregar dados:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+        // Aguarda tudo em paralelo
+        const [availabilitiesData] = await Promise.all([availabilitiesPromise]);
+        setAvailabilities(availabilitiesData);
+      } catch (err: any) {
+        console.error("Erro ao carregar dados:", err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  fetchData();
-}, [navigate, title]);
-
+    fetchData();
+  }, [navigate, title]);
 
   if (error) return <p>{error}</p>;
 
-
   // Datas disponíveis para o calendário
-  const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter(d => !isNaN(d.getTime()));
-
+  const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
 
   // Quando seleciona um dia, pegar horários disponíveis
   const handleDateSelect = (date: Date | undefined) => {
@@ -168,7 +175,6 @@ const BookService = () => {
     setSelectedTime("");
   };
 
-
   const renderMobileHeader = () => (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
       <div className="flex items-center justify-between p-4">
@@ -181,31 +187,20 @@ const BookService = () => {
     </div>
   );
 
-
-
   const renderServiceInfo = () => (
     <Card className="glass-card rounded-3xl border-white/10 mb-6">
-      <CardContent className={`${isMobile ? 'p-4' : 'p-6'}`}>
+      <CardContent className={`${isMobile ? "p-4" : "p-6"}`}>
         <div className="flex justify-between items-start mb-3">
           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
             {category}
           </Badge>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">
-              £ {price}
-            </div>
-            <div className="text-sm text-white/70">
-
-            </div>
+            <div className="text-2xl font-bold text-white">£ {price}</div>
+            <div className="text-sm text-white/70"></div>
           </div>
         </div>
-        <h1 className="font-serif text-2xl font-medium text-white mb-3">
-          {title}
-        </h1>
-        <p className="text-white/70 leading-relaxed mb-4">
-          {service?.description}
-        </p>
-
+        <h1 className="font-serif text-2xl font-medium text-white mb-3">{title}</h1>
+        <p className="text-white/70 leading-relaxed mb-4">{service?.description}</p>
       </CardContent>
     </Card>
   );
@@ -213,8 +208,6 @@ const BookService = () => {
     setSelectedTime(time);
 
     if (!selectedDate) return;
-
-
 
     // encontra a disponibilidade correspondente
     const availability = availabilities.find((a) => {
@@ -247,7 +240,6 @@ const BookService = () => {
     }
     const clientId = localStorage.getItem("clientId");
 
-    console.log('serviço', service)
     const sessionTypeId = service.Id;
 
     setStaffId(staffId);
@@ -255,9 +247,7 @@ const BookService = () => {
 
     // Continuar workflow do Mindbody
     proceedMindbodyWorkflow(token, bookAbleDate, time, staffId, locationId, sessionTypeId, clientId);
-    console.log("Selected time:", time, "Staff ID:", staffId, "Location ID:", locationId, "Session Type ID:", sessionTypeId);
   };
-
 
   const proceedMindbodyWorkflow = async (
     token: string,
@@ -266,33 +256,23 @@ const BookService = () => {
     staffId: string,
     locationId: string,
     sessionTypeId: string,
-    clientId: string
+    clientId: string,
   ) => {
     try {
+      // 🔹 1. Obtém dados do usuário atual no Mindbody
+      const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
 
-
-
-      // 🔎 chama sua função no Supabase para obter o usuário
-      const meRes = await fetch(
-        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ token }),
-        }
-      );
-
-     
-
-      // Se retornar 403, remove token e redireciona
       if (meRes.status === 403) {
         localStorage.removeItem("access_token");
         navigate("/services");
-        return; // interrompe o fluxo
+        return;
       }
 
       if (meRes.status === 401) {
-        // Token expirado -> buscar refreshToken
         const refreshToken = localStorage.getItem("refresh_token");
         if (!refreshToken) {
           localStorage.removeItem("access_token");
@@ -300,14 +280,11 @@ const BookService = () => {
           return;
         }
 
-        const refreshRes = await fetch(
-          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/refreshMindbodyToken",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ refresh_token: refreshToken }),
-          }
-        );
+        const refreshRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/refreshMindbodyToken", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refresh_token: refreshToken }),
+        });
 
         if (!refreshRes.ok) {
           localStorage.removeItem("access_token");
@@ -316,19 +293,17 @@ const BookService = () => {
         }
 
         const newTokens = await refreshRes.json();
-
-        // Atualiza localStorage com novo access_token
         localStorage.setItem("access_token", newTokens.access_token);
         localStorage.setItem("refresh_token", newTokens.refresh_token);
-
       }
 
       if (!meRes.ok) {
         const errorText = await meRes.text();
         throw new Error(`Erro ao validar usuário Mindbody: ${errorText}`);
       }
+
       const { user } = await meRes.json();
-      console.log("Mindbody user:", user);
+
       setUserIdFromProfile(user.id);
 
       if (!user.businessProfiles || user.businessProfiles.length === 0) {
@@ -339,8 +314,55 @@ const BookService = () => {
 
       const userId = user.businessProfiles[0]?.profileId;
 
+      // 🔹 Continua o fluxo normal: pega token staff, faz checkout etc.
+      const getMindbodyToken = async () => {
+        const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyStaffToken", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: "henry@xeniasocial.com",
+            password: "Loveablefix!",
+            siteId: "5736189",
+          }),
+        });
+        if (!res.ok) throw new Error("Erro ao obter token via Supabase");
+        const { AccessToken: rawToken } = await res.json();
+        return rawToken.replace(/\s+/g, "");
+      };
 
+      const mindbodyToken = await getMindbodyToken();
 
+      // 🔹 2. Verifica se o cliente já tem cartões salvos no Mindbody
+      const cardsRes = await fetch(
+        `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyClients?clientID=${userId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: mindbodyToken, // token do cliente (vem do login OAuth)
+            // se o front enviar, substitua dinamicamente
+          },
+        },
+      );
+
+      const savedCards: ClientCreditCard[] = [];
+
+      if (cardsRes.ok) {
+        const data = await cardsRes.json();
+        const clients = data.Clients ?? [];
+
+        clients.forEach((client: any) => {
+          if (client.ClientCreditCard && client.ClientCreditCard.CardNumber) {
+            savedCards.push(client.ClientCreditCard as ClientCreditCard);
+          }
+        });
+
+        setClientCardInfo(savedCards);
+        toast.info(`We found ${savedCards.length} saved card(s).`);
+      } else {
+        toast.error("Error fetching saved cards.");
+      }
+
+      // 🔹 3. Agora só abre o modal SE não tiver cartões salvos
       const cardData = await new Promise<{
         creditCardNumber: string;
         expMonth: string;
@@ -349,6 +371,7 @@ const BookService = () => {
         billingName: string;
         billingPostalCode: string;
         saveInfo: boolean;
+        isStoredCard: boolean;
       }>((resolve, reject) => {
         const modalRoot = document.createElement("div");
         document.body.appendChild(modalRoot);
@@ -356,7 +379,7 @@ const BookService = () => {
         const root = ReactDOM.createRoot(modalRoot);
 
         const handleClose = () => {
-          toast.error("Payment canceled"); // exibe o toast
+          toast.error("Payment canceled");
           root.unmount();
           modalRoot.remove();
         };
@@ -367,29 +390,15 @@ const BookService = () => {
           modalRoot.remove();
         };
 
-        root.render(<CardFormDialog amount={price} onCancel={handleClose} onSubmit={handleSubmit} />);
-      });
-
-      const getMindbodyToken = async () => {
-        const res = await fetch(
-          "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyStaffToken",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              username: "henry@xeniasocial.com",
-              password: "Loveablefix!",
-              siteId: "5736189",
-            }),
-          }
+        root.render(
+          <CardFormDialog
+            amount={price}
+            existingCards={savedCards} // 👈 injeta aqui os cartões carregados
+            onCancel={handleClose}
+            onSubmit={handleSubmit}
+          />,
         );
-        if (!res.ok) throw new Error("Erro ao obter token via Supabase");
-        const { AccessToken: rawToken } = await res.json();
-        const cleanToken = rawToken.replace(/\s+/g, '');
-        return cleanToken;
-      };
-
-      const mindbodyToken = await getMindbodyToken();
+      });
 
       const checkoutBody = {
         CartId: null,
@@ -398,10 +407,7 @@ const BookService = () => {
         Test: true,
         Items: [
           {
-            Item: {
-              Type: "Service",
-              Metadata: { Id: productId },
-            },
+            Item: { Type: "Service", Metadata: { Id: productId } },
             Quantity: 1,
             AppointmentBookingRequests: [
               {
@@ -415,53 +421,52 @@ const BookService = () => {
         ],
         InStore: false,
         CalculateTax: true,
-        Payments: [
-          {
-            Type: "CreditCard",
-            Metadata: {
-              amount: price,
-              creditCardNumber: cardData.creditCardNumber,
-              expMonth: cardData.expMonth,
-              expYear: cardData.expYear,
-              cvv: cardData.cvv,
-              billingName: cardData.billingName,
-              billingPostalCode: cardData.billingPostalCode,
-              saveInfo: cardData.saveInfo,
-            },
-          },
-        ],
+        Payments: cardData.isStoredCard
+          ? [
+              {
+                Type: "StoredCard",
+                Metadata: {
+                  amount: price,
+                },
+              },
+            ]
+          : [
+              {
+                Type: "CreditCard",
+                Metadata: {
+                  amount: price,
+                  creditCardNumber: cardData.creditCardNumber,
+                  expMonth: cardData.expMonth,
+                  expYear: cardData.expYear,
+                  cvv: cardData.cvv,
+                  billingName: cardData.billingName,
+                  billingPostalCode: cardData.billingPostalCode,
+                  SaveInfo: cardData.saveInfo,
+                },
+              },
+            ],
         SendEmail: false,
       };
 
-      console.log("Checkout body (JSON):", JSON.stringify(checkoutBody, null, 2));
+      const checkoutRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyCheckout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: mindbodyToken.trim(),
+        },
+        body: JSON.stringify(checkoutBody),
+      });
 
-      // chama a Edge Function de checkout
-      const checkoutRes = await fetch(
-        "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyCheckout",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": mindbodyToken.trim(), // token obtido via mindbodyStaffToken
-          },
-          body: JSON.stringify(checkoutBody),
-        }
-      );
       const checkoutData = await checkoutRes.json();
       if (!checkoutRes.ok) throw new Error(checkoutData.error || "Erro no checkout");
 
       toast.success("Scheduling completed successfully!");
       navigate("/services");
-      // 2️⃣ Agora chamamos a Edge Function de checkout para marcar o appointment
-
     } catch (err: any) {
       console.error(err);
       toast.error(`Error on Mindbody workflow : ${err.message}`);
     }
   };
-
-
-
 
   const handleSaveProfile = async () => {
     const token = localStorage.getItem("access_token");
@@ -492,16 +497,11 @@ const BookService = () => {
     }
   };
 
-
-
-
-
-
   return (
     <div
       className="min-h-screen bg-cover bg-center bg-fixed relative transition-all duration-700 ease-in-out"
       style={{
-        backgroundImage: `url('/lovable-uploads/8911d1ac-19d7-427a-9138-19c768396ea7.png')`
+        backgroundImage: `url('/lovable-uploads/8911d1ac-19d7-427a-9138-19c768396ea7.png')`,
       }}
     >
       {/* Dark overlay for text legibility with smooth transition */}
@@ -515,19 +515,14 @@ const BookService = () => {
         <div className={isMobile ? "pt-0" : "pt-20"}>
           <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
             <div className="max-w-7xl mx-auto">
-              {!isMobile && (
-                <div className="animate-scale-in">
-
-                </div>
-              )}
+              {!isMobile && <div className="animate-scale-in"></div>}
 
               {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
               {!isMobile && (
-                <div className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? 'max-w-sm px-4' : 'max-w-lg'}`}>
+                <div
+                  className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? "max-w-sm px-4" : "max-w-lg"}`}
+                >
                   {renderServiceInfo()}
-
-
-
 
                   {availableDates.length > 0 ? (
                     <div className="flex justify-center mx-auto min-w-[510px]">
@@ -535,12 +530,13 @@ const BookService = () => {
                         mode="single"
                         selected={selectedDate}
                         onSelect={handleDateSelect}
+                        minDate={new Date()}
                         disabled={(date) =>
-                          date < new Date() || !availableDates.some(
+                          !availableDates.some(
                             (d) =>
                               d.getFullYear() === date.getFullYear() &&
                               d.getMonth() === date.getMonth() &&
-                              d.getDate() === date.getDate()
+                              d.getDate() === date.getDate(),
                           )
                         }
                         className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
@@ -594,9 +590,6 @@ const BookService = () => {
                   )}
                 </div>
               )}
-
-
-
             </div>
           </section>
         </div>
@@ -673,13 +666,14 @@ const BookService = () => {
               </div>
 
               <DialogFooter className="mt-4 flex justify-end gap-2">
-                <Button variant="outline" onClick={() => setShowProfileModal(false)}>Cancel</Button>
+                <Button variant="outline" onClick={() => setShowProfileModal(false)}>
+                  Cancel
+                </Button>
                 <Button onClick={handleSaveProfile}>Save</Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
         )}
-
       </div>
     </div>
   );
