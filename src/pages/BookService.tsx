@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { useLocation } from "react-router-dom";
+import ReactDOM from "react-dom/client";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import CardFormDialog from "@/components/CardFormDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format, parseISO, set } from "date-fns";
-import { useLocation } from "react-router-dom";
-import CardFormDialog from "@/components/CardFormDialog";
-import ReactDOM from "react-dom/client";
-import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { toast } from "sonner";
 
 interface ProfileModalProps {
   open: boolean;
