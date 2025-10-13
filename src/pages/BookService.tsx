@@ -130,7 +130,7 @@ const BookService = () => {
       window.history.replaceState({}, "", cleanUrl);
 
       console.log("✅ Tokens stored, checking profile...");
-      
+
       // Check if user has a business profile
       checkUserProfile(accessToken);
       return;
@@ -141,9 +141,9 @@ const BookService = () => {
     try {
       const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ token }),
       });
@@ -174,7 +174,7 @@ const BookService = () => {
   const handleMindbodyAuth = () => {
     const currentPath = window.location.pathname;
     const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
-    const state = currentPath;
+    const state = JSON.stringify({ from: currentPath });
 
     const authUrl =
       "https://signin.mindbodyonline.com/connect/authorize" +
@@ -253,9 +253,9 @@ const BookService = () => {
 
         const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
         });
@@ -381,9 +381,9 @@ const BookService = () => {
       // 🔹 1. Obtém dados do usuário atual no Mindbody
       const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ token }),
       });
@@ -404,9 +404,9 @@ const BookService = () => {
 
         const refreshRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/refreshMindbodyToken", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
@@ -443,9 +443,9 @@ const BookService = () => {
       const getMindbodyToken = async () => {
         const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyStaffToken", {
           method: "POST",
-          headers: { 
+          headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
             username: "henry@xeniasocial.com",
@@ -466,8 +466,7 @@ const BookService = () => {
         {
           method: "GET",
           headers: {
-            Authorization: mindbodyToken, // token do cliente (vem do login OAuth)
-            // se o front enviar, substitua dinamicamente
+            Authorization: mindbodyToken,
           },
         },
       );
@@ -638,9 +637,9 @@ const BookService = () => {
     try {
       const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyProfile", {
         method: "POST",
-        headers: { 
+        headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           token,
@@ -808,25 +807,25 @@ const BookService = () => {
                       className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl"
                     >
                       <h2 className="text-2xl font-semibold text-white mb-6">Booking Summary</h2>
-                      
+
                       <div className="space-y-4 mb-6">
                         <div className="flex justify-between items-start">
                           <span className="text-white/70">Service</span>
                           <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-white/70">Category</span>
                           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
                             {serviceCategoryFromStorage}
                           </Badge>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-white/70">Duration</span>
                           <span className="text-white">{duration} minutes</span>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-white/70">Date & Time</span>
                           <div className="text-right">
@@ -834,7 +833,7 @@ const BookService = () => {
                             <div className="text-white/80 text-sm">{selectedTime}</div>
                           </div>
                         </div>
-                        
+
                         <div className="border-t border-white/20 pt-4 flex justify-between items-center">
                           <span className="text-white font-semibold text-lg">Total Price</span>
                           <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
@@ -852,7 +851,7 @@ const BookService = () => {
                           Back
                         </Button>
                         <Button
-                          onClick={handleMindbodyAuth}
+                          onClick={handleProceedToPayment}
                           className="flex-1 bg-white/20 hover:bg-white/30 text-white border border-white/30"
                         >
                           Next
@@ -872,13 +871,13 @@ const BookService = () => {
                         <Check className="w-6 h-6 text-green-400" />
                         <h2 className="text-2xl font-semibold text-white">Ready to Book</h2>
                       </div>
-                      
+
                       <div className="space-y-4 mb-6">
                         <div className="flex justify-between items-start">
                           <span className="text-white/70">Service</span>
                           <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
                         </div>
-                        
+
                         <div className="flex justify-between items-center">
                           <span className="text-white/70">Date & Time</span>
                           <div className="text-right">
@@ -886,7 +885,7 @@ const BookService = () => {
                             <div className="text-white/80 text-sm">{selectedTime}</div>
                           </div>
                         </div>
-                        
+
                         <div className="border-t border-white/20 pt-4 flex justify-between items-center">
                           <span className="text-white font-semibold text-lg">Total Price</span>
                           <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
