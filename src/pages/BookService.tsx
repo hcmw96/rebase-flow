@@ -141,7 +141,10 @@ const BookService = () => {
     try {
       const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
         body: JSON.stringify({ token }),
       });
 
@@ -249,7 +252,10 @@ const BookService = () => {
 
         const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          },
           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
         });
 
@@ -374,7 +380,10 @@ const BookService = () => {
       // 🔹 1. Obtém dados do usuário atual no Mindbody
       const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
         body: JSON.stringify({ token }),
       });
 
@@ -394,7 +403,10 @@ const BookService = () => {
 
         const refreshRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/refreshMindbodyToken", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
 
@@ -430,7 +442,10 @@ const BookService = () => {
       const getMindbodyToken = async () => {
         const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyStaffToken", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: { 
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          },
           body: JSON.stringify({
             username: "henry@xeniasocial.com",
             password: "Loveablefix!",
@@ -564,7 +579,8 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: mindbodyToken.trim(),
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          "X-Mindbody-Token": mindbodyToken.trim(),
         },
         body: JSON.stringify(checkoutBody),
       });
@@ -621,7 +637,10 @@ const BookService = () => {
     try {
       const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyProfile", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { 
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        },
         body: JSON.stringify({
           token,
           businessId: "5736189", // coloque o real

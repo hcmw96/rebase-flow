@@ -51,6 +51,9 @@ export const MindbodyConnect = () => {
           action: 'callback',
           code,
           state
+        },
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         }
       });
 
@@ -120,6 +123,9 @@ export const MindbodyConnect = () => {
         body: { 
           action: 'initiate',
           userId: user.id
+        },
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         }
       });
 
@@ -145,7 +151,10 @@ export const MindbodyConnect = () => {
       setRefreshing(true);
       
       const { error } = await supabase.functions.invoke('mindbody-oauth', {
-        body: { action: 'refresh' }
+        body: { action: 'refresh' },
+        headers: {
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+        }
       });
 
       if (error) {
