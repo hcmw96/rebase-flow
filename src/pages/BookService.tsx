@@ -650,116 +650,118 @@ const BookService = () => {
                 >
                   {renderServiceInfo()}
 
-                  <div className="relative min-h-[500px] flex items-center justify-center">
-                    <AnimatePresence mode="wait">
-                      {showCalendarView ? (
-                        <motion.div
-                          key="calendar"
-                          initial={{ rotateY: 90, opacity: 0 }}
-                          animate={{ rotateY: 0, opacity: 1 }}
-                          exit={{ rotateY: -90, opacity: 0 }}
-                          transition={{ duration: 0.5, ease: "easeInOut" }}
-                          className="absolute w-full"
-                          style={{ transformStyle: "preserve-3d" }}
-                        >
-                          {availableDates.length > 0 ? (
-                            <div className="flex justify-center mx-auto min-w-[510px]">
-                              <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(date) => {
-                                  handleDateSelect(date);
-                                  if (date) setShowCalendarView(false);
-                                }}
-                                disabled={(date) =>
-                                  !availableDates.some(
-                                    (d) =>
-                                      d.getFullYear() === date.getFullYear() &&
-                                      d.getMonth() === date.getMonth() &&
-                                      d.getDate() === date.getDate(),
-                                  )
-                                }
-                                className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl"
-                              />
-                            </div>
-                          ) : (
-                            <p className="text-white text-center">Loading Calendar...</p>
-                          )}
-                        </motion.div>
-                      ) : (
-                        <motion.div
-                          key="times"
-                          initial={{ rotateY: 90, opacity: 0 }}
-                          animate={{ rotateY: 0, opacity: 1 }}
-                          exit={{ rotateY: -90, opacity: 0 }}
-                          transition={{ duration: 0.5, ease: "easeInOut" }}
-                          className="absolute w-full"
-                          style={{ transformStyle: "preserve-3d" }}
-                        >
-                          <div className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl max-w-md mx-auto">
-                            <div className="flex items-center justify-between mb-6">
-                              <Button
-                                variant="ghost"
-                                onClick={() => setShowCalendarView(true)}
-                                className="text-white hover:bg-white/20 -ml-2"
-                              >
-                                <ArrowLeft className="h-4 w-4 mr-2" />
-                                Back to calendar
-                              </Button>
-                            </div>
-
-                            {timeSlots.length > 0 ? (
-                              <div>
-                                <h2 className="text-xl text-white mb-4 font-semibold">
-                                  Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
-                                </h2>
-                                <div className="grid grid-cols-3 gap-2">
-                                  {timeSlots.map((t) => {
-                                    const availability = availabilities.find((a) => {
-                                      const start = parseISO(a.StartDateTime);
-                                      return (
-                                        format(start, "HH:mm") === t &&
-                                        selectedDate &&
-                                        start.getFullYear() === selectedDate.getFullYear() &&
-                                        start.getMonth() === selectedDate.getMonth() &&
-                                        start.getDate() === selectedDate.getDate()
-                                      );
-                                    });
-
-                                    const staffName = availability?.Staff?.DisplayName || "Unavailable";
-
-                                    return (
-                                      <Button
-                                        key={t}
-                                        variant="ghost"
-                                        onClick={() => handleTimeSelect(t)}
-                                        className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${
-                                          selectedTime === t ? "bg-white/30" : "bg-white/10"
-                                        }`}
-                                      >
-                                        {t}
-                                      </Button>
-                                    );
-                                  })}
-                                </div>
-
-                                {selectedDate && selectedTime && (
-                                  <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
-                                    <p className="text-white text-center">
-                                      <Check className="inline h-5 w-5 mr-2 text-green-400" />
-                                      Selected: {format(selectedDate, "dd/MM/yyyy")} at {selectedTime}
-                                    </p>
-                                  </div>
-                                )}
+                  {!showSummaryCard && !showPreviewCard && (
+                    <div className="relative min-h-[500px] flex items-center justify-center">
+                      <AnimatePresence mode="wait">
+                        {showCalendarView ? (
+                          <motion.div
+                            key="calendar"
+                            initial={{ rotateY: 90, opacity: 0 }}
+                            animate={{ rotateY: 0, opacity: 1 }}
+                            exit={{ rotateY: -90, opacity: 0 }}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                            className="absolute w-full"
+                            style={{ transformStyle: "preserve-3d" }}
+                          >
+                            {availableDates.length > 0 ? (
+                              <div className="flex justify-center mx-auto min-w-[510px]">
+                                <Calendar
+                                  mode="single"
+                                  selected={selectedDate}
+                                  onSelect={(date) => {
+                                    handleDateSelect(date);
+                                    if (date) setShowCalendarView(false);
+                                  }}
+                                  disabled={(date) =>
+                                    !availableDates.some(
+                                      (d) =>
+                                        d.getFullYear() === date.getFullYear() &&
+                                        d.getMonth() === date.getMonth() &&
+                                        d.getDate() === date.getDate(),
+                                    )
+                                  }
+                                  className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl"
+                                />
                               </div>
                             ) : (
-                              <p className="text-white text-center">No available times for this date.</p>
+                              <p className="text-white text-center">Loading Calendar...</p>
                             )}
-                          </div>
-                        </motion.div>
-                      )}
+                          </motion.div>
+                        ) : (
+                          <motion.div
+                            key="times"
+                            initial={{ rotateY: 90, opacity: 0 }}
+                            animate={{ rotateY: 0, opacity: 1 }}
+                            exit={{ rotateY: -90, opacity: 0 }}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                            className="absolute w-full"
+                            style={{ transformStyle: "preserve-3d" }}
+                          >
+                            <div className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl max-w-md mx-auto">
+                              <div className="flex items-center justify-between mb-6">
+                                <Button
+                                  variant="ghost"
+                                  onClick={() => setShowCalendarView(true)}
+                                  className="text-white hover:bg-white/20 -ml-2"
+                                >
+                                  <ArrowLeft className="h-4 w-4 mr-2" />
+                                  Back to calendar
+                                </Button>
+                              </div>
+
+                              {timeSlots.length > 0 ? (
+                                <div>
+                                  <h2 className="text-xl text-white mb-4 font-semibold">
+                                    Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
+                                  </h2>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    {timeSlots.map((t) => {
+                                      const availability = availabilities.find((a) => {
+                                        const start = parseISO(a.StartDateTime);
+                                        return (
+                                          format(start, "HH:mm") === t &&
+                                          selectedDate &&
+                                          start.getFullYear() === selectedDate.getFullYear() &&
+                                          start.getMonth() === selectedDate.getMonth() &&
+                                          start.getDate() === selectedDate.getDate()
+                                        );
+                                      });
+
+                                      const staffName = availability?.Staff?.DisplayName || "Unavailable";
+
+                                      return (
+                                        <Button
+                                          key={t}
+                                          variant="ghost"
+                                          onClick={() => handleTimeSelect(t)}
+                                          className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${
+                                            selectedTime === t ? "bg-white/30" : "bg-white/10"
+                                          }`}
+                                        >
+                                          {t}
+                                        </Button>
+                                      );
+                                    })}
+                                  </div>
+
+                                  {selectedDate && selectedTime && (
+                                    <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
+                                      <p className="text-white text-center">
+                                        <Check className="inline h-5 w-5 mr-2 text-green-400" />
+                                        Selected: {format(selectedDate, "dd/MM/yyyy")} at {selectedTime}
+                                      </p>
+                                    </div>
+                                  )}
+                                </div>
+                              ) : (
+                                <p className="text-white text-center">No available times for this date.</p>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
                       </AnimatePresence>
                     </div>
+                  )}
 
                   {showSummaryCard && (
                     <motion.div
@@ -807,7 +809,6 @@ const BookService = () => {
                           variant="ghost"
                           onClick={() => {
                             setShowSummaryCard(false);
-                            setShowCalendarView(false);
                           }}
                           className="flex-1 text-white border border-white/30 hover:bg-white/10"
                         >
