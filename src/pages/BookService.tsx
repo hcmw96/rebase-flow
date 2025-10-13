@@ -97,6 +97,8 @@ const BookService = () => {
   const [servicePriceFromStorage, setServicePriceFromStorage] = useState<number | null>(null);
   const [serviceCategoryFromStorage, setServiceCategoryFromStorage] = useState<string | null>(null);
   const [showCalendarView, setShowCalendarView] = useState(true);
+  const [showSummaryCard, setShowSummaryCard] = useState(false);
+  const [showPreviewCard, setShowPreviewCard] = useState(false);
 
   function parseJwt(token: string) {
     try {
@@ -109,19 +111,11 @@ const BookService = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const code = params.get("code");
     const accessToken = params.get("access_token");
     const idToken = params.get("id_token");
     const refreshToken = params.get("refresh_token");
 
-    // Se já temos tokens no localStorage, não faz nada
-    const storedAccessToken = localStorage.getItem("access_token");
-    if (storedAccessToken && !code && !accessToken) {
-      console.log("🔹 Usuário já autenticado, pulando fluxo OAuth");
-      return;
-    }
-
-    // 🔸 Caso 1: chegou do redirect do Mindbody com tokens → salvar e limpar URL
+    // 🔸 Handle OAuth callback: save tokens and check profile
     if (accessToken || refreshToken) {
       if (accessToken) localStorage.setItem("access_token", accessToken);
       if (refreshToken) localStorage.setItem("refresh_token", refreshToken);
@@ -131,35 +125,68 @@ const BookService = () => {
         localStorage.setItem("clientId", decoded?.sub);
       }
 
-      // 🔹 Remove tokens da URL (mantém o usuário em /book/:id)
+      // Remove tokens from URL
       const cleanUrl = window.location.pathname;
       window.history.replaceState({}, "", cleanUrl);
 
-      console.log("✅ Tokens armazenados, URL limpa");
+      console.log("✅ Tokens stored, checking profile...");
+      
+      // Check if user has a business profile
+      checkUserProfile(accessToken);
       return;
     }
-
-    // 🔸 Caso 2: primeira vez → iniciar login OAuth
-    if (!code && !accessToken && !storedAccessToken) {
-      const currentPath = window.location.pathname; // ex: "/book/1176"
-      const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
-      const state = currentPath;
-
-      const authUrl =
-        "https://signin.mindbodyonline.com/connect/authorize" +
-        "?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565" +
-        "&response_type=code id_token" +
-        "&response_mode=form_post" +
-        "&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access" +
-        "&nonce=10" +
-        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-        `&state=${encodeURIComponent(state)}` +
-        "&subscriberId=5736189";
-
-      console.log("🟢 Iniciando fluxo OAuth");
-      window.location.href = authUrl;
-    }
   }, []);
+
+  const checkUserProfile = async (token: string) => {
+    try {
+      const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ token }),
+      });
+
+      if (!meRes.ok) {
+        toast.error("Error checking profile");
+        return;
+      }
+
+      const { user } = await meRes.json();
+      setUserInfo(user);
+      setUserIdFromProfile(user.id);
+
+      if (!user.businessProfiles || user.businessProfiles.length === 0) {
+        setShowProfileModal(true);
+        toast.error("Please complete your profile to continue");
+      } else {
+        setShowPreviewCard(true);
+        setShowSummaryCard(false);
+        toast.success("Profile verified!");
+      }
+    } catch (error) {
+      console.error("Error checking profile:", error);
+      toast.error("Failed to verify profile");
+    }
+  };
+
+  const handleMindbodyAuth = () => {
+    const currentPath = window.location.pathname;
+    const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
+    const state = currentPath;
+
+    const authUrl =
+      "https://signin.mindbodyonline.com/connect/authorize" +
+      "?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565" +
+      "&response_type=code id_token" +
+      "&response_mode=form_post" +
+      "&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access" +
+      "&nonce=10" +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&state=${encodeURIComponent(state)}` +
+      "&subscriberId=5736189";
+
+    console.log("🟢 Starting OAuth flow");
+    window.location.href = authUrl;
+  };
 
   useEffect(() => {
     const storedService = localStorage.getItem("selectedService");
@@ -286,7 +313,7 @@ const BookService = () => {
 
     if (!selectedDate) return;
 
-    // encontra a disponibilidade correspondente
+    // Find the corresponding availability
     const availability = availabilities.find((a) => {
       const start = parseISO(a.StartDateTime);
       return (
@@ -298,33 +325,23 @@ const BookService = () => {
     });
 
     if (!availability) {
-      alert("Disponibilidade não encontrada.");
+      toast.error("Availability not found");
       return;
     }
 
     const staffId = availability.Staff?.Id;
     if (!availability.Location?.Id) {
-      alert("Local da aula não encontrado");
+      toast.error("Class location not found");
       return;
     }
     const locationId = availability.Location?.Id;
 
-    const bookAbleDate = availability.BookableEndDateTime;
-    const token = localStorage.getItem("access_token");
-    if (!token) {
-      alert("Token não encontrado, favor logar novamente.");
-      return;
-    }
-    const clientId = localStorage.getItem("clientId");
-
-    const sessionTypeId = service.Id;
-
     setStaffId(staffId);
     setLocationId(locationId);
 
-    // Continuar workflow do Mindbody
-    proceedMindbodyWorkflow(token, bookAbleDate, time, staffId, locationId, sessionTypeId, clientId);
-    console.log(" 🔹 Agendando com:", bookAbleDate, time, staffId, locationId, sessionTypeId, clientId);
+    // Show summary card instead of immediately proceeding
+    setShowSummaryCard(true);
+    setShowCalendarView(false);
   };
 
   const proceedMindbodyWorkflow = async (
@@ -546,6 +563,37 @@ const BookService = () => {
     }
   };
 
+  const handleProceedToPayment = () => {
+    const token = localStorage.getItem("access_token");
+    if (!token) {
+      toast.error("Please authenticate first");
+      handleMindbodyAuth();
+      return;
+    }
+
+    const availability = availabilities.find((a) => {
+      const start = parseISO(a.StartDateTime);
+      return (
+        format(start, "HH:mm") === selectedTime &&
+        selectedDate &&
+        start.getFullYear() === selectedDate.getFullYear() &&
+        start.getMonth() === selectedDate.getMonth() &&
+        start.getDate() === selectedDate.getDate()
+      );
+    });
+
+    if (!availability) {
+      toast.error("Please select a time slot");
+      return;
+    }
+
+    const bookAbleDate = availability.BookableEndDateTime;
+    const clientId = localStorage.getItem("clientId");
+    const sessionTypeId = service.Id;
+
+    proceedMindbodyWorkflow(token, bookAbleDate, selectedTime, staffId, locationId, sessionTypeId, clientId);
+  };
+
   const handleSaveProfile = async () => {
     const token = localStorage.getItem("access_token");
     if (!token) {
@@ -710,8 +758,111 @@ const BookService = () => {
                           </div>
                         </motion.div>
                       )}
-                    </AnimatePresence>
-                  </div>
+                      </AnimatePresence>
+                    </div>
+
+                  {showSummaryCard && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl"
+                    >
+                      <h2 className="text-2xl font-semibold text-white mb-6">Booking Summary</h2>
+                      
+                      <div className="space-y-4 mb-6">
+                        <div className="flex justify-between items-start">
+                          <span className="text-white/70">Service</span>
+                          <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/70">Category</span>
+                          <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+                            {serviceCategoryFromStorage}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/70">Duration</span>
+                          <span className="text-white">{duration} minutes</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/70">Date & Time</span>
+                          <div className="text-right">
+                            <div className="text-white">{selectedDate && format(selectedDate, "MMM d, yyyy")}</div>
+                            <div className="text-white/80 text-sm">{selectedTime}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t border-white/20 pt-4 flex justify-between items-center">
+                          <span className="text-white font-semibold text-lg">Total Price</span>
+                          <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
+                        </div>
+                      </div>
+
+                      <div className="flex gap-3">
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            setShowSummaryCard(false);
+                            setShowCalendarView(false);
+                          }}
+                          className="flex-1 text-white border border-white/30 hover:bg-white/10"
+                        >
+                          Back
+                        </Button>
+                        <Button
+                          onClick={handleMindbodyAuth}
+                          className="flex-1 bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                        >
+                          Next
+                        </Button>
+                      </div>
+                    </motion.div>
+                  )}
+
+                  {showPreviewCard && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.4 }}
+                      className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl"
+                    >
+                      <div className="flex items-center gap-2 mb-6">
+                        <Check className="w-6 h-6 text-green-400" />
+                        <h2 className="text-2xl font-semibold text-white">Ready to Book</h2>
+                      </div>
+                      
+                      <div className="space-y-4 mb-6">
+                        <div className="flex justify-between items-start">
+                          <span className="text-white/70">Service</span>
+                          <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
+                        </div>
+                        
+                        <div className="flex justify-between items-center">
+                          <span className="text-white/70">Date & Time</span>
+                          <div className="text-right">
+                            <div className="text-white">{selectedDate && format(selectedDate, "MMM d, yyyy")}</div>
+                            <div className="text-white/80 text-sm">{selectedTime}</div>
+                          </div>
+                        </div>
+                        
+                        <div className="border-t border-white/20 pt-4 flex justify-between items-center">
+                          <span className="text-white font-semibold text-lg">Total Price</span>
+                          <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={handleProceedToPayment}
+                        className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                      >
+                        Proceed to Payment
+                      </Button>
+                    </motion.div>
+                  )}
                 </div>
               )}
             </div>
