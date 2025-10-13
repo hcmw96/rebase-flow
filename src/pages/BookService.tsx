@@ -683,12 +683,13 @@ const BookService = () => {
                                     return (
                                       <Button
                                         key={t}
-                                        variant={selectedTime === t ? "default" : "outline"}
+                                        variant="ghost"
                                         onClick={() => handleTimeSelect(t)}
-                                        className="text-white flex flex-col border-white/30 hover:bg-white/20 transition-all"
+                                        className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${
+                                          selectedTime === t ? "bg-white/30" : "bg-white/10"
+                                        }`}
                                       >
-                                        <span>{t}</span>
-                                        <span className="text-xs text-white/70">{staffName}</span>
+                                        {t}
                                       </Button>
                                     );
                                   })}
