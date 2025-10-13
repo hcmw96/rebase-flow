@@ -16,6 +16,7 @@ import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
 
 interface ProfileModalProps {
   open: boolean;
@@ -95,6 +96,7 @@ const BookService = () => {
   const [serviceTitleFromStorage, setServiceTitleFromStorage] = useState<string | null>(null);
   const [servicePriceFromStorage, setServicePriceFromStorage] = useState<number | null>(null);
   const [serviceCategoryFromStorage, setServiceCategoryFromStorage] = useState<string | null>(null);
+  const [showCalendarView, setShowCalendarView] = useState(true);
 
   function parseJwt(token: string) {
     try {
@@ -600,70 +602,115 @@ const BookService = () => {
                 >
                   {renderServiceInfo()}
 
-                  {availableDates.length > 0 ? (
-                    <div className="flex justify-center mx-auto min-w-[510px]">
-                      <Calendar
-                        mode="single"
-                        selected={selectedDate}
-                        onSelect={handleDateSelect}
-                        
-                        disabled={(date) =>
-                          !availableDates.some(
-                            (d) =>
-                              d.getFullYear() === date.getFullYear() &&
-                              d.getMonth() === date.getMonth() &&
-                              d.getDate() === date.getDate(),
-                          )
-                        }
-                        className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
-                      />
-                    </div>
-                  ) : (
-                    <p>Loading Calendar...</p>
-                  )}
+                  <div className="relative min-h-[500px] flex items-center justify-center">
+                    <AnimatePresence mode="wait">
+                      {showCalendarView ? (
+                        <motion.div
+                          key="calendar"
+                          initial={{ rotateY: 90, opacity: 0 }}
+                          animate={{ rotateY: 0, opacity: 1 }}
+                          exit={{ rotateY: -90, opacity: 0 }}
+                          transition={{ duration: 0.5, ease: "easeInOut" }}
+                          className="absolute w-full"
+                          style={{ transformStyle: "preserve-3d" }}
+                        >
+                          {availableDates.length > 0 ? (
+                            <div className="flex justify-center mx-auto min-w-[510px]">
+                              <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => {
+                                  handleDateSelect(date);
+                                  if (date) setShowCalendarView(false);
+                                }}
+                                disabled={(date) =>
+                                  !availableDates.some(
+                                    (d) =>
+                                      d.getFullYear() === date.getFullYear() &&
+                                      d.getMonth() === date.getMonth() &&
+                                      d.getDate() === date.getDate(),
+                                  )
+                                }
+                                className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl"
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-white text-center">Loading Calendar...</p>
+                          )}
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="times"
+                          initial={{ rotateY: 90, opacity: 0 }}
+                          animate={{ rotateY: 0, opacity: 1 }}
+                          exit={{ rotateY: -90, opacity: 0 }}
+                          transition={{ duration: 0.5, ease: "easeInOut" }}
+                          className="absolute w-full"
+                          style={{ transformStyle: "preserve-3d" }}
+                        >
+                          <div className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl max-w-md mx-auto">
+                            <div className="flex items-center justify-between mb-6">
+                              <Button
+                                variant="ghost"
+                                onClick={() => setShowCalendarView(true)}
+                                className="text-white hover:bg-white/20 -ml-2"
+                              >
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Back to calendar
+                              </Button>
+                            </div>
 
-                  {/* Horários disponíveis com professor */}
-                  {timeSlots.length > 0 && (
-                    <div className="mt-4">
-                      <h2 className="text-xl mb-2">Available times:</h2>
-                      <div className="grid grid-cols-3 gap-2">
-                        {timeSlots.map((t) => {
-                          // encontra a disponibilidade correspondente
-                          const availability = availabilities.find((a) => {
-                            const start = parseISO(a.StartDateTime);
-                            return (
-                              format(start, "HH:mm") === t &&
-                              selectedDate &&
-                              start.getFullYear() === selectedDate.getFullYear() &&
-                              start.getMonth() === selectedDate.getMonth() &&
-                              start.getDate() === selectedDate.getDate()
-                            );
-                          });
+                            {timeSlots.length > 0 ? (
+                              <div>
+                                <h2 className="text-xl text-white mb-4 font-semibold">
+                                  Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
+                                </h2>
+                                <div className="grid grid-cols-3 gap-2">
+                                  {timeSlots.map((t) => {
+                                    const availability = availabilities.find((a) => {
+                                      const start = parseISO(a.StartDateTime);
+                                      return (
+                                        format(start, "HH:mm") === t &&
+                                        selectedDate &&
+                                        start.getFullYear() === selectedDate.getFullYear() &&
+                                        start.getMonth() === selectedDate.getMonth() &&
+                                        start.getDate() === selectedDate.getDate()
+                                      );
+                                    });
 
-                          const staffName = availability?.Staff?.DisplayName || "Indisponível";
+                                    const staffName = availability?.Staff?.DisplayName || "Unavailable";
 
-                          return (
-                            <Button
-                              key={t}
-                              variant={selectedTime === t ? "default" : "outline"}
-                              onClick={() => handleTimeSelect(t)}
-                              className="text-white flex flex-col"
-                            >
-                              <span>{t}</span>
-                              <span className="text-xs text-white/70">{staffName}</span>
-                            </Button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
+                                    return (
+                                      <Button
+                                        key={t}
+                                        variant={selectedTime === t ? "default" : "outline"}
+                                        onClick={() => handleTimeSelect(t)}
+                                        className="text-white flex flex-col border-white/30 hover:bg-white/20 transition-all"
+                                      >
+                                        <span>{t}</span>
+                                        <span className="text-xs text-white/70">{staffName}</span>
+                                      </Button>
+                                    );
+                                  })}
+                                </div>
 
-                  {/* Seleção final */}
-                  {selectedDate && selectedTime && (
-                    <p className="mt-4">
-                      You selected: {format(selectedDate, "dd/MM/yyyy")} às {selectedTime}
-                    </p>
-                  )}
+                                {selectedDate && selectedTime && (
+                                  <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
+                                    <p className="text-white text-center">
+                                      <Check className="inline h-5 w-5 mr-2 text-green-400" />
+                                      Selected: {format(selectedDate, "dd/MM/yyyy")} at {selectedTime}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-white text-center">No available times for this date.</p>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               )}
             </div>
