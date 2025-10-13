@@ -22,27 +22,24 @@ interface ServiceCardProps {
   };
 }
 
-const ServiceCard = ({
-  id,
-  title,
-  category,
-  image,
-  className,
-  service
-}: ServiceCardProps) => {
+const ServiceCard = ({ id, title, category, image, className, service }: ServiceCardProps) => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-
-    navigate(`/book/${id}`, {
-      state: {
+    // 🔹 Salva as informações no localStorage
+    localStorage.setItem(
+      "selectedService",
+      JSON.stringify({
+        id,
         title,
         price: service?.price,
         duration: service?.duration,
         category,
+      }),
+    );
 
-      }
-    });
+    // 🔹 Navega para a página de booking
+    navigate(`/book/${id}`);
   };
 
   const renderPricing = () => {
@@ -53,9 +50,7 @@ const ServiceCard = ({
         <div className="space-y-2 mb-4">
           {service.variants.map((variant, index) => (
             <div key={index} className="flex justify-between items-center text-sm">
-              <span className="text-white/70">
-                {variant.description ? `${variant.description}` : variant.duration}
-              </span>
+              <span className="text-white/70">{variant.description ? `${variant.description}` : variant.duration}</span>
               <span className="text-white font-medium">£{variant.price}</span>
             </div>
           ))}
@@ -81,8 +76,12 @@ const ServiceCard = ({
   };
 
   return (
-    <Card className={cn("glass-card group hover:scale-105 transition-all duration-300 rounded-3xl border-white/10", className)}>
-      
+    <Card
+      className={cn(
+        "glass-card group hover:scale-105 transition-all duration-300 rounded-3xl border-white/10",
+        className,
+      )}
+    >
       <CardHeader className="pb-4">
         <CardTitle className="text-xl font-serif font-medium text-foreground group-hover:text-primary transition-colors text-center">
           {title}
@@ -100,7 +99,6 @@ const ServiceCard = ({
           Book Now
         </Button>
       </CardContent>
-
     </Card>
   );
 };
