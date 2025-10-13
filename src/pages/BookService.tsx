@@ -197,6 +197,17 @@ const BookService = () => {
       setServicePriceFromStorage(serviceStoraged.price);
       setServiceCategoryFromStorage(serviceStoraged.category);
     }
+
+    // Restore booking state if user is returning from auth
+    const storedTime = localStorage.getItem("selectedTime");
+    const storedDate = localStorage.getItem("selectedDate");
+    const storedStaffId = localStorage.getItem("staffId");
+    const storedLocationId = localStorage.getItem("locationId");
+
+    if (storedTime) setSelectedTime(storedTime);
+    if (storedDate) setSelectedDate(new Date(storedDate));
+    if (storedStaffId) setStaffId(storedStaffId);
+    if (storedLocationId) setLocationId(storedLocationId);
   }, []);
 
   useEffect(() => {
@@ -338,6 +349,12 @@ const BookService = () => {
 
     setStaffId(staffId);
     setLocationId(locationId);
+
+    // Save to localStorage to persist across auth redirect
+    localStorage.setItem("selectedTime", time);
+    localStorage.setItem("selectedDate", selectedDate.toISOString());
+    localStorage.setItem("staffId", staffId);
+    localStorage.setItem("locationId", locationId);
 
     // Show summary card instead of immediately proceeding
     setShowSummaryCard(true);
