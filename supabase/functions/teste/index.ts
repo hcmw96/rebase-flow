@@ -35,8 +35,18 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Parse state to get the original path
+    let redirectPath = '/book-service';
+    if (state) {
+      try {
+        const stateObj = JSON.parse(state);
+        redirectPath = stateObj.from || '/book-service';
+      } catch (e) {
+        console.log("⚠️ Failed to parse state, using default path");
+      }
+    }
+    
     // Build redirect URL with tokens as query params
-    const redirectPath = state || '/book-service';
     const redirectUrl = new URL(redirectPath, req.url.split('/functions')[0]);
     
     redirectUrl.searchParams.set('access_token', idToken);
