@@ -11,7 +11,7 @@ import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
 import { format, parseISO, set } from "date-fns";
 import { useLocation } from "react-router-dom";
-import CardFormDialog from "@/components/CardFormModal";
+import CardFormDialog from "@/components/CardFormDialog";
 import ReactDOM from "react-dom/client";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -606,7 +606,7 @@ const BookService = () => {
                         mode="single"
                         selected={selectedDate}
                         onSelect={handleDateSelect}
-                        minDate={new Date()}
+                        
                         disabled={(date) =>
                           !availableDates.some(
                             (d) =>
