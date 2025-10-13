@@ -1,21 +1,21 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { useLocation } from "react-router-dom";
-import ReactDOM from "react-dom/client";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import CardFormDialog from "@/components/CardFormDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
+import { format, parseISO, set } from "date-fns";
+import { useLocation } from "react-router-dom";
+import CardFormDialog from "@/components/CardFormModal";
+import ReactDOM from "react-dom/client";
+import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import { toast } from "sonner";
 
 interface ProfileModalProps {
   open: boolean;
@@ -91,56 +91,133 @@ const BookService = () => {
   const productId = serviceId;
   const [userIdFromProfile, setUserIdFromProfile] = useState<string>("");
   const [clientCardInfo, setClientCardInfo] = useState<ClientCreditCard[] | null>(null);
+  const [serviceIdFromStorage, setServiceIdFromStorage] = useState<number | null>(null);
+  const [serviceTitleFromStorage, setServiceTitleFromStorage] = useState<string | null>(null);
+  const [servicePriceFromStorage, setServicePriceFromStorage] = useState<number | null>(null);
+  const [serviceCategoryFromStorage, setServiceCategoryFromStorage] = useState<string | null>(null);
+
+  function parseJwt(token: string) {
+    try {
+      return JSON.parse(atob(token.split(".")[1]));
+    } catch (e) {
+      console.error("Erro ao decodificar id_token:", e);
+      return null;
+    }
+  }
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+    const accessToken = params.get("access_token");
+    const idToken = params.get("id_token");
+    const refreshToken = params.get("refresh_token");
+
+    // Se já temos tokens no localStorage, não faz nada
+    const storedAccessToken = localStorage.getItem("access_token");
+    if (storedAccessToken && !code && !accessToken) {
+      console.log("🔹 Usuário já autenticado, pulando fluxo OAuth");
+      return;
+    }
+
+    // 🔸 Caso 1: chegou do redirect do Mindbody com tokens → salvar e limpar URL
+    if (accessToken || refreshToken) {
+      if (accessToken) localStorage.setItem("access_token", accessToken);
+      if (refreshToken) localStorage.setItem("refresh_token", refreshToken);
+      if (idToken) {
+        localStorage.setItem("id_token", idToken);
+        const decoded = parseJwt(idToken);
+        localStorage.setItem("clientId", decoded?.sub);
+      }
+
+      // 🔹 Remove tokens da URL (mantém o usuário em /book/:id)
+      const cleanUrl = window.location.pathname;
+      window.history.replaceState({}, "", cleanUrl);
+
+      console.log("✅ Tokens armazenados, URL limpa");
+      return;
+    }
+
+    // 🔸 Caso 2: primeira vez → iniciar login OAuth
+    if (!code && !accessToken && !storedAccessToken) {
+      const currentPath = window.location.pathname; // ex: "/book/1176"
+      const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
+      const state = currentPath;
+
+      const authUrl =
+        "https://signin.mindbodyonline.com/connect/authorize" +
+        "?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565" +
+        "&response_type=code id_token" +
+        "&response_mode=form_post" +
+        "&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access" +
+        "&nonce=10" +
+        `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+        `&state=${encodeURIComponent(state)}` +
+        "&subscriberId=5736189";
+
+      console.log("🟢 Iniciando fluxo OAuth");
+      window.location.href = authUrl;
+    }
+  }, []);
+
+  useEffect(() => {
+    const storedService = localStorage.getItem("selectedService");
+    if (storedService) {
+      const serviceStoraged = JSON.parse(storedService);
+      setServiceIdFromStorage(serviceStoraged.id);
+      setServiceTitleFromStorage(serviceStoraged.title);
+      setServicePriceFromStorage(serviceStoraged.price);
+      setServiceCategoryFromStorage(serviceStoraged.category);
+    }
+  }, []);
+
+  useEffect(() => {
+    console.log("🔹 serviceTitleFromStorage mudou:", serviceTitleFromStorage);
+    if (!serviceTitleFromStorage) return;
     const fetchData = async () => {
       try {
+        console.log("🔹 Iniciando fetchData em BookService", serviceTitleFromStorage);
+
         setLoading(true);
 
-        // Se já veio via state, evita novo fetch
         let serviceData = service;
-        if (!serviceData && title) {
-          const servicePromise = fetch(
-            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(title)}`,
+
+        // Se ainda não temos serviceData, busca via title
+        if (!serviceData) {
+          if (!serviceTitleFromStorage) throw new Error("Title não definido para buscar serviço");
+
+          const res = await fetch(
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(serviceTitleFromStorage)}`,
             {
               method: "GET",
               headers: {
-                Authorization:
-                  "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
                 "Content-Type": "application/json",
               },
             },
-          ).then(async (res) => {
-            if (!res.ok) throw new Error("Erro ao buscar serviço");
-            const data = await res.json();
-            console.log("Fetched service data:", data);
-            if (!data) throw new Error("Serviço não encontrado");
-            return data;
-          });
+          );
 
-          serviceData = await servicePromise;
+          if (!res.ok) throw new Error("Erro ao buscar serviço");
+          const data = await res.json();
+          if (!data) throw new Error("Serviço não encontrado");
+
+          serviceData = data;
           setService(serviceData);
+          console.log("✅ Serviço carregado via fetch:", serviceData);
         }
 
-        if (!serviceData) {
-          navigate("/services");
-          return;
-        }
+        // 🔹 Agora que serviceData existe, busca disponibilidades
+        if (!serviceData.Id) throw new Error("serviceData.Id não definido");
 
-        // 🔹 Faz o fetch das disponibilidades em paralelo
-        const availabilitiesPromise = fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
+        const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id || "0")] }),
-        }).then(async (res) => {
-          if (!res.ok) throw new Error("Erro ao buscar disponibilidades");
-          const data = await res.json();
-          return data.Availabilities;
+          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
         });
 
-        // Aguarda tudo em paralelo
-        const [availabilitiesData] = await Promise.all([availabilitiesPromise]);
-        setAvailabilities(availabilitiesData);
+        if (!resAvail.ok) throw new Error("Erro ao buscar disponibilidades");
+
+        const availData = await resAvail.json();
+        setAvailabilities(availData.Availabilities || []);
+        console.log("✅ Disponibilidades carregadas:", availData.Availabilities);
       } catch (err: any) {
         console.error("Erro ao carregar dados:", err);
         setError(err.message);
@@ -150,9 +227,7 @@ const BookService = () => {
     };
 
     fetchData();
-  }, [navigate, title]);
-
-  if (error) return <p>{error}</p>;
+  }, [serviceTitleFromStorage]);
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
@@ -192,14 +267,14 @@ const BookService = () => {
       <CardContent className={`${isMobile ? "p-4" : "p-6"}`}>
         <div className="flex justify-between items-start mb-3">
           <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-            {category}
+            {serviceCategoryFromStorage}
           </Badge>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">£ {price}</div>
+            <div className="text-2xl font-bold text-white">£ {servicePriceFromStorage}</div>
             <div className="text-sm text-white/70"></div>
           </div>
         </div>
-        <h1 className="font-serif text-2xl font-medium text-white mb-3">{title}</h1>
+        <h1 className="font-serif text-2xl font-medium text-white mb-3">{serviceTitleFromStorage}</h1>
         <p className="text-white/70 leading-relaxed mb-4">{service?.description}</p>
       </CardContent>
     </Card>
@@ -247,6 +322,7 @@ const BookService = () => {
 
     // Continuar workflow do Mindbody
     proceedMindbodyWorkflow(token, bookAbleDate, time, staffId, locationId, sessionTypeId, clientId);
+    console.log(" 🔹 Agendando com:", bookAbleDate, time, staffId, locationId, sessionTypeId, clientId);
   };
 
   const proceedMindbodyWorkflow = async (
@@ -530,13 +606,13 @@ const BookService = () => {
                         mode="single"
                         selected={selectedDate}
                         onSelect={handleDateSelect}
+                        minDate={new Date()}
                         disabled={(date) =>
-                          date < new Date(new Date().setHours(0, 0, 0, 0)) ||
                           !availableDates.some(
                             (d) =>
                               d.getFullYear() === date.getFullYear() &&
                               d.getMonth() === date.getMonth() &&
-                              d.getDate() === date.getDate()
+                              d.getDate() === date.getDate(),
                           )
                         }
                         className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center"
