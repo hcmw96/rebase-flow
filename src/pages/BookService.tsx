@@ -172,9 +172,9 @@ const BookService = () => {
   };
 
   const handleMindbodyAuth = () => {
-    const currentPath = window.location.pathname;
+    const currentUrl = window.location.href;
     const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
-    const state = JSON.stringify({ from: currentPath });
+    const state = JSON.stringify({ returnUrl: currentUrl });
 
     const authUrl =
       "https://signin.mindbodyonline.com/connect/authorize" +

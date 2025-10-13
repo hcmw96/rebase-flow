@@ -35,19 +35,29 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Parse state to get the original path
-    let redirectPath = '/book-service';
+    // Parse state to get the original full return URL if provided
+    let redirectTarget = '/services';
     if (state) {
       try {
         const stateObj = JSON.parse(state);
-        redirectPath = stateObj.from || '/book-service';
+        redirectTarget = stateObj.returnUrl || stateObj.from || '/services';
       } catch (e) {
         console.log("⚠️ Failed to parse state, using default path");
       }
     }
-    
-    // Build redirect URL with tokens as query params
-    const redirectUrl = new URL(redirectPath, req.url.split('/functions')[0]);
+
+    // Build redirect URL (absolute if returnUrl provided)
+    let redirectUrl: URL;
+    try {
+      if (typeof redirectTarget === 'string' && redirectTarget.startsWith('http')) {
+        redirectUrl = new URL(redirectTarget);
+      } else {
+        redirectUrl = new URL(redirectTarget, req.url.split('/functions')[0]);
+      }
+    } catch (_e) {
+      // Fallback
+      redirectUrl = new URL('/services', req.url.split('/functions')[0]);
+    }
     
     redirectUrl.searchParams.set('access_token', idToken);
     redirectUrl.searchParams.set('auth_code', code);
