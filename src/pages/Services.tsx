@@ -19,8 +19,6 @@ const Services = () => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [availableSlots, setAvailableSlots] = useState<string[]>([]);
-  const [loadingSlots, setLoadingSlots] = useState(false);
 
   // Specific service patterns to match with custom descriptions
   const popularServicePatterns = [
@@ -137,69 +135,9 @@ const Services = () => {
     setSelectedTime("");
   };
 
-  const handleDateSelect = async (date: Date | undefined) => {
+  const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
-    if (date && openBookingId) {
-      setBookingStep(2);
-      await fetchAvailableSlots(openBookingId, date);
-    }
-  };
-
-  const fetchAvailableSlots = async (serviceId: number, date: Date) => {
-    setLoadingSlots(true);
-    try {
-      const service = services.find(s => s.id === serviceId);
-      if (!service) return;
-
-      const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-        },
-        body: JSON.stringify({ sessionTypeIds: [serviceId] }),
-      });
-
-      if (!res.ok) throw new Error("Failed to fetch available slots");
-
-      const data = await res.json();
-      const slots: string[] = [];
-
-      // Filter availabilities for the selected date
-      const selectedDateStr = date.toISOString().split('T')[0];
-      
-      data.Availabilities?.forEach((availability: any) => {
-        const startDateTime = new Date(availability.StartDateTime);
-        const availabilityDateStr = startDateTime.toISOString().split('T')[0];
-        
-        // Only process availabilities that match the selected date
-        if (availabilityDateStr === selectedDateStr) {
-          const bookableEndDateTime = new Date(availability.BookableEndDateTime);
-          
-          let currentTime = new Date(startDateTime);
-          
-          // Generate 30-minute slots until BookableEndDateTime
-          while (currentTime <= bookableEndDateTime) {
-            const timeStr = currentTime.toLocaleTimeString('en-GB', { 
-              hour: '2-digit', 
-              minute: '2-digit',
-              hour12: false 
-            });
-            if (!slots.includes(timeStr)) {
-              slots.push(timeStr);
-            }
-            currentTime = new Date(currentTime.getTime() + 30 * 60 * 1000); // Add 30 minutes
-          }
-        }
-      });
-
-      setAvailableSlots(slots.sort());
-    } catch (err) {
-      console.error("Error fetching available slots:", err);
-      setAvailableSlots([]);
-    } finally {
-      setLoadingSlots(false);
-    }
+    if (date) setBookingStep(2);
   };
 
   const handleBackStep = () => {
@@ -213,6 +151,16 @@ const Services = () => {
     setBookingStep(3);
   };
 
+  const generateTimeSlots = () => {
+    const slots = [];
+    for (let hour = 9; hour <= 18; hour++) {
+      for (let minute = 0; minute < 60; minute += 30) {
+        const time = `${hour.toString().padStart(2, "0")}:${minute.toString().padStart(2, "0")}`;
+        slots.push(time);
+      }
+    }
+    return slots;
+  };
 
   return (
     <div
@@ -346,28 +294,22 @@ const Services = () => {
                               <div className="text-center text-sm text-white/70 mb-6">
                                 {selectedDate && format(selectedDate, "EEEE, MMMM d")}
                               </div>
-                              {loadingSlots ? (
-                                <div className="text-center text-white/70 py-8">Loading available times...</div>
-                              ) : availableSlots.length === 0 ? (
-                                <div className="text-center text-white/70 py-8">No available times for this date</div>
-                              ) : (
-                                <div className="grid grid-cols-3 gap-3">
-                                  {availableSlots.map((time) => (
-                                    <Button
-                                      key={time}
-                                      variant="outline"
-                                      className={`h-12 text-sm transition-all rounded-xl ${
-                                        selectedTime === time
-                                          ? "glass-button text-white border-white/30 bg-white/20"
-                                          : "glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10"
-                                      }`}
-                                      onClick={() => handleTimeSelect(time)}
-                                    >
-                                      {time}
-                                    </Button>
-                                  ))}
-                                </div>
-                              )}
+                              <div className="grid grid-cols-3 gap-3">
+                                {generateTimeSlots().map((time) => (
+                                  <Button
+                                    key={time}
+                                    variant="outline"
+                                    className={`h-12 text-sm transition-all rounded-xl ${
+                                      selectedTime === time
+                                        ? "glass-button text-white border-white/30 bg-white/20"
+                                        : "glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10"
+                                    }`}
+                                    onClick={() => handleTimeSelect(time)}
+                                  >
+                                    {time}
+                                  </Button>
+                                ))}
+                              </div>
                             </div>
                           )}
 
