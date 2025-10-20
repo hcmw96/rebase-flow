@@ -112,10 +112,14 @@ const Services = () => {
           title: pattern.display, // Use friendly display name
           description: pattern.description // Use custom description
         };
+      } else {
+        console.log(`No match found for pattern: ${pattern.keyword}`);
       }
       return null;
     })
     .filter(Boolean);
+  
+  console.log(`Filtered ${filteredServices.length} services out of ${popularServicePatterns.length} patterns`);
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
