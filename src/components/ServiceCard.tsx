@@ -8,6 +8,7 @@ interface ServiceCardProps {
   id: number;
   title: string;
   category: string;
+  description?: string;
   image?: string;
   className?: string;
   service?: {
@@ -22,7 +23,7 @@ interface ServiceCardProps {
   };
 }
 
-const ServiceCard = ({ id, title, category, image, className, service }: ServiceCardProps) => {
+const ServiceCard = ({ id, title, category, description, image, className, service }: ServiceCardProps) => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
@@ -94,7 +95,11 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
       </CardHeader>
 
       <CardContent className="pt-0">
-        {renderPricing()}
+        {description && (
+          <p className="text-sm text-white/70 text-center mb-4 line-clamp-3">
+            {description}
+          </p>
+        )}
         <Button className="w-full glass-button text-white rounded-xl font-medium" onClick={handleBookNow}>
           Book Now
         </Button>

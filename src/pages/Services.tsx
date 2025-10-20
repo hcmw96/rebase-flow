@@ -20,12 +20,12 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const popularServiceNames = [
-    "Sauna and Ice Bath",
-    "Hyperbaric Oxygen",
+  const popularCategories = [
+    "Sauna",
+    "HBOT",
     "Cryotherapy",
-    "IV Drips and Diagnostics",
-    "Massage Therapy",
+    "IV Drip",
+    "Massage",
     "Osteopathy"
   ];
 
@@ -75,10 +75,10 @@ const Services = () => {
     fetchSessionTypes();
   }, []);
 
-  // Filter to show only popular services
-  const filteredServices = services.filter((service) => 
-    popularServiceNames.includes(service.title)
-  );
+  // Group services by category and get one representative per category
+  const filteredServices = popularCategories
+    .map(category => services.find(service => service.category === category))
+    .filter(Boolean);
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
@@ -174,6 +174,7 @@ const Services = () => {
                       id={service.id}
                       title={service.title}
                       category={service.category}
+                      description={service.description}
                       service={{
                         duration: service.duration,
                         price: service.price,
