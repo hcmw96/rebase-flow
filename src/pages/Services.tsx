@@ -20,13 +20,38 @@ const Services = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const popularCategories = [
-    "Sauna",
-    "HBOT",
-    "Cryotherapy",
-    "IV Drip",
-    "Massage",
-    "Osteopathy"
+  // Specific service patterns to match with custom descriptions
+  const popularServicePatterns = [
+    { 
+      keyword: "Sauna", 
+      display: "Sauna and Ice Bath",
+      description: "Alternate between heat and cold therapy to boost circulation, reduce inflammation, and enhance recovery."
+    },
+    { 
+      keyword: "Hyperbaric", 
+      display: "Hyperbaric Oxygen",
+      description: "Experience increased oxygen levels in a pressurized chamber to accelerate healing and boost energy."
+    },
+    { 
+      keyword: "Cryotherapy", 
+      display: "Cryotherapy",
+      description: "Whole-body cold therapy to reduce inflammation, relieve pain, and improve overall wellness."
+    },
+    { 
+      keyword: "IV drip", 
+      display: "IV Drips and Diagnostics",
+      description: "Customized intravenous nutrient therapy and comprehensive blood testing for optimal health."
+    },
+    { 
+      keyword: "Massage", 
+      display: "Massage Therapy",
+      description: "Therapeutic massage techniques to release tension, improve circulation, and promote relaxation."
+    },
+    { 
+      keyword: "Osteopathy", 
+      display: "Osteopathy",
+      description: "Holistic manual therapy focusing on the musculoskeletal system to restore balance and function."
+    }
   ];
 
   useEffect(() => {
@@ -63,8 +88,6 @@ const Services = () => {
         });
 
         setServices(allServices);
-        console.log("All services loaded:", allServices);
-        console.log("Unique categories:", [...new Set(allServices.map(s => s.category))]);
         setLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -77,12 +100,22 @@ const Services = () => {
     fetchSessionTypes();
   }, []);
 
-  // Group services by category and get one representative per category
-  const filteredServices = popularCategories
-    .map(category => services.find(service => service.category === category))
+  // Find one service for each pattern
+  const filteredServices = popularServicePatterns
+    .map(pattern => {
+      const service = services.find(s => 
+        s.title.toLowerCase().includes(pattern.keyword.toLowerCase())
+      );
+      if (service) {
+        return {
+          ...service,
+          title: pattern.display, // Use friendly display name
+          description: pattern.description // Use custom description
+        };
+      }
+      return null;
+    })
     .filter(Boolean);
-  
-  console.log("Filtered services:", filteredServices);
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
