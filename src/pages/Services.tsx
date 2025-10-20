@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 
 const Services = () => {
-  const [activeCategory, setActiveCategory] = useState("All");
   const [openBookingId, setOpenBookingId] = useState<number | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedTime, setSelectedTime] = useState<string>("");
@@ -20,7 +19,15 @@ const Services = () => {
   const [services, setServices] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>(["All"]);
+
+  const popularServiceNames = [
+    "Sauna and Ice Bath",
+    "Hyperbaric Oxygen",
+    "Cryotherapy",
+    "IV Drips and Diagnostics",
+    "Massage Therapy",
+    "Osteopathy"
+  ];
 
   useEffect(() => {
     const fetchSessionTypes = async () => {
@@ -39,10 +46,8 @@ const Services = () => {
         console.log("API response:", data);
 
         const allServices: any[] = [];
-        const categorySet = new Set<string>(["All"]);
 
         (data.Services || []).forEach((service: any) => {
-          categorySet.add(service.RevenueCategory || "Other");
           allServices.push({
             id: Number(service.Id),
             title: service.Name,
@@ -58,7 +63,6 @@ const Services = () => {
         });
 
         setServices(allServices);
-        setCategories(Array.from(categorySet));
         setLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -71,13 +75,10 @@ const Services = () => {
     fetchSessionTypes();
   }, []);
 
-  // Fallback static services in case API fails
-
-  // Use fetched services or fallback to static services
-  const allServices = services;
-
-  const filteredServices =
-    activeCategory === "All" ? allServices : allServices.filter((service) => service.category === activeCategory);
+  // Filter to show only popular services
+  const filteredServices = services.filter((service) => 
+    popularServiceNames.includes(service.title)
+  );
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
@@ -153,26 +154,13 @@ const Services = () => {
             </section>
           )}
 
-          {/* Category Filter */}
+          {/* Most Popular Section */}
           <section className="px-4 sm:px-6 lg:px-8 mb-12">
-            <div className="max-w-7xl mx-auto">
-              <div className="flex flex-wrap justify-center gap-3">
-                {categories.map((category) => (
-                  <Button
-                    key={category}
-                    variant={activeCategory === category ? "default" : "outline"}
-                    onClick={() => setActiveCategory(category)}
-                    className={cn(
-                      "transition-all duration-300 rounded-xl",
-                      activeCategory === category
-                        ? "glass-button text-white"
-                        : "glass-button text-white/70 hover:text-white border-white/20",
-                    )}
-                  >
-                    {category}
-                  </Button>
-                ))}
-              </div>
+            <div className="max-w-7xl mx-auto text-center">
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-white mb-2">
+                Most Popular
+              </h2>
+              <p className="text-white/70 text-lg">Our top-rated wellness services</p>
             </div>
           </section>
 
