@@ -63,6 +63,8 @@ const Services = () => {
         });
 
         setServices(allServices);
+        console.log("All services loaded:", allServices);
+        console.log("Unique categories:", [...new Set(allServices.map(s => s.category))]);
         setLoading(false);
       } catch (err: any) {
         setError(err.message);
@@ -79,6 +81,8 @@ const Services = () => {
   const filteredServices = popularCategories
     .map(category => services.find(service => service.category === category))
     .filter(Boolean);
+  
+  console.log("Filtered services:", filteredServices);
 
   const handleBookNow = (serviceId: number) => {
     setOpenBookingId(serviceId);
