@@ -283,17 +283,31 @@ const BookService = () => {
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     if (!date) return;
-    const slots = availabilities
-      .filter((a) => {
-        const start = parseISO(a.StartDateTime);
-        return (
-          start.getFullYear() === date.getFullYear() &&
-          start.getMonth() === date.getMonth() &&
-          start.getDate() === date.getDate()
-        );
-      })
-      .map((a) => format(parseISO(a.StartDateTime), "HH:mm"));
-    setTimeSlots(slots);
+    
+    // Find availabilities for the selected date
+    const dayAvailabilities = availabilities.filter((a) => {
+      const start = parseISO(a.StartDateTime);
+      return (
+        start.getFullYear() === date.getFullYear() &&
+        start.getMonth() === date.getMonth() &&
+        start.getDate() === date.getDate()
+      );
+    });
+
+    // Generate 30-minute time slots for each availability
+    const generatedSlots: string[] = [];
+    dayAvailabilities.forEach((availability) => {
+      const startTime = parseISO(availability.StartDateTime);
+      const endTime = parseISO(availability.BookableEndDateTime);
+      
+      let currentTime = new Date(startTime);
+      while (currentTime <= endTime) {
+        generatedSlots.push(format(currentTime, "h:mm a"));
+        currentTime = new Date(currentTime.getTime() + 30 * 60000); // Add 30 minutes
+      }
+    });
+
+    setTimeSlots(generatedSlots);
     setSelectedTime("");
   };
 
@@ -331,11 +345,23 @@ const BookService = () => {
 
     if (!selectedDate) return;
 
-    // Find the corresponding availability
+    // Find the corresponding availability that contains this time slot
     const availability = availabilities.find((a) => {
       const start = parseISO(a.StartDateTime);
+      const end = parseISO(a.BookableEndDateTime);
+      
+      // Parse the selected time (e.g., "4:00 PM") and combine with selectedDate
+      const [timeStr, period] = time.split(" ");
+      const [hours, minutes] = timeStr.split(":");
+      let hour24 = parseInt(hours);
+      if (period === "PM" && hour24 !== 12) hour24 += 12;
+      if (period === "AM" && hour24 === 12) hour24 = 0;
+      
+      const selectedDateTime = set(selectedDate, { hours: hour24, minutes: parseInt(minutes) });
+      
       return (
-        format(start, "HH:mm") === time &&
+        selectedDateTime >= start &&
+        selectedDateTime <= end &&
         start.getFullYear() === selectedDate.getFullYear() &&
         start.getMonth() === selectedDate.getMonth() &&
         start.getDate() === selectedDate.getDate()
