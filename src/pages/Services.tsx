@@ -28,7 +28,8 @@ const Services = () => {
         const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getMindbodyClasses-v1", {
           method: "POST",
           headers: {
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization:
+              "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo",
             "Content-Type": "application/json",
           },
         });
@@ -43,18 +44,24 @@ const Services = () => {
 
         (data.Services || []).forEach((service: any) => {
           categorySet.add(service.RevenueCategory || "Other");
-          allServices.push({
+
+          const serviceObj = {
             id: Number(service.Id),
             title: service.Name,
             category: service.RevenueCategory || "Other",
             price: service.Price,
-            //duration: `${service.ExpirationLength} ${service.ExpirationUnit}`,
-            variants: [],
+            sessionTypeId: service.SessionTypeId,
             description: service.OnlineDescription,
             sellOnline: service.SellOnline,
             program: service.Program,
             count: service.Count,
-          });
+            variants: [],
+          };
+
+          // 🔹 Console para verificar cada serviço
+          console.log("Service being pushed:", serviceObj);
+
+          allServices.push(serviceObj);
         });
 
         setServices(allServices);
@@ -67,7 +74,6 @@ const Services = () => {
         setLoading(false);
       }
     };
-
     fetchSessionTypes();
   }, []);
 
@@ -190,6 +196,7 @@ const Services = () => {
                         duration: service.duration,
                         price: service.price,
                         variants: service.variants,
+                        sessionTypeId: service.sessionTypeId, // 👈 aqui dentro
                       }}
                     />
 
