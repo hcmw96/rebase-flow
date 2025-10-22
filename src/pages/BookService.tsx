@@ -99,8 +99,6 @@ const BookService = () => {
   const [showCalendarView, setShowCalendarView] = useState(true);
   const [showSummaryCard, setShowSummaryCard] = useState(false);
   const [showPreviewCard, setShowPreviewCard] = useState(false);
-  const [pricingOptions, setPricingOptions] = useState<any[]>([]);
-  const [selectedPricing, setSelectedPricing] = useState<any>(null);
 
   function parseJwt(token: string) {
     try {
@@ -216,25 +214,27 @@ const BookService = () => {
   }, []);
 
   useEffect(() => {
-    console.log("🔹 serviceId from URL:", serviceId);
-    if (!serviceId) return;
+    console.log("🔹 serviceTitleFromStorage mudou:", serviceTitleFromStorage);
+    if (!serviceTitleFromStorage) return;
     const fetchData = async () => {
       try {
-        console.log("🔹 Iniciando fetchData em BookService", serviceId);
+        console.log("🔹 Iniciando fetchData em BookService", serviceTitleFromStorage);
 
         setLoading(true);
 
         let serviceData = service;
 
-        // Fetch service by ID from URL params
+        // Se ainda não temos serviceData, busca via title
         if (!serviceData) {
+          if (!serviceTitleFromStorage) throw new Error("Title não definido para buscar serviço");
+
           const res = await fetch(
-            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?id=${serviceId}`,
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(serviceTitleFromStorage)}`,
             {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
               },
             },
           );
@@ -255,7 +255,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
         });
@@ -265,34 +265,6 @@ const BookService = () => {
         const availData = await resAvail.json();
         setAvailabilities(availData.Availabilities || []);
         console.log("✅ Disponibilidades carregadas:", availData.Availabilities);
-        
-        // Parse pricing options from the response
-        const programs = availData.Availabilities?.[0]?.SessionType?.Programs || [];
-        if (programs && programs.length > 0) {
-          // Sort pricing: single sessions first, then by number of sessions
-          const sortedPricing = [...programs].sort((a, b) => {
-            const sessionsA = a.NumberOfSessions || 1;
-            const sessionsB = b.NumberOfSessions || 1;
-            return sessionsA - sessionsB;
-          });
-          setPricingOptions(sortedPricing);
-          setSelectedPricing(sortedPricing[0]); // Default to single session
-          console.log("✅ Pricing options loaded:", sortedPricing);
-        } else {
-          // Fallback to default pricing from localStorage
-          setPricingOptions([{
-            Name: "Single Session",
-            Price: servicePriceFromStorage,
-            NumberOfSessions: 1,
-            Id: serviceData.Id
-          }]);
-          setSelectedPricing({
-            Name: "Single Session",
-            Price: servicePriceFromStorage,
-            NumberOfSessions: 1,
-            Id: serviceData.Id
-          });
-        }
       } catch (err: any) {
         console.error("Erro ao carregar dados:", err);
         setError(err.message);
@@ -302,7 +274,7 @@ const BookService = () => {
     };
 
     fetchData();
-  }, [serviceId]);
+  }, [serviceTitleFromStorage]);
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
@@ -359,68 +331,12 @@ const BookService = () => {
             {serviceCategoryFromStorage}
           </Badge>
           <div className="text-right">
-            <div className="text-2xl font-bold text-white">
-              £{selectedPricing?.Price || servicePriceFromStorage}
-            </div>
-            {selectedPricing?.NumberOfSessions > 1 && (
-              <div className="text-sm text-white/70">
-                {selectedPricing.NumberOfSessions} sessions
-              </div>
-            )}
+            <div className="text-2xl font-bold text-white">£ {servicePriceFromStorage}</div>
+            <div className="text-sm text-white/70"></div>
           </div>
         </div>
         <h1 className="font-serif text-2xl font-medium text-white mb-3">{serviceTitleFromStorage}</h1>
         <p className="text-white/70 leading-relaxed mb-4">{service?.description}</p>
-        
-        {/* Pricing Options */}
-        {pricingOptions.length > 1 && (
-          <div className="space-y-2">
-            <h3 className="text-white font-medium text-sm mb-2">Select Package:</h3>
-            <div className="grid grid-cols-1 gap-2">
-              {pricingOptions.map((option, index) => {
-                const isSingleSession = option.NumberOfSessions === 1;
-                const pricePerSession = option.NumberOfSessions > 1 
-                  ? (option.Price / option.NumberOfSessions).toFixed(2)
-                  : option.Price;
-                const savingsAmount = option.NumberOfSessions > 1 && pricingOptions[0]
-                  ? ((pricingOptions[0].Price * option.NumberOfSessions) - option.Price)
-                  : 0;
-                const savings = savingsAmount > 0 ? savingsAmount.toFixed(2) : null;
-
-                return (
-                  <button
-                    key={option.Id || index}
-                    onClick={() => setSelectedPricing(option)}
-                    className={`p-3 rounded-lg border transition-all text-left ${
-                      selectedPricing?.Id === option.Id || (selectedPricing?.NumberOfSessions === option.NumberOfSessions && !option.Id)
-                        ? 'bg-white/20 border-white/40'
-                        : 'bg-white/5 border-white/20 hover:bg-white/10'
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <div className="text-white font-medium">
-                          {isSingleSession ? 'Single Session' : `${option.NumberOfSessions} Sessions`}
-                        </div>
-                        {!isSingleSession && (
-                          <div className="text-white/60 text-sm">
-                            £{pricePerSession} per session
-                            {savings && (
-                              <span className="text-green-400 ml-1">
-                                (Save £{savings})
-                              </span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                      <div className="text-white font-bold">£{option.Price}</div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
       </CardContent>
     </Card>
   );
@@ -629,7 +545,7 @@ const BookService = () => {
 
         root.render(
           <CardFormDialog
-            amount={selectedPricing?.Price || price}
+            amount={price}
             existingCards={savedCards} // 👈 injeta aqui os cartões carregados
             onCancel={handleClose}
             onSubmit={handleSubmit}
@@ -663,7 +579,7 @@ const BookService = () => {
               {
                 Type: "StoredCard",
                 Metadata: {
-                  amount: selectedPricing?.Price || price,
+                  amount: price,
                 },
               },
             ]
@@ -671,7 +587,7 @@ const BookService = () => {
               {
                 Type: "CreditCard",
                 Metadata: {
-                  amount: selectedPricing?.Price || price,
+                  amount: price,
                   creditCardNumber: cardData.creditCardNumber,
                   expMonth: cardData.expMonth,
                   expYear: cardData.expYear,
@@ -946,15 +862,8 @@ const BookService = () => {
 
                         <div className="border-t border-white/20 pt-4 flex justify-between items-center">
                           <span className="text-white font-semibold text-lg">Total Price</span>
-                          <span className="text-white font-bold text-2xl">
-                            £{selectedPricing?.Price || servicePriceFromStorage}
-                          </span>
+                          <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
                         </div>
-                        {selectedPricing?.NumberOfSessions > 1 && (
-                          <div className="text-white/70 text-sm text-right">
-                            {selectedPricing.NumberOfSessions} sessions package
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex gap-3">
@@ -1005,15 +914,8 @@ const BookService = () => {
 
                         <div className="border-t border-white/20 pt-4 flex justify-between items-center">
                           <span className="text-white font-semibold text-lg">Total Price</span>
-                          <span className="text-white font-bold text-2xl">
-                            £{selectedPricing?.Price || servicePriceFromStorage}
-                          </span>
+                          <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
                         </div>
-                        {selectedPricing?.NumberOfSessions > 1 && (
-                          <div className="text-white/70 text-sm text-right">
-                            {selectedPricing.NumberOfSessions} sessions package
-                          </div>
-                        )}
                       </div>
 
                       <Button
