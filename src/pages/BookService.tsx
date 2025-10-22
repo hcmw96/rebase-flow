@@ -214,24 +214,50 @@ const BookService = () => {
   }, []);
 
   useEffect(() => {
-    console.log("🔹 serviceId from URL:", serviceId);
-    if (!serviceId) return;
-    
+    console.log("🔹 serviceTitleFromStorage mudou:", serviceTitleFromStorage);
+    if (!serviceTitleFromStorage) return;
     const fetchData = async () => {
       try {
-        console.log("🔹 Iniciando fetchData em BookService with serviceId:", serviceId);
+        console.log("🔹 Iniciando fetchData em BookService", serviceTitleFromStorage);
 
         setLoading(true);
 
-        // Use the service ID directly from URL params to fetch availabilities
-        // The service ID from the URL is actually a session type ID
+        let serviceData = service;
+
+        // Se ainda não temos serviceData, busca via title
+        if (!serviceData) {
+          if (!serviceTitleFromStorage) throw new Error("Title não definido para buscar serviço");
+
+          const res = await fetch(
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(serviceTitleFromStorage)}`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+              },
+            },
+          );
+
+          if (!res.ok) throw new Error("Erro ao buscar serviço");
+          const data = await res.json();
+          if (!data) throw new Error("Serviço não encontrado");
+
+          serviceData = data;
+          setService(serviceData);
+          console.log("✅ Serviço carregado via fetch:", serviceData);
+        }
+
+        // 🔹 Agora que serviceData existe, busca disponibilidades
+        if (!serviceData.Id) throw new Error("serviceData.Id não definido");
+
         const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceId)] }),
+          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
         });
 
         if (!resAvail.ok) throw new Error("Erro ao buscar disponibilidades");
@@ -239,15 +265,6 @@ const BookService = () => {
         const availData = await resAvail.json();
         setAvailabilities(availData.Availabilities || []);
         console.log("✅ Disponibilidades carregadas:", availData.Availabilities);
-        
-        // If we got availabilities, we can extract service info from them
-        if (availData.Availabilities && availData.Availabilities.length > 0) {
-          const firstAvail = availData.Availabilities[0];
-          if (firstAvail.SessionType) {
-            setService(firstAvail.SessionType);
-            console.log("✅ Serviço extraído das disponibilidades:", firstAvail.SessionType);
-          }
-        }
       } catch (err: any) {
         console.error("Erro ao carregar dados:", err);
         setError(err.message);
@@ -257,7 +274,7 @@ const BookService = () => {
     };
 
     fetchData();
-  }, [serviceId]);
+  }, [serviceTitleFromStorage]);
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
