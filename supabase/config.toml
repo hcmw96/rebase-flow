@@ -2,3 +2,6 @@ project_id = "wdgyuxkqqmtxcltsfkel"
 
 [functions.teste]
 verify_jwt = false
+
+[functions.getBookableItems]
+verify_jwt = false
