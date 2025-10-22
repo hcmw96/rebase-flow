@@ -14,6 +14,7 @@ interface ServiceCardProps {
     duration?: string;
     price?: number;
     fromPrice?: boolean;
+    sessionTypeId?: string | number; // 👈 novo campo
     variants?: Array<{
       duration: string;
       price: number;
@@ -35,6 +36,7 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
         price: service?.price,
         duration: service?.duration,
         category,
+        sessionTypeId: service?.sessionTypeId,
       }),
     );
 
