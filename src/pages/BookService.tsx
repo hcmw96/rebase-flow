@@ -143,7 +143,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ token }),
       });
@@ -214,67 +214,67 @@ const BookService = () => {
   }, []);
 
   useEffect(() => {
-    if (!serviceIdFromStorage) return;
-    
+    console.log("🔹 serviceTitleFromStorage mudou:", serviceTitleFromStorage);
+    if (!serviceTitleFromStorage) return;
     const fetchData = async () => {
       try {
-        console.log("🔹 Starting data fetch for service ID:", serviceIdFromStorage);
+        console.log("🔹 Iniciando fetchData em BookService", serviceTitleFromStorage);
+
         setLoading(true);
 
-        // Parallel fetch: service details and availabilities
-        const [serviceRes, availRes] = await Promise.all([
-          fetch(
-            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?id=${serviceIdFromStorage}`,
+        let serviceData = service;
+
+        // Se ainda não temos serviceData, busca via title
+        if (!serviceData) {
+          if (!serviceTitleFromStorage) throw new Error("Title não definido para buscar serviço");
+
+          const res = await fetch(
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(serviceTitleFromStorage)}`,
             {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
               },
-            }
-          ),
-          fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
             },
-            body: JSON.stringify({ sessionTypeIds: [serviceIdFromStorage] }),
-          })
-        ]);
+          );
 
-        if (!serviceRes.ok) {
-          const errorText = await serviceRes.text();
-          throw new Error(`Failed to fetch service: ${errorText}`);
-        }
-        
-        if (!availRes.ok) {
-          const errorText = await availRes.text();
-          throw new Error(`Failed to fetch availabilities: ${errorText}`);
+          if (!res.ok) throw new Error("Erro ao buscar serviço");
+          const data = await res.json();
+          if (!data) throw new Error("Serviço não encontrado");
+
+          serviceData = data;
+          setService(serviceData);
+          console.log("✅ Serviço carregado via fetch:", serviceData);
         }
 
-        const [serviceData, availData] = await Promise.all([
-          serviceRes.json(),
-          availRes.json()
-        ]);
+        // 🔹 Agora que serviceData existe, busca disponibilidades
+        if (!serviceData.Id) throw new Error("serviceData.Id não definido");
 
-        if (!serviceData) throw new Error("Service not found");
+        const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
+        });
 
-        setService(serviceData);
+        if (!resAvail.ok) throw new Error("Erro ao buscar disponibilidades");
+
+        const availData = await resAvail.json();
         setAvailabilities(availData.Availabilities || []);
-        
-        console.log("✅ Data loaded:", { service: serviceData, availabilities: availData.Availabilities?.length || 0 });
+        console.log("✅ Disponibilidades carregadas:", availData.Availabilities);
       } catch (err: any) {
-        console.error("Error loading data:", err);
+        console.error("Erro ao carregar dados:", err);
         setError(err.message);
-        toast.error(`Failed to load service: ${err.message}`);
       } finally {
         setLoading(false);
       }
     };
 
     fetchData();
-  }, [serviceIdFromStorage]);
+  }, [serviceTitleFromStorage]);
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
@@ -409,7 +409,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ token }),
       });
@@ -432,7 +432,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
@@ -471,7 +471,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
             username: "henry@xeniasocial.com",
@@ -605,7 +605,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           "X-Mindbody-Token": mindbodyToken.trim(),
         },
         body: JSON.stringify(checkoutBody),
@@ -665,11 +665,11 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           token,
-          businessId: "5736189",
+          businessId: "5736189", // coloque o real
           userId: userIdFromProfile,
           profileData,
         }),
