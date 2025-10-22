@@ -216,27 +216,25 @@ const BookService = () => {
   }, []);
 
   useEffect(() => {
-    console.log("🔹 serviceTitleFromStorage mudou:", serviceTitleFromStorage);
-    if (!serviceTitleFromStorage) return;
+    console.log("🔹 serviceId from URL:", serviceId);
+    if (!serviceId) return;
     const fetchData = async () => {
       try {
-        console.log("🔹 Iniciando fetchData em BookService", serviceTitleFromStorage);
+        console.log("🔹 Iniciando fetchData em BookService", serviceId);
 
         setLoading(true);
 
         let serviceData = service;
 
-        // Se ainda não temos serviceData, busca via title
+        // Fetch service by ID from URL params
         if (!serviceData) {
-          if (!serviceTitleFromStorage) throw new Error("Title não definido para buscar serviço");
-
           const res = await fetch(
-            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(serviceTitleFromStorage)}`,
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?id=${serviceId}`,
             {
               method: "GET",
               headers: {
                 "Content-Type": "application/json",
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+                Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
               },
             },
           );
@@ -257,7 +255,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndkZ3l1eGtxcW10eGNsdHNma2VsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTMzMjk4MjksImV4cCI6MjA2ODkwNTgyOX0.mmXnxGqS9lyviLYcQ-XPkpimRGypJQkDcqlMb5poHIo`,
           },
           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
         });
@@ -304,7 +302,7 @@ const BookService = () => {
     };
 
     fetchData();
-  }, [serviceTitleFromStorage]);
+  }, [serviceId]);
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));

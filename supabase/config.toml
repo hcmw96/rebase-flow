@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.getBookableItems]
 verify_jwt = false
+
+[functions.getAllSessionTypes]
+verify_jwt = false
