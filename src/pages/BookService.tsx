@@ -93,6 +93,7 @@ const BookService = () => {
   const [userIdFromProfile, setUserIdFromProfile] = useState<string>("");
   const [clientCardInfo, setClientCardInfo] = useState<ClientCreditCard[] | null>(null);
   const [serviceIdFromStorage, setServiceIdFromStorage] = useState<number | null>(null);
+  const [serviceSessionIdFromStorage, setServiceSessionIdFromStorage] = useState<string | null>(null);
   const [serviceTitleFromStorage, setServiceTitleFromStorage] = useState<string | null>(null);
   const [servicePriceFromStorage, setServicePriceFromStorage] = useState<number | null>(null);
   const [serviceCategoryFromStorage, setServiceCategoryFromStorage] = useState<string | null>(null);
@@ -172,9 +173,9 @@ const BookService = () => {
   };
 
   const handleMindbodyAuth = () => {
-    const currentUrl = window.location.href;
+    const currentPath = window.location.pathname;
     const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
-    const state = JSON.stringify({ returnUrl: currentUrl });
+    const state = JSON.stringify({ from: currentPath });
 
     const authUrl =
       "https://signin.mindbodyonline.com/connect/authorize" +
@@ -196,10 +197,13 @@ const BookService = () => {
     if (storedService) {
       const serviceStoraged = JSON.parse(storedService);
       setServiceIdFromStorage(serviceStoraged.id);
+      setServiceSessionIdFromStorage(serviceStoraged.sessionTypeId);
       setServiceTitleFromStorage(serviceStoraged.title);
       setServicePriceFromStorage(serviceStoraged.price);
       setServiceCategoryFromStorage(serviceStoraged.category);
     }
+
+    console.log("🔹 serviceSessionIdFromStorage:", serviceSessionIdFromStorage);
 
     // Restore booking state if user is returning from auth
     const storedTime = localStorage.getItem("selectedTime");
@@ -211,25 +215,22 @@ const BookService = () => {
     if (storedDate) setSelectedDate(new Date(storedDate));
     if (storedStaffId) setStaffId(storedStaffId);
     if (storedLocationId) setLocationId(storedLocationId);
-  }, []);
+  }, [serviceSessionIdFromStorage]);
 
   useEffect(() => {
-    console.log("🔹 serviceTitleFromStorage mudou:", serviceTitleFromStorage);
-    if (!serviceTitleFromStorage) return;
+    console.log("🔹 serviceSessionIdFromStorage mudou:", serviceSessionIdFromStorage);
+    if (!serviceSessionIdFromStorage) return; // aqui verificamos o valor
+
     const fetchData = async () => {
       try {
-        console.log("🔹 Iniciando fetchData em BookService", serviceTitleFromStorage);
-
+        console.log("🔹 Iniciando fetchData em BookService", serviceSessionIdFromStorage);
         setLoading(true);
 
         let serviceData = service;
 
-        // Se ainda não temos serviceData, busca via title
         if (!serviceData) {
-          if (!serviceTitleFromStorage) throw new Error("Title não definido para buscar serviço");
-
           const res = await fetch(
-            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?name=${encodeURIComponent(serviceTitleFromStorage)}`,
+            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?id=${serviceSessionIdFromStorage}`,
             {
               method: "GET",
               headers: {
@@ -243,13 +244,12 @@ const BookService = () => {
           const data = await res.json();
           if (!data) throw new Error("Serviço não encontrado");
 
-          serviceData = data;
+          serviceData = data[0]; // pegar o primeiro SessionType
+          setService(serviceData);
+
           setService(serviceData);
           console.log("✅ Serviço carregado via fetch:", serviceData);
         }
-
-        // 🔹 Agora que serviceData existe, busca disponibilidades
-        if (!serviceData.Id) throw new Error("serviceData.Id não definido");
 
         const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
@@ -274,7 +274,7 @@ const BookService = () => {
     };
 
     fetchData();
-  }, [serviceTitleFromStorage]);
+  }, [serviceSessionIdFromStorage]); // 🔹 dependência correta
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
@@ -749,6 +749,7 @@ const BookService = () => {
                                 <div>
                                   <h2 className="text-xl text-white mb-4 font-semibold">
                                     Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
+                                    staff{" "}
                                   </h2>
                                   <div className="grid grid-cols-3 gap-2">
                                     {timeSlots.map((t) => {
