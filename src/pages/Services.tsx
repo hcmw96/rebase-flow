@@ -208,7 +208,7 @@ const Services = () => {
           {/* Services Grid */}
           <section className="px-4 sm:px-6 lg:px-8 pb-20">
             <div className="max-w-7xl mx-auto">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <div className="flex flex-wrap justify-center gap-8 [&>*]:w-full [&>*]:md:w-[calc(50%-1rem)] [&>*]:lg:w-[calc(33.333%-1.34rem)]">
                 {filteredServices.map((service) => (
                   <div key={service.id} className="space-y-4">
                     <ServiceCard
