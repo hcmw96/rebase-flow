@@ -42,71 +42,26 @@ const Services = () => {
         const allServices: any[] = [];
         const categorySet = new Set<string>(["All"]);
 
-        // Categories to be grouped into single cards
-        const groupedCategories = {
-          'IV Drips': [] as any[],
-          'Massage Therapy': [] as any[],
-          'Private Suites': [] as any[],
-        };
-
         (data.Services || []).forEach((service: any) => {
-          const category = service.RevenueCategory || "Other";
-          categorySet.add(category);
-          
-          // Check if service belongs to a grouped category
-          const isGroupedCategory = category === 'IV Drips' || 
-                                    category === 'Massage Therapy' || 
-                                    category === 'Private Suites';
+          categorySet.add(service.RevenueCategory || "Other");
 
-          if (isGroupedCategory) {
-            // Add to the appropriate grouped category
-            groupedCategories[category as keyof typeof groupedCategories].push({
-              id: Number(service.Id),
-              sessionTypeId: service.SessionTypeId,
-              name: service.Name,
-              price: service.Price,
-              duration: service.Duration || '60 min',
-            });
-          } else {
-            // Regular service (not grouped) - add directly
-            allServices.push({
-              id: Number(service.Id),
-              title: service.Name,
-              category: category,
-              price: service.Price,
-              sessionTypeId: service.SessionTypeId,
-              description: service.OnlineDescription,
-              sellOnline: service.SellOnline,
-              program: service.Program,
-              count: service.Count,
-              variants: [],
-            });
-          }
-        });
+          const serviceObj = {
+            id: Number(service.Id),
+            title: service.Name,
+            category: service.RevenueCategory || "Other",
+            price: service.Price,
+            sessionTypeId: service.SessionTypeId,
+            description: service.OnlineDescription,
+            sellOnline: service.SellOnline,
+            program: service.Program,
+            count: service.Count,
+            variants: [],
+          };
 
-        // Add grouped category cards (one card per category with all variants)
-        Object.entries(groupedCategories).forEach(([categoryName, variants]) => {
-          if (variants.length > 0) {
-            const groupedCardIds = {
-              'IV Drips': 999999,
-              'Massage Therapy': 999998,
-              'Private Suites': 999997,
-            };
-            
-            const descriptions = {
-              'IV Drips': 'Choose from our range of IV Drip therapies',
-              'Massage Therapy': 'Choose from our range of massage therapies',
-              'Private Suites': 'Choose from our range of private suite options',
-            };
+          // 🔹 Console para verificar cada serviço
+          console.log("Service being pushed:", serviceObj);
 
-            allServices.push({
-              id: groupedCardIds[categoryName as keyof typeof groupedCardIds],
-              title: categoryName,
-              category: categoryName,
-              description: descriptions[categoryName as keyof typeof descriptions],
-              variants: variants,
-            });
-          }
+          allServices.push(serviceObj);
         });
 
         setServices(allServices);
