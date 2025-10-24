@@ -42,42 +42,25 @@ const Services = () => {
         const allServices: any[] = [];
         const categorySet = new Set<string>(["All"]);
 
-        const ivDripVariants: any[] = [];
-        const massageTherapyVariants: any[] = [];
-        const privateSuitesVariants: any[] = [];
+        // Categories to be grouped into single cards
+        const groupedCategories = {
+          'IV Drips': [] as any[],
+          'Massage Therapy': [] as any[],
+          'Private Suites': [] as any[],
+        };
 
         (data.Services || []).forEach((service: any) => {
-          categorySet.add(service.RevenueCategory || "Other");
+          const category = service.RevenueCategory || "Other";
+          categorySet.add(category);
           
-          const isIVDrip = service.RevenueCategory === 'IV Drips' || 
-                          service.Name.toLowerCase().includes('iv drip');
-          
-          const isMassageTherapy = service.RevenueCategory === 'Massage Therapy' || 
-                                   service.Name.toLowerCase().includes('massage');
-          
-          const isPrivateSuites = service.RevenueCategory === 'Private Suites';
+          // Check if service belongs to a grouped category
+          const isGroupedCategory = category === 'IV Drips' || 
+                                    category === 'Massage Therapy' || 
+                                    category === 'Private Suites';
 
-          if (isIVDrip) {
-            // Collect all IV Drip variations
-            ivDripVariants.push({
-              id: Number(service.Id),
-              sessionTypeId: service.SessionTypeId,
-              name: service.Name,
-              price: service.Price,
-              duration: service.Duration || '60 min',
-            });
-          } else if (isMassageTherapy) {
-            // Collect all Massage Therapy variations
-            massageTherapyVariants.push({
-              id: Number(service.Id),
-              sessionTypeId: service.SessionTypeId,
-              name: service.Name,
-              price: service.Price,
-              duration: service.Duration || '60 min',
-            });
-          } else if (isPrivateSuites) {
-            // Collect all Private Suites variations
-            privateSuitesVariants.push({
+          if (isGroupedCategory) {
+            // Add to the appropriate grouped category
+            groupedCategories[category as keyof typeof groupedCategories].push({
               id: Number(service.Id),
               sessionTypeId: service.SessionTypeId,
               name: service.Name,
@@ -85,11 +68,11 @@ const Services = () => {
               duration: service.Duration || '60 min',
             });
           } else {
-            // Regular service (not grouped)
+            // Regular service (not grouped) - add directly
             allServices.push({
               id: Number(service.Id),
               title: service.Name,
-              category: service.RevenueCategory || "Other",
+              category: category,
               price: service.Price,
               sessionTypeId: service.SessionTypeId,
               description: service.OnlineDescription,
@@ -101,38 +84,30 @@ const Services = () => {
           }
         });
 
-        // Add single IV Drips card with all variations
-        if (ivDripVariants.length > 0) {
-          allServices.push({
-            id: 999999, // Unique ID for the grouped card
-            title: 'IV Drips',
-            category: 'IV Drips',
-            description: 'Choose from our range of IV Drip therapies',
-            variants: ivDripVariants,
-          });
-        }
+        // Add grouped category cards (one card per category with all variants)
+        Object.entries(groupedCategories).forEach(([categoryName, variants]) => {
+          if (variants.length > 0) {
+            const groupedCardIds = {
+              'IV Drips': 999999,
+              'Massage Therapy': 999998,
+              'Private Suites': 999997,
+            };
+            
+            const descriptions = {
+              'IV Drips': 'Choose from our range of IV Drip therapies',
+              'Massage Therapy': 'Choose from our range of massage therapies',
+              'Private Suites': 'Choose from our range of private suite options',
+            };
 
-        // Add single Massage Therapy card with all variations
-        if (massageTherapyVariants.length > 0) {
-          allServices.push({
-            id: 999998, // Unique ID for the grouped card
-            title: 'Massage Therapy',
-            category: 'Massage Therapy',
-            description: 'Choose from our range of massage therapies',
-            variants: massageTherapyVariants,
-          });
-        }
-
-        // Add single Private Suites card with all variations
-        if (privateSuitesVariants.length > 0) {
-          allServices.push({
-            id: 999997, // Unique ID for the grouped card
-            title: 'Private Suites',
-            category: 'Private Suites',
-            description: 'Choose from our range of private suite options',
-            variants: privateSuitesVariants,
-          });
-        }
+            allServices.push({
+              id: groupedCardIds[categoryName as keyof typeof groupedCardIds],
+              title: categoryName,
+              category: categoryName,
+              description: descriptions[categoryName as keyof typeof descriptions],
+              variants: variants,
+            });
+          }
+        });
 
         setServices(allServices);
         setCategories(Array.from(categorySet));
