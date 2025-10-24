@@ -14,11 +14,14 @@ interface ServiceCardProps {
     duration?: string;
     price?: number;
     fromPrice?: boolean;
-    sessionTypeId?: string | number; // 👈 novo campo
+    sessionTypeId?: string | number;
     variants?: Array<{
-      duration: string;
+      id: number;
+      title: string;
+      duration?: string;
       price: number;
       description?: string;
+      sessionTypeId?: string | number;
     }>;
   };
 }
@@ -44,16 +47,43 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
     navigate(`/book/${id}`);
   };
 
+  const handleVariantBookNow = (variant: any) => {
+    localStorage.setItem(
+      "selectedService",
+      JSON.stringify({
+        id: variant.id,
+        title: variant.title || variant.description,
+        price: variant.price,
+        duration: variant.duration,
+        category,
+        sessionTypeId: variant.sessionTypeId,
+      }),
+    );
+    navigate(`/book/${variant.id}`);
+  };
+
   const renderPricing = () => {
     if (!service) return null;
 
     if (service.variants && service.variants.length > 0) {
       return (
-        <div className="space-y-2 mb-4">
+        <div className="space-y-3 mb-4">
           {service.variants.map((variant, index) => (
-            <div key={index} className="flex justify-between items-center text-sm">
-              <span className="text-white/70">{variant.description ? `${variant.description}` : variant.duration}</span>
-              <span className="text-white font-medium">£{variant.price}</span>
+            <div key={index} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
+              <div className="flex justify-between items-start">
+                <div className="flex-1">
+                  <div className="text-white font-medium text-sm">{variant.description || variant.title}</div>
+                  {variant.duration && <div className="text-white/60 text-xs mt-1">{variant.duration}</div>}
+                </div>
+                <div className="text-white font-medium text-sm">£{variant.price}</div>
+              </div>
+              <Button 
+                size="sm" 
+                className="w-full glass-button text-white rounded-lg text-xs font-medium"
+                onClick={() => handleVariantBookNow(variant)}
+              >
+                Book Now
+              </Button>
             </div>
           ))}
         </div>
@@ -97,9 +127,11 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
 
       <CardContent className="pt-0">
         {renderPricing()}
-        <Button className="w-full glass-button text-white rounded-xl font-medium" onClick={handleBookNow}>
-          Book Now
-        </Button>
+        {(!service?.variants || service.variants.length === 0) && (
+          <Button className="w-full glass-button text-white rounded-xl font-medium" onClick={handleBookNow}>
+            Book Now
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

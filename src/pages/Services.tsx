@@ -41,27 +41,68 @@ const Services = () => {
 
         const allServices: any[] = [];
         const categorySet = new Set<string>(["All"]);
+        
+        // Categories to group
+        const groupedCategories: Record<string, any[]> = {
+          "IV Drip": [],
+          "Massage Therapy": [],
+          "Private Suites": [],
+          "CRYO": [],
+          "HBOT": [],
+        };
 
         (data.Services || []).forEach((service: any) => {
-          categorySet.add(service.RevenueCategory || "Other");
+          const category = service.RevenueCategory || "Other";
+          categorySet.add(category);
 
           const serviceObj = {
             id: Number(service.Id),
             title: service.Name,
-            category: service.RevenueCategory || "Other",
+            category: category,
             price: service.Price,
             sessionTypeId: service.SessionTypeId,
             description: service.OnlineDescription,
             sellOnline: service.SellOnline,
             program: service.Program,
             count: service.Count,
-            variants: [],
           };
 
-          // 🔹 Console para verificar cada serviço
-          console.log("Service being pushed:", serviceObj);
+          // Check if service belongs to a grouped category
+          if (groupedCategories[category]) {
+            groupedCategories[category].push(serviceObj);
+          } else {
+            // Add non-grouped services directly
+            allServices.push({
+              ...serviceObj,
+              variants: [],
+            });
+          }
+        });
 
-          allServices.push(serviceObj);
+        // Create grouped service cards
+        Object.entries(groupedCategories).forEach(([categoryName, variants], index) => {
+          if (variants.length > 0) {
+            categorySet.add(categoryName);
+            allServices.push({
+              id: 999999 - index, // Unique IDs for grouped cards
+              title: categoryName,
+              category: categoryName,
+              price: Math.min(...variants.map(v => v.price)),
+              sessionTypeId: undefined,
+              description: `Choose from ${variants.length} ${categoryName} options`,
+              sellOnline: true,
+              program: categoryName,
+              count: variants.length,
+              variants: variants.map(v => ({
+                id: v.id,
+                title: v.title,
+                duration: v.duration,
+                price: v.price,
+                description: v.title,
+                sessionTypeId: v.sessionTypeId,
+              })),
+            });
+          }
         });
 
         setServices(allServices);
