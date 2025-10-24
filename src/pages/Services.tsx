@@ -42,26 +42,57 @@ const Services = () => {
         const allServices: any[] = [];
         const categorySet = new Set<string>(["All"]);
 
+        const serviceGroups = new Map<string, any>();
+
         (data.Services || []).forEach((service: any) => {
           categorySet.add(service.RevenueCategory || "Other");
 
-          const serviceObj = {
-            id: Number(service.Id),
-            title: service.Name,
-            category: service.RevenueCategory || "Other",
-            price: service.Price,
-            sessionTypeId: service.SessionTypeId,
-            description: service.OnlineDescription,
-            sellOnline: service.SellOnline,
-            program: service.Program,
-            count: service.Count,
-            variants: [],
-          };
+          // Extract base name (remove variation info like "- Single", "- 5 Pack")
+          const baseName = service.Name.replace(/\s*-\s*(Single|[0-9]+\s*Pack).*$/i, '').trim();
+          
+          const isIVDrip = baseName.toLowerCase().includes('iv drip') || 
+                          service.RevenueCategory === 'IV Drips';
 
-          // 🔹 Console para verificar cada serviço
-          console.log("Service being pushed:", serviceObj);
+          if (isIVDrip) {
+            // Group IV Drip variations
+            if (!serviceGroups.has(baseName)) {
+              serviceGroups.set(baseName, {
+                id: Number(service.Id),
+                title: baseName,
+                category: service.RevenueCategory || "Other",
+                description: service.OnlineDescription,
+                variants: [],
+              });
+            }
+            
+            serviceGroups.get(baseName).variants.push({
+              id: Number(service.Id),
+              sessionTypeId: service.SessionTypeId,
+              name: service.Name,
+              description: service.Name.replace(baseName, '').replace(/^[-\s]+/, '').trim(),
+              price: service.Price,
+              duration: service.Duration || '60 min',
+            });
+          } else {
+            // Regular service (not grouped)
+            allServices.push({
+              id: Number(service.Id),
+              title: service.Name,
+              category: service.RevenueCategory || "Other",
+              price: service.Price,
+              sessionTypeId: service.SessionTypeId,
+              description: service.OnlineDescription,
+              sellOnline: service.SellOnline,
+              program: service.Program,
+              count: service.Count,
+              variants: [],
+            });
+          }
+        });
 
-          allServices.push(serviceObj);
+        // Add grouped IV Drip services
+        serviceGroups.forEach((group) => {
+          allServices.push(group);
         });
 
         setServices(allServices);
