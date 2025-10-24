@@ -144,7 +144,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         },
         body: JSON.stringify({ token }),
       });
@@ -197,7 +197,7 @@ const BookService = () => {
     if (storedService) {
       const serviceStoraged = JSON.parse(storedService);
       setServiceIdFromStorage(serviceStoraged.id);
-      setServiceSessionIdFromStorage(serviceStoraged.sessionTypeId);
+      setServiceSessionIdFromStorage(serviceStoraged.sessionId);
       setServiceTitleFromStorage(serviceStoraged.title);
       setServicePriceFromStorage(serviceStoraged.price);
       setServiceCategoryFromStorage(serviceStoraged.category);
@@ -223,41 +223,14 @@ const BookService = () => {
 
     const fetchData = async () => {
       try {
-        console.log("🔹 Iniciando fetchData em BookService", serviceSessionIdFromStorage);
-        setLoading(true);
-
-        let serviceData = service;
-
-        if (!serviceData) {
-          const res = await fetch(
-            `https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getAllSessionTypes?id=${serviceSessionIdFromStorage}`,
-            {
-              method: "GET",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-              },
-            },
-          );
-
-          if (!res.ok) throw new Error("Erro ao buscar serviço");
-          const data = await res.json();
-          if (!data) throw new Error("Serviço não encontrado");
-
-          serviceData = data[0]; // pegar o primeiro SessionType
-          setService(serviceData);
-
-          setService(serviceData);
-          console.log("✅ Serviço carregado via fetch:", serviceData);
-        }
-
+      
         const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-          body: JSON.stringify({ sessionTypeIds: [parseInt(serviceData.Id)] }),
+           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceSessionIdFromStorage)] }),
         });
 
         if (!resAvail.ok) throw new Error("Erro ao buscar disponibilidades");
@@ -275,6 +248,7 @@ const BookService = () => {
 
     fetchData();
   }, [serviceSessionIdFromStorage]); // 🔹 dependência correta
+
 
   // Datas disponíveis para o calendário
   const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
@@ -383,7 +357,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         },
         body: JSON.stringify({ token }),
       });
@@ -406,7 +380,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
           },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
@@ -445,7 +419,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
           },
           body: JSON.stringify({
             username: "henry@xeniasocial.com",
@@ -467,6 +441,7 @@ const BookService = () => {
           method: "GET",
           headers: {
             Authorization: mindbodyToken,
+
           },
         },
       );
@@ -550,28 +525,28 @@ const BookService = () => {
         CalculateTax: true,
         Payments: cardData.isStoredCard
           ? [
-              {
-                Type: "StoredCard",
-                Metadata: {
-                  amount: price,
-                },
+            {
+              Type: "StoredCard",
+              Metadata: {
+                amount: price,
               },
-            ]
+            },
+          ]
           : [
-              {
-                Type: "CreditCard",
-                Metadata: {
-                  amount: price,
-                  creditCardNumber: cardData.creditCardNumber,
-                  expMonth: cardData.expMonth,
-                  expYear: cardData.expYear,
-                  cvv: cardData.cvv,
-                  billingName: cardData.billingName,
-                  billingPostalCode: cardData.billingPostalCode,
-                  SaveInfo: cardData.saveInfo,
-                },
+            {
+              Type: "CreditCard",
+              Metadata: {
+                amount: price,
+                creditCardNumber: cardData.creditCardNumber,
+                expMonth: cardData.expMonth,
+                expYear: cardData.expYear,
+                cvv: cardData.cvv,
+                billingName: cardData.billingName,
+                billingPostalCode: cardData.billingPostalCode,
+                SaveInfo: cardData.saveInfo,
               },
-            ],
+            },
+          ],
         SendEmail: false,
       };
 
@@ -639,7 +614,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
         },
         body: JSON.stringify({
           token,
@@ -749,8 +724,7 @@ const BookService = () => {
                                 <div>
                                   <h2 className="text-xl text-white mb-4 font-semibold">
                                     Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
-                                    staff{" "}
-                                  </h2>
+                                    staff                                   </h2>
                                   <div className="grid grid-cols-3 gap-2">
                                     {timeSlots.map((t) => {
                                       const availability = availabilities.find((a) => {
@@ -771,9 +745,8 @@ const BookService = () => {
                                           key={t}
                                           variant="ghost"
                                           onClick={() => handleTimeSelect(t)}
-                                          className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${
-                                            selectedTime === t ? "bg-white/30" : "bg-white/10"
-                                          }`}
+                                          className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${selectedTime === t ? "bg-white/30" : "bg-white/10"
+                                            }`}
                                         >
                                           {t}
                                         </Button>
