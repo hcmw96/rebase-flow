@@ -47,8 +47,8 @@ const Services = () => {
           "IV Drip": [],
           "Massage Therapy": [],
           "Private Suites": [],
-          "CRYO": [],
-          "HBOT": [],
+          CRYO: [],
+          HBOT: [],
         };
 
         (data.Services || []).forEach((service: any) => {
@@ -87,13 +87,13 @@ const Services = () => {
               id: 999999 - index, // Unique IDs for grouped cards
               title: categoryName,
               category: categoryName,
-              price: Math.min(...variants.map(v => v.price)),
+              price: Math.min(...variants.map((v) => v.price)),
               sessionId: variants[0].sessionId, // ✅ pega do primeiro variant
               description: `Choose from ${variants.length} ${categoryName} options`,
               sellOnline: true,
               program: categoryName,
               count: variants.length,
-              variants: variants.map(v => ({
+              variants: variants.map((v) => ({
                 id: v.id,
                 title: v.title,
                 duration: v.duration,
@@ -317,10 +317,11 @@ const Services = () => {
                                   <Button
                                     key={time}
                                     variant="outline"
-                                    className={`h-12 text-sm transition-all rounded-xl ${selectedTime === time
+                                    className={`h-12 text-sm transition-all rounded-xl ${
+                                      selectedTime === time
                                         ? "glass-button text-white border-white/30 bg-white/20"
                                         : "glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10"
-                                      }`}
+                                    }`}
                                     onClick={() => handleTimeSelect(time)}
                                   >
                                     {time}

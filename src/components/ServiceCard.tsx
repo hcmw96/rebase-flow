@@ -30,22 +30,22 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-  const sessionIdToSave = service?.sessionId ?? service?.variants?.[0]?.sessionId;
+    const sessionIdToSave = service?.sessionId ?? service?.variants?.[0]?.sessionId;
 
-  localStorage.setItem(
-    "selectedService",
-    JSON.stringify({
-      id,
-      title,
-      price: service?.price,
-      duration: service?.duration,
-      category,
-      sessionId: sessionIdToSave,
-    }),
-  );
+    localStorage.setItem(
+      "selectedService",
+      JSON.stringify({
+        id,
+        title,
+        price: service?.price,
+        duration: service?.duration,
+        category,
+        sessionId: sessionIdToSave,
+      }),
+    );
 
-  navigate(`/book/${id}`);
-};
+    navigate(`/book/${id}`);
+  };
 
   const handleVariantBookNow = (variant: any) => {
     localStorage.setItem(
@@ -70,7 +70,10 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
         <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
           <div className="space-y-3 mb-4">
             {service.variants.map((variant, index) => (
-              <div key={index} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+              <div
+                key={index}
+                className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
+              >
                 <div className="flex justify-between items-start">
                   <div className="flex-1">
                     <div className="text-white font-medium text-sm">{variant.description || variant.title}</div>
@@ -78,8 +81,8 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
                   </div>
                   <div className="text-white font-medium text-sm">£{variant.price}</div>
                 </div>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   className="w-full glass-button text-white rounded-lg text-xs font-medium"
                   onClick={() => handleVariantBookNow(variant)}
                 >
