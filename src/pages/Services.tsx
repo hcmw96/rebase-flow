@@ -41,7 +41,7 @@ const Services = () => {
 
         const allServices: any[] = [];
         const categorySet = new Set<string>(["All"]);
-        
+
         // Categories to group
         const groupedCategories: Record<string, any[]> = {
           "IV Drip": [],
@@ -60,7 +60,7 @@ const Services = () => {
             title: service.Name,
             category: category,
             price: service.Price,
-            sessionTypeId: service.SessionTypeId,
+            sessionId: service.sessionId,
             description: service.OnlineDescription,
             sellOnline: service.SellOnline,
             program: service.Program,
@@ -88,7 +88,7 @@ const Services = () => {
               title: categoryName,
               category: categoryName,
               price: Math.min(...variants.map(v => v.price)),
-              sessionTypeId: undefined,
+              sessionId: variants[0].sessionId, // ✅ pega do primeiro variant
               description: `Choose from ${variants.length} ${categoryName} options`,
               sellOnline: true,
               program: categoryName,
@@ -99,7 +99,7 @@ const Services = () => {
                 duration: v.duration,
                 price: v.price,
                 description: v.title,
-                sessionTypeId: v.sessionTypeId,
+                sessionId: v.sessionId,
               })),
             });
           }
@@ -237,7 +237,7 @@ const Services = () => {
                         duration: service.duration,
                         price: service.price,
                         variants: service.variants,
-                        sessionTypeId: service.sessionTypeId, // 👈 aqui dentro
+                        sessionId: service.sessionId || service.variants?.[0]?.sessionId,
                       }}
                     />
 
@@ -317,11 +317,10 @@ const Services = () => {
                                   <Button
                                     key={time}
                                     variant="outline"
-                                    className={`h-12 text-sm transition-all rounded-xl ${
-                                      selectedTime === time
+                                    className={`h-12 text-sm transition-all rounded-xl ${selectedTime === time
                                         ? "glass-button text-white border-white/30 bg-white/20"
                                         : "glass-button text-white/70 border-white/20 hover:text-white hover:bg-white/10"
-                                    }`}
+                                      }`}
                                     onClick={() => handleTimeSelect(time)}
                                   >
                                     {time}
