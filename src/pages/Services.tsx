@@ -44,6 +44,7 @@ const Services = () => {
 
         const ivDripVariants: any[] = [];
         const massageTherapyVariants: any[] = [];
+        const privateSuitesVariants: any[] = [];
 
         (data.Services || []).forEach((service: any) => {
           categorySet.add(service.RevenueCategory || "Other");
@@ -53,6 +54,8 @@ const Services = () => {
           
           const isMassageTherapy = service.RevenueCategory === 'Massage Therapy' || 
                                    service.Name.toLowerCase().includes('massage');
+          
+          const isPrivateSuites = service.RevenueCategory === 'Private Suites';
 
           if (isIVDrip) {
             // Collect all IV Drip variations
@@ -66,6 +69,15 @@ const Services = () => {
           } else if (isMassageTherapy) {
             // Collect all Massage Therapy variations
             massageTherapyVariants.push({
+              id: Number(service.Id),
+              sessionTypeId: service.SessionTypeId,
+              name: service.Name,
+              price: service.Price,
+              duration: service.Duration || '60 min',
+            });
+          } else if (isPrivateSuites) {
+            // Collect all Private Suites variations
+            privateSuitesVariants.push({
               id: Number(service.Id),
               sessionTypeId: service.SessionTypeId,
               name: service.Name,
@@ -108,6 +120,17 @@ const Services = () => {
             category: 'Massage Therapy',
             description: 'Choose from our range of massage therapies',
             variants: massageTherapyVariants,
+          });
+        }
+
+        // Add single Private Suites card with all variations
+        if (privateSuitesVariants.length > 0) {
+          allServices.push({
+            id: 999997, // Unique ID for the grouped card
+            title: 'Private Suites',
+            category: 'Private Suites',
+            description: 'Choose from our range of private suite options',
+            variants: privateSuitesVariants,
           });
         }
 
