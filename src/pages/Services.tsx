@@ -43,16 +43,29 @@ const Services = () => {
         const categorySet = new Set<string>(["All"]);
 
         const ivDripVariants: any[] = [];
+        const massageTherapyVariants: any[] = [];
 
         (data.Services || []).forEach((service: any) => {
           categorySet.add(service.RevenueCategory || "Other");
           
           const isIVDrip = service.RevenueCategory === 'IV Drips' || 
                           service.Name.toLowerCase().includes('iv drip');
+          
+          const isMassageTherapy = service.RevenueCategory === 'Massage Therapy' || 
+                                   service.Name.toLowerCase().includes('massage');
 
           if (isIVDrip) {
             // Collect all IV Drip variations
             ivDripVariants.push({
+              id: Number(service.Id),
+              sessionTypeId: service.SessionTypeId,
+              name: service.Name,
+              price: service.Price,
+              duration: service.Duration || '60 min',
+            });
+          } else if (isMassageTherapy) {
+            // Collect all Massage Therapy variations
+            massageTherapyVariants.push({
               id: Number(service.Id),
               sessionTypeId: service.SessionTypeId,
               name: service.Name,
@@ -84,6 +97,17 @@ const Services = () => {
             category: 'IV Drips',
             description: 'Choose from our range of IV Drip therapies',
             variants: ivDripVariants,
+          });
+        }
+
+        // Add single Massage Therapy card with all variations
+        if (massageTherapyVariants.length > 0) {
+          allServices.push({
+            id: 999998, // Unique ID for the grouped card
+            title: 'Massage Therapy',
+            category: 'Massage Therapy',
+            description: 'Choose from our range of massage therapies',
+            variants: massageTherapyVariants,
           });
         }
 
