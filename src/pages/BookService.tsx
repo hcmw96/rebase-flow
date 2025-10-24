@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format, parseISO, set, startOfMonth, endOfMonth, startOfDay } from "date-fns";
+import { format, parseISO, set } from "date-fns";
 import { useLocation } from "react-router-dom";
 import CardFormDialog from "@/components/CardFormDialog";
 import ReactDOM from "react-dom/client";
@@ -62,7 +62,7 @@ const BookService = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [availabilities, setAvailabilities] = useState<any[]>([]);
-  const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [selectedDate, setSelectedDate] = useState<Date>(() => new Date());
   const [timeSlots, setTimeSlots] = useState<string[]>([]);
   const [selectedTime, setSelectedTime] = useState<string>("");
   const isMobile = useIsMobile();
@@ -100,7 +100,64 @@ const BookService = () => {
   const [showCalendarView, setShowCalendarView] = useState(true);
   const [showSummaryCard, setShowSummaryCard] = useState(false);
   const [showPreviewCard, setShowPreviewCard] = useState(false);
-  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
+
+  useEffect(() => {
+    const storedService = localStorage.getItem("selectedService");
+    if (storedService) {
+      const serviceStoraged = JSON.parse(storedService);
+      setServiceIdFromStorage(serviceStoraged.id);
+      setServiceSessionIdFromStorage(serviceStoraged.sessionId); // <- garante que sessionId seja definido
+      setServiceTitleFromStorage(serviceStoraged.title);
+      setServicePriceFromStorage(serviceStoraged.price);
+      setServiceCategoryFromStorage(serviceStoraged.category);
+    }
+
+    // Restaurar booking state
+    const storedTime = localStorage.getItem("selectedTime");
+    const storedDate = localStorage.getItem("selectedDate");
+    const storedStaffId = localStorage.getItem("staffId");
+    const storedLocationId = localStorage.getItem("locationId");
+
+    if (storedTime) setSelectedTime(storedTime);
+    if (storedDate) setSelectedDate(new Date(storedDate));
+    if (storedStaffId) setStaffId(storedStaffId);
+    if (storedLocationId) setLocationId(storedLocationId);
+  }, []); // <- remove dependência de serviceSessionIdFromStorage
+
+  // Fetch das disponibilidades
+  useEffect(() => {
+    if (!serviceSessionIdFromStorage) return;
+
+    const fetchAvailabilities = async () => {
+      setLoading(true);
+      try {
+        const startOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), 1);
+        const endOfMonth = new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0);
+
+        const res = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          },
+          body: JSON.stringify({
+            sessionTypeIds: [parseInt(serviceSessionIdFromStorage)],
+            startDate: startOfMonth.toISOString(),
+            endDate: endOfMonth.toISOString(),
+          }),
+        });
+        const data = await res.json();
+        setAvailabilities(data.Appointments || []);
+      } catch (err: any) {
+        console.error(err);
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAvailabilities();
+  }, [serviceSessionIdFromStorage, selectedDate]);
 
   function parseJwt(token: string) {
     try {
@@ -145,7 +202,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ token }),
       });
@@ -192,78 +249,6 @@ const BookService = () => {
     console.log("🟢 Starting OAuth flow");
     window.location.href = authUrl;
   };
-
-  useEffect(() => {
-    const storedService = localStorage.getItem("selectedService");
-    if (storedService) {
-      const serviceStoraged = JSON.parse(storedService);
-      setServiceIdFromStorage(serviceStoraged.id);
-      setServiceSessionIdFromStorage(serviceStoraged.sessionId);
-      setServiceTitleFromStorage(serviceStoraged.title);
-      setServicePriceFromStorage(serviceStoraged.price);
-      setServiceCategoryFromStorage(serviceStoraged.category);
-    }
-
-    console.log("🔹 serviceSessionIdFromStorage:", serviceSessionIdFromStorage);
-
-    // Restore booking state if user is returning from auth
-    const storedTime = localStorage.getItem("selectedTime");
-    const storedDate = localStorage.getItem("selectedDate");
-    const storedStaffId = localStorage.getItem("staffId");
-    const storedLocationId = localStorage.getItem("locationId");
-
-    if (storedTime) setSelectedTime(storedTime);
-    if (storedDate) setSelectedDate(new Date(storedDate));
-    if (storedStaffId) setStaffId(storedStaffId);
-    if (storedLocationId) setLocationId(storedLocationId);
-  }, [serviceSessionIdFromStorage]);
-
-  useEffect(() => {
-    console.log("🔹 serviceSessionIdFromStorage mudou:", serviceSessionIdFromStorage);
-    if (!serviceSessionIdFromStorage) return;
-
-    const fetchAvailabilitiesForMonth = async () => {
-      try {
-        const today = startOfDay(new Date());
-        const monthStart = currentMonth.getMonth() === today.getMonth() && currentMonth.getFullYear() === today.getFullYear()
-          ? today
-          : startOfMonth(currentMonth);
-        const monthEnd = endOfMonth(currentMonth);
-
-        console.log(`🗓️ Fetching availabilities from ${format(monthStart, "yyyy-MM-dd")} to ${format(monthEnd, "yyyy-MM-dd")}`);
-
-        const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          },
-          body: JSON.stringify({
-            sessionTypeIds: [parseInt(serviceSessionIdFromStorage)],
-            startDate: format(monthStart, "yyyy-MM-dd"),
-            endDate: format(monthEnd, "yyyy-MM-dd")
-          }),
-        });
-
-        if (!resAvail.ok) throw new Error("Erro ao buscar disponibilidades");
-
-        const availData = await resAvail.json();
-        setAvailabilities(availData.Availabilities || []);
-        console.log("✅ Disponibilidades carregadas:", availData.Availabilities);
-      } catch (err: any) {
-        console.error("Erro ao carregar dados:", err);
-        setError(err.message);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchAvailabilitiesForMonth();
-  }, [serviceSessionIdFromStorage, currentMonth]);
-
-
-  // Datas disponíveis para o calendário
-  const availableDates = availabilities.map((a) => parseISO(a.StartDateTime)).filter((d) => !isNaN(d.getTime()));
 
   // Quando seleciona um dia, pegar horários disponíveis
   const handleDateSelect = (date: Date | undefined) => {
@@ -369,7 +354,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({ token }),
       });
@@ -392,7 +377,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({ refresh_token: refreshToken }),
         });
@@ -431,7 +416,7 @@ const BookService = () => {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+            Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
           body: JSON.stringify({
             username: "henry@xeniasocial.com",
@@ -453,7 +438,6 @@ const BookService = () => {
           method: "GET",
           headers: {
             Authorization: mindbodyToken,
-
           },
         },
       );
@@ -537,28 +521,28 @@ const BookService = () => {
         CalculateTax: true,
         Payments: cardData.isStoredCard
           ? [
-            {
-              Type: "StoredCard",
-              Metadata: {
-                amount: price,
+              {
+                Type: "StoredCard",
+                Metadata: {
+                  amount: price,
+                },
               },
-            },
-          ]
+            ]
           : [
-            {
-              Type: "CreditCard",
-              Metadata: {
-                amount: price,
-                creditCardNumber: cardData.creditCardNumber,
-                expMonth: cardData.expMonth,
-                expYear: cardData.expYear,
-                cvv: cardData.cvv,
-                billingName: cardData.billingName,
-                billingPostalCode: cardData.billingPostalCode,
-                SaveInfo: cardData.saveInfo,
+              {
+                Type: "CreditCard",
+                Metadata: {
+                  amount: price,
+                  creditCardNumber: cardData.creditCardNumber,
+                  expMonth: cardData.expMonth,
+                  expYear: cardData.expYear,
+                  cvv: cardData.cvv,
+                  billingName: cardData.billingName,
+                  billingPostalCode: cardData.billingPostalCode,
+                  SaveInfo: cardData.saveInfo,
+                },
               },
-            },
-          ],
+            ],
         SendEmail: false,
       };
 
@@ -626,7 +610,7 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
         },
         body: JSON.stringify({
           token,
@@ -686,32 +670,23 @@ const BookService = () => {
                             className="absolute w-full"
                             style={{ transformStyle: "preserve-3d" }}
                           >
-                            {availableDates.length > 0 ? (
-                              <div className="flex justify-center mx-auto min-w-[510px]">
-                                <Calendar
-                                  mode="single"
-                                  selected={selectedDate}
-                                  onSelect={(date) => {
-                                    handleDateSelect(date);
-                                    if (date) setShowCalendarView(false);
-                                  }}
-                                  onMonthChange={(month) => {
-                                    setCurrentMonth(month);
-                                  }}
-                                  disabled={(date) =>
-                                    !availableDates.some(
-                                      (d) =>
-                                        d.getFullYear() === date.getFullYear() &&
-                                        d.getMonth() === date.getMonth() &&
-                                        d.getDate() === date.getDate(),
-                                    )
-                                  }
-                                  className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl"
-                                />
-                              </div>
-                            ) : (
-                              <p className="text-white text-center">Loading Calendar...</p>
-                            )}
+                            <div className="flex justify-center mx-auto min-w-[510px]">
+                              <Calendar
+                                mode="single"
+                                selected={selectedDate}
+                                onSelect={(date) => {
+                                  handleDateSelect(date);
+                                  if (date) setShowCalendarView(false);
+                                }}
+                                onMonthChange={(date) => setSelectedDate(date)}
+                                disabled={(date) =>
+                                  !availabilities.some(
+                                    (a) => parseISO(a.StartDateTime).toDateString() === date.toDateString(),
+                                  )
+                                }
+                                className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl"
+                              />
+                            </div>
                           </motion.div>
                         ) : (
                           <motion.div
@@ -739,7 +714,8 @@ const BookService = () => {
                                 <div>
                                   <h2 className="text-xl text-white mb-4 font-semibold">
                                     Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
-                                    staff                                   </h2>
+                                    staff{" "}
+                                  </h2>
                                   <div className="grid grid-cols-3 gap-2">
                                     {timeSlots.map((t) => {
                                       const availability = availabilities.find((a) => {
@@ -760,8 +736,9 @@ const BookService = () => {
                                           key={t}
                                           variant="ghost"
                                           onClick={() => handleTimeSelect(t)}
-                                          className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${selectedTime === t ? "bg-white/30" : "bg-white/10"
-                                            }`}
+                                          className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${
+                                            selectedTime === t ? "bg-white/30" : "bg-white/10"
+                                          }`}
                                         >
                                           {t}
                                         </Button>
