@@ -67,25 +67,27 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
 
     if (service.variants && service.variants.length > 0) {
       return (
-        <div className="space-y-3 mb-4">
-          {service.variants.map((variant, index) => (
-            <div key={index} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10">
-              <div className="flex justify-between items-start">
-                <div className="flex-1">
-                  <div className="text-white font-medium text-sm">{variant.description || variant.title}</div>
-                  {variant.duration && <div className="text-white/60 text-xs mt-1">{variant.duration}</div>}
+        <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+          <div className="space-y-3 mb-4">
+            {service.variants.map((variant, index) => (
+              <div key={index} className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="text-white font-medium text-sm">{variant.description || variant.title}</div>
+                    {variant.duration && <div className="text-white/60 text-xs mt-1">{variant.duration}</div>}
+                  </div>
+                  <div className="text-white font-medium text-sm">£{variant.price}</div>
                 </div>
-                <div className="text-white font-medium text-sm">£{variant.price}</div>
+                <Button 
+                  size="sm" 
+                  className="w-full glass-button text-white rounded-lg text-xs font-medium"
+                  onClick={() => handleVariantBookNow(variant)}
+                >
+                  Book Now
+                </Button>
               </div>
-              <Button 
-                size="sm" 
-                className="w-full glass-button text-white rounded-lg text-xs font-medium"
-                onClick={() => handleVariantBookNow(variant)}
-              >
-                Book Now
-              </Button>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       );
     }
