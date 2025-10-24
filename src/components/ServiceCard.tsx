@@ -14,14 +14,14 @@ interface ServiceCardProps {
     duration?: string;
     price?: number;
     fromPrice?: boolean;
-    sessionTypeId?: string | number;
+    sessionId?: string | number;
     variants?: Array<{
       id: number;
       title: string;
       duration?: string;
       price: number;
       description?: string;
-      sessionTypeId?: string | number;
+      sessionId?: string | number;
     }>;
   };
 }
@@ -30,22 +30,22 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    // 🔹 Salva as informações no localStorage
-    localStorage.setItem(
-      "selectedService",
-      JSON.stringify({
-        id,
-        title,
-        price: service?.price,
-        duration: service?.duration,
-        category,
-        sessionTypeId: service?.sessionTypeId,
-      }),
-    );
+  const sessionIdToSave = service?.sessionId ?? service?.variants?.[0]?.sessionId;
 
-    // 🔹 Navega para a página de booking
-    navigate(`/book/${id}`);
-  };
+  localStorage.setItem(
+    "selectedService",
+    JSON.stringify({
+      id,
+      title,
+      price: service?.price,
+      duration: service?.duration,
+      category,
+      sessionId: sessionIdToSave,
+    }),
+  );
+
+  navigate(`/book/${id}`);
+};
 
   const handleVariantBookNow = (variant: any) => {
     localStorage.setItem(
@@ -56,7 +56,7 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
         price: variant.price,
         duration: variant.duration,
         category,
-        sessionTypeId: variant.sessionTypeId,
+        sessionId: variant.sessionId,
       }),
     );
     navigate(`/book/${variant.id}`);
