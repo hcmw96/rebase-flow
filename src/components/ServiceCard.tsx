@@ -49,12 +49,12 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
 
     if (service.variants && service.variants.length > 0) {
       return (
-        <div className="space-y-3 mb-4">
+        <div className="space-y-3 mb-4 max-h-96 overflow-y-auto">
           {service.variants.map((variant: any, index: number) => (
-            <div key={index} className="glass-morphism rounded-xl p-3 space-y-2">
-              <div className="flex justify-between items-start">
-                <span className="text-white font-medium text-sm">{variant.description || variant.name}</span>
-                <span className="text-white font-semibold">£{variant.price}</span>
+            <div key={index} className="glass-morphism rounded-xl p-3 space-y-2 border border-white/10">
+              <div className="flex justify-between items-start gap-3">
+                <span className="text-white font-medium text-sm flex-1">{variant.name}</span>
+                <span className="text-white font-semibold whitespace-nowrap">£{variant.price}</span>
               </div>
               <Button 
                 className="w-full glass-button text-white rounded-lg font-medium text-sm py-2" 

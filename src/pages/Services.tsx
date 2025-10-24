@@ -42,34 +42,20 @@ const Services = () => {
         const allServices: any[] = [];
         const categorySet = new Set<string>(["All"]);
 
-        const serviceGroups = new Map<string, any>();
+        const ivDripVariants: any[] = [];
 
         (data.Services || []).forEach((service: any) => {
           categorySet.add(service.RevenueCategory || "Other");
-
-          // Extract base name (remove variation info like "- Single", "- 5 Pack")
-          const baseName = service.Name.replace(/\s*-\s*(Single|[0-9]+\s*Pack).*$/i, '').trim();
           
-          const isIVDrip = baseName.toLowerCase().includes('iv drip') || 
-                          service.RevenueCategory === 'IV Drips';
+          const isIVDrip = service.RevenueCategory === 'IV Drips' || 
+                          service.Name.toLowerCase().includes('iv drip');
 
           if (isIVDrip) {
-            // Group IV Drip variations
-            if (!serviceGroups.has(baseName)) {
-              serviceGroups.set(baseName, {
-                id: Number(service.Id),
-                title: baseName,
-                category: service.RevenueCategory || "Other",
-                description: service.OnlineDescription,
-                variants: [],
-              });
-            }
-            
-            serviceGroups.get(baseName).variants.push({
+            // Collect all IV Drip variations
+            ivDripVariants.push({
               id: Number(service.Id),
               sessionTypeId: service.SessionTypeId,
               name: service.Name,
-              description: service.Name.replace(baseName, '').replace(/^[-\s]+/, '').trim(),
               price: service.Price,
               duration: service.Duration || '60 min',
             });
@@ -90,10 +76,16 @@ const Services = () => {
           }
         });
 
-        // Add grouped IV Drip services
-        serviceGroups.forEach((group) => {
-          allServices.push(group);
-        });
+        // Add single IV Drips card with all variations
+        if (ivDripVariants.length > 0) {
+          allServices.push({
+            id: 999999, // Unique ID for the grouped card
+            title: 'IV Drips',
+            category: 'IV Drips',
+            description: 'Choose from our range of IV Drip therapies',
+            variants: ivDripVariants,
+          });
+        }
 
         setServices(allServices);
         setCategories(Array.from(categorySet));
