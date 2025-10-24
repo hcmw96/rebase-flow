@@ -9,7 +9,7 @@ import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { Calendar as CalendarIcon, Clock, ArrowLeft, Check, MapPin, Star } from "lucide-react";
-import { format, parseISO, set } from "date-fns";
+import { format, parseISO, set, startOfMonth, endOfMonth, startOfDay } from "date-fns";
 import { useLocation } from "react-router-dom";
 import CardFormDialog from "@/components/CardFormDialog";
 import ReactDOM from "react-dom/client";
@@ -100,6 +100,7 @@ const BookService = () => {
   const [showCalendarView, setShowCalendarView] = useState(true);
   const [showSummaryCard, setShowSummaryCard] = useState(false);
   const [showPreviewCard, setShowPreviewCard] = useState(false);
+  const [currentMonth, setCurrentMonth] = useState<Date>(new Date());
 
   function parseJwt(token: string) {
     try {
@@ -219,18 +220,29 @@ const BookService = () => {
 
   useEffect(() => {
     console.log("🔹 serviceSessionIdFromStorage mudou:", serviceSessionIdFromStorage);
-    if (!serviceSessionIdFromStorage) return; // aqui verificamos o valor
+    if (!serviceSessionIdFromStorage) return;
 
-    const fetchData = async () => {
+    const fetchAvailabilitiesForMonth = async () => {
       try {
-      
+        const today = startOfDay(new Date());
+        const monthStart = currentMonth.getMonth() === today.getMonth() && currentMonth.getFullYear() === today.getFullYear()
+          ? today
+          : startOfMonth(currentMonth);
+        const monthEnd = endOfMonth(currentMonth);
+
+        console.log(`🗓️ Fetching availabilities from ${format(monthStart, "yyyy-MM-dd")} to ${format(monthEnd, "yyyy-MM-dd")}`);
+
         const resAvail = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/getBookableItems", {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
           },
-           body: JSON.stringify({ sessionTypeIds: [parseInt(serviceSessionIdFromStorage)] }),
+          body: JSON.stringify({
+            sessionTypeIds: [parseInt(serviceSessionIdFromStorage)],
+            startDate: format(monthStart, "yyyy-MM-dd"),
+            endDate: format(monthEnd, "yyyy-MM-dd")
+          }),
         });
 
         if (!resAvail.ok) throw new Error("Erro ao buscar disponibilidades");
@@ -246,8 +258,8 @@ const BookService = () => {
       }
     };
 
-    fetchData();
-  }, [serviceSessionIdFromStorage]); // 🔹 dependência correta
+    fetchAvailabilitiesForMonth();
+  }, [serviceSessionIdFromStorage, currentMonth]);
 
 
   // Datas disponíveis para o calendário
@@ -682,6 +694,9 @@ const BookService = () => {
                                   onSelect={(date) => {
                                     handleDateSelect(date);
                                     if (date) setShowCalendarView(false);
+                                  }}
+                                  onMonthChange={(month) => {
+                                    setCurrentMonth(month);
                                   }}
                                   disabled={(date) =>
                                     !availableDates.some(
