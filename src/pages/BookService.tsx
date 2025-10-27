@@ -195,6 +195,25 @@ const BookService = () => {
       return;
     }
   }, []);
+  const handleMindbodyAuth = () => {
+    const currentPath = window.location.pathname;
+    const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
+    const state = JSON.stringify({ from: currentPath });
+
+    const authUrl =
+      "https://signin.mindbodyonline.com/connect/authorize" +
+      "?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565" +
+      "&response_type=code id_token" +
+      "&response_mode=form_post" +
+      "&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access" +
+      "&nonce=10" +
+      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
+      `&state=${encodeURIComponent(state)}` +
+      "&subscriberId=5736189";
+
+    console.log("🟢 Starting OAuth flow");
+    window.location.href = authUrl;
+  };
 
   const checkUserProfile = async (token: string) => {
     try {
@@ -228,26 +247,6 @@ const BookService = () => {
       console.error("Error checking profile:", error);
       toast.error("Failed to verify profile");
     }
-  };
-
-  const handleMindbodyAuth = () => {
-    const currentPath = window.location.pathname;
-    const redirectUri = "https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/teste";
-    const state = JSON.stringify({ from: currentPath });
-
-    const authUrl =
-      "https://signin.mindbodyonline.com/connect/authorize" +
-      "?client_id=f660fd3e-a0d6-4f66-878c-871c9860e565" +
-      "&response_type=code id_token" +
-      "&response_mode=form_post" +
-      "&scope=email openid profile Platform.Contacts.Api.Write Platform.Contacts.Api.Read Platform.Accounts.Api.Read Mindbody.Api.Public.v6 offline_access" +
-      "&nonce=10" +
-      `&redirect_uri=${encodeURIComponent(redirectUri)}` +
-      `&state=${encodeURIComponent(state)}` +
-      "&subscriberId=5736189";
-
-    console.log("🟢 Starting OAuth flow");
-    window.location.href = authUrl;
   };
 
   // Quando seleciona um dia, pegar horários disponíveis
@@ -345,11 +344,11 @@ const BookService = () => {
     time: string,
     staffId: string,
     locationId: string,
-    sessionTypeId: string,
+    sessionTypeId: number,
     clientId: string,
   ) => {
     try {
-      // 🔹 1. Obtém dados do usuário atual no Mindbody
+      console.log("🔹 Starting Mindbody workflow...");
       const meRes = await fetch("https://wdgyuxkqqmtxcltsfkel.supabase.co/functions/v1/mindbodyMe", {
         method: "POST",
         headers: {
@@ -430,6 +429,7 @@ const BookService = () => {
       };
 
       const mindbodyToken = await getMindbodyToken();
+      console.log(mindbodyToken);
 
       // 🔹 2. Verifica se o cliente já tem cartões salvos no Mindbody
       const cardsRes = await fetch(
@@ -511,7 +511,7 @@ const BookService = () => {
               {
                 StaffId: staffId,
                 LocationId: locationId,
-                SessionTypeId: sessionTypeId,
+                SessionTypeId: serviceSessionIdFromStorage,
                 StartDateTime: date,
               },
             ],
@@ -524,7 +524,7 @@ const BookService = () => {
               {
                 Type: "StoredCard",
                 Metadata: {
-                  amount: price,
+                  amount: servicePriceFromStorage,
                 },
               },
             ]
@@ -532,7 +532,7 @@ const BookService = () => {
               {
                 Type: "CreditCard",
                 Metadata: {
-                  amount: price,
+                  amount: servicePriceFromStorage,
                   creditCardNumber: cardData.creditCardNumber,
                   expMonth: cardData.expMonth,
                   expYear: cardData.expYear,
@@ -550,12 +550,11 @@ const BookService = () => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
-          "X-Mindbody-Token": mindbodyToken.trim(),
+          Authorization: mindbodyToken.trim(),
         },
         body: JSON.stringify(checkoutBody),
       });
-
+      console.log(checkoutBody);
       const checkoutData = await checkoutRes.json();
       if (!checkoutRes.ok) throw new Error(checkoutData.error || "Erro no checkout");
 
@@ -593,7 +592,7 @@ const BookService = () => {
 
     const bookAbleDate = availability.BookableEndDateTime;
     const clientId = localStorage.getItem("clientId");
-    const sessionTypeId = service.Id;
+    const sessionTypeId = serviceIdFromStorage;
 
     proceedMindbodyWorkflow(token, bookAbleDate, selectedTime, staffId, locationId, sessionTypeId, clientId);
   };
@@ -714,7 +713,6 @@ const BookService = () => {
                                 <div>
                                   <h2 className="text-xl text-white mb-4 font-semibold">
                                     Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
-                                    staff{" "}
                                   </h2>
                                   <div className="grid grid-cols-3 gap-2">
                                     {timeSlots.map((t) => {
