@@ -649,11 +649,11 @@ const BookService = () => {
 
         {isMobile && renderMobileHeader()}
 
-        <div className={isMobile ? "pt-0" : "pt-20"}>
-          <section className={isMobile ? "py-4 px-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
+        <div className={isMobile ? "pt-0 min-h-[calc(100vh-64px)] flex items-center" : "pt-20"}>
+          <section className={isMobile ? "py-8 px-4 w-full" : "py-20 px-4 sm:px-6 lg:px-8"}>
             <div className="max-w-7xl mx-auto">
               <div
-                className={`flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? "max-w-full" : "max-w-lg"}`}
+                className={`flex justify-center flex-col mx-auto animate-fade-in ${isMobile ? "max-w-full" : "max-w-lg mb-8"}`}
               >
                 {renderServiceInfo()}
 
