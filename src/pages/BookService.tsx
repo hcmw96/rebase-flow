@@ -270,10 +270,15 @@ const BookService = () => {
   const renderMobileHeader = () => (
     <div className="sticky top-0 z-50 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b border-border/40">
       <div className="flex items-center justify-between p-4">
-        <Button variant="ghost" size="icon" className="h-8 w-8">
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          className="h-8 w-8"
+          onClick={() => navigate('/services')}
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-
+        <h1 className="text-lg font-semibold text-white">Book Service</h1>
         <div className="w-8" />
       </div>
     </div>
@@ -645,227 +650,220 @@ const BookService = () => {
         {isMobile && renderMobileHeader()}
 
         <div className={isMobile ? "pt-0" : "pt-20"}>
-          <section className={isMobile ? "py-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
+          <section className={isMobile ? "py-4 px-4" : "py-20 px-4 sm:px-6 lg:px-8"}>
             <div className="max-w-7xl mx-auto">
-              {!isMobile && <div className="animate-scale-in"></div>}
+              <div
+                className={`flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? "max-w-full" : "max-w-lg"}`}
+              >
+                {renderServiceInfo()}
 
-              {/* Service info always visible on desktop, only on mobile in step 1 or 0 */}
-              {!isMobile && (
-                <div
-                  className={` flex justify-center flex-col mx-auto mb-8 animate-fade-in ${isMobile ? "max-w-sm px-4" : "max-w-lg"}`}
-                >
-                  {renderServiceInfo()}
-
-                  {!showSummaryCard && !showPreviewCard && (
-                    <div className="relative min-h-[500px] flex items-center justify-center">
-                      <AnimatePresence mode="wait">
-                        {showCalendarView ? (
-                          <motion.div
-                            key="calendar"
-                            initial={{ rotateY: 90, opacity: 0 }}
-                            animate={{ rotateY: 0, opacity: 1 }}
-                            exit={{ rotateY: -90, opacity: 0 }}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                            className="absolute w-full"
-                            style={{ transformStyle: "preserve-3d" }}
-                          >
-                            <div className="flex justify-center mx-auto min-w-[510px]">
-                              <Calendar
-                                mode="single"
-                                selected={selectedDate}
-                                onSelect={(date) => {
-                                  handleDateSelect(date);
-                                  if (date) setShowCalendarView(false);
-                                }}
-                                onMonthChange={(date) => setSelectedDate(date)}
-                                disabled={(date) =>
-                                  !availabilities.some(
-                                    (a) => parseISO(a.StartDateTime).toDateString() === date.toDateString(),
-                                  )
-                                }
-                                className="text-white rounded-lg p-4 border border-white/20 glass-card w-full max-w-md flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl"
-                              />
+                {!showSummaryCard && !showPreviewCard && (
+                  <div className={`relative ${isMobile ? "min-h-[400px]" : "min-h-[500px]"} flex items-center justify-center`}>
+                    <AnimatePresence mode="wait">
+                      {showCalendarView ? (
+                        <motion.div
+                          key="calendar"
+                          initial={{ rotateY: 90, opacity: 0 }}
+                          animate={{ rotateY: 0, opacity: 1 }}
+                          exit={{ rotateY: -90, opacity: 0 }}
+                          transition={{ duration: 0.5, ease: "easeInOut" }}
+                          className="absolute w-full"
+                          style={{ transformStyle: "preserve-3d" }}
+                        >
+                          <div className="flex justify-center mx-auto w-full">
+                            <Calendar
+                              mode="single"
+                              selected={selectedDate}
+                              onSelect={(date) => {
+                                handleDateSelect(date);
+                                if (date) setShowCalendarView(false);
+                              }}
+                              onMonthChange={(date) => setSelectedDate(date)}
+                              disabled={(date) =>
+                                !availabilities.some(
+                                  (a) => parseISO(a.StartDateTime).toDateString() === date.toDateString(),
+                                )
+                              }
+                              className={`text-white rounded-lg border border-white/20 glass-card w-full flex flex-col items-center backdrop-blur-xl bg-white/10 shadow-xl ${isMobile ? "p-2" : "p-4 max-w-md"}`}
+                            />
+                          </div>
+                        </motion.div>
+                      ) : (
+                        <motion.div
+                          key="times"
+                          initial={{ rotateY: 90, opacity: 0 }}
+                          animate={{ rotateY: 0, opacity: 1 }}
+                          exit={{ rotateY: -90, opacity: 0 }}
+                          transition={{ duration: 0.5, ease: "easeInOut" }}
+                          className="absolute w-full"
+                          style={{ transformStyle: "preserve-3d" }}
+                        >
+                          <div className={`glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg shadow-xl mx-auto ${isMobile ? "p-4 w-full" : "p-6 max-w-md"}`}>
+                            <div className="flex items-center justify-between mb-6">
+                              <Button
+                                variant="ghost"
+                                onClick={() => setShowCalendarView(true)}
+                                className="text-white hover:bg-white/20 -ml-2"
+                              >
+                                <ArrowLeft className="h-4 w-4 mr-2" />
+                                Back to calendar
+                              </Button>
                             </div>
-                          </motion.div>
-                        ) : (
-                          <motion.div
-                            key="times"
-                            initial={{ rotateY: 90, opacity: 0 }}
-                            animate={{ rotateY: 0, opacity: 1 }}
-                            exit={{ rotateY: -90, opacity: 0 }}
-                            transition={{ duration: 0.5, ease: "easeInOut" }}
-                            className="absolute w-full"
-                            style={{ transformStyle: "preserve-3d" }}
-                          >
-                            <div className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl max-w-md mx-auto">
-                              <div className="flex items-center justify-between mb-6">
-                                <Button
-                                  variant="ghost"
-                                  onClick={() => setShowCalendarView(true)}
-                                  className="text-white hover:bg-white/20 -ml-2"
-                                >
-                                  <ArrowLeft className="h-4 w-4 mr-2" />
-                                  Back to calendar
-                                </Button>
-                              </div>
 
-                              {timeSlots.length > 0 ? (
-                                <div>
-                                  <h2 className="text-xl text-white mb-4 font-semibold">
-                                    Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
-                                  </h2>
-                                  <div className="grid grid-cols-3 gap-2">
-                                    {timeSlots.map((t) => {
-                                      const availability = availabilities.find((a) => {
-                                        const start = parseISO(a.StartDateTime);
-                                        return (
-                                          format(start, "HH:mm") === t &&
-                                          selectedDate &&
-                                          start.getFullYear() === selectedDate.getFullYear() &&
-                                          start.getMonth() === selectedDate.getMonth() &&
-                                          start.getDate() === selectedDate.getDate()
-                                        );
-                                      });
-
-                                      const staffName = availability?.Staff?.DisplayName || "Unavailable";
-
+                            {timeSlots.length > 0 ? (
+                              <div>
+                                <h2 className={`text-white mb-4 font-semibold ${isMobile ? "text-lg" : "text-xl"}`}>
+                                  Available times for {selectedDate && format(selectedDate, "MMM dd, yyyy")}
+                                </h2>
+                                <div className={`grid gap-2 ${isMobile ? "grid-cols-2" : "grid-cols-3"}`}>
+                                  {timeSlots.map((t) => {
+                                    const availability = availabilities.find((a) => {
+                                      const start = parseISO(a.StartDateTime);
                                       return (
-                                        <Button
-                                          key={t}
-                                          variant="ghost"
-                                          onClick={() => handleTimeSelect(t)}
-                                          className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${
-                                            selectedTime === t ? "bg-white/30" : "bg-white/10"
-                                          }`}
-                                        >
-                                          {t}
-                                        </Button>
+                                        format(start, "HH:mm") === t &&
+                                        selectedDate &&
+                                        start.getFullYear() === selectedDate.getFullYear() &&
+                                        start.getMonth() === selectedDate.getMonth() &&
+                                        start.getDate() === selectedDate.getDate()
                                       );
-                                    })}
-                                  </div>
+                                    });
 
-                                  {selectedDate && selectedTime && (
-                                    <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
-                                      <p className="text-white text-center">
-                                        <Check className="inline h-5 w-5 mr-2 text-green-400" />
-                                        Selected: {format(selectedDate, "dd/MM/yyyy")} at {selectedTime}
-                                      </p>
-                                    </div>
-                                  )}
+                                    return (
+                                      <Button
+                                        key={t}
+                                        variant="ghost"
+                                        onClick={() => handleTimeSelect(t)}
+                                        className={`text-white backdrop-blur-sm border border-white/30 hover:bg-white/20 transition-all ${isMobile ? "text-sm py-2" : ""} ${
+                                          selectedTime === t ? "bg-white/30" : "bg-white/10"
+                                        }`}
+                                      >
+                                        {t}
+                                      </Button>
+                                    );
+                                  })}
                                 </div>
-                              ) : (
-                                <p className="text-white text-center">No available times for this date.</p>
-                              )}
-                            </div>
-                          </motion.div>
-                        )}
-                      </AnimatePresence>
+
+                                {selectedDate && selectedTime && (
+                                  <div className="mt-6 p-4 bg-white/10 rounded-lg border border-white/20">
+                                    <p className={`text-white text-center ${isMobile ? "text-sm" : ""}`}>
+                                      <Check className="inline h-5 w-5 mr-2 text-green-400" />
+                                      Selected: {format(selectedDate, "dd/MM/yyyy")} at {selectedTime}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <p className="text-white text-center">No available times for this date.</p>
+                            )}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                )}
+
+                {showSummaryCard && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg shadow-xl ${isMobile ? "p-4" : "p-6"}`}
+                  >
+                    <h2 className={`font-semibold text-white mb-6 ${isMobile ? "text-xl" : "text-2xl"}`}>Booking Summary</h2>
+
+                    <div className={`space-y-4 mb-6 ${isMobile ? "text-sm" : ""}`}>
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="text-white/70">Service</span>
+                        <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/70">Category</span>
+                        <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
+                          {serviceCategoryFromStorage}
+                        </Badge>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/70">Duration</span>
+                        <span className="text-white">{duration} minutes</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/70">Date & Time</span>
+                        <div className="text-right">
+                          <div className="text-white">{selectedDate && format(selectedDate, "MMM d, yyyy")}</div>
+                          <div className="text-white/80 text-sm">{selectedTime}</div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-white/20 pt-4 flex justify-between items-center">
+                        <span className={`text-white font-semibold ${isMobile ? "text-base" : "text-lg"}`}>Total Price</span>
+                        <span className={`text-white font-bold ${isMobile ? "text-xl" : "text-2xl"}`}>£{servicePriceFromStorage}</span>
+                      </div>
                     </div>
-                  )}
 
-                  {showSummaryCard && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4 }}
-                      className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl"
-                    >
-                      <h2 className="text-2xl font-semibold text-white mb-6">Booking Summary</h2>
-
-                      <div className="space-y-4 mb-6">
-                        <div className="flex justify-between items-start">
-                          <span className="text-white/70">Service</span>
-                          <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/70">Category</span>
-                          <Badge variant="secondary" className="bg-white/10 text-white border-white/20">
-                            {serviceCategoryFromStorage}
-                          </Badge>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/70">Duration</span>
-                          <span className="text-white">{duration} minutes</span>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/70">Date & Time</span>
-                          <div className="text-right">
-                            <div className="text-white">{selectedDate && format(selectedDate, "MMM d, yyyy")}</div>
-                            <div className="text-white/80 text-sm">{selectedTime}</div>
-                          </div>
-                        </div>
-
-                        <div className="border-t border-white/20 pt-4 flex justify-between items-center">
-                          <span className="text-white font-semibold text-lg">Total Price</span>
-                          <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex gap-3">
-                        <Button
-                          variant="ghost"
-                          onClick={() => {
-                            setShowSummaryCard(false);
-                          }}
-                          className="flex-1 text-white border border-white/30 hover:bg-white/10"
-                        >
-                          Back
-                        </Button>
-                        <Button
-                          onClick={handleProceedToPayment}
-                          className="flex-1 bg-white/20 hover:bg-white/30 text-white border border-white/30"
-                        >
-                          Next
-                        </Button>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {showPreviewCard && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 20 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.4 }}
-                      className="glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg p-6 shadow-xl"
-                    >
-                      <div className="flex items-center gap-2 mb-6">
-                        <Check className="w-6 h-6 text-green-400" />
-                        <h2 className="text-2xl font-semibold text-white">Ready to Book</h2>
-                      </div>
-
-                      <div className="space-y-4 mb-6">
-                        <div className="flex justify-between items-start">
-                          <span className="text-white/70">Service</span>
-                          <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
-                        </div>
-
-                        <div className="flex justify-between items-center">
-                          <span className="text-white/70">Date & Time</span>
-                          <div className="text-right">
-                            <div className="text-white">{selectedDate && format(selectedDate, "MMM d, yyyy")}</div>
-                            <div className="text-white/80 text-sm">{selectedTime}</div>
-                          </div>
-                        </div>
-
-                        <div className="border-t border-white/20 pt-4 flex justify-between items-center">
-                          <span className="text-white font-semibold text-lg">Total Price</span>
-                          <span className="text-white font-bold text-2xl">£{servicePriceFromStorage}</span>
-                        </div>
-                      </div>
-
+                    <div className={`flex ${isMobile ? "flex-col gap-2" : "flex-row gap-3"}`}>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setShowSummaryCard(false);
+                        }}
+                        className="flex-1 text-white border border-white/30 hover:bg-white/10"
+                      >
+                        Back
+                      </Button>
                       <Button
                         onClick={handleProceedToPayment}
-                        className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                        className="flex-1 bg-white/20 hover:bg-white/30 text-white border border-white/30"
                       >
-                        Proceed to Payment
+                        Next
                       </Button>
-                    </motion.div>
-                  )}
-                </div>
-              )}
+                    </div>
+                  </motion.div>
+                )}
+
+                {showPreviewCard && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className={`glass-card backdrop-blur-xl bg-white/10 border border-white/20 rounded-lg shadow-xl ${isMobile ? "p-4" : "p-6"}`}
+                  >
+                    <div className="flex items-center gap-2 mb-6">
+                      <Check className="w-6 h-6 text-green-400" />
+                      <h2 className={`font-semibold text-white ${isMobile ? "text-xl" : "text-2xl"}`}>Ready to Book</h2>
+                    </div>
+
+                    <div className={`space-y-4 mb-6 ${isMobile ? "text-sm" : ""}`}>
+                      <div className="flex justify-between items-start gap-4">
+                        <span className="text-white/70">Service</span>
+                        <span className="text-white font-medium text-right">{serviceTitleFromStorage}</span>
+                      </div>
+
+                      <div className="flex justify-between items-center">
+                        <span className="text-white/70">Date & Time</span>
+                        <div className="text-right">
+                          <div className="text-white">{selectedDate && format(selectedDate, "MMM d, yyyy")}</div>
+                          <div className="text-white/80 text-sm">{selectedTime}</div>
+                        </div>
+                      </div>
+
+                      <div className="border-t border-white/20 pt-4 flex justify-between items-center">
+                        <span className={`text-white font-semibold ${isMobile ? "text-base" : "text-lg"}`}>Total Price</span>
+                        <span className={`text-white font-bold ${isMobile ? "text-xl" : "text-2xl"}`}>£{servicePriceFromStorage}</span>
+                      </div>
+                    </div>
+
+                    <Button
+                      onClick={handleProceedToPayment}
+                      className="w-full bg-white/20 hover:bg-white/30 text-white border border-white/30"
+                    >
+                      Proceed to Payment
+                    </Button>
+                  </motion.div>
+                )}
+              </div>
             </div>
           </section>
         </div>
@@ -874,7 +872,7 @@ const BookService = () => {
 
         {showProfileModal && (
           <Dialog open={showProfileModal} onOpenChange={setShowProfileModal}>
-            <DialogContent className="sm:max-w-lg">
+            <DialogContent className={`${isMobile ? "max-w-[90vw] max-h-[80vh] overflow-y-auto" : "sm:max-w-lg"}`}>
               <DialogHeader>
                 <DialogTitle>Complete your profile</DialogTitle>
               </DialogHeader>
