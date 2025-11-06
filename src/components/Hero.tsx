@@ -32,7 +32,7 @@ const Hero = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
           <Link to="/book">
-            <Button size="lg" className="btn-luxury text-lg px-8 py-4">
+            <Button size="lg" className="glass-button text-white text-lg px-8 py-4 border-white/20">
               Book Your Experience
             </Button>
           </Link>
@@ -40,7 +40,7 @@ const Hero = () => {
             <Button 
               variant="outline" 
               size="lg" 
-              className="btn-ghost-luxury text-lg px-8 py-4"
+              className="glass-button text-white text-lg px-8 py-4 border-white/30 hover:bg-white/20"
             >
               Explore Services
             </Button>
