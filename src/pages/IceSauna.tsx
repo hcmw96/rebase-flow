@@ -57,7 +57,10 @@ const IceSauna = () => {
               </p>
               <div className="flex gap-4">
                 <Button 
-                  onClick={() => setBookingStep(1)} 
+                  onClick={() => {
+                    setBookingStep(1);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }} 
                   className="glass-button text-white border-white/30 hover:bg-white/20 px-8 py-6 text-lg"
                 >
                   Book Now
