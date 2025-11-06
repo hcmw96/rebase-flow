@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import Navigation from "@/components/Navigation";
 import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
+import Hero from "@/components/Hero";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -168,19 +169,12 @@ const Services = () => {
   };
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-left bg-fixed relative"
-      style={{
-        backgroundImage: `url('/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png')`,
-      }}
-    >
-      {/* Dark overlay for text legibility */}
-      <div className="absolute inset-0 bg-black/60 z-0" />
+    <div className="min-h-screen">
+      <Navigation />
+      
+      <Hero />
 
-      <div className="relative z-10">
-        <Navigation />
-
-        <div className="pt-20">
+      <div className="bg-gradient-dark">{/* Removed pt-20 since Hero handles spacing */}
           {/* Loading State */}
           {loading && (
             <section className="px-4 sm:px-6 lg:px-8 mb-12">
@@ -359,8 +353,7 @@ const Services = () => {
           </section>
         </div>
 
-        <Footer />
-      </div>
+      <Footer />
     </div>
   );
 };
