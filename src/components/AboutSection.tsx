@@ -86,7 +86,7 @@ const AboutSection = () => {
               <img 
                 src="/images/rebase-cryo.webp"
                 alt="Cryotherapy"
-                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                className="w-full h-full object-cover object-left transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
                 <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
