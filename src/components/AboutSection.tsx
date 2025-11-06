@@ -11,8 +11,8 @@ const AboutSection = () => {
           {/* Large image on the left */}
           <div className="md:row-span-2">
             <img 
-              src="/lovable-uploads/397f6034-d62e-4ad3-b98c-30070da1186a.png"
-              alt="Wellness space"
+              src="/images/rebase-hbot.webp"
+              alt="Hyperbaric oxygen therapy at Rebase"
               className="w-full h-full object-cover rounded-lg"
             />
           </div>
@@ -20,13 +20,13 @@ const AboutSection = () => {
           {/* Two stacked images on the right */}
           <div className="space-y-4">
             <img 
-              src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png"
-              alt="Recovery session"
+              src="/images/rebase-suite.webp"
+              alt="Rebase recovery suite"
               className="w-full h-[250px] md:h-[300px] object-cover rounded-lg"
             />
             <img 
-              src="/lovable-uploads/8911d1ac-19d7-427a-9138-19c768396ea7.png"
-              alt="Wellness treatment"
+              src="/images/rebase-class.webp"
+              alt="Wellness class at Rebase"
               className="w-full h-[250px] md:h-[300px] object-cover rounded-lg"
             />
           </div>
