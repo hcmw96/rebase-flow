@@ -26,15 +26,16 @@ const Hero = () => {
         </h1>
         
         <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <Link to="/book">
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="glass-button text-white text-base px-12 py-6 border-white/30 hover:bg-white/10 uppercase tracking-widest"
-            >
-              Book Now
-            </Button>
-          </Link>
+          <Button 
+            variant="outline" 
+            size="lg" 
+            className="glass-button text-white text-base px-12 py-6 border-white/30 hover:bg-white/10 uppercase tracking-widest"
+            onClick={() => {
+              document.getElementById('most-popular')?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            Book Now
+          </Button>
         </div>
       </div>
 

@@ -33,7 +33,7 @@ const AboutSection = () => {
         </div>
 
         {/* Most Popular Section */}
-        <div className="mt-20">
+        <div id="most-popular" className="mt-20">
           <h2 className="text-3xl sm:text-4xl font-light text-white text-center mb-12">
             MOST POPULAR
           </h2>
