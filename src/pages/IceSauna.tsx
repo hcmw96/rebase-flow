@@ -9,6 +9,8 @@ import { useNavigate } from "react-router-dom";
 const IceSauna = () => {
   const navigate = useNavigate();
 
+  // TODO: Replace these placeholder sessionIds with actual Mindbody session type IDs
+  // These must be numeric IDs from your Mindbody account for each service variant
   const variants = [
     {
       id: 1,
@@ -16,7 +18,7 @@ const IceSauna = () => {
       duration: "45 Minutes",
       price: 190,
       description: "Infrared Sauna/Ice bath (45 Minutes)",
-      sessionId: "ice-sauna-45"
+      sessionId: "REPLACE_WITH_MINDBODY_SESSION_TYPE_ID" // Example: "12345"
     },
     {
       id: 2,
@@ -24,7 +26,7 @@ const IceSauna = () => {
       duration: "90 Minutes",
       price: 330,
       description: "Infrared Sauna/Ice bath (90 Minutes)",
-      sessionId: "ice-sauna-90"
+      sessionId: "REPLACE_WITH_MINDBODY_SESSION_TYPE_ID" // Example: "12346"
     },
     {
       id: 3,
@@ -32,7 +34,7 @@ const IceSauna = () => {
       duration: "45 minutes",
       price: 240,
       description: "Premium Suite - 45 minutes",
-      sessionId: "premium-suite-45"
+      sessionId: "REPLACE_WITH_MINDBODY_SESSION_TYPE_ID" // Example: "12347"
     },
     {
       id: 4,
@@ -40,7 +42,7 @@ const IceSauna = () => {
       duration: "90",
       price: 420,
       description: "Premium Suite - 90",
-      sessionId: "premium-suite-90"
+      sessionId: "REPLACE_WITH_MINDBODY_SESSION_TYPE_ID" // Example: "12348"
     }
   ];
 
