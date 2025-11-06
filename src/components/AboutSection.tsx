@@ -38,21 +38,23 @@ const AboutSection = () => {
             MOST POPULAR
           </h2>
           
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {/* Ice & Sauna */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
                 src="/images/rebase-class.webp"
                 alt="Ice & Sauna"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-6">
-                <h3 className="text-white text-2xl sm:text-3xl font-light mb-6 text-center tracking-wide">
-                  ICE & SAUNA
-                </h3>
-                <button className="px-8 py-3 border border-white/60 text-white text-sm tracking-wider hover:bg-white/10 transition-colors">
-                  LEARN MORE
-                </button>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
+                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                    ICE & SAUNA
+                  </h3>
+                  <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
+                    BOOK NOW
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -61,32 +63,55 @@ const AboutSection = () => {
               <img 
                 src="/images/rebase-suite.webp"
                 alt="Private Suites"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-6">
-                <h3 className="text-white text-2xl sm:text-3xl font-light mb-6 text-center tracking-wide">
-                  PRIVATE SUITES
-                </h3>
-                <button className="px-8 py-3 border border-white/60 text-white text-sm tracking-wider hover:bg-white/10 transition-colors">
-                  LEARN MORE
-                </button>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
+                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                    PRIVATE SUITES
+                  </h3>
+                  <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
+                    BOOK NOW
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Cryo & IV */}
+            {/* Cryo */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
                 src="/images/rebase-hbot.webp"
-                alt="Cryo & IV"
-                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                alt="Cryotherapy"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
-              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-6">
-                <h3 className="text-white text-2xl sm:text-3xl font-light mb-6 text-center tracking-wide">
-                  CRYO & IV
-                </h3>
-                <button className="px-8 py-3 border border-white/60 text-white text-sm tracking-wider hover:bg-white/10 transition-colors">
-                  LEARN MORE
-                </button>
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
+                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                    CRYO
+                  </h3>
+                  <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
+                    BOOK NOW
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* IV Therapy */}
+            <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
+              <img 
+                src="/images/rebase-suite.webp"
+                alt="IV Therapy"
+                className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
+                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                    IV THERAPY
+                  </h3>
+                  <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
+                    BOOK NOW
+                  </button>
+                </div>
               </div>
             </div>
           </div>
