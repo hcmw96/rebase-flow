@@ -53,12 +53,6 @@ const Hero = () => {
         <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-primary/40 rounded-full animate-float" style={{ animationDelay: '4s' }}></div>
       </div>
 
-      {/* Scroll indicator */}
-      <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2">
-        <div className="w-px h-16 bg-primary/30 relative">
-          <div className="absolute top-0 w-px h-8 bg-primary animate-pulse"></div>
-        </div>
-      </div>
     </section>
   );
 };
