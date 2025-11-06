@@ -48,7 +48,7 @@ const Navigation = () => {
           {/* Book Button - desktop */}
           <div className="hidden md:block">
             <Link to="/book">
-              <Button className="bg-white text-background hover:bg-white/90 uppercase tracking-wider text-sm px-8">
+              <Button variant="outline" className="glass-button text-white border-white/30 hover:bg-white/10 uppercase tracking-wider text-sm px-8">
                 Book
               </Button>
             </Link>
@@ -86,7 +86,7 @@ const Navigation = () => {
               ))}
               <div className="px-3 pt-4">
                 <Link to="/book" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full bg-white text-background hover:bg-white/90 uppercase tracking-wider">
+                  <Button variant="outline" className="w-full glass-button text-white border-white/30 hover:bg-white/10 uppercase tracking-wider">
                     Book
                   </Button>
                 </Link>
