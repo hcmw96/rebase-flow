@@ -46,11 +46,6 @@ const Hero = () => {
             </Button>
           </Link>
         </div>
-
-        {/* Floating elements */}
-        <div className="absolute top-1/4 left-1/4 w-2 h-2 bg-primary rounded-full animate-float" style={{ animationDelay: '0s' }}></div>
-        <div className="absolute top-1/3 right-1/3 w-1 h-1 bg-primary/60 rounded-full animate-float" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-1/4 left-1/3 w-1.5 h-1.5 bg-primary/40 rounded-full animate-float" style={{ animationDelay: '4s' }}></div>
       </div>
 
     </section>
