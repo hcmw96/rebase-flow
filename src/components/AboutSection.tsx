@@ -1,3 +1,5 @@
+import { Link } from "react-router-dom";
+
 const AboutSection = () => {
   return (
     <section className="bg-background py-20 px-4 sm:px-6 lg:px-8">
@@ -109,9 +111,11 @@ const AboutSection = () => {
                     HBOT
                   </h3>
                 </div>
-                <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
-                  RESERVE
-                </button>
+                <Link to="/book/101264" className="w-full">
+                  <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
+                    RESERVE
+                  </button>
+                </Link>
               </div>
             </div>
           </div>
