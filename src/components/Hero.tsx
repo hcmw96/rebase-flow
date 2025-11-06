@@ -21,28 +21,18 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light text-foreground mb-6 animate-fade-in">
-          <span className="block">Elevate</span>
-          <span className="block text-primary text-glow">Your Wellness</span>
+        <h1 className="font-serif text-4xl sm:text-5xl lg:text-6xl font-light text-white mb-12 tracking-wider uppercase animate-fade-in">
+          Elevate Your Wellness
         </h1>
         
-        <p className="text-lg sm:text-xl text-foreground/80 mb-8 max-w-2xl mx-auto leading-relaxed animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          Experience a novel approach to lasting wellbeing at Rebase, London's premier home of social wellness.
-        </p>
-
-        <div className="flex flex-col sm:flex-row gap-4 justify-center animate-fade-in" style={{ animationDelay: '0.4s' }}>
+        <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <Link to="/book">
-            <Button size="lg" className="glass-button text-white text-lg px-8 py-4 border-white/20">
-              Book Your Experience
-            </Button>
-          </Link>
-          <Link to="/services">
             <Button 
               variant="outline" 
               size="lg" 
-              className="glass-button text-white text-lg px-8 py-4 border-white/30 hover:bg-white/20"
+              className="glass-button text-white text-base px-12 py-6 border-white/30 hover:bg-white/10 uppercase tracking-widest"
             >
-              Explore Services
+              Book Now
             </Button>
           </Link>
         </div>
