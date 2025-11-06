@@ -31,6 +31,66 @@ const AboutSection = () => {
             />
           </div>
         </div>
+
+        {/* Most Popular Section */}
+        <div className="mt-20">
+          <h2 className="text-3xl sm:text-4xl font-light text-white text-center mb-12">
+            MOST POPULAR
+          </h2>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-6xl mx-auto">
+            {/* Ice & Sauna */}
+            <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
+              <img 
+                src="/images/rebase-class.webp"
+                alt="Ice & Sauna"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-6">
+                <h3 className="text-white text-2xl sm:text-3xl font-light mb-6 text-center tracking-wide">
+                  ICE & SAUNA
+                </h3>
+                <button className="px-8 py-3 border border-white/60 text-white text-sm tracking-wider hover:bg-white/10 transition-colors">
+                  LEARN MORE
+                </button>
+              </div>
+            </div>
+
+            {/* Private Suites */}
+            <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
+              <img 
+                src="/images/rebase-suite.webp"
+                alt="Private Suites"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-6">
+                <h3 className="text-white text-2xl sm:text-3xl font-light mb-6 text-center tracking-wide">
+                  PRIVATE SUITES
+                </h3>
+                <button className="px-8 py-3 border border-white/60 text-white text-sm tracking-wider hover:bg-white/10 transition-colors">
+                  LEARN MORE
+                </button>
+              </div>
+            </div>
+
+            {/* Cryo & IV */}
+            <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
+              <img 
+                src="/images/rebase-hbot.webp"
+                alt="Cryo & IV"
+                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/40 flex flex-col items-center justify-center p-6">
+                <h3 className="text-white text-2xl sm:text-3xl font-light mb-6 text-center tracking-wide">
+                  CRYO & IV
+                </h3>
+                <button className="px-8 py-3 border border-white/60 text-white text-sm tracking-wider hover:bg-white/10 transition-colors">
+                  LEARN MORE
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
