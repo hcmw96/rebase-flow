@@ -130,31 +130,38 @@ const AboutSection = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 max-w-6xl mx-auto items-center">
             {/* The Times */}
             <div className="flex items-center justify-center h-24">
-              <span className="text-white/50 text-3xl font-serif tracking-tight" style={{ fontFamily: 'Times New Roman, serif' }}>
-                The Times
-              </span>
+              <img 
+                src="/images/the-times-logo.jpg" 
+                alt="The Times" 
+                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+              />
             </div>
 
-            {/* CN Traveller */}
+            {/* Condé Nast Traveller */}
             <div className="flex items-center justify-center h-24">
-              <span className="text-white/50 text-2xl font-light tracking-wider uppercase">
-                CN Traveller
-              </span>
+              <img 
+                src="/images/conde-nast-traveler-logo.png" 
+                alt="Condé Nast Traveller" 
+                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+              />
             </div>
 
             {/* Stylist */}
             <div className="flex items-center justify-center h-24">
-              <span className="text-white/50 text-4xl font-light tracking-tight uppercase" style={{ fontFamily: 'Futura, Arial, sans-serif' }}>
-                Stylist
-              </span>
+              <img 
+                src="/images/stylist-logo.png" 
+                alt="Stylist" 
+                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+              />
             </div>
 
             {/* Business Insider */}
             <div className="flex items-center justify-center h-24">
-              <div className="text-center">
-                <div className="text-white/50 text-2xl font-bold tracking-tight uppercase">Business</div>
-                <div className="text-white/50 text-2xl font-bold tracking-tight uppercase">Insider</div>
-              </div>
+              <img 
+                src="/images/business-insider-logo.png" 
+                alt="Business Insider" 
+                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+              />
             </div>
           </div>
         </div>
