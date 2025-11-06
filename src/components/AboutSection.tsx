@@ -133,7 +133,8 @@ const AboutSection = () => {
               <img 
                 src="/images/the-times-logo.jpg" 
                 alt="The Times" 
-                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+                className="h-12 w-auto object-contain grayscale"
+                style={{ filter: 'grayscale(100%) brightness(0.64) contrast(1)' }}
               />
             </div>
 
@@ -142,7 +143,8 @@ const AboutSection = () => {
               <img 
                 src="/images/conde-nast-traveler-logo.png" 
                 alt="Condé Nast Traveller" 
-                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+                className="h-12 w-auto object-contain grayscale"
+                style={{ filter: 'grayscale(100%) brightness(0.64) contrast(1)' }}
               />
             </div>
 
@@ -151,7 +153,8 @@ const AboutSection = () => {
               <img 
                 src="/images/stylist-logo.png" 
                 alt="Stylist" 
-                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+                className="h-12 w-auto object-contain grayscale"
+                style={{ filter: 'grayscale(100%) brightness(0.64) contrast(1)' }}
               />
             </div>
 
@@ -160,7 +163,8 @@ const AboutSection = () => {
               <img 
                 src="/images/business-insider-logo.png" 
                 alt="Business Insider" 
-                className="h-12 w-auto object-contain opacity-50 grayscale brightness-200"
+                className="h-12 w-auto object-contain grayscale"
+                style={{ filter: 'grayscale(100%) brightness(0.64) contrast(1)' }}
               />
             </div>
           </div>
