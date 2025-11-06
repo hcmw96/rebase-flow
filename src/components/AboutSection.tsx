@@ -102,18 +102,18 @@ const AboutSection = () => {
               </div>
             </div>
 
-            {/* IV Therapy */}
+            {/* HBOT */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
                 src="/images/rebase-suite.webp"
-                alt="IV Therapy"
+                alt="HBOT"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
                 <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
                   <div className="h-16 flex items-center justify-center mb-4">
                     <h3 className="text-white text-xl sm:text-2xl font-light text-center tracking-wide">
-                      IV THERAPY
+                      HBOT
                     </h3>
                   </div>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
