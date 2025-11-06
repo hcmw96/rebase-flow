@@ -42,7 +42,7 @@ const AboutSection = () => {
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {/* Ice & Sauna */}
-            <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
+            <Link to="/ice-sauna" className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer block">
               <img 
                 src="/images/rebase-ice-sauna.webp"
                 alt="Ice & Sauna"
@@ -58,7 +58,7 @@ const AboutSection = () => {
                   RESERVE
                 </button>
               </div>
-            </div>
+            </Link>
 
             {/* Private Suites */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
