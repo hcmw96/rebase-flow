@@ -9,6 +9,7 @@ const Navigation = () => {
   const location = useLocation();
 
   const navItems = [
+    { href: "/", label: "Home" },
     { href: "/services", label: "Services" },
     { href: "/about", label: "About" },
     { href: "/contact", label: "Contact" },
@@ -21,7 +22,7 @@ const Navigation = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
-          <Link to="/services" className="flex items-center">
+          <Link to="/" className="flex items-center">
             <img 
               src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png" 
               alt="Rebase Recovery" 
