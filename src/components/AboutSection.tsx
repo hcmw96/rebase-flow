@@ -47,8 +47,8 @@ const AboutSection = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
-                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full h-[140px] flex flex-col justify-between">
+                  <h3 className="text-white text-xl sm:text-2xl font-light text-center tracking-wide">
                     ICE & SAUNA
                   </h3>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
@@ -66,8 +66,8 @@ const AboutSection = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
-                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full h-[140px] flex flex-col justify-between">
+                  <h3 className="text-white text-xl sm:text-2xl font-light text-center tracking-wide">
                     PRIVATE SUITES
                   </h3>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
@@ -85,8 +85,8 @@ const AboutSection = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
-                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full h-[140px] flex flex-col justify-between">
+                  <h3 className="text-white text-xl sm:text-2xl font-light text-center tracking-wide">
                     CRYO
                   </h3>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
@@ -104,8 +104,8 @@ const AboutSection = () => {
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-col items-center justify-end p-6 pb-8">
-                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full">
-                  <h3 className="text-white text-xl sm:text-2xl font-light mb-4 text-center tracking-wide">
+                <div className="backdrop-blur-md bg-white/10 border border-white/20 rounded-lg p-6 w-full h-[140px] flex flex-col justify-between">
+                  <h3 className="text-white text-xl sm:text-2xl font-light text-center tracking-wide">
                     IV THERAPY
                   </h3>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
