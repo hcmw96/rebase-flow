@@ -63,7 +63,7 @@ const AboutSection = () => {
             {/* Private Suites */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
-                src="/images/rebase-suite.webp"
+                src="/images/rebase-private-suites.webp"
                 alt="Private Suites"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
