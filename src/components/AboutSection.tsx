@@ -105,7 +105,7 @@ const AboutSection = () => {
             {/* HBOT */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
-                src="/images/rebase-suite.webp"
+                src="/images/rebase-hbot-new.png"
                 alt="HBOT"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
