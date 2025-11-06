@@ -21,6 +21,15 @@ Deno.serve(async (req) => {
 
     console.log('📅 Fetching bookable items:', { sessionTypeIds, startDate, endDate });
 
+    // Validate sessionTypeIds - filter out null/undefined/NaN values
+    const validSessionTypeIds = sessionTypeIds.filter(id => id !== null && id !== undefined && !isNaN(id));
+    
+    if (validSessionTypeIds.length === 0) {
+      throw new Error('No valid session type IDs provided. Please configure valid Mindbody session type IDs in your service variants.');
+    }
+
+    console.log('✅ Valid session type IDs:', validSessionTypeIds);
+
     // Get Mindbody staff token
     const tokenResponse = await fetch(
       `${Deno.env.get('SUPABASE_URL')}/functions/v1/mindbodyStaffToken`,
@@ -46,7 +55,7 @@ Deno.serve(async (req) => {
     const mindbodyToken = AccessToken.replace(/\s+/g, '');
 
     // Build query parameters
-    let url = `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?sessionTypeIds=${sessionTypeIds.join(',')}`;
+    let url = `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?sessionTypeIds=${validSessionTypeIds.join(',')}`;
     
     if (startDate) {
       url += `&startDate=${startDate}`;
