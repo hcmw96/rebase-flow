@@ -101,6 +101,11 @@ const BookService = () => {
   const [showSummaryCard, setShowSummaryCard] = useState(false);
   const [showPreviewCard, setShowPreviewCard] = useState(false);
 
+  // Scroll to top when page loads
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
   useEffect(() => {
     const storedService = localStorage.getItem("selectedService");
     if (storedService) {
