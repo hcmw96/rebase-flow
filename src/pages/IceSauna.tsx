@@ -25,6 +25,22 @@ const IceSauna = () => {
       price: 330,
       description: "Infrared Sauna/Ice bath (90 Minutes)",
       sessionId: "ice-sauna-90"
+    },
+    {
+      id: 3,
+      title: "Premium Suite",
+      duration: "45 minutes",
+      price: 240,
+      description: "Premium Suite - 45 minutes",
+      sessionId: "premium-suite-45"
+    },
+    {
+      id: 4,
+      title: "Premium Suite",
+      duration: "90",
+      price: 420,
+      description: "Premium Suite - 90",
+      sessionId: "premium-suite-90"
     }
   ];
 
