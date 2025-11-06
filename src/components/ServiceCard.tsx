@@ -30,12 +30,6 @@ const ServiceCard = ({ id, title, category, image, className, service }: Service
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    // Check if this is Ice & Sauna service and redirect to dedicated page
-    if (title.toLowerCase().includes('ice') && title.toLowerCase().includes('sauna')) {
-      navigate('/ice-sauna');
-      return;
-    }
-
     const sessionIdToSave = service?.sessionId ?? service?.variants?.[0]?.sessionId;
 
     localStorage.setItem(
