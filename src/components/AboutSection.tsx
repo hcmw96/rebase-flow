@@ -84,7 +84,7 @@ const AboutSection = () => {
             {/* Cryo */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
-                src="/images/rebase-hbot.webp"
+                src="/images/rebase-cryo.webp"
                 alt="Cryotherapy"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
