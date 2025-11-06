@@ -121,50 +121,6 @@ const AboutSection = () => {
           </div>
         </div>
 
-        {/* As Seen In Section */}
-        <div className="mt-32">
-          <h2 className="text-3xl sm:text-4xl font-light text-white/60 text-center mb-16 tracking-widest">
-            AS SEEN IN
-          </h2>
-          
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 max-w-6xl mx-auto items-center">
-            {/* The Times */}
-            <div className="flex items-center justify-center h-24">
-              <img 
-                src="/images/the-times-logo.png" 
-                alt="The Times" 
-                className="h-12 w-auto object-contain"
-              />
-            </div>
-
-            {/* Condé Nast Traveller */}
-            <div className="flex items-center justify-center h-24">
-              <img 
-                src="/images/conde-nast-traveler-logo.png" 
-                alt="Condé Nast Traveller" 
-                className="h-12 w-auto object-contain"
-              />
-            </div>
-
-            {/* Stylist */}
-            <div className="flex items-center justify-center h-24">
-              <img 
-                src="/images/stylist-logo.png" 
-                alt="Stylist" 
-                className="h-12 w-auto object-contain"
-              />
-            </div>
-
-            {/* Business Insider */}
-            <div className="flex items-center justify-center h-24">
-              <img 
-                src="/images/business-insider-logo.png" 
-                alt="Business Insider" 
-                className="h-12 w-auto object-contain"
-              />
-            </div>
-          </div>
-        </div>
       </div>
     </section>
   );
