@@ -3,6 +3,7 @@ import Navigation from "@/components/Navigation";
 import ServiceCard from "@/components/ServiceCard";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
+import AboutSection from "@/components/AboutSection";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
@@ -173,6 +174,8 @@ const Services = () => {
       <Navigation />
       
       <Hero />
+      
+      <AboutSection />
 
       <div className="bg-gradient-dark">{/* Removed pt-20 since Hero handles spacing */}
           {/* Loading State */}
