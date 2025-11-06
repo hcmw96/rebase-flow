@@ -120,6 +120,44 @@ const AboutSection = () => {
             </div>
           </div>
         </div>
+
+        {/* As Seen In Section */}
+        <div className="mt-32">
+          <h2 className="text-3xl sm:text-4xl font-light text-white/60 text-center mb-16 tracking-widest">
+            AS SEEN IN
+          </h2>
+          
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 lg:gap-12 max-w-6xl mx-auto items-center">
+            {/* The Times */}
+            <div className="flex items-center justify-center h-24">
+              <span className="text-white/50 text-3xl font-serif tracking-tight" style={{ fontFamily: 'Times New Roman, serif' }}>
+                The Times
+              </span>
+            </div>
+
+            {/* CN Traveller */}
+            <div className="flex items-center justify-center h-24">
+              <span className="text-white/50 text-2xl font-light tracking-wider uppercase">
+                CN Traveller
+              </span>
+            </div>
+
+            {/* Stylist */}
+            <div className="flex items-center justify-center h-24">
+              <span className="text-white/50 text-4xl font-light tracking-tight uppercase" style={{ fontFamily: 'Futura, Arial, sans-serif' }}>
+                Stylist
+              </span>
+            </div>
+
+            {/* Business Insider */}
+            <div className="flex items-center justify-center h-24">
+              <div className="text-center">
+                <div className="text-white/50 text-2xl font-bold tracking-tight uppercase">Business</div>
+                <div className="text-white/50 text-2xl font-bold tracking-tight uppercase">Insider</div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
