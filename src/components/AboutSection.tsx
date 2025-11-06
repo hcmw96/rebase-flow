@@ -131,7 +131,7 @@ const AboutSection = () => {
             {/* The Times */}
             <div className="flex items-center justify-center h-24">
               <img 
-                src="/images/the-times-logo.jpg" 
+                src="/images/the-times-logo.png" 
                 alt="The Times" 
                 className="h-12 w-auto object-contain"
               />
