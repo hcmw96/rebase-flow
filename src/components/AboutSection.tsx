@@ -13,7 +13,7 @@ const AboutSection = () => {
             <img 
               src="/images/rebase-hbot.webp"
               alt="Hyperbaric oxygen therapy at Rebase"
-              className="w-full h-full object-cover rounded-lg"
+              className="w-full h-full object-cover object-center rounded-lg"
             />
           </div>
           
