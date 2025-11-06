@@ -42,7 +42,7 @@ const AboutSection = () => {
             {/* Ice & Sauna */}
             <div className="relative h-[400px] rounded-lg overflow-hidden group cursor-pointer">
               <img 
-                src="/images/rebase-class.webp"
+                src="/images/rebase-ice-sauna.webp"
                 alt="Ice & Sauna"
                 className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
