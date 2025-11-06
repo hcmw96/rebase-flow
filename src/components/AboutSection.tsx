@@ -7,9 +7,9 @@ const AboutSection = () => {
         </p>
         
         {/* Collage Gallery */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-6xl mx-auto items-end">
           {/* Large image on the left */}
-          <div className="md:row-span-2">
+          <div className="h-[500px] md:h-[608px]">
             <img 
               src="/images/rebase-hbot.webp"
               alt="Hyperbaric oxygen therapy at Rebase"
