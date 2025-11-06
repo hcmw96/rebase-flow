@@ -54,7 +54,7 @@ const AboutSection = () => {
                     </h3>
                   </div>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
-                    BOOK NOW
+                    RESERVE
                   </button>
                 </div>
               </div>
@@ -75,7 +75,7 @@ const AboutSection = () => {
                     </h3>
                   </div>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
-                    BOOK NOW
+                    RESERVE
                   </button>
                 </div>
               </div>
@@ -96,7 +96,7 @@ const AboutSection = () => {
                     </h3>
                   </div>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
-                    BOOK NOW
+                    RESERVE
                   </button>
                 </div>
               </div>
@@ -117,7 +117,7 @@ const AboutSection = () => {
                     </h3>
                   </div>
                   <button className="w-full px-6 py-3 backdrop-blur-sm bg-white/20 border border-white/40 text-white text-sm tracking-wider hover:bg-white/30 transition-all">
-                    BOOK NOW
+                    RESERVE
                   </button>
                 </div>
               </div>
