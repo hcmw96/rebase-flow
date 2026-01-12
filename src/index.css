@@ -2,6 +2,23 @@
 @tailwind components;
 @tailwind utilities;
 
+/* SF Pro Font Family */
+@font-face {
+  font-family: 'SF Pro Display';
+  src: local('-apple-system'), local('BlinkMacSystemFont'), local('SF Pro Display');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: 'SF Pro Text';
+  src: local('-apple-system'), local('BlinkMacSystemFont'), local('SF Pro Text');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 /* Rebase Recovery Design System - Dark Luxury Theme
 All colors MUST be HSL.
 */
