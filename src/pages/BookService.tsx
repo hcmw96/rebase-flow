@@ -9,27 +9,31 @@ import Footer from '@/components/Footer';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
-import { ArrowLeft, ArrowRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useMindbody } from '@/contexts/MindbodyContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+interface ServiceVariant {
+  id: string;
+  name: string;
+  duration: number | null;
+  price: number | null;
+}
 
 interface StoredService {
   id: string;
   title: string;
   description: string;
-  duration: string;
-  price: string;
   category: string;
   image: string;
+  variants?: ServiceVariant[];
+  // Legacy single-variant format
+  duration?: string;
+  price?: string;
 }
-
-const steps = [
-  { id: 1, label: 'Date' },
-  { id: 2, label: 'Time' },
-  { id: 3, label: 'Confirm' },
-];
 
 const BookService = () => {
   const navigate = useNavigate();
@@ -41,15 +45,58 @@ const BookService = () => {
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [service, setService] = useState<StoredService | null>(null);
+  const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+
+  // Determine if we have multiple variants
+  const hasVariants = service?.variants && service.variants.length > 1;
+  
+  // Dynamic steps based on variants
+  const steps = useMemo(() => {
+    if (hasVariants) {
+      return [
+        { id: 1, label: 'Type' },
+        { id: 2, label: 'Date' },
+        { id: 3, label: 'Time' },
+        { id: 4, label: 'Confirm' },
+      ];
+    }
+    return [
+      { id: 1, label: 'Date' },
+      { id: 2, label: 'Time' },
+      { id: 3, label: 'Confirm' },
+    ];
+  }, [hasVariants]);
+
+  // Step mapping for logic
+  const dateStep = hasVariants ? 2 : 1;
+  const timeStep = hasVariants ? 3 : 2;
+  const confirmStep = hasVariants ? 4 : 3;
 
   // Load service from localStorage
   useEffect(() => {
     const stored = localStorage.getItem('selectedService');
     if (stored) {
-      setService(JSON.parse(stored));
+      const parsedService = JSON.parse(stored) as StoredService;
+      setService(parsedService);
+      
+      // If single variant or legacy format, auto-select it
+      if (parsedService.variants && parsedService.variants.length === 1) {
+        setSelectedVariant(parsedService.variants[0]);
+      } else if (!parsedService.variants) {
+        // Legacy format - create a variant from the service
+        setSelectedVariant({
+          id: parsedService.id,
+          name: parsedService.title,
+          duration: parsedService.duration ? parseInt(parsedService.duration) : null,
+          price: parsedService.price ? parseFloat(parsedService.price.replace('£', '')) : null,
+        });
+      }
     }
   }, [serviceId]);
+
+  // Use selected variant ID for availability
+  const activeServiceId = selectedVariant?.id || serviceId || '';
 
   // Date range for availability query
   const dateRange = useMemo(() => {
@@ -62,19 +109,23 @@ const BookService = () => {
 
   // Fetch availability for selected date
   const { data: availabilityData, isLoading: isLoadingSlots } = useMindbodyAvailability({
-    sessionTypeId: serviceId || '',
+    sessionTypeId: activeServiceId,
     startDate: dateRange?.startDate,
     endDate: dateRange?.endDate,
-    enabled: !!serviceId && !!selectedDate,
+    enabled: !!activeServiceId && !!selectedDate,
   });
 
   const availableSlots = availabilityData?.availableItems || [];
+
+  const handleVariantSelect = (variant: ServiceVariant) => {
+    setSelectedVariant(variant);
+  };
 
   const handleDateSelect = (date: Date | undefined) => {
     setSelectedDate(date);
     setSelectedSlot(null);
     if (date) {
-      setCurrentStep(2);
+      setCurrentStep(timeStep);
     }
   };
 
@@ -91,20 +142,21 @@ const BookService = () => {
   };
 
   const handleNext = () => {
-    if (currentStep === 2 && selectedSlot) {
-      setCurrentStep(3);
+    if (currentStep === 1 && hasVariants && selectedVariant) {
+      setCurrentStep(2);
+    } else if (currentStep === timeStep && selectedSlot) {
+      setCurrentStep(confirmStep);
     }
   };
 
   const handleConfirmBooking = async () => {
     if (!isAuthenticated) {
-      // Store booking intent and redirect to login
       localStorage.setItem('bookingIntent', JSON.stringify({
-        serviceId,
+        serviceId: activeServiceId,
         selectedDate: selectedDate?.toISOString(),
         selectedSlot,
       }));
-      const redirectUri = `${window.location.origin}/book/${serviceId}`;
+      const redirectUri = `${window.location.origin}/book/${activeServiceId}`;
       login(redirectUri);
       return;
     }
@@ -118,7 +170,7 @@ const BookService = () => {
         staffId: selectedSlot.staffId.toString(),
         locationId: selectedSlot.locationId,
         startDateTime: selectedSlot.startDateTime,
-        serviceName: service?.title,
+        serviceName: selectedVariant?.name || service?.title,
       });
       setBookingComplete(true);
       toast.success('Booking confirmed!');
@@ -128,6 +180,15 @@ const BookService = () => {
   };
 
   const isBooking = bookServiceMutation.isPending;
+
+  // Get display values for selected variant or legacy format
+  const displayDuration = selectedVariant?.duration 
+    ? `${selectedVariant.duration} min` 
+    : service?.duration || '';
+  const displayPrice = selectedVariant?.price 
+    ? `£${selectedVariant.price.toFixed(2)}` 
+    : service?.price || 'Contact for pricing';
+  const displayTitle = selectedVariant?.name || service?.title || '';
 
   if (!service) {
     return (
@@ -245,13 +306,17 @@ const BookService = () => {
                 <h1 className="text-2xl md:text-3xl font-bold text-foreground mb-2">
                   Book {service.title}
                 </h1>
-                <div className="flex items-center gap-4 text-muted-foreground">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {service.duration}
-                  </span>
-                  <span className="font-medium text-foreground">{service.price}</span>
-                </div>
+                {selectedVariant && (
+                  <div className="flex items-center gap-4 text-muted-foreground">
+                    {displayDuration && (
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-4 w-4" />
+                        {displayDuration}
+                      </span>
+                    )}
+                    <span className="font-medium text-foreground">{displayPrice}</span>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -261,9 +326,79 @@ const BookService = () => {
           {/* Step Content */}
           <div className="max-w-3xl mx-auto">
             <AnimatePresence mode="wait">
-              {currentStep === 1 && (
+              {/* Step 1: Variant Selection (only if multiple variants) */}
+              {currentStep === 1 && hasVariants && (
                 <motion.div
-                  key="step-1"
+                  key="step-variant"
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Select Treatment Type
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {service.variants?.map((variant) => (
+                          <button
+                            key={variant.id}
+                            onClick={() => handleVariantSelect(variant)}
+                            className={cn(
+                              'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
+                              selectedVariant?.id === variant.id
+                                ? 'border-primary bg-primary/5'
+                                : 'border-border hover:border-primary/50 hover:bg-secondary/50'
+                            )}
+                          >
+                            <div className="flex-1">
+                              <div className="font-medium text-foreground">
+                                {variant.name}
+                              </div>
+                              <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
+                                {variant.duration && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="h-3 w-3" />
+                                    {variant.duration} min
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              <span className="font-semibold text-foreground">
+                                {variant.price ? `£${variant.price.toFixed(2)}` : 'Contact'}
+                              </span>
+                              {selectedVariant?.id === variant.id && (
+                                <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center">
+                                  <Check className="w-4 h-4 text-primary-foreground" />
+                                </div>
+                              )}
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+                      
+                      {selectedVariant && (
+                        <div className="mt-6 flex justify-end">
+                          <Button onClick={handleNext}>
+                            Continue
+                            <ArrowRight className="h-4 w-4 ml-2" />
+                          </Button>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              )}
+
+              {/* Date Selection Step */}
+              {currentStep === dateStep && (
+                <motion.div
+                  key="step-date"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -288,9 +423,10 @@ const BookService = () => {
                 </motion.div>
               )}
 
-              {currentStep === 2 && (
+              {/* Time Selection Step */}
+              {currentStep === timeStep && (
                 <motion.div
-                  key="step-2"
+                  key="step-time"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -329,9 +465,10 @@ const BookService = () => {
                 </motion.div>
               )}
 
-              {currentStep === 3 && selectedSlot && (
+              {/* Confirmation Step */}
+              {currentStep === confirmStep && selectedSlot && (
                 <motion.div
-                  key="step-3"
+                  key="step-confirm"
                   initial={{ opacity: 0, x: 20 }}
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -20 }}
@@ -347,7 +484,7 @@ const BookService = () => {
                     <CardContent className="space-y-6">
                       {/* Booking Summary */}
                       <div className="bg-secondary/50 rounded-lg p-6 space-y-4">
-                        <h3 className="font-semibold text-lg">{service.title}</h3>
+                        <h3 className="font-semibold text-lg">{displayTitle}</h3>
                         
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div className="flex items-center gap-3">
@@ -390,13 +527,15 @@ const BookService = () => {
                         </div>
 
                         <div className="pt-4 border-t border-border">
-                          <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Duration</span>
-                            <span>{service.duration}</span>
-                          </div>
+                          {displayDuration && (
+                            <div className="flex justify-between items-center">
+                              <span className="text-muted-foreground">Duration</span>
+                              <span>{displayDuration}</span>
+                            </div>
+                          )}
                           <div className="flex justify-between items-center mt-2">
                             <span className="text-muted-foreground">Price</span>
-                            <span className="font-semibold text-lg">{service.price}</span>
+                            <span className="font-semibold text-lg">{displayPrice}</span>
                           </div>
                         </div>
                       </div>
@@ -414,7 +553,7 @@ const BookService = () => {
                       <div className="flex flex-col sm:flex-row gap-3 pt-4">
                         <Button
                           variant="outline"
-                          onClick={() => setCurrentStep(2)}
+                          onClick={() => setCurrentStep(timeStep)}
                           className="sm:flex-1"
                         >
                           Change Time
