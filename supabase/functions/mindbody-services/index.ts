@@ -101,71 +101,137 @@ serve(async (req) => {
       programs = programsData.Programs || [];
     }
 
-    // Fetch pricing from /sale/services
-    const servicesResponse = await fetch(
-      `https://api.mindbodyonline.com/public/v6/sale/services`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Key": apiKey,
-          "SiteId": siteId,
-          "Authorization": `Bearer ${staffToken}`,
-        },
-      }
-    );
+    // Get all session type IDs
+    const sessionTypes = sessionTypesData.SessionTypes || [];
+    const sessionTypeIds = sessionTypes.map((st: any) => st.Id);
+    
+    console.log(`Fetching prices for ${sessionTypeIds.length} session types`);
 
-    let saleServices = [];
-    if (servicesResponse.ok) {
+    // Fetch ALL sale services for pricing (don't filter by sessionTypeIds since it doesn't add SessionTypeIds to response)
+    const priceBySessionTypeId = new Map<number, number | null>();
+    const allSaleServices: any[] = [];
+    let offset = 0;
+    const limit = 100;
+    
+    // Paginate through all sale services
+    while (true) {
+      const servicesResponse = await fetch(
+        `https://api.mindbodyonline.com/public/v6/sale/services?Limit=${limit}&Offset=${offset}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "SiteId": siteId,
+            "Authorization": `Bearer ${staffToken}`,
+          },
+        }
+      );
+
+      if (!servicesResponse.ok) {
+        console.log(`Failed to fetch sale services at offset ${offset}:`, await servicesResponse.text());
+        break;
+      }
+      
       const servicesData = await servicesResponse.json();
-      saleServices = servicesData.Services || [];
-      console.log("Sale services fetched:", saleServices.length);
-    } else {
-      console.log("Failed to fetch sale services, prices may be unavailable");
+      const services = servicesData.Services || [];
+      allSaleServices.push(...services);
+      
+      console.log(`Fetched ${services.length} sale services (offset: ${offset}, total: ${allSaleServices.length})`);
+      
+      if (services.length < limit) break; // No more pages
+      offset += limit;
     }
 
-    // Normalize names for better matching
+    // Normalize name for matching
     const normalizeName = (name: string | undefined): string => {
-      return name?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
+      if (!name) return '';
+      return name
+        .toLowerCase()
+        .trim()
+        .replace(/\s+/g, ' ')
+        .replace(/[^a-z0-9\s]/g, '') // Remove special chars
+        .replace(/\b(mins?|minutes?|hrs?|hours?)\b/g, '') // Remove time units
+        .replace(/\b\d+\b/g, match => match) // Keep numbers
+        .trim();
     };
 
-    // Create a map of normalized service name to price
-    const priceMap = new Map();
-    for (const service of saleServices) {
+    // Create multiple lookup maps for better matching
+    const priceByExactName = new Map<string, number>();
+    const priceByNormalizedName = new Map<string, number>();
+    const priceByKeywords = new Map<string, number>();
+    
+    for (const service of allSaleServices) {
+      const price = service.OnlinePrice ?? service.Price ?? null;
+      if (price === null || price === 0) continue;
+      
+      const exactName = service.Name?.toLowerCase().trim() || '';
       const normalizedName = normalizeName(service.Name);
-      if (normalizedName) {
-        priceMap.set(normalizedName, {
-          price: service.OnlinePrice ?? service.Price ?? null,
-          productId: service.ProductId,
-          originalName: service.Name,
-        });
+      
+      priceByExactName.set(exactName, price);
+      priceByNormalizedName.set(normalizedName, price);
+      
+      // Extract key words (3+ chars) for fuzzy matching
+      const keywords = normalizedName.split(' ').filter((w: string) => w.length >= 4);
+      if (keywords.length >= 2) {
+        priceByKeywords.set(keywords.slice(0, 2).join(' '), price);
       }
     }
+    
+    console.log(`Built price maps: exact=${priceByExactName.size}, normalized=${priceByNormalizedName.size}, keywords=${priceByKeywords.size}`);
 
-    console.log("Sale services available:", Array.from(priceMap.entries()).map(([name, info]) => `${name}: £${info.price}`).slice(0, 20));
-
-    // Map session types to services with category info and pricing
-    const unmatchedServices: string[] = [];
-    const services = (sessionTypesData.SessionTypes || []).map((st: any) => {
-      const program = programs.find((p: any) => p.Id === st.ProgramId);
-      const normalizedSessionName = normalizeName(st.Name);
+    // Match session types to prices
+    const matchResults: Record<string, string[]> = { exact: [], normalized: [], keywords: [], none: [] };
+    
+    for (const st of sessionTypes) {
+      const sessionName = st.Name || '';
+      const exactName = sessionName.toLowerCase().trim();
+      const normalizedName = normalizeName(sessionName);
+      const keywords = normalizedName.split(' ').filter((w: string) => w.length >= 4).slice(0, 2).join(' ');
       
-      // Try exact normalized match first
-      let priceInfo = priceMap.get(normalizedSessionName);
+      let price: number | null = null;
+      let matchType = 'none';
       
-      // If no exact match, try partial matching
-      if (!priceInfo) {
-        for (const [saleName, info] of priceMap.entries()) {
-          // Check if one contains the other
-          if (saleName.includes(normalizedSessionName) || normalizedSessionName.includes(saleName)) {
-            priceInfo = info;
+      // Try exact match first
+      if (priceByExactName.has(exactName)) {
+        price = priceByExactName.get(exactName)!;
+        matchType = 'exact';
+      }
+      // Try normalized match
+      else if (priceByNormalizedName.has(normalizedName)) {
+        price = priceByNormalizedName.get(normalizedName)!;
+        matchType = 'normalized';
+      }
+      // Try keyword match (first two significant words)
+      else if (keywords && priceByKeywords.has(keywords)) {
+        price = priceByKeywords.get(keywords)!;
+        matchType = 'keywords';
+      }
+      // Try partial match - session name contains sale name or vice versa
+      else {
+        for (const [saleName, salePrice] of priceByNormalizedName.entries()) {
+          if (normalizedName.includes(saleName) || saleName.includes(normalizedName)) {
+            price = salePrice;
+            matchType = 'normalized';
             break;
           }
         }
       }
       
-      if (!priceInfo) {
-        unmatchedServices.push(st.Name);
+      priceBySessionTypeId.set(st.Id, price);
+      matchResults[matchType].push(`${st.Name} (ID: ${st.Id})${price ? ` = £${price}` : ''}`);
+    }
+    
+    console.log(`Match results: exact=${matchResults.exact.length}, normalized=${matchResults.normalized.length}, keywords=${matchResults.keywords.length}, none=${matchResults.none.length}`);
+
+    // Map session types to services with category info and pricing
+    const unmatchedServices: string[] = [];
+    const services = sessionTypes.map((st: any) => {
+      const program = programs.find((p: any) => p.Id === st.ProgramId);
+      const price = priceBySessionTypeId.get(st.Id) ?? null;
+      
+      if (price === null) {
+        unmatchedServices.push(`${st.Name} (ID: ${st.Id})`);
       }
 
       return {
@@ -178,12 +244,12 @@ serve(async (req) => {
         category: mapProgramToCategory(program?.Name),
         numDeducted: st.NumDeducted,
         onlineDescription: st.OnlineDescription || st.Description || "",
-        price: priceInfo?.price ?? null,
+        price: price,
       };
     });
 
     if (unmatchedServices.length > 0) {
-      console.log("Unmatched session types (no price found):", unmatchedServices);
+      console.log(`${unmatchedServices.length} session types without price:`, unmatchedServices.slice(0, 20));
     }
 
     return new Response(
