@@ -124,19 +124,50 @@ serve(async (req) => {
       console.log("Failed to fetch sale services, prices may be unavailable");
     }
 
-    // Create a map of session type name to price
+    // Normalize names for better matching
+    const normalizeName = (name: string | undefined): string => {
+      return name?.toLowerCase().trim().replace(/\s+/g, ' ') || '';
+    };
+
+    // Create a map of normalized service name to price
     const priceMap = new Map();
     for (const service of saleServices) {
-      priceMap.set(service.Name?.toLowerCase(), {
-        price: service.OnlinePrice ?? service.Price ?? null,
-        productId: service.ProductId,
-      });
+      const normalizedName = normalizeName(service.Name);
+      if (normalizedName) {
+        priceMap.set(normalizedName, {
+          price: service.OnlinePrice ?? service.Price ?? null,
+          productId: service.ProductId,
+          originalName: service.Name,
+        });
+      }
     }
 
+    console.log("Sale services available:", Array.from(priceMap.entries()).map(([name, info]) => `${name}: £${info.price}`).slice(0, 20));
+
     // Map session types to services with category info and pricing
+    const unmatchedServices: string[] = [];
     const services = (sessionTypesData.SessionTypes || []).map((st: any) => {
       const program = programs.find((p: any) => p.Id === st.ProgramId);
-      const priceInfo = priceMap.get(st.Name?.toLowerCase());
+      const normalizedSessionName = normalizeName(st.Name);
+      
+      // Try exact normalized match first
+      let priceInfo = priceMap.get(normalizedSessionName);
+      
+      // If no exact match, try partial matching
+      if (!priceInfo) {
+        for (const [saleName, info] of priceMap.entries()) {
+          // Check if one contains the other
+          if (saleName.includes(normalizedSessionName) || normalizedSessionName.includes(saleName)) {
+            priceInfo = info;
+            break;
+          }
+        }
+      }
+      
+      if (!priceInfo) {
+        unmatchedServices.push(st.Name);
+      }
+
       return {
         id: st.Id.toString(),
         name: st.Name,
@@ -150,6 +181,10 @@ serve(async (req) => {
         price: priceInfo?.price ?? null,
       };
     });
+
+    if (unmatchedServices.length > 0) {
+      console.log("Unmatched session types (no price found):", unmatchedServices);
+    }
 
     return new Response(
       JSON.stringify({ services }),
