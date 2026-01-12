@@ -101,9 +101,42 @@ serve(async (req) => {
       programs = programsData.Programs || [];
     }
 
-    // Map session types to services with category info
+    // Fetch pricing from /sale/services
+    const servicesResponse = await fetch(
+      `https://api.mindbodyonline.com/public/v6/sale/services`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Api-Key": apiKey,
+          "SiteId": siteId,
+          "Authorization": `Bearer ${staffToken}`,
+        },
+      }
+    );
+
+    let saleServices = [];
+    if (servicesResponse.ok) {
+      const servicesData = await servicesResponse.json();
+      saleServices = servicesData.Services || [];
+      console.log("Sale services fetched:", saleServices.length);
+    } else {
+      console.log("Failed to fetch sale services, prices may be unavailable");
+    }
+
+    // Create a map of session type name to price
+    const priceMap = new Map();
+    for (const service of saleServices) {
+      priceMap.set(service.Name?.toLowerCase(), {
+        price: service.OnlinePrice ?? service.Price ?? null,
+        productId: service.ProductId,
+      });
+    }
+
+    // Map session types to services with category info and pricing
     const services = (sessionTypesData.SessionTypes || []).map((st: any) => {
       const program = programs.find((p: any) => p.Id === st.ProgramId);
+      const priceInfo = priceMap.get(st.Name?.toLowerCase());
       return {
         id: st.Id.toString(),
         name: st.Name,
@@ -114,6 +147,7 @@ serve(async (req) => {
         category: mapProgramToCategory(program?.Name),
         numDeducted: st.NumDeducted,
         onlineDescription: st.OnlineDescription || st.Description || "",
+        price: priceInfo?.price ?? null,
       };
     });
 
