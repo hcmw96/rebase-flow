@@ -3,13 +3,18 @@ import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import ServiceCard, { ServiceVariant } from '@/components/ServiceCard';
+import ServiceCardCompact from '@/components/ServiceCardCompact';
+import CategoryFilter from '@/components/CategoryFilter';
+import FeaturedServices from '@/components/FeaturedServices';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices, useHideServices } from '@/hooks/useHiddenServices';
+import { useFeaturedServices, useAddFeaturedService, useRemoveFeaturedService } from '@/hooks/useFeaturedServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { Trash2, X, EyeOff, Settings } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 // Fallback images for services without images
 const categoryImages: Record<string, string> = {
@@ -43,21 +48,29 @@ const Services = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
+  const isMobile = useIsMobile();
   
   const { data: services, isLoading, error } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
+  const { data: featuredServicesData = [] } = useFeaturedServices();
   const hideServices = useHideServices();
+  const addFeatured = useAddFeaturedService();
+  const removeFeatured = useRemoveFeaturedService();
   const { toast } = useToast();
 
-  // Get set of hidden service IDs
+  // Get set of hidden service IDs and featured service IDs
   const hiddenServiceIds = useMemo(() => {
     return new Set(hiddenServices.map((h) => h.service_id));
   }, [hiddenServices]);
 
+  const featuredServiceIds = useMemo(() => {
+    return new Set(featuredServicesData.map((f) => f.service_id));
+  }, [featuredServicesData]);
+
   // Group services by base name (without duration) and extract unique categories
-  const { groupedServices, categories } = useMemo(() => {
+  const { groupedServices, categories, servicesMap } = useMemo(() => {
     if (!services || services.length === 0) {
-      return { groupedServices: [], categories: ['All'] };
+      return { groupedServices: [], categories: ['All'], servicesMap: new Map() };
     }
 
     // Filter out hidden services unless in edit mode
@@ -100,12 +113,22 @@ const Services = () => {
     // Extract unique categories
     const uniqueCategories = ['All', ...new Set(grouped.map(s => s.category))];
 
-    return { groupedServices: grouped, categories: uniqueCategories };
+    return { groupedServices: grouped, categories: uniqueCategories, servicesMap: groups };
   }, [services, hiddenServiceIds, isEditMode]);
 
-  const filteredServices = activeCategory === 'All'
-    ? groupedServices
-    : groupedServices.filter(service => service.category === activeCategory);
+  // Filter services based on category
+  const filteredServices = useMemo(() => {
+    if (activeCategory === 'All') {
+      return groupedServices;
+    }
+    if (activeCategory === 'Most Popular') {
+      // Show services that are featured
+      return groupedServices.filter(service => 
+        service.variants.some(v => featuredServiceIds.has(v.id))
+      );
+    }
+    return groupedServices.filter(service => service.category === activeCategory);
+  }, [activeCategory, groupedServices, featuredServiceIds]);
 
   const toggleServiceSelection = (baseName: string) => {
     const newSelected = new Set(selectedServices);
@@ -155,6 +178,41 @@ const Services = () => {
     }
   };
 
+  const handleToggleFeatured = async (service: GroupedService) => {
+    const firstVariantId = service.variants[0].id;
+    const isFeatured = service.variants.some(v => featuredServiceIds.has(v.id));
+
+    try {
+      if (isFeatured) {
+        // Find the featured service ID to remove
+        const featuredToRemove = service.variants.find(v => featuredServiceIds.has(v.id));
+        if (featuredToRemove) {
+          await removeFeatured.mutateAsync(featuredToRemove.id);
+          toast({
+            title: 'Removed from popular',
+            description: `${service.baseName} is no longer featured.`,
+          });
+        }
+      } else {
+        await addFeatured.mutateAsync({
+          service_id: firstVariantId,
+          service_name: service.baseName,
+          label: 'Popular',
+        });
+        toast({
+          title: 'Added to popular',
+          description: `${service.baseName} is now featured.`,
+        });
+      }
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update featured status.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const exitEditMode = () => {
     setIsEditMode(false);
     setSelectedServices(new Set());
@@ -164,12 +222,16 @@ const Services = () => {
     return service.variants.every((v) => hiddenServiceIds.has(v.id));
   };
 
+  const isServiceFeatured = (service: GroupedService) => {
+    return service.variants.some((v) => featuredServiceIds.has(v.id));
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navigation />
       
-      {/* Hero Section */}
-      <section className="pt-24 pb-12 bg-gradient-to-b from-secondary/50 to-background">
+      {/* Hero Section - Compact on mobile */}
+      <section className="pt-20 pb-4 md:pt-24 md:pb-8 bg-gradient-to-b from-secondary/50 to-background">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -177,43 +239,53 @@ const Services = () => {
             transition={{ duration: 0.6 }}
             className="text-center max-w-3xl mx-auto"
           >
-            <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
+            <h1 className="text-2xl md:text-5xl font-bold text-foreground mb-2 md:mb-4">
               Our Services
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Discover our range of recovery and wellness treatments designed to help you perform at your best.
+            <p className="text-sm md:text-lg text-muted-foreground">
+              Discover our range of recovery and wellness treatments.
             </p>
           </motion.div>
         </div>
       </section>
 
+      {/* Featured Services - Only on mobile when not in edit mode */}
+      {isMobile && !isEditMode && featuredServicesData.length > 0 && (
+        <FeaturedServices 
+          featuredServices={featuredServicesData} 
+          servicesMap={servicesMap}
+        />
+      )}
+
       {/* Edit Mode Toggle & Actions */}
-      <section className="py-4 border-b border-border">
+      <section className="py-3 border-b border-border sticky top-16 z-20 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3">
               {isEditMode ? (
                 <>
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={exitEditMode}
+                    className="h-8"
                   >
-                    <X className="h-4 w-4 mr-2" />
+                    <X className="h-4 w-4 mr-1" />
                     Cancel
                   </Button>
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-xs text-muted-foreground">
                     {selectedServices.size} selected
                   </span>
                 </>
               ) : (
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   size="sm"
                   onClick={() => setIsEditMode(true)}
+                  className="h-8"
                 >
-                  <EyeOff className="h-4 w-4 mr-2" />
-                  Manage Services
+                  <Settings className="h-4 w-4 mr-1" />
+                  Manage
                 </Button>
               )}
             </div>
@@ -224,47 +296,40 @@ const Services = () => {
                 size="sm"
                 onClick={handleHideSelected}
                 disabled={hideServices.isPending}
+                className="h-8"
               >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Hide Selected ({selectedServices.size})
+                <EyeOff className="h-4 w-4 mr-1" />
+                Hide ({selectedServices.size})
               </Button>
             )}
           </div>
         </div>
       </section>
 
-      {/* Category Filter */}
-      <section className="py-8 border-b border-border">
+      {/* Category Filter - Horizontal scroll */}
+      <section className="py-3 border-b border-border bg-background/50">
         <div className="container mx-auto px-4">
-          <div className="flex flex-wrap justify-center gap-3">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-6 py-2 rounded-full text-sm font-medium transition-all ${
-                  activeCategory === category
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
+          <CategoryFilter
+            categories={categories}
+            activeCategory={activeCategory}
+            onCategoryChange={setActiveCategory}
+            showPopular={!isEditMode && featuredServicesData.length > 0}
+          />
         </div>
       </section>
 
-      {/* Services Grid */}
-      <section className="py-16">
+      {/* Services List/Grid */}
+      <section className="py-6 md:py-16">
         <div className="container mx-auto px-4">
           {isLoading ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className={isMobile ? 'space-y-3' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'}>
               {[...Array(6)].map((_, i) => (
-                <div key={i} className="space-y-4">
-                  <Skeleton className="h-48 w-full rounded-lg" />
-                  <Skeleton className="h-6 w-3/4" />
-                  <Skeleton className="h-4 w-full" />
-                  <Skeleton className="h-4 w-2/3" />
+                <div key={i} className={isMobile ? 'flex gap-3' : 'space-y-4'}>
+                  <Skeleton className={isMobile ? 'h-16 w-16 rounded-lg' : 'h-48 w-full rounded-lg'} />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
                 </div>
               ))}
             </div>
@@ -275,9 +340,51 @@ const Services = () => {
             </div>
           ) : filteredServices.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">No services available in this category.</p>
+              <p className="text-muted-foreground">
+                {activeCategory === 'Most Popular' 
+                  ? 'No popular services yet. Use "Manage" to feature services.'
+                  : 'No services available in this category.'}
+              </p>
+            </div>
+          ) : isMobile ? (
+            /* Mobile: Compact list view */
+            <div className="space-y-2">
+              {filteredServices.map((service, index) => (
+                <motion.div
+                  key={service.baseName}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  className="relative"
+                >
+                  {isEditMode && (
+                    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
+                      <Checkbox
+                        checked={selectedServices.has(service.baseName)}
+                        onCheckedChange={() => toggleServiceSelection(service.baseName)}
+                        className="h-5 w-5 bg-background border-2"
+                      />
+                    </div>
+                  )}
+                  <div className={isEditMode ? 'pl-10' : ''}>
+                    <ServiceCardCompact
+                      id={service.variants[0].id}
+                      title={service.baseName}
+                      description={service.description}
+                      category={service.category}
+                      image={service.image}
+                      variants={service.variants}
+                      isHidden={isServiceHidden(service)}
+                      isFeatured={isServiceFeatured(service)}
+                      onToggleFeatured={() => handleToggleFeatured(service)}
+                      isEditMode={isEditMode}
+                    />
+                  </div>
+                </motion.div>
+              ))}
             </div>
           ) : (
+            /* Desktop: Grid view */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredServices.map((service, index) => (
                 <motion.div

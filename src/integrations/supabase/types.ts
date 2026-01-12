@@ -70,6 +70,33 @@ export type Database = {
           },
         ]
       }
+      featured_services: {
+        Row: {
+          created_at: string | null
+          display_order: number | null
+          id: string
+          label: string | null
+          service_id: string
+          service_name: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          label?: string | null
+          service_id: string
+          service_name?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          display_order?: number | null
+          id?: string
+          label?: string | null
+          service_id?: string
+          service_name?: string | null
+        }
+        Relationships: []
+      }
       hidden_services: {
         Row: {
           hidden_at: string
