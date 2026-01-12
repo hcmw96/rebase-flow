@@ -14,7 +14,101 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      bookings: {
+        Row: {
+          booking_type: string
+          created_at: string
+          end_time: string | null
+          id: string
+          location_name: string | null
+          mindbody_appointment_id: string | null
+          mindbody_class_id: string | null
+          service_id: string | null
+          service_name: string
+          session_id: string
+          staff_name: string | null
+          start_time: string
+          status: string
+        }
+        Insert: {
+          booking_type?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          location_name?: string | null
+          mindbody_appointment_id?: string | null
+          mindbody_class_id?: string | null
+          service_id?: string | null
+          service_name: string
+          session_id: string
+          staff_name?: string | null
+          start_time: string
+          status?: string
+        }
+        Update: {
+          booking_type?: string
+          created_at?: string
+          end_time?: string | null
+          id?: string
+          location_name?: string | null
+          mindbody_appointment_id?: string | null
+          mindbody_class_id?: string | null
+          service_id?: string | null
+          service_name?: string
+          session_id?: string
+          staff_name?: string | null
+          start_time?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bookings_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "mb_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mb_sessions: {
+        Row: {
+          access_token: string
+          created_at: string
+          email: string | null
+          first_name: string | null
+          id: string
+          last_name: string | null
+          mindbody_client_id: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at: string
+        }
+        Insert: {
+          access_token: string
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          mindbody_client_id: string
+          refresh_token: string
+          token_expires_at: string
+          updated_at?: string
+        }
+        Update: {
+          access_token?: string
+          created_at?: string
+          email?: string | null
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+          mindbody_client_id?: string
+          refresh_token?: string
+          token_expires_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
