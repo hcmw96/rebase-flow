@@ -4,7 +4,12 @@ import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import ServiceCard, { ServiceVariant } from '@/components/ServiceCard';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
+import { useHiddenServices, useHideServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Trash2, X, Eye, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 
 // Fallback images for services without images
 const categoryImages: Record<string, string> = {
@@ -36,7 +41,18 @@ interface GroupedService {
 
 const Services = () => {
   const [activeCategory, setActiveCategory] = useState('All');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
+  
   const { data: services, isLoading, error } = useMindbodyServices();
+  const { data: hiddenServices = [] } = useHiddenServices();
+  const hideServices = useHideServices();
+  const { toast } = useToast();
+
+  // Get set of hidden service IDs
+  const hiddenServiceIds = useMemo(() => {
+    return new Set(hiddenServices.map((h) => h.service_id));
+  }, [hiddenServices]);
 
   // Group services by base name (without duration) and extract unique categories
   const { groupedServices, categories } = useMemo(() => {
@@ -44,9 +60,14 @@ const Services = () => {
       return { groupedServices: [], categories: ['All'] };
     }
 
+    // Filter out hidden services unless in edit mode
+    const visibleServices = isEditMode 
+      ? services 
+      : services.filter((s) => !hiddenServiceIds.has(s.id));
+
     const groups = new Map<string, GroupedService>();
 
-    for (const service of services) {
+    for (const service of visibleServices) {
       const { baseName, duration } = extractDurationFromName(service.name);
       const category = service.programName || service.category || 'Wellness';
       const image = categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
@@ -80,11 +101,68 @@ const Services = () => {
     const uniqueCategories = ['All', ...new Set(grouped.map(s => s.category))];
 
     return { groupedServices: grouped, categories: uniqueCategories };
-  }, [services]);
+  }, [services, hiddenServiceIds, isEditMode]);
 
   const filteredServices = activeCategory === 'All'
     ? groupedServices
     : groupedServices.filter(service => service.category === activeCategory);
+
+  const toggleServiceSelection = (baseName: string) => {
+    const newSelected = new Set(selectedServices);
+    if (newSelected.has(baseName)) {
+      newSelected.delete(baseName);
+    } else {
+      newSelected.add(baseName);
+    }
+    setSelectedServices(newSelected);
+  };
+
+  const handleHideSelected = async () => {
+    // Get all variant IDs for selected services
+    const servicesToHide: { id: string; name: string }[] = [];
+    
+    for (const service of groupedServices) {
+      if (selectedServices.has(service.baseName)) {
+        for (const variant of service.variants) {
+          if (!hiddenServiceIds.has(variant.id)) {
+            servicesToHide.push({ id: variant.id, name: variant.name });
+          }
+        }
+      }
+    }
+
+    if (servicesToHide.length === 0) {
+      toast({
+        title: 'No services to hide',
+        description: 'Selected services are already hidden.',
+      });
+      return;
+    }
+
+    try {
+      await hideServices.mutateAsync(servicesToHide);
+      toast({
+        title: 'Services hidden',
+        description: `${servicesToHide.length} service(s) have been hidden from the website.`,
+      });
+      setSelectedServices(new Set());
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to hide services. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const exitEditMode = () => {
+    setIsEditMode(false);
+    setSelectedServices(new Set());
+  };
+
+  const isServiceHidden = (service: GroupedService) => {
+    return service.variants.every((v) => hiddenServiceIds.has(v.id));
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -106,6 +184,52 @@ const Services = () => {
               Discover our range of recovery and wellness treatments designed to help you perform at your best.
             </p>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Edit Mode Toggle & Actions */}
+      <section className="py-4 border-b border-border">
+        <div className="container mx-auto px-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {isEditMode ? (
+                <>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={exitEditMode}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                  <span className="text-sm text-muted-foreground">
+                    {selectedServices.size} selected
+                  </span>
+                </>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsEditMode(true)}
+                >
+                  <EyeOff className="h-4 w-4 mr-2" />
+                  Manage Services
+                </Button>
+              )}
+            </div>
+            
+            {isEditMode && selectedServices.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleHideSelected}
+                disabled={hideServices.isPending}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Hide Selected ({selectedServices.size})
+              </Button>
+            )}
+          </div>
         </div>
       </section>
 
@@ -161,15 +285,36 @@ const Services = () => {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
+                  className="relative"
                 >
-                  <ServiceCard
-                    id={service.variants[0].id}
-                    title={service.baseName}
-                    description={service.description}
-                    category={service.category}
-                    image={service.image}
-                    variants={service.variants}
-                  />
+                  {isEditMode && (
+                    <div 
+                      className={`absolute -top-2 -left-2 z-10 flex items-center gap-2 ${
+                        isServiceHidden(service) ? 'opacity-50' : ''
+                      }`}
+                    >
+                      <Checkbox
+                        checked={selectedServices.has(service.baseName)}
+                        onCheckedChange={() => toggleServiceSelection(service.baseName)}
+                        className="h-6 w-6 bg-background border-2"
+                      />
+                      {isServiceHidden(service) && (
+                        <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
+                          Hidden
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  <div className={`${isEditMode && isServiceHidden(service) ? 'opacity-50' : ''}`}>
+                    <ServiceCard
+                      id={service.variants[0].id}
+                      title={service.baseName}
+                      description={service.description}
+                      category={service.category}
+                      image={service.image}
+                      variants={service.variants}
+                    />
+                  </div>
                 </motion.div>
               ))}
             </div>
