@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Clock, ChevronRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,24 +29,18 @@ const ServiceCardCompact = ({
   isEditMode = false,
 }: ServiceCardCompactProps) => {
   const navigate = useNavigate();
-  const [selectedVariant, setSelectedVariant] = useState<ServiceVariant>(variants[0]);
 
   const handleBook = () => {
+    // Store all variants so user can select on booking page
     localStorage.setItem('selectedService', JSON.stringify({
-      id: selectedVariant.id,
-      title: selectedVariant.name,
+      id: variants[0].id,
+      title,
       description,
-      duration: selectedVariant.duration ? `${selectedVariant.duration} min` : null,
-      price: selectedVariant.price ? `£${selectedVariant.price.toFixed(2)}` : 'Contact for pricing',
       category,
       image,
+      variants, // Pass all variants for selection on next page
     }));
-    navigate(`/book/${selectedVariant.id}`);
-  };
-
-  const formatPrice = (price: number | null) => {
-    if (price === null || price === 0) return 'Contact';
-    return `£${price.toFixed(0)}`;
+    navigate(`/book/${variants[0].id}`);
   };
 
   // Get price range for display
@@ -57,7 +50,7 @@ const ServiceCardCompact = ({
     const min = Math.min(...prices);
     const max = Math.max(...prices);
     if (min === max) return `£${min}`;
-    return `£${min}-${max}`;
+    return `From £${min}`;
   };
 
   // Get duration range
@@ -69,6 +62,9 @@ const ServiceCardCompact = ({
     if (min === max) return `${min} min`;
     return `${min}-${max} min`;
   };
+
+  // Show variant count if multiple
+  const variantCount = variants.length > 1 ? `${variants.length} options` : null;
 
   return (
     <div
@@ -104,28 +100,8 @@ const ServiceCardCompact = ({
           )}
           <span className="font-medium text-foreground">{priceRange()}</span>
         </div>
-
-        {/* Variant selector for multiple variants */}
-        {variants.length > 1 && (
-          <div className="flex flex-wrap gap-1 mt-2">
-            {variants.map((variant) => (
-              <button
-                key={variant.id}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedVariant(variant);
-                }}
-                className={cn(
-                  'px-2 py-0.5 rounded-full text-xs font-medium transition-all',
-                  selectedVariant.id === variant.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground'
-                )}
-              >
-                {variant.duration ? `${variant.duration}m` : 'Session'}
-              </button>
-            ))}
-          </div>
+        {variantCount && (
+          <span className="text-xs text-muted-foreground">{variantCount}</span>
         )}
       </div>
 
