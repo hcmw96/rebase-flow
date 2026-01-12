@@ -1,66 +1,50 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import ServiceCard from '@/components/ServiceCard';
+import { useMindbodyServices } from '@/hooks/useMindbodyServices';
+import { Skeleton } from '@/components/ui/skeleton';
 
-// Static service data - will be replaced with API fetch once Mindbody integration is built
-const staticServices = [
-  {
-    id: 'hbot-1',
-    title: 'Hyperbaric Oxygen Therapy',
-    description: 'Experience the healing power of pressurized oxygen therapy. Enhances recovery, reduces inflammation, and boosts cellular regeneration.',
-    duration: '60 min',
-    price: '£150',
-    category: 'Recovery',
-    image: '/images/rebase-hbot-new.png',
-  },
-  {
-    id: 'cryo-1',
-    title: 'Cryotherapy',
-    description: 'Full-body cold therapy to reduce inflammation, boost metabolism, and accelerate muscle recovery.',
-    duration: '3 min',
-    price: '£65',
-    category: 'Recovery',
-    image: '/images/rebase-cryo.webp',
-  },
-  {
-    id: 'ice-sauna-1',
-    title: 'Ice & Sauna Circuit',
-    description: 'Alternate between ice baths and infrared sauna for the ultimate contrast therapy experience.',
-    duration: '45 min',
-    price: '£85',
-    category: 'Wellness',
-    image: '/images/rebase-ice-sauna.webp',
-  },
-  {
-    id: 'class-1',
-    title: 'Recovery Class',
-    description: 'Guided group sessions focusing on mobility, breathwork, and recovery techniques.',
-    duration: '45 min',
-    price: '£25',
-    category: 'Classes',
-    image: '/images/rebase-class.webp',
-  },
-  {
-    id: 'suite-1',
-    title: 'Private Suite',
-    description: 'Book a private suite with access to sauna, ice bath, and relaxation amenities.',
-    duration: '90 min',
-    price: '£120',
-    category: 'Private',
-    image: '/images/rebase-private-suites.webp',
-  },
-];
-
-const categories = ['All', 'Recovery', 'Wellness', 'Classes', 'Private'];
+// Fallback images for services without images
+const categoryImages: Record<string, string> = {
+  'Recovery': '/images/rebase-hbot-new.png',
+  'Wellness': '/images/rebase-ice-sauna.webp',
+  'Classes': '/images/rebase-class.webp',
+  'Private': '/images/rebase-private-suites.webp',
+  'default': '/images/rebase-suite.webp',
+};
 
 const Services = () => {
   const [activeCategory, setActiveCategory] = useState('All');
+  const { data: services, isLoading, error } = useMindbodyServices();
+
+  // Transform Mindbody services to our format and extract unique categories
+  const { transformedServices, categories } = useMemo(() => {
+    if (!services || services.length === 0) {
+      return { transformedServices: [], categories: ['All'] };
+    }
+
+    const transformed = services.map((service) => ({
+      id: service.id,
+      title: service.name,
+      description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
+      duration: `${service.defaultTimeLength} min`,
+      price: service.numDeducted > 0 ? `${service.numDeducted} credits` : 'Included',
+      category: service.programName || service.category || 'Wellness',
+      image: categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'],
+      programId: service.programId,
+    }));
+
+    // Extract unique categories
+    const uniqueCategories = ['All', ...new Set(transformed.map(s => s.category))];
+
+    return { transformedServices: transformed, categories: uniqueCategories };
+  }, [services]);
 
   const filteredServices = activeCategory === 'All'
-    ? staticServices
-    : staticServices.filter(service => service.category === activeCategory);
+    ? transformedServices
+    : transformedServices.filter(service => service.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-background">
@@ -109,26 +93,48 @@ const Services = () => {
       {/* Services Grid */}
       <section className="py-16">
         <div className="container mx-auto px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredServices.map((service, index) => (
-              <motion.div
-                key={service.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-              >
-                <ServiceCard
-                  id={service.id}
-                  title={service.title}
-                  description={service.description}
-                  duration={service.duration}
-                  price={service.price}
-                  category={service.category}
-                  image={service.image}
-                />
-              </motion.div>
-            ))}
-          </div>
+          {isLoading ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="space-y-4">
+                  <Skeleton className="h-48 w-full rounded-lg" />
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-4 w-2/3" />
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground mb-4">Unable to load services at the moment.</p>
+              <p className="text-sm text-muted-foreground">Please try again later.</p>
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No services available in this category.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {filteredServices.map((service, index) => (
+                <motion.div
+                  key={service.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: index * 0.1 }}
+                >
+                  <ServiceCard
+                    id={service.id}
+                    title={service.title}
+                    description={service.description}
+                    duration={service.duration}
+                    price={service.price}
+                    category={service.category}
+                    image={service.image}
+                  />
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
