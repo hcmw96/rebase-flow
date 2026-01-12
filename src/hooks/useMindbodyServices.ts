@@ -12,6 +12,7 @@ export interface MindbodyService {
   category: string;
   numDeducted: number;
   onlineDescription: string;
+  price: number | null;
 }
 
 export interface MindbodyClass {
