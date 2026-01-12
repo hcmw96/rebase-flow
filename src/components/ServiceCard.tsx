@@ -1,42 +1,54 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock } from 'lucide-react';
 
+export interface ServiceVariant {
+  id: string;
+  duration: number | null;
+  price: number | null;
+  name: string;
+}
+
 interface ServiceCardProps {
   id: string;
   title: string;
   description: string;
-  duration: string;
-  price: string;
   category: string;
   image: string;
+  variants: ServiceVariant[];
 }
 
 const ServiceCard = ({
   id,
   title,
   description,
-  duration,
-  price,
   category,
   image,
+  variants,
 }: ServiceCardProps) => {
   const navigate = useNavigate();
+  const [selectedVariant, setSelectedVariant] = useState<ServiceVariant>(variants[0]);
 
   const handleBookNow = () => {
     // Store service data for the booking page
     localStorage.setItem('selectedService', JSON.stringify({
-      id,
-      title,
+      id: selectedVariant.id,
+      title: selectedVariant.name,
       description,
-      duration,
-      price,
+      duration: selectedVariant.duration ? `${selectedVariant.duration} min` : null,
+      price: selectedVariant.price ? `£${selectedVariant.price.toFixed(2)}` : 'Contact for pricing',
       category,
       image,
     }));
-    navigate(`/book/${id}`);
+    navigate(`/book/${selectedVariant.id}`);
+  };
+
+  const formatPrice = (price: number | null) => {
+    if (price === null || price === 0) return 'Contact';
+    return `£${price.toFixed(0)}`;
   };
 
   return (
@@ -61,19 +73,40 @@ const ServiceCard = ({
             {description}
           </p>
         </div>
-        
-        <div className="flex items-center justify-between pt-2">
+
+        {/* Duration/Price Variants */}
+        {variants.length > 1 ? (
+          <div className="flex flex-wrap gap-2">
+            {variants.map((variant) => (
+              <button
+                key={variant.id}
+                onClick={() => setSelectedVariant(variant)}
+                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
+                  selectedVariant.id === variant.id
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
+                }`}
+              >
+                {variant.duration ? `${variant.duration} min` : 'Session'} - {formatPrice(variant.price)}
+              </button>
+            ))}
+          </div>
+        ) : (
           <div className="flex items-center gap-4">
-            <span className="flex items-center gap-1 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              {duration}
-            </span>
+            {selectedVariant.duration && (
+              <span className="flex items-center gap-1 text-sm text-muted-foreground">
+                <Clock className="h-4 w-4" />
+                {selectedVariant.duration} min
+              </span>
+            )}
             <span className="font-semibold text-foreground">
-              {price}
+              {formatPrice(selectedVariant.price)}
             </span>
           </div>
-          
-          <Button onClick={handleBookNow} size="sm">
+        )}
+        
+        <div className="pt-2">
+          <Button onClick={handleBookNow} size="sm" className="w-full">
             Book Now
           </Button>
         </div>

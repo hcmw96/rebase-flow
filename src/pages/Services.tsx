@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import ServiceCard from '@/components/ServiceCard';
+import ServiceCard, { ServiceVariant } from '@/components/ServiceCard';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -15,36 +15,76 @@ const categoryImages: Record<string, string> = {
   'default': '/images/rebase-suite.webp',
 };
 
+// Extract duration from service name like "Service Name (45 mins)" or "(90 min)"
+function extractDurationFromName(name: string): { baseName: string; duration: number | null } {
+  const durationMatch = name.match(/\((\d+)\s*(?:mins?|minutes?)\)/i);
+  if (durationMatch) {
+    const duration = parseInt(durationMatch[1], 10);
+    const baseName = name.replace(durationMatch[0], '').trim();
+    return { baseName, duration };
+  }
+  return { baseName: name, duration: null };
+}
+
+interface GroupedService {
+  baseName: string;
+  description: string;
+  category: string;
+  image: string;
+  variants: ServiceVariant[];
+}
+
 const Services = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const { data: services, isLoading, error } = useMindbodyServices();
 
-  // Transform Mindbody services to our format and extract unique categories
-  const { transformedServices, categories } = useMemo(() => {
+  // Group services by base name (without duration) and extract unique categories
+  const { groupedServices, categories } = useMemo(() => {
     if (!services || services.length === 0) {
-      return { transformedServices: [], categories: ['All'] };
+      return { groupedServices: [], categories: ['All'] };
     }
 
-    const transformed = services.map((service) => ({
-      id: service.id,
-      title: service.name,
-      description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
-      duration: service.defaultTimeLength ? `${service.defaultTimeLength} min` : null,
-      price: typeof service.price === 'number' ? `£${service.price.toFixed(2)}` : 'Contact for pricing',
-      category: service.programName || service.category || 'Wellness',
-      image: categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'],
-      programId: service.programId,
-    }));
+    const groups = new Map<string, GroupedService>();
+
+    for (const service of services) {
+      const { baseName, duration } = extractDurationFromName(service.name);
+      const category = service.programName || service.category || 'Wellness';
+      const image = categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
+
+      if (!groups.has(baseName)) {
+        groups.set(baseName, {
+          baseName,
+          description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
+          category,
+          image,
+          variants: [],
+        });
+      }
+
+      groups.get(baseName)!.variants.push({
+        id: service.id,
+        duration: duration ?? service.defaultTimeLength,
+        price: service.price,
+        name: service.name,
+      });
+    }
+
+    // Sort variants by duration within each group
+    for (const group of groups.values()) {
+      group.variants.sort((a, b) => (a.duration ?? 0) - (b.duration ?? 0));
+    }
+
+    const grouped = Array.from(groups.values());
 
     // Extract unique categories
-    const uniqueCategories = ['All', ...new Set(transformed.map(s => s.category))];
+    const uniqueCategories = ['All', ...new Set(grouped.map(s => s.category))];
 
-    return { transformedServices: transformed, categories: uniqueCategories };
+    return { groupedServices: grouped, categories: uniqueCategories };
   }, [services]);
 
   const filteredServices = activeCategory === 'All'
-    ? transformedServices
-    : transformedServices.filter(service => service.category === activeCategory);
+    ? groupedServices
+    : groupedServices.filter(service => service.category === activeCategory);
 
   return (
     <div className="min-h-screen bg-background">
@@ -117,19 +157,18 @@ const Services = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredServices.map((service, index) => (
                 <motion.div
-                  key={service.id}
+                  key={service.baseName}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: index * 0.1 }}
                 >
                   <ServiceCard
-                    id={service.id}
-                    title={service.title}
+                    id={service.variants[0].id}
+                    title={service.baseName}
                     description={service.description}
-                    duration={service.duration}
-                    price={service.price}
                     category={service.category}
                     image={service.image}
+                    variants={service.variants}
                   />
                 </motion.div>
               ))}
