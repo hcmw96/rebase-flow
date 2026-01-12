@@ -1,142 +1,82 @@
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
-import { useNavigate } from "react-router-dom";
+import { useNavigate } from 'react-router-dom';
+import { Card, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Clock } from 'lucide-react';
 
 interface ServiceCardProps {
-  id: number;
+  id: string;
   title: string;
+  description: string;
+  duration: string;
+  price: string;
   category: string;
-  image?: string;
-  className?: string;
-  service?: {
-    duration?: string;
-    price?: number;
-    fromPrice?: boolean;
-    sessionId?: string | number;
-    variants?: Array<{
-      id: number;
-      title: string;
-      duration?: string;
-      price: number;
-      description?: string;
-      sessionId?: string | number;
-    }>;
-  };
+  image: string;
 }
 
-const ServiceCard = ({ id, title, category, image, className, service }: ServiceCardProps) => {
+const ServiceCard = ({
+  id,
+  title,
+  description,
+  duration,
+  price,
+  category,
+  image,
+}: ServiceCardProps) => {
   const navigate = useNavigate();
 
   const handleBookNow = () => {
-    const sessionIdToSave = service?.sessionId ?? service?.variants?.[0]?.sessionId;
-
-    localStorage.setItem(
-      "selectedService",
-      JSON.stringify({
-        id,
-        title,
-        price: service?.price,
-        duration: service?.duration,
-        category,
-        sessionId: sessionIdToSave,
-      }),
-    );
-
+    // Store service data for the booking page
+    localStorage.setItem('selectedService', JSON.stringify({
+      id,
+      title,
+      description,
+      duration,
+      price,
+      category,
+      image,
+    }));
     navigate(`/book/${id}`);
   };
 
-  const handleVariantBookNow = (variant: any) => {
-    localStorage.setItem(
-      "selectedService",
-      JSON.stringify({
-        id: variant.id,
-        title: variant.title || variant.description,
-        price: variant.price,
-        duration: variant.duration,
-        category,
-        sessionId: variant.sessionId,
-      }),
-    );
-    navigate(`/book/${variant.id}`);
-  };
-
-  const renderPricing = () => {
-    if (!service) return null;
-
-    if (service.variants && service.variants.length > 0) {
-      return (
-        <div className="max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
-          <div className="space-y-3 mb-4">
-            {service.variants.map((variant, index) => (
-              <div
-                key={index}
-                className="flex flex-col gap-2 p-3 rounded-xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors"
-              >
-                <div className="flex justify-between items-start">
-                  <div className="flex-1">
-                    <div className="text-white font-medium text-sm">{variant.description || variant.title}</div>
-                    {variant.duration && <div className="text-white/60 text-xs mt-1">{variant.duration}</div>}
-                  </div>
-                  <div className="text-white font-medium text-sm">£{variant.price}</div>
-                </div>
-                <Button
-                  size="sm"
-                  className="w-full glass-button text-white rounded-lg text-xs font-medium"
-                  onClick={() => handleVariantBookNow(variant)}
-                >
-                  Book Now
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-      );
-    }
-
-    if (service.fromPrice) {
-      return (
-        <div className="text-center mb-4">
-          <div className="text-sm text-white/70 mb-1">{service.duration}</div>
-          <div className="text-lg font-medium text-white">from £{service.price}</div>
-        </div>
-      );
-    }
-
-    return (
-      <div className="text-center mb-4">
-        <div className="text-sm text-white/70 mb-1">{service.duration}</div>
-        <div className="text-lg font-medium text-white">£{service.price}</div>
-      </div>
-    );
-  };
-
   return (
-    <Card
-      className={cn(
-        "glass-card group hover:scale-105 transition-all duration-300 rounded-3xl border-white/10",
-        className,
-      )}
-    >
-      <CardHeader className="pb-4">
-        <CardTitle className="text-xl font-serif font-medium text-foreground group-hover:text-primary transition-colors text-center">
-          {title}
-        </CardTitle>
-        <div className="flex justify-center">
-          <Badge variant="secondary" className="bg-detail/10 text-detail border-detail/20">
-            {category}
-          </Badge>
+    <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300">
+      <div className="relative h-48 overflow-hidden">
+        <img
+          src={image}
+          alt={title}
+          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        />
+        <Badge className="absolute top-4 left-4 bg-background/90 text-foreground">
+          {category}
+        </Badge>
+      </div>
+      
+      <CardContent className="p-6 space-y-4">
+        <div>
+          <h3 className="text-xl font-semibold text-foreground mb-2">
+            {title}
+          </h3>
+          <p className="text-muted-foreground text-sm line-clamp-2">
+            {description}
+          </p>
         </div>
-      </CardHeader>
-
-      <CardContent className="pt-0">
-        {renderPricing()}
-        {(!service?.variants || service.variants.length === 0) && (
-          <Button className="w-full glass-button text-white rounded-xl font-medium" onClick={handleBookNow}>
+        
+        <div className="flex items-center justify-between pt-2">
+          <div className="flex items-center gap-4">
+            <span className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Clock className="h-4 w-4" />
+              {duration}
+            </span>
+            <span className="font-semibold text-foreground">
+              {price}
+            </span>
+          </div>
+          
+          <Button onClick={handleBookNow} size="sm">
             Book Now
           </Button>
-        )}
+        </div>
       </CardContent>
     </Card>
   );
