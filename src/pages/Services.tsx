@@ -30,7 +30,7 @@ const Services = () => {
       title: service.name,
       description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
       duration: service.defaultTimeLength ? `${service.defaultTimeLength} min` : null,
-      price: service.price !== null ? `£${service.price.toFixed(2)}` : 'Contact for pricing',
+      price: typeof service.price === 'number' ? `£${service.price.toFixed(2)}` : 'Contact for pricing',
       category: service.programName || service.category || 'Wellness',
       image: categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'],
       programId: service.programId,
