@@ -70,6 +70,27 @@ export type Database = {
           },
         ]
       }
+      hidden_services: {
+        Row: {
+          hidden_at: string
+          id: string
+          service_id: string
+          service_name: string | null
+        }
+        Insert: {
+          hidden_at?: string
+          id?: string
+          service_id: string
+          service_name?: string | null
+        }
+        Update: {
+          hidden_at?: string
+          id?: string
+          service_id?: string
+          service_name?: string | null
+        }
+        Relationships: []
+      }
       mb_sessions: {
         Row: {
           access_token: string
