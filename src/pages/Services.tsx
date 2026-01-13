@@ -397,7 +397,7 @@ const Services = () => {
             </div>
           ) : isMobile ? (
             /* Mobile: Compact list view */
-            <div className="space-y-2">
+            <div className="flex flex-col gap-3">
               {filteredServices.map((service, index) => (
                 <motion.div
                   key={service.baseName}
