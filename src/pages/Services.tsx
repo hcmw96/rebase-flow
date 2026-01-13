@@ -293,7 +293,7 @@ const Services = () => {
       <Navigation />
       
       {/* Hero Section - Compact on mobile */}
-      <section className="pt-20 pb-4 md:pt-24 md:pb-8 bg-gradient-to-b from-secondary/50 to-background">
+      <section className="pt-28 pb-4 md:pt-32 md:pb-8 bg-gradient-to-b from-secondary/50 to-background">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -340,14 +340,14 @@ const Services = () => {
                   </span>
                 </>
               ) : (
-                <div className="relative">
-                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <div className="relative w-full">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Search services..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-8 w-40 pl-8 text-sm"
+                    className="h-10 w-full pl-10 text-sm"
                   />
                 </div>
               )}
