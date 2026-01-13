@@ -12,7 +12,8 @@ import { useFeaturedServices, useAddFeaturedService, useRemoveFeaturedService } 
 import { Skeleton } from '@/components/ui/skeleton';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, X, EyeOff, Settings } from 'lucide-react';
+import { Trash2, X, EyeOff, Settings, Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
 
@@ -88,6 +89,7 @@ const Services = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
+  const [searchQuery, setSearchQuery] = useState('');
   const isMobile = useIsMobile();
   
   const { data: services, isLoading, error } = useMindbodyServices();
@@ -157,19 +159,30 @@ const Services = () => {
     return { groupedServices: grouped, categories: uniqueCategories, servicesMap: groups };
   }, [services, hiddenServiceIds, isEditMode]);
 
-  // Filter services based on category
+  // Filter services based on category and search query
   const filteredServices = useMemo(() => {
-    if (activeCategory === 'All') {
-      return groupedServices;
-    }
+    let filtered = groupedServices;
+    
+    // Filter by category
     if (activeCategory === 'Most Popular') {
-      // Show services that are featured
-      return groupedServices.filter(service => 
+      filtered = filtered.filter(service => 
         service.variants.some(v => featuredServiceIds.has(v.id))
       );
+    } else if (activeCategory !== 'All') {
+      filtered = filtered.filter(service => service.category === activeCategory);
     }
-    return groupedServices.filter(service => service.category === activeCategory);
-  }, [activeCategory, groupedServices, featuredServiceIds]);
+    
+    // Filter by search query
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(service => 
+        service.baseName.toLowerCase().includes(query) ||
+        service.description.toLowerCase().includes(query)
+      );
+    }
+    
+    return filtered;
+  }, [activeCategory, groupedServices, featuredServiceIds, searchQuery]);
 
   const toggleServiceSelection = (baseName: string) => {
     const newSelected = new Set(selectedServices);
@@ -327,15 +340,16 @@ const Services = () => {
                   </span>
                 </>
               ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsEditMode(true)}
-                  className="h-8"
-                >
-                  <Settings className="h-4 w-4 mr-1" />
-                  Manage
-                </Button>
+                <div className="relative">
+                  <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    type="text"
+                    placeholder="Search services..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="h-8 w-40 pl-8 text-sm"
+                  />
+                </div>
               )}
             </div>
             
