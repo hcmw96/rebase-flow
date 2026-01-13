@@ -42,9 +42,10 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
   { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
   
-  // Massage types (kept separate by type)
-  { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Deep Tissue Massage' },
-  { pattern: /^sports\s*massage/i, groupName: 'Sports Massage' },
+  // All massage types grouped together
+  { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Massage' },
+  { pattern: /^sports\s*massage/i, groupName: 'Massage' },
+  { pattern: /massage/i, groupName: 'Massage' },
   
   // Wellness services
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
