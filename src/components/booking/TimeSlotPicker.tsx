@@ -34,13 +34,19 @@ const TimeSlotPicker = ({
 
   if (slots.length === 0) {
     return (
-      <div className={cn("text-center py-8", className)}>
+      <div className={cn("text-center py-8 space-y-3", className)}>
         <p className="text-muted-foreground">
           No available time slots for this date.
         </p>
-        <p className="text-sm text-muted-foreground mt-2">
-          Please select a different date.
+        <p className="text-sm text-muted-foreground">
+          Try selecting a different date, or contact us if you need assistance booking.
         </p>
+        <a 
+          href="/contact" 
+          className="inline-block text-sm text-primary hover:underline"
+        >
+          Contact Support →
+        </a>
       </div>
     );
   }
