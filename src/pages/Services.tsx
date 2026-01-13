@@ -268,7 +268,15 @@ const Services = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div 
+      className="min-h-screen"
+      style={{
+        backgroundImage: "url('/images/background.webp')",
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <Navigation />
       
       {/* Hero Section - Compact on mobile */}
