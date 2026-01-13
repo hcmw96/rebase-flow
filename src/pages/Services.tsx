@@ -293,24 +293,6 @@ const Services = () => {
     >
       <Navigation />
       
-      {/* Hero Section - Compact on mobile */}
-      <section className="pt-28 pb-4 md:pt-32 md:pb-8 bg-gradient-to-b from-secondary/50 to-background">
-        <div className="container mx-auto px-4">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <h1 className="text-2xl md:text-5xl font-bold text-foreground mb-2 md:mb-4">
-              Our Services
-            </h1>
-            <p className="text-sm md:text-lg text-muted-foreground">
-              Discover our range of recovery and wellness treatments.
-            </p>
-          </motion.div>
-        </div>
-      </section>
 
       {/* Featured Services - Only on mobile when not in edit mode */}
       {isMobile && !isEditMode && featuredServicesData.length > 0 && (
