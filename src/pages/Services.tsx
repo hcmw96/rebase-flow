@@ -36,6 +36,22 @@ function extractDurationFromName(name: string): { baseName: string; duration: nu
   return { baseName: name, duration: null };
 }
 
+// Service group mappings - similar services that should be grouped under one card
+const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
+  { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
+  { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
+];
+
+// Canonicalize service name to group similar services together
+function canonicalizeServiceName(baseName: string): string {
+  for (const { pattern, groupName } of serviceGroupMappings) {
+    if (pattern.test(baseName)) {
+      return groupName;
+    }
+  }
+  return baseName;
+}
+
 interface GroupedService {
   baseName: string;
   description: string;
@@ -82,12 +98,13 @@ const Services = () => {
 
     for (const service of visibleServices) {
       const { baseName, duration } = extractDurationFromName(service.name);
+      const canonicalName = canonicalizeServiceName(baseName);
       const category = service.programName || service.category || 'Wellness';
       const image = categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
 
-      if (!groups.has(baseName)) {
-        groups.set(baseName, {
-          baseName,
+      if (!groups.has(canonicalName)) {
+        groups.set(canonicalName, {
+          baseName: canonicalName,
           description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
           category,
           image,
@@ -95,7 +112,7 @@ const Services = () => {
         });
       }
 
-      groups.get(baseName)!.variants.push({
+      groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: duration ?? service.defaultTimeLength,
         price: service.price,
