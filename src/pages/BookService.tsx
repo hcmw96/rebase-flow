@@ -119,6 +119,8 @@ const BookService = () => {
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
+    // Auto-continue to date selection
+    setCurrentStep(2);
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -131,6 +133,8 @@ const BookService = () => {
 
   const handleSlotSelect = (slot: AvailableItem) => {
     setSelectedSlot(slot);
+    // Auto-continue to confirmation
+    setCurrentStep(confirmStep);
   };
 
   const handleBack = () => {
@@ -382,14 +386,6 @@ const BookService = () => {
                         ))}
                       </div>
                       
-                      {selectedVariant && (
-                        <div className="mt-6 flex justify-end">
-                          <Button onClick={handleNext}>
-                            Continue
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </Button>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -452,14 +448,6 @@ const BookService = () => {
                         isLoading={isLoadingSlots}
                       />
                       
-                      {selectedSlot && (
-                        <div className="mt-6 flex justify-end">
-                          <Button onClick={handleNext}>
-                            Continue
-                            <ArrowRight className="h-4 w-4 ml-2" />
-                          </Button>
-                        </div>
-                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
