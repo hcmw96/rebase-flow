@@ -88,6 +88,16 @@ serve(async (req) => {
     }
 
     const data = await response.json();
+    
+    // Enhanced logging for debugging availability issues
+    console.log("Mindbody bookableitems response:", JSON.stringify({
+      sessionTypeId,
+      staffId,
+      startDate,
+      endDate,
+      availableItemsCount: data.AvailableItems?.length || 0,
+      rawResponse: data,
+    }));
 
     // Transform the availability data
     const availableItems = (data.AvailableItems || []).map((item: any) => ({
