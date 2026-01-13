@@ -38,8 +38,31 @@ function extractDurationFromName(name: string): { baseName: string; duration: nu
 
 // Service group mappings - similar services that should be grouped under one card
 const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
+  // Skin treatments
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
   { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
+  
+  // Massage types (kept separate by type)
+  { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Deep Tissue Massage' },
+  { pattern: /^sports\s*massage/i, groupName: 'Sports Massage' },
+  
+  // Wellness services
+  { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
+  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
+  { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
+  
+  // Therapy services
+  { pattern: /^structural\s*fascia/i, groupName: 'Structural Fascia Therapy' },
+  { pattern: /^holistic\s*face\s*sculpt/i, groupName: 'Holistic Face Sculpting' },
+  { pattern: /^divine\s*facial/i, groupName: 'Divine Facial Healing' },
+  
+  // Medical/Clinical
+  { pattern: /^osteopathy/i, groupName: 'Osteopathy' },
+  { pattern: /^(oxygen-?)?ozone/i, groupName: 'Ozone Therapy' },
+  
+  // Classes (group all class types)
+  { pattern: /minute\s*classes$/i, groupName: 'Classes' },
+  { pattern: /^all\s*classes$/i, groupName: 'Classes' },
 ];
 
 // Canonicalize service name to group similar services together
