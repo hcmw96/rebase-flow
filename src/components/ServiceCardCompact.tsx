@@ -100,9 +100,9 @@ const ServiceCardCompact = ({
           )}
           <span className="font-medium text-foreground">{priceRange()}</span>
         </div>
-        {variantCount && (
-          <span className="text-xs text-muted-foreground">{variantCount}</span>
-        )}
+        <span className="text-xs text-muted-foreground min-h-[1rem]">
+          {variantCount || '\u00A0'}
+        </span>
       </div>
 
       {/* Actions */}
