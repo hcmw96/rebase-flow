@@ -40,6 +40,7 @@ function extractDurationFromName(name: string): { baseName: string; duration: nu
 // Service group mappings - similar services that should be grouped under one card
 const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   // Skin treatments
+  { pattern: /^skin\s*rejuv(enation)?/i, groupName: 'Skin Rejuvenation' },
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
   { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
   
