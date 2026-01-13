@@ -303,7 +303,7 @@ const Services = () => {
       )}
 
       {/* Edit Mode Toggle & Actions */}
-      <section className="py-3 border-b border-border sticky top-16 z-20 bg-background/95 backdrop-blur-sm">
+      <section className="mt-16 py-3 border-b border-border sticky top-16 z-20 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto px-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
