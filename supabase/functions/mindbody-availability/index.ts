@@ -95,22 +95,41 @@ serve(async (req) => {
       staffId,
       startDate,
       endDate,
-      availableItemsCount: data.AvailableItems?.length || 0,
-      rawResponse: data,
+      availabilitiesCount: data.Availabilities?.length || 0,
     }));
 
-    // Transform the availability data
-    const availableItems = (data.AvailableItems || []).map((item: any) => ({
-      id: item.Id,
-      staffId: item.Staff?.Id,
-      staffName: item.Staff ? `${item.Staff.FirstName} ${item.Staff.LastName}` : null,
-      locationId: item.Location?.Id,
-      locationName: item.Location?.Name,
-      sessionTypeId: item.SessionType?.Id,
-      sessionTypeName: item.SessionType?.Name,
-      startDateTime: item.StartDateTime,
-      endDateTime: item.EndDateTime,
-    }));
+    // Generate individual time slots from availability windows
+    function generateTimeSlots(availability: any): any[] {
+      const slots: any[] = [];
+      const sessionLength = availability.SessionType?.DefaultTimeLength || 60;
+      const startTime = new Date(availability.StartDateTime);
+      const bookableEndTime = new Date(availability.BookableEndDateTime || availability.EndDateTime);
+      
+      let slotStart = new Date(startTime);
+      while (slotStart < bookableEndTime) {
+        const slotEnd = new Date(slotStart.getTime() + sessionLength * 60 * 1000);
+        // Only add slot if it ends before or at the bookable end time
+        if (slotEnd <= new Date(availability.EndDateTime)) {
+          slots.push({
+            id: `${availability.Id}-${slotStart.toISOString()}`,
+            staffId: availability.Staff?.Id,
+            staffName: availability.Staff ? 
+              `${availability.Staff.FirstName} ${availability.Staff.LastName}`.trim() : null,
+            locationId: availability.Location?.Id,
+            locationName: availability.Location?.Name,
+            sessionTypeId: availability.SessionType?.Id,
+            sessionTypeName: availability.SessionType?.Name,
+            startDateTime: slotStart.toISOString(),
+            endDateTime: slotEnd.toISOString(),
+          });
+        }
+        slotStart = slotEnd;
+      }
+      return slots;
+    }
+
+    // Transform availability windows into individual bookable time slots
+    const availableItems = (data.Availabilities || []).flatMap(generateTimeSlots);
 
     // Also fetch staff list for the session type
     const staffResponse = await fetch(
