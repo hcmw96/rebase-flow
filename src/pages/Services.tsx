@@ -271,7 +271,7 @@ const Services = () => {
     <div 
       className="min-h-screen"
       style={{
-        backgroundImage: "url('/images/background.webp')",
+        backgroundImage: "url('/images/services-background.jpg')",
         backgroundSize: 'cover',
         backgroundPosition: 'center',
         backgroundAttachment: 'fixed',
