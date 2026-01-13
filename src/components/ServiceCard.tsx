@@ -51,6 +51,17 @@ const ServiceCard = ({
     return `£${price.toFixed(0)}`;
   };
 
+  // Get lowest price for "From £X" display
+  const getFromPrice = () => {
+    const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
+    if (prices.length === 0) return null;
+    const min = Math.min(...prices);
+    return min;
+  };
+
+  const fromPrice = getFromPrice();
+  const hasMultipleVariants = variants.length > 1;
+
   return (
     <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300">
       <div className="relative h-48 overflow-hidden">
@@ -74,8 +85,20 @@ const ServiceCard = ({
           </p>
         </div>
 
+        {/* From Price & Variant Info */}
+        {hasMultipleVariants && (
+          <div className="flex items-center justify-between">
+            <span className="text-lg font-semibold text-foreground">
+              {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
+            </span>
+            <span className="text-sm text-muted-foreground">
+              {variants.length} options
+            </span>
+          </div>
+        )}
+
         {/* Duration/Price Variants */}
-        {variants.length > 1 ? (
+        {hasMultipleVariants ? (
           <div className="flex flex-wrap gap-2">
             {variants.map((variant) => (
               <button
