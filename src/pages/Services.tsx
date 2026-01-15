@@ -29,6 +29,7 @@ const categoryImages: Record<string, string> = {
 // Service-specific images (by canonicalized name)
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
+  'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
 };
 
 // Extract duration from service name like "Service Name (45 mins)" or "(90 min)"
