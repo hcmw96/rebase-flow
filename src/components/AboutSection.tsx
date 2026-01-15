@@ -116,7 +116,7 @@ const AboutSection = () => {
 
           {/* Most Popular Section */}
           <div id="most-popular" className="mt-20">
-            <h2 className="text-3xl sm:text-4xl font-light text-white text-center mb-12">
+            <h2 className="text-xl sm:text-2xl font-light text-white text-center mb-12 tracking-widest">
               MOST POPULAR
             </h2>
           </div>
