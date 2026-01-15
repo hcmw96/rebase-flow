@@ -21,9 +21,12 @@ const Hero = () => {
 
       {/* Content */}
       <div className="relative z-10 text-center max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-white mb-12 tracking-wider uppercase animate-fade-in">
+        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-white mb-6 tracking-wider uppercase animate-fade-in">
           Elevate Your Wellness
         </h1>
+        <p className="text-white/80 text-base sm:text-lg lg:text-xl font-light mb-12 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
+          Experience a novel approach to lasting wellbeing at Rebase, London's new Home of Social Wellness.
+        </p>
         
         <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
           <Button 
