@@ -119,35 +119,28 @@ const AboutSection = () => {
             <h2 className="text-3xl sm:text-4xl font-light text-white text-center mb-12">
               MOST POPULAR
             </h2>
-
-            {/* Mobile Carousel */}
-            <div className="sm:hidden">
-              <Carousel
-                opts={{
-                  align: "start",
-                  loop: true,
-                }}
-                className="w-full"
-              >
-                <CarouselContent className="-ml-4">
-                  {popularServices.map((service) => (
-                    <CarouselItem key={service.id} className="pl-4 basis-[85%]">
-                      <ServiceCard service={service} />
-                    </CarouselItem>
-                  ))}
-                </CarouselContent>
-                <CarouselPrevious className="left-2 bg-white/20 border-white/40 text-white hover:bg-white/30" />
-                <CarouselNext className="right-2 bg-white/20 border-white/40 text-white hover:bg-white/30" />
-              </Carousel>
-            </div>
-
-            {/* Desktop Grid */}
-            <div className="hidden sm:grid sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-              {popularServices.map((service) => (
-                <ServiceCard key={service.id} service={service} />
-              ))}
-            </div>
           </div>
+        </div>
+
+        {/* Full Width Carousel */}
+        <div className="w-full">
+          <Carousel
+            opts={{
+              align: "start",
+              loop: true,
+            }}
+            className="w-full"
+          >
+            <CarouselContent className="-ml-4">
+              {popularServices.map((service) => (
+                <CarouselItem key={service.id} className="pl-4 basis-[85%] sm:basis-[45%] lg:basis-[24%]">
+                  <ServiceCard service={service} />
+                </CarouselItem>
+              ))}
+            </CarouselContent>
+            <CarouselPrevious className="left-4 bg-white/20 border-white/40 text-white hover:bg-white/30" />
+            <CarouselNext className="right-4 bg-white/20 border-white/40 text-white hover:bg-white/30" />
+          </Carousel>
         </div>
       </section>
       <ServicesAccordion />
