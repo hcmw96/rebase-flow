@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Clock } from 'lucide-react';
+import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
 
 export interface ServiceVariant {
   id: string;
@@ -21,6 +21,12 @@ interface ServiceCardProps {
   variants: ServiceVariant[];
 }
 
+// Strip HTML tags from description
+const stripHtml = (html: string): string => {
+  const doc = new DOMParser().parseFromString(html, 'text/html');
+  return doc.body.textContent || '';
+};
+
 const ServiceCard = ({
   id,
   title,
@@ -31,13 +37,17 @@ const ServiceCard = ({
 }: ServiceCardProps) => {
   const navigate = useNavigate();
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant>(variants[0]);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const cleanDescription = stripHtml(description);
+  const isLongDescription = cleanDescription.length > 100;
 
   const handleBookNow = () => {
     // Store service data for the booking page
     localStorage.setItem('selectedService', JSON.stringify({
       id: selectedVariant.id,
       title: selectedVariant.name,
-      description,
+      description: cleanDescription,
       duration: selectedVariant.duration ? `${selectedVariant.duration} min` : null,
       price: selectedVariant.price ? `£${selectedVariant.price.toFixed(2)}` : 'Contact for pricing',
       category,
@@ -80,9 +90,23 @@ const ServiceCard = ({
           <h3 className="text-xl font-semibold text-foreground mb-2">
             {title}
           </h3>
-          <p className="text-muted-foreground text-sm line-clamp-2">
-            {description}
-          </p>
+          <div className="relative">
+            <p className={`text-muted-foreground text-sm ${!isExpanded && isLongDescription ? 'line-clamp-2' : ''}`}>
+              {cleanDescription}
+            </p>
+            {isLongDescription && (
+              <button
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-1 transition-colors"
+              >
+                {isExpanded ? (
+                  <>Show less <ChevronUp className="h-3 w-3" /></>
+                ) : (
+                  <>Read more <ChevronDown className="h-3 w-3" /></>
+                )}
+              </button>
+            )}
+          </div>
         </div>
 
         {/* From Price & Variant Info */}
