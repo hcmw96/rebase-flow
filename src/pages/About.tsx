@@ -106,16 +106,6 @@ const About = () => {
                   innovative treatments, and a supportive community environment that empowers 
                   every individual to achieve their wellness goals."
                 </p>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">2023</div>
-                    <div className="text-sm text-foreground/60">Founded</div>
-                  </div>
-                  <div className="text-center">
-                    <div className="text-2xl font-bold text-primary mb-1">5000+</div>
-                    <div className="text-sm text-foreground/60">Members</div>
-                  </div>
-                </div>
               </div>
             </div>
           </div>
