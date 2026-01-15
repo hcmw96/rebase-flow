@@ -26,7 +26,7 @@ All colors MUST be HSL.
 @layer base {
   :root {
     /* Dark luxury theme - warm and elegant */
-    --background: 25 8% 8%;                    /* Deep dark brown-black */
+    --background: 25 18% 12%;                    /* Earthy dark brown */
     --foreground: 35 15% 88%;                  /* Warm cream white */
 
     --card: 25 12% 12%;                        /* Dark brown card background */
