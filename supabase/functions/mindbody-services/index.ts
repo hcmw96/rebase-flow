@@ -245,8 +245,14 @@ serve(async (req) => {
         if (minutes) {
           priceByNameWithDuration.set(`${stripDuration(name)}_${minutes}`, price);
         }
-        priceByNameOnly.set(stripDuration(name), price);
+        // Only use no-duration fallback if the service itself has no duration in name
+        if (!minutes) {
+          priceByNameOnly.set(stripDuration(name), price);
+        }
       }
+      
+      // Log available prices for debugging
+      console.log("Available prices with duration:", JSON.stringify(Object.fromEntries(priceByNameWithDuration)));
       
       // Try to match unpriced session types
       for (const stId of unpricedIds) {
@@ -267,8 +273,9 @@ serve(async (req) => {
           }
         }
         
-        // Then try matching without duration (last resort)
-        if (priceByNameOnly.has(strippedName)) {
+        // Only use name-only match if session type has no explicit duration
+        const hasExplicitDuration = extractMinutes(st.Name) !== null;
+        if (!hasExplicitDuration && priceByNameOnly.has(strippedName)) {
           priceBySessionTypeId.set(stId, priceByNameOnly.get(strippedName)!);
           console.log(`Fallback matched ${st.Name} -> £${priceBySessionTypeId.get(stId)} (no duration match)`);
         }
