@@ -47,10 +47,20 @@ const About = () => {
   ];
 
   return (
-    <div className="min-h-screen">
-      <Navigation />
-      
-      <div className="pt-20">
+    <div 
+      className="min-h-screen relative"
+      style={{
+        backgroundImage: 'url(/images/about-background.webp)',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundAttachment: 'fixed',
+      }}
+    >
+      <div className="absolute inset-0 bg-background/80" />
+      <div className="relative z-10">
+        <Navigation />
+        
+        <div className="pt-20">
         {/* Hero Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8">
           <div className="max-w-4xl mx-auto text-center">
@@ -162,9 +172,10 @@ const About = () => {
             </div>
           </div>
         </section>
-      </div>
+        </div>
 
-      <Footer />
+        <Footer />
+      </div>
     </div>
   );
 };
