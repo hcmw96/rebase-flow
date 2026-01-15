@@ -132,7 +132,7 @@ const AccordionItem = ({ item, isOpen, onToggle }: AccordionItemProps) => {
             transition={{ duration: 0.3, ease: "easeInOut" }}
             className="overflow-hidden"
           >
-            <div className="pb-8 space-y-4">
+            <div className="pt-4 pb-8 space-y-4">
               <p className="text-white/80 text-sm md:text-base leading-relaxed">
                 {item.description}
               </p>
