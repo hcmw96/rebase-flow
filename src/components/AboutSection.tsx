@@ -144,9 +144,9 @@ const AboutSection = () => {
           </Carousel>
         </div>
       </section>
-      <MissionVision />
-      <div className="h-6" />
       <ServicesAccordion />
+      <div className="h-6" />
+      <MissionVision />
     </>
   );
 };
