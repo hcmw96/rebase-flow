@@ -133,7 +133,7 @@ const AboutSection = () => {
           >
             <CarouselContent className="-ml-4">
               {popularServices.map((service) => (
-                <CarouselItem key={service.id} className="pl-4 basis-[85%] sm:basis-[45%] lg:basis-[24%]">
+                <CarouselItem key={service.id} className="pl-4 basis-[85%]">
                   <ServiceCard service={service} />
                 </CarouselItem>
               ))}
