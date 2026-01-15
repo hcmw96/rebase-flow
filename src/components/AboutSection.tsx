@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import MissionVision from "./MissionVision";
 import ServicesAccordion from "./ServicesAccordion";
 import {
   Carousel,
@@ -143,6 +144,8 @@ const AboutSection = () => {
           </Carousel>
         </div>
       </section>
+      <MissionVision />
+      <div className="h-6" />
       <ServicesAccordion />
     </>
   );
