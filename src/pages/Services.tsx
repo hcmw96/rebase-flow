@@ -161,6 +161,19 @@ const Services = () => {
     }
 
     const grouped = Array.from(groups.values());
+    
+    // Custom sort order for specific services
+    const serviceOrder: Record<string, number> = {
+      'Infrared Sauna & Ice Bath': 0,
+      'Premium Suite': 1,
+    };
+    
+    grouped.sort((a, b) => {
+      const orderA = serviceOrder[a.baseName] ?? 999;
+      const orderB = serviceOrder[b.baseName] ?? 999;
+      if (orderA !== orderB) return orderA - orderB;
+      return a.baseName.localeCompare(b.baseName);
+    });
 
     // Extract unique categories
     const uniqueCategories = ['All', ...new Set(grouped.map(s => s.category))];
