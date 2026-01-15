@@ -166,6 +166,7 @@ const Services = () => {
     const serviceOrder: Record<string, number> = {
       'Infrared Sauna & Ice Bath': 0,
       'Premium Suite': 1,
+      'Cryotherapy': 2,
     };
     
     grouped.sort((a, b) => {
