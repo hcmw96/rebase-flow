@@ -352,7 +352,7 @@ const Services = () => {
                     placeholder="Search services..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-12 w-full pl-11 text-base"
+                    className="h-12 w-full pl-11 py-0 leading-[46px] text-base md:text-base"
                   />
                 </div>
               )}
