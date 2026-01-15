@@ -327,15 +327,15 @@ const Services = () => {
       {/* Edit Mode Toggle & Actions */}
       <section className="mt-16 py-3 border-b border-border sticky top-16 z-20 bg-background/95 backdrop-blur-sm">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+          <div className="flex items-stretch justify-between gap-4">
+            <div className="flex-1 flex items-stretch">
               {isEditMode ? (
-                <>
+                <div className="flex items-center gap-3">
                   <Button
                     variant="ghost"
                     size="sm"
                     onClick={exitEditMode}
-                    className="h-8"
+                    className="h-10"
                   >
                     <X className="h-4 w-4 mr-1" />
                     Cancel
@@ -343,16 +343,16 @@ const Services = () => {
                   <span className="text-xs text-muted-foreground">
                     {selectedServices.size} selected
                   </span>
-                </>
+                </div>
               ) : (
-                <div className="relative w-full h-full">
+                <div className="relative w-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Search services..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-full w-full pl-10 text-sm"
+                    className="h-10 w-full pl-10 text-sm"
                   />
                 </div>
               )}
