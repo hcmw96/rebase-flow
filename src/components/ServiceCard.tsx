@@ -73,7 +73,10 @@ const ServiceCard = ({
   const hasMultipleVariants = variants.length > 1;
 
   return (
-    <Card className="overflow-hidden group hover:shadow-lg transition-shadow duration-300">
+    <Card 
+      className="overflow-hidden group hover:shadow-lg transition-shadow duration-300 cursor-pointer"
+      onClick={handleBookNow}
+    >
       <div className="relative h-48 overflow-hidden">
         <img
           src={image}
@@ -96,7 +99,10 @@ const ServiceCard = ({
             </p>
             {isLongDescription && (
               <button
-                onClick={() => setIsExpanded(!isExpanded)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsExpanded(!isExpanded);
+                }}
                 className="flex items-center gap-1 text-xs text-primary hover:text-primary/80 mt-1 transition-colors"
               >
                 {isExpanded ? (
@@ -109,51 +115,28 @@ const ServiceCard = ({
           </div>
         </div>
 
-        {/* From Price & Variant Info */}
-        {hasMultipleVariants && (
-          <div className="flex items-center justify-between">
-            <span className="text-lg font-semibold text-foreground">
-              {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
-            </span>
+        {/* Price & Options Summary */}
+        <div className="flex items-center justify-between">
+          <span className="text-lg font-semibold text-foreground">
+            {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
+          </span>
+          {hasMultipleVariants && (
             <span className="text-sm text-muted-foreground">
               {variants.length} options
             </span>
-          </div>
-        )}
+          )}
+        </div>
 
-        {/* Duration/Price Variants */}
-        {hasMultipleVariants ? (
-          <div className="flex flex-wrap gap-2">
-            {variants.map((variant) => (
-              <button
-                key={variant.id}
-                onClick={() => setSelectedVariant(variant)}
-                className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${
-                  selectedVariant.id === variant.id
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-secondary text-secondary-foreground hover:bg-secondary/80'
-                }`}
-              >
-                {variant.duration ? `${variant.duration} min` : 'Session'} - {formatPrice(variant.price)}
-              </button>
-            ))}
-          </div>
-        ) : (
-          <div className="flex items-center gap-4">
-            {selectedVariant.duration && (
-              <span className="flex items-center gap-1 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4" />
-                {selectedVariant.duration} min
-              </span>
-            )}
-            <span className="font-semibold text-foreground">
-              {formatPrice(selectedVariant.price)}
-            </span>
+        {/* Single variant info */}
+        {!hasMultipleVariants && selectedVariant.duration && (
+          <div className="flex items-center gap-1 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4" />
+            {selectedVariant.duration} min
           </div>
         )}
         
         <div className="pt-2">
-          <Button onClick={handleBookNow} size="sm" className="w-full">
+          <Button size="sm" className="w-full">
             Book Now
           </Button>
         </div>
