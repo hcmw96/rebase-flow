@@ -138,38 +138,6 @@ const About = () => {
           </div>
         </section>
 
-        {/* Team Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8 bg-card/20">
-          <div className="max-w-7xl mx-auto">
-            <div className="text-center mb-16">
-              <h2 className="text-4xl font-serif font-light text-foreground mb-4">
-                Meet Our <span className="text-primary">Team</span>
-              </h2>
-              <p className="text-xl text-foreground/70 max-w-2xl mx-auto">
-                Our dedicated team of skilled professionals is committed to providing exceptional care.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-              {team.map((member, index) => (
-                <div key={index} className="card-luxury p-6 text-center">
-                  <div className="w-24 h-24 bg-primary/10 rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <div className="w-12 h-12 bg-primary/20 rounded-full"></div>
-                  </div>
-                  <h3 className="text-lg font-medium text-foreground mb-2">
-                    {member.name}
-                  </h3>
-                  <p className="text-primary text-sm font-medium mb-2">
-                    {member.role}
-                  </p>
-                  <p className="text-foreground/60 text-sm">
-                    {member.specialization}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
 
         {/* CTA Section */}
         <section className="py-20 px-4 sm:px-6 lg:px-8">
