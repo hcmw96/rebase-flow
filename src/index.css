@@ -2,18 +2,10 @@
 @tailwind components;
 @tailwind utilities;
 
-/* SF Pro Font Family */
+/* SF Pro Font Family - System font fallbacks */
 @font-face {
-  font-family: 'SF Pro Display';
-  src: local('-apple-system'), local('BlinkMacSystemFont'), local('SF Pro Display');
-  font-weight: 100 900;
-  font-style: normal;
-  font-display: swap;
-}
-
-@font-face {
-  font-family: 'SF Pro Text';
-  src: local('-apple-system'), local('BlinkMacSystemFont'), local('SF Pro Text');
+  font-family: 'SF Pro';
+  src: local('-apple-system'), local('BlinkMacSystemFont'), local('SF Pro Display'), local('SF Pro Text');
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
