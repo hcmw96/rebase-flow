@@ -345,14 +345,14 @@ const Services = () => {
                   </span>
                 </>
               ) : (
-                <div className="relative w-full">
+                <div className="relative w-full h-full">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
                     type="text"
                     placeholder="Search services..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="h-10 w-full pl-10 text-sm"
+                    className="h-full w-full pl-10 text-sm"
                   />
                 </div>
               )}
