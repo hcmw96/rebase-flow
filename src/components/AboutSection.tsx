@@ -1,7 +1,9 @@
 import { Link } from "react-router-dom";
+import ServicesAccordion from "./ServicesAccordion";
 
 const AboutSection = () => {
   return (
+    <>
     <section className="bg-background py-20 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto">
         {/* Collage Gallery */}
@@ -119,6 +121,8 @@ const AboutSection = () => {
 
       </div>
     </section>
+    <ServicesAccordion />
+    </>
   );
 };
 
