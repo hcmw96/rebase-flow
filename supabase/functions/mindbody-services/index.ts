@@ -230,54 +230,113 @@ serve(async (req) => {
         offset += limit;
       }
       
-      // Build lookup maps including duration info
-      const priceByNameWithDuration = new Map<string, number>();
-      const priceByNameOnly = new Map<string, number>();
+      // Build lookup maps including duration info - using normalized names
+      const priceByNormalizedWithDuration = new Map<string, number>();
+      const priceByNormalizedOnly = new Map<string, number>();
+      const allServiceEntries: Array<{name: string, normalized: string, minutes: number | null, price: number}> = [];
       
       for (const service of allSaleServices) {
         const price = service.OnlinePrice ?? service.Price ?? null;
         if (price === null || price === 0) continue;
         
-        const name = (service.Name || '').toLowerCase().trim();
-        const minutes = extractMinutes(service.Name);
+        const name = service.Name || '';
+        const normalized = normalizeServiceName(name);
+        const minutes = extractMinutes(name);
+        
+        allServiceEntries.push({ name, normalized, minutes, price });
         
         // Store with duration key if present
         if (minutes) {
-          priceByNameWithDuration.set(`${stripDuration(name)}_${minutes}`, price);
+          priceByNormalizedWithDuration.set(`${normalized}_${minutes}`, price);
         }
-        // Only use no-duration fallback if the service itself has no duration in name
-        if (!minutes) {
-          priceByNameOnly.set(stripDuration(name), price);
+        // Store without duration for fallback
+        if (!priceByNormalizedOnly.has(normalized)) {
+          priceByNormalizedOnly.set(normalized, price);
         }
       }
       
       // Log available prices for debugging
-      console.log("Available prices with duration:", JSON.stringify(Object.fromEntries(priceByNameWithDuration)));
+      console.log("Available normalized prices:", JSON.stringify(Object.fromEntries(priceByNormalizedWithDuration)));
       
-      // Try to match unpriced session types
+      // Try to match unpriced session types using multiple strategies
       for (const stId of unpricedIds) {
+        if (priceBySessionTypeId.has(stId)) continue;
+        
         const st = sessionTypes.find((s: any) => s.Id === stId);
         if (!st) continue;
         
-        const sessionName = (st.Name || '').toLowerCase().trim();
-        const sessionMinutes = extractMinutes(st.Name) || st.DefaultTimeLength;
-        const strippedName = stripDuration(sessionName);
+        const sessionName = st.Name || '';
+        const normalizedSession = normalizeServiceName(sessionName);
+        const sessionMinutes = extractMinutes(sessionName) || st.DefaultTimeLength;
         
-        // First try matching with duration
+        // Strategy 1: Exact normalized name + duration match
         if (sessionMinutes) {
-          const keyWithDuration = `${strippedName}_${sessionMinutes}`;
-          if (priceByNameWithDuration.has(keyWithDuration)) {
-            priceBySessionTypeId.set(stId, priceByNameWithDuration.get(keyWithDuration)!);
-            console.log(`Fallback matched ${st.Name} (${sessionMinutes}min) -> £${priceBySessionTypeId.get(stId)}`);
+          const keyWithDuration = `${normalizedSession}_${sessionMinutes}`;
+          if (priceByNormalizedWithDuration.has(keyWithDuration)) {
+            priceBySessionTypeId.set(stId, priceByNormalizedWithDuration.get(keyWithDuration)!);
+            console.log(`Strategy 1: ${st.Name} (${sessionMinutes}min) -> £${priceBySessionTypeId.get(stId)}`);
             continue;
           }
         }
         
-        // Only use name-only match if session type has no explicit duration
-        const hasExplicitDuration = extractMinutes(st.Name) !== null;
-        if (!hasExplicitDuration && priceByNameOnly.has(strippedName)) {
-          priceBySessionTypeId.set(stId, priceByNameOnly.get(strippedName)!);
-          console.log(`Fallback matched ${st.Name} -> £${priceBySessionTypeId.get(stId)} (no duration match)`);
+        // Strategy 2: Fuzzy name match with duration
+        let bestMatch: { price: number; score: number; name: string } | null = null;
+        for (const entry of allServiceEntries) {
+          const score = fuzzyNameMatch(sessionName, entry.name);
+          
+          // Require high similarity (70%+)
+          if (score < 0.7) continue;
+          
+          // If both have durations, they must match
+          if (sessionMinutes && entry.minutes && sessionMinutes !== entry.minutes) continue;
+          
+          // Prefer matches with matching duration
+          const adjustedScore = (sessionMinutes && entry.minutes === sessionMinutes) ? score + 0.2 : score;
+          
+          if (!bestMatch || adjustedScore > bestMatch.score) {
+            bestMatch = { price: entry.price, score: adjustedScore, name: entry.name };
+          }
+        }
+        
+        if (bestMatch) {
+          priceBySessionTypeId.set(stId, bestMatch.price);
+          console.log(`Strategy 2: ${st.Name} -> £${bestMatch.price} (fuzzy: ${bestMatch.score.toFixed(2)} from "${bestMatch.name}")`);
+          continue;
+        }
+        
+        // Strategy 3: Normalized name only (no duration requirement)
+        if (priceByNormalizedOnly.has(normalizedSession)) {
+          priceBySessionTypeId.set(stId, priceByNormalizedOnly.get(normalizedSession)!);
+          console.log(`Strategy 3: ${st.Name} -> £${priceBySessionTypeId.get(stId)} (normalized name only)`);
+          continue;
+        }
+        
+        // Strategy 4: Partial word match for common service types
+        const commonMappings: Record<string, string> = {
+          'premium suite': 'premium suite',
+          'infrared sauna': 'infrared sauna/ice bath',
+          'ice bath': 'infrared sauna/ice bath',
+          'osteopathy first': 'osteopathy',
+          'osteopathy follow': 'osteopathy follow up',
+          'hyperbaric': 'hyperbaric oxygen',
+          'hbot': 'hyperbaric oxygen',
+        };
+        
+        for (const [pattern, target] of Object.entries(commonMappings)) {
+          if (normalizedSession.includes(pattern)) {
+            // Find a matching service
+            for (const entry of allServiceEntries) {
+              if (entry.normalized.includes(target)) {
+                // Check duration compatibility
+                if (sessionMinutes && entry.minutes && sessionMinutes !== entry.minutes) continue;
+                
+                priceBySessionTypeId.set(stId, entry.price);
+                console.log(`Strategy 4: ${st.Name} -> £${entry.price} (pattern "${pattern}" -> "${entry.name}")`);
+                break;
+              }
+            }
+            if (priceBySessionTypeId.has(stId)) break;
+          }
         }
       }
     }
@@ -335,17 +394,71 @@ serve(async (req) => {
 // Extract minutes from a name like "Premium Suite (45 mins)" -> 45
 function extractMinutes(name: string | undefined): number | null {
   if (!name) return null;
-  const match = name.match(/(\d+)\s*(?:mins?|minutes?)/i);
+  const match = name.match(/(\d+)\s*(?:mins?|minutes?|min|minute)/i);
   return match ? parseInt(match[1], 10) : null;
 }
 
 // Strip duration from name for matching: "Premium Suite (45 mins)" -> "premium suite"
 function stripDuration(name: string): string {
   return name
-    .replace(/\(\d+\s*(?:mins?|minutes?|hrs?|hours?)\)/gi, '')
-    .replace(/\d+\s*(?:mins?|minutes?|hrs?|hours?)/gi, '')
+    .replace(/\(\d+\s*(?:mins?|minutes?|min|minute|hrs?|hours?)\)/gi, '')
+    .replace(/\d+\s*(?:mins?|minutes?|min|minute|hrs?|hours?)/gi, '')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// Normalize service name by removing common suffixes and cleaning
+function normalizeServiceName(name: string): string {
+  return name
+    .toLowerCase()
+    // Remove staff/location suffixes like "- Utes", "- Minutes", etc.
+    .replace(/\s*-\s*(utes|minutes|mins|staff|room\s*\d*)\s*$/gi, '')
+    .replace(/\s*-\s*\d+\s*(min|mins|minutes|pack)\s*$/gi, '')
+    // Remove duration patterns
+    .replace(/\(\d+\s*(?:mins?|minutes?|min|minute|hrs?|hours?)\)/gi, '')
+    .replace(/\d+\s*(?:mins?|minutes?|min|minute)\s*$/gi, '')
+    // Remove pack info
+    .replace(/\s*-?\s*\d+\s*(?:pack|session)s?\s*$/gi, '')
+    // Remove extra whitespace and trailing dashes
+    .replace(/\s*-\s*$/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// Get core words from a name for fuzzy matching
+function getCoreWords(name: string): Set<string> {
+  const stopWords = new Set(['the', 'a', 'an', 'and', 'or', 'of', 'for', 'with', 'in', 'on', 'at', 'to', 'by']);
+  return new Set(
+    normalizeServiceName(name)
+      .split(/\s+/)
+      .filter(word => word.length > 2 && !stopWords.has(word))
+  );
+}
+
+// Fuzzy match: returns similarity score (0-1) based on word overlap
+function fuzzyNameMatch(name1: string, name2: string): number {
+  const words1 = getCoreWords(name1);
+  const words2 = getCoreWords(name2);
+  
+  if (words1.size === 0 || words2.size === 0) return 0;
+  
+  let matches = 0;
+  for (const word of words1) {
+    if (words2.has(word)) {
+      matches++;
+    } else {
+      // Check for partial word matches (e.g., "sculpting" vs "sculpt")
+      for (const word2 of words2) {
+        if (word.includes(word2) || word2.includes(word)) {
+          matches += 0.8;
+          break;
+        }
+      }
+    }
+  }
+  
+  const minSize = Math.min(words1.size, words2.size);
+  return matches / minSize;
 }
 
 function mapProgramToCategory(programName: string | undefined): string {
