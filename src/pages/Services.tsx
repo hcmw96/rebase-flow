@@ -26,6 +26,11 @@ const categoryImages: Record<string, string> = {
   'default': '/images/rebase-suite.webp',
 };
 
+// Service-specific images (by canonicalized name)
+const serviceImages: Record<string, string> = {
+  'Cryotherapy': '/images/rebase-cryo.webp',
+};
+
 // Extract duration from service name like "Service Name (45 mins)" or "(90 min)"
 function extractDurationFromName(name: string): { baseName: string; duration: number | null } {
   const durationMatch = name.match(/\((\d+)\s*(?:mins?|minutes?)\)/i);
@@ -48,6 +53,9 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Massage' },
   { pattern: /^sports\s*massage/i, groupName: 'Massage' },
   { pattern: /massage/i, groupName: 'Massage' },
+  
+  // Recovery/Tech therapies
+  { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
   
   // Wellness services
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
@@ -127,7 +135,7 @@ const Services = () => {
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
       const category = service.programName || service.category || 'Wellness';
-      const image = categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
+      const image = serviceImages[canonicalName] || categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
 
       if (!groups.has(canonicalName)) {
         groups.set(canonicalName, {
