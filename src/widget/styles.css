@@ -1,0 +1,92 @@
+/* Widget Styles - Injected into Shadow DOM */
+
+/* Animations */
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    height: 0;
+  }
+  to {
+    opacity: 1;
+    height: auto;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Base Styles */
+.rebase-widget {
+  box-sizing: border-box;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.rebase-widget *,
+.rebase-widget *::before,
+.rebase-widget *::after {
+  box-sizing: inherit;
+}
+
+/* Utility Classes */
+.rebase-widget .animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Line Clamp */
+.rebase-widget .line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Scrollbar Styling */
+.rebase-widget ::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.rebase-widget ::-webkit-scrollbar-track {
+  background: hsl(25, 10%, 15%);
+  border-radius: 3px;
+}
+
+.rebase-widget ::-webkit-scrollbar-thumb {
+  background: hsl(25, 10%, 30%);
+  border-radius: 3px;
+}
+
+.rebase-widget ::-webkit-scrollbar-thumb:hover {
+  background: hsl(25, 10%, 40%);
+}
+
+/* Hide scrollbar for touch devices but keep functionality */
+@media (hover: none) {
+  .rebase-widget ::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .rebase-widget {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
