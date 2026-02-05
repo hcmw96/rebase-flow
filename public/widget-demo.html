@@ -137,24 +137,22 @@
     </div>
   </div>
   
-  <script type="module">
-    // For development preview, we import directly
-    // In production, this would be loaded via the custom element
-    import { Widget } from '/src/widget/Widget.tsx';
-    import { createRoot } from 'react-dom/client';
-    import React from 'react';
+  <script>
+    // Note: In development, visit this page through Vite dev server
+    // In production, the widget.js bundle would be loaded here
     
-    const config = {
-      theme: 'dark',
-      apiUrl: 'https://ipmrdxtgrxvwzbrbiuvz.supabase.co',
-      showBooking: true,
-      category: null,
-    };
-    
-    const root = document.getElementById('widget-demo-root');
-    if (root) {
-      createRoot(root).render(React.createElement(Widget, { config }));
-    }
+    // Display a message explaining how to use the widget
+    document.getElementById('widget-demo-root').innerHTML = `
+      <div style="padding: 40px; text-align: center; color: #888;">
+        <h3 style="color: #f0f0f0; margin-bottom: 16px;">Widget Preview</h3>
+        <p style="margin-bottom: 24px;">To test the widget in development, use the main app's /services page.</p>
+        <p style="margin-bottom: 16px; font-size: 14px;">For production embedding on Framer:</p>
+        <code style="background: #0d0d0d; padding: 16px; display: block; border-radius: 8px; text-align: left; font-size: 13px; color: #4ade80;">
+&lt;script src="https://rebase-flow.lovable.app/widget.js"&gt;&lt;/script&gt;<br/>
+&lt;rebase-services theme="dark"&gt;&lt;/rebase-services&gt;
+        </code>
+      </div>
+    `;
   </script>
 </body>
 </html>
