@@ -1,136 +1,359 @@
 
 
-## Improving Services Page UX: Reducing Scroll with Smart Layout
+## Embeddable Web Component: `<rebase-services>` 
 
-### Current Problem
+### Overview
 
-The Services page currently displays services in a vertical list (mobile) or grid (desktop), requiring excessive scrolling to see all available services. With approximately 15+ services, users must scroll significantly to discover what's available.
+This plan creates a standalone, embeddable Web Component using the native Web Components API that packages your services listing and booking flow into a single `<rebase-services>` custom element. External websites can embed it with just:
 
-### Recommended Solution: Collapsible Category Sections with Service Chips
-
-The smartest UX approach combines multiple proven patterns:
-
-```text
-+------------------------------------------+
-|  [Search Bar]                            |
-+------------------------------------------+
-|  Recovery                          [v]   |
-|  +------+ +------+ +------+ +------+     |
-|  |Cryo  | |HBOT  | |Ozone | |More..|     |
-|  |£45   | |£120  | |£85   | |+3    |     |
-|  +------+ +------+ +------+ +------+     |
-+------------------------------------------+
-|  Wellness                          [v]   |
-|  +------+ +------+ +------+              |
-|  |Sauna | |Suite | |...   |              |
-|  +------+ +------+ +------+              |
-+------------------------------------------+
-|  Classes                           [>]   |  <- Collapsed
-+------------------------------------------+
+```html
+<rebase-services src="https://rebase-flow.lovable.app/widget.js"></rebase-services>
 ```
 
-### Key UX Improvements
+### Architecture
 
-1. **Grouped by Category**: Services are organized into collapsible sections by category (Recovery, Wellness, Classes, etc.)
+```text
+External Website
++--------------------------------------------------+
+|  <html>                                          |
+|    <body>                                        |
+|      <rebase-services                            |
+|        src="https://rebase.../widget.js"         |
+|      ></rebase-services>                         |
+|                                                  |
+|      +----------------------------------+        |
+|      | #shadow-root (closed)            |        |
+|      |   <style>/* Tailwind CSS */</style>       |
+|      |   <div id="widget-root">          |       |
+|      |     [React App Renders Here]      |       |
+|      |   </div>                          |        |
+|      +----------------------------------+        |
+|    </body>                                       |
+|  </html>                                         |
++--------------------------------------------------+
+```
 
-2. **Horizontal Scroll within Categories**: Each category shows services in a horizontal scrollable row, fitting 3-4 services visible at once
+### Key Features
 
-3. **Compact "Chip" Cards**: Smaller service cards showing just:
-   - Thumbnail image
-   - Service name
-   - Price (or "From £X")
-   - Duration indicator
+1. **Shadow DOM Isolation** - Styles are encapsulated, preventing conflicts with host website CSS
+2. **Single Script Load** - Embed via `src` attribute that fetches the bundled JavaScript
+3. **Self-Contained React** - Full React 18 renders inside the Shadow DOM
+4. **Theming Support** - Optional attributes for customization (theme, API endpoint)
+5. **Responsive** - Works across all screen sizes
 
-4. **Expandable Categories**: Categories start expanded but can be collapsed to quickly jump between sections
+### Configuration Options (HTML Attributes)
 
-5. **"Show All" Option**: Each category has a subtle link to expand to full grid view if needed
+| Attribute | Default | Description |
+|-----------|---------|-------------|
+| `src` | Required | URL to the widget bundle |
+| `theme` | `dark` | `dark` or `light` theme |
+| `api-url` | Production URL | Override API endpoint |
+| `show-booking` | `true` | Enable/disable booking flow |
+| `category` | `null` | Filter to specific category |
 
-### Why This is the Best UX
-
-- **Reduces vertical scroll by ~70%**: All categories visible without scrolling on most screens
-- **Information scent**: Users immediately see all service categories
-- **Progressive disclosure**: Details revealed on tap/click
-- **Familiar pattern**: Similar to food delivery apps, app stores, streaming services
-- **Mobile-first**: Optimized for thumb scrolling
+Example:
+```html
+<rebase-services 
+  src="https://rebase-flow.lovable.app/widget.js"
+  theme="light"
+  category="Recovery"
+></rebase-services>
+```
 
 ---
 
-## Technical Implementation
+## Implementation Plan
 
-### Files to Modify
+### Phase 1: Create Widget Infrastructure
 
-**1. Create `src/components/ServiceChip.tsx`** (new file)
-   - Ultra-compact service card component
-   - ~80px x 100px size
-   - Image, title, price only
-   - Click navigates to booking
+**1. Create widget entry point and registration**
 
-**2. Create `src/components/CategorySection.tsx`** (new file)
-   - Collapsible section with category header
-   - Horizontal scroll container for service chips
-   - "See all" link to expand
-   - Animated expand/collapse
+Create a new entry point that:
+- Defines the `<rebase-services>` custom element class
+- Extends `HTMLElement` with Shadow DOM
+- Handles `src` attribute to load the main bundle
+- Injects styles and mounts React
 
-**3. Modify `src/pages/Services.tsx`**
-   - Replace current grid/list view with CategorySection components
-   - Group services by category
-   - Keep search bar (filters across all categories)
-   - Keep sticky header behavior
+**Files to create:**
+- `src/widget/index.ts` - Custom element definition
+- `src/widget/Widget.tsx` - Root React component for widget
+- `src/widget/styles.css` - Compiled Tailwind for widget
+- `src/widget/context/WidgetContext.tsx` - Widget-specific context
 
-### Component Structure
+**2. Custom Element Class Structure:**
 
-```text
-Services.tsx
-  ├── Navigation
-  ├── SearchBar (sticky)
-  ├── CategorySection (Recovery)
-  │     └── ServiceChip[] (horizontal scroll)
-  ├── CategorySection (Wellness)
-  │     └── ServiceChip[]
-  ├── CategorySection (Classes)
-  │     └── ServiceChip[]
-  └── Footer
+```typescript
+// src/widget/index.ts
+class RebaseServicesWidget extends HTMLElement {
+  private shadow: ShadowRoot;
+  private root: Root | null = null;
+  
+  static get observedAttributes() {
+    return ['theme', 'api-url', 'category', 'show-booking'];
+  }
+  
+  constructor() {
+    super();
+    this.shadow = this.attachShadow({ mode: 'closed' });
+  }
+  
+  connectedCallback() {
+    this.render();
+  }
+  
+  attributeChangedCallback() {
+    this.render();
+  }
+  
+  private render() {
+    // Inject styles and mount React
+  }
+}
+
+customElements.define('rebase-services', RebaseServicesWidget);
 ```
 
-### ServiceChip Design
+### Phase 2: Create Standalone Widget Components
+
+**1. Widget-specific service components (simplified, no routing):**
+
+- `src/widget/components/ServiceList.tsx` - Collapsible category sections
+- `src/widget/components/ServiceChip.tsx` - Compact service cards
+- `src/widget/components/BookingFlow.tsx` - Multi-step booking (modal-based, no navigation)
+- `src/widget/components/BookingCalendar.tsx` - Calendar picker
+- `src/widget/components/TimeSlots.tsx` - Time slot selection
+
+**2. Key differences from main app:**
+- No `react-router-dom` - all navigation is internal state
+- Modal-based booking flow instead of page navigation
+- Simplified authentication flow (popup-based OAuth)
+- All API calls use provided `api-url` attribute or default
+
+### Phase 3: Styling Strategy
+
+**1. Shadow DOM CSS Injection:**
+
+Since Tailwind uses global styles, we need to:
+- Build a separate Tailwind bundle for the widget
+- Inject all CSS into the Shadow DOM
+
+**2. Add to vite.config.ts:**
+
+```typescript
+// Additional build config for widget
+export default defineConfig({
+  build: {
+    lib: {
+      entry: 'src/widget/index.ts',
+      name: 'RebaseServicesWidget',
+      fileName: 'widget',
+      formats: ['iife']
+    },
+    rollupOptions: {
+      output: {
+        // Inline all CSS into JS
+        inlineDynamicImports: true
+      }
+    }
+  }
+});
+```
+
+**3. Create widget-specific Tailwind config:**
+- `src/widget/tailwind.widget.config.ts`
+- Prefixes all classes to avoid conflicts
+
+### Phase 4: Build Configuration
+
+**1. Create separate Vite config for widget build:**
+
+Create `vite.widget.config.ts`:
+```typescript
+export default defineConfig({
+  build: {
+    lib: {
+      entry: resolve(__dirname, 'src/widget/index.ts'),
+      name: 'RebaseServicesWidget',
+      formats: ['iife'],
+      fileName: () => 'widget.js'
+    },
+    cssCodeSplit: false,
+    outDir: 'dist-widget',
+    emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        inlineDynamicImports: true,
+        manualChunks: undefined
+      }
+    }
+  }
+});
+```
+
+**2. Add build scripts to package.json:**
+
+```json
+{
+  "scripts": {
+    "build:widget": "vite build --config vite.widget.config.ts",
+    "build:all": "vite build && npm run build:widget"
+  }
+}
+```
+
+### Phase 5: API Integration
+
+**1. Widget API client (no Vite env vars):**
+
+```typescript
+// src/widget/api/client.ts
+export function createApiClient(baseUrl: string) {
+  return {
+    async getServices() {
+      const res = await fetch(`${baseUrl}/functions/v1/mindbody-services`);
+      return res.json();
+    },
+    async getAvailability(params) {
+      // ...
+    },
+    async bookService(params) {
+      // ...
+    }
+  };
+}
+```
+
+**2. Authentication handling:**
+- OAuth popup flow for Mindbody login
+- Session stored in widget's isolated localStorage key
+- Callback handled via postMessage
+
+### Phase 6: Widget React Components
+
+**1. Main Widget.tsx structure:**
 
 ```tsx
-// Compact card ~80px wide
-<div className="w-20 flex-shrink-0">
-  <div className="aspect-square rounded-lg overflow-hidden">
-    <img src={image} />
-  </div>
-  <p className="text-xs font-medium truncate mt-1">{title}</p>
-  <p className="text-xs text-muted-foreground">£{price}</p>
-</div>
+// src/widget/Widget.tsx
+export function Widget({ config }: WidgetProps) {
+  const [view, setView] = useState<'services' | 'booking'>('services');
+  const [selectedService, setSelectedService] = useState(null);
+  
+  return (
+    <WidgetProvider config={config}>
+      <div className="rebase-widget">
+        {view === 'services' && (
+          <ServiceList onSelectService={(s) => {
+            setSelectedService(s);
+            setView('booking');
+          }} />
+        )}
+        {view === 'booking' && (
+          <BookingModal 
+            service={selectedService}
+            onClose={() => setView('services')}
+          />
+        )}
+      </div>
+    </WidgetProvider>
+  );
+}
 ```
 
-### CategorySection Behavior
+**2. ServiceList (widget version):**
+- Reuses CategorySection and ServiceChip patterns
+- Horizontal scrolling categories
+- Click triggers booking modal (not navigation)
 
-- **Default state**: Expanded, showing horizontal scroll of services
-- **Collapsed state**: Just the header, tap to expand
-- **Header shows**: Category name + service count + expand/collapse icon
-- **Smooth animation**: Using framer-motion for expand/collapse
-
-### Search Integration
-
-- Search filters services across all categories
-- Empty categories are hidden when filtering
-- Highlights matching text in results
-
-### Mobile vs Desktop
-
-- **Mobile**: Full horizontal scroll, collapsed categories
-- **Desktop**: Can show 2 rows of horizontal scrolls side-by-side, or keep current grid for larger screens
+**3. BookingModal:**
+- Steps: Service Options > Date > Time > Confirm
+- Renders as overlay within Shadow DOM
+- Uses same BookingCalendar and TimeSlotPicker logic
 
 ---
 
-## Alternative Considered: Tabs
+## File Structure
 
-Tabs would also reduce scroll but have drawbacks:
-- Hides other categories completely
-- Requires extra tap to discover services
-- Less efficient for comparing across categories
+```text
+src/
+├── widget/
+│   ├── index.ts                    # Custom element registration
+│   ├── Widget.tsx                  # Root React component
+│   ├── styles.css                  # Widget Tailwind styles
+│   ├── api/
+│   │   └── client.ts               # API client (no env vars)
+│   ├── components/
+│   │   ├── ServiceList.tsx         # Category sections
+│   │   ├── ServiceChip.tsx         # Compact service cards
+│   │   ├── BookingModal.tsx        # Modal-based booking
+│   │   ├── BookingCalendar.tsx     # Calendar (adapted)
+│   │   ├── TimeSlotPicker.tsx      # Time slots (adapted)
+│   │   └── ConfirmationStep.tsx    # Booking confirmation
+│   └── context/
+│       └── WidgetContext.tsx       # Config & state context
+├── vite.widget.config.ts           # Widget build config
+└── package.json                    # Updated scripts
+```
 
-The collapsible sections approach shows more at once while remaining scannable.
+---
+
+## Hosting & Distribution
+
+**1. After building, `widget.js` is served from:**
+```
+https://rebase-flow.lovable.app/widget.js
+```
+
+**2. Public serving:**
+- Add `widget.js` to `public/` folder after build
+- Or serve from CDN/separate hosting
+
+**3. CORS configuration:**
+- Edge functions already have `Access-Control-Allow-Origin: *`
+- Widget script loads from any domain
+
+---
+
+## Usage Examples
+
+**Basic embed:**
+```html
+<rebase-services src="https://rebase-flow.lovable.app/widget.js"></rebase-services>
+```
+
+**With custom options:**
+```html
+<rebase-services 
+  src="https://rebase-flow.lovable.app/widget.js"
+  theme="light"
+  category="Recovery"
+  show-booking="true"
+></rebase-services>
+```
+
+**Programmatic control:**
+```javascript
+const widget = document.querySelector('rebase-services');
+widget.setAttribute('category', 'Wellness'); // Filter changes
+```
+
+---
+
+## Technical Considerations
+
+1. **Bundle Size** - Target under 250KB gzipped by tree-shaking unused Radix/UI components
+2. **Shadow DOM Limitations** - Some Radix components may need adaptation for Shadow DOM
+3. **Date Picker** - react-day-picker works in Shadow DOM with injected styles
+4. **Fonts** - Load fonts via link in Shadow DOM or use system fonts
+5. **Framer Motion** - Works in Shadow DOM, animations preserved
+
+---
+
+## Summary
+
+This implementation creates a production-ready Web Component that:
+- Loads via a single `<script>` tag with `src` attribute
+- Uses Shadow DOM for complete style isolation
+- Renders the full services + booking flow inside any website
+- Requires no npm installation or build setup from embedders
+- Supports theming and configuration via HTML attributes
 
