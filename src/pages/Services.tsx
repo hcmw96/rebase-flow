@@ -186,7 +186,7 @@ const Services = () => {
 
    // Group services by category for collapsible sections
    const servicesByCategory = useMemo(() => {
-     const categoryMap = new Map<string, typeof groupedServices>();
+     const categoryMap = new Map<string, GroupedService[]>();
      
      // Filter by search first
      let filtered = groupedServices;
