@@ -6,6 +6,7 @@ import ServiceCard, { ServiceVariant } from '@/components/ServiceCard';
 import ServiceCardCompact from '@/components/ServiceCardCompact';
 import CategoryFilter from '@/components/CategoryFilter';
 import FeaturedServices from '@/components/FeaturedServices';
+ import CategorySection from '@/components/CategorySection';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices, useHideServices } from '@/hooks/useHiddenServices';
 import { useFeaturedServices, useAddFeaturedService, useRemoveFeaturedService } from '@/hooks/useFeaturedServices';
@@ -96,7 +97,7 @@ interface GroupedService {
 }
 
 const Services = () => {
-  const [activeCategory, setActiveCategory] = useState('All');
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedServices, setSelectedServices] = useState<Set<string>>(new Set());
   const [searchQuery, setSearchQuery] = useState('');
@@ -183,31 +184,31 @@ const Services = () => {
     return { groupedServices: grouped, categories: uniqueCategories, servicesMap: groups };
   }, [services, hiddenServiceIds, isEditMode]);
 
-  // Filter services based on category and search query
-  const filteredServices = useMemo(() => {
-    let filtered = groupedServices;
-    
-    // Filter by category
-    if (activeCategory === 'Most Popular') {
-      filtered = filtered.filter(service => 
-        service.variants.some(v => featuredServiceIds.has(v.id))
-      );
-    } else if (activeCategory !== 'All') {
-      filtered = filtered.filter(service => service.category === activeCategory);
-    }
-    
-    // Filter by search query
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(service => 
-        service.baseName.toLowerCase().includes(query) ||
-        service.description.toLowerCase().includes(query)
-      );
-    }
-    
-    return filtered;
-  }, [activeCategory, groupedServices, featuredServiceIds, searchQuery]);
-
+   // Group services by category for collapsible sections
+   const servicesByCategory = useMemo(() => {
+     const categoryMap = new Map<string, typeof groupedServices>();
+     
+     // Filter by search first
+     let filtered = groupedServices;
+     if (searchQuery.trim()) {
+       const query = searchQuery.toLowerCase().trim();
+       filtered = filtered.filter(service => 
+         service.baseName.toLowerCase().includes(query) ||
+         service.description.toLowerCase().includes(query)
+       );
+     }
+     
+     for (const service of filtered) {
+       const cat = service.category;
+       if (!categoryMap.has(cat)) {
+         categoryMap.set(cat, []);
+       }
+       categoryMap.get(cat)!.push(service);
+     }
+     
+     return categoryMap;
+   }, [groupedServices, searchQuery]);
+ 
   const toggleServiceSelection = (baseName: string) => {
     const newSelected = new Set(selectedServices);
     if (newSelected.has(baseName)) {
@@ -376,28 +377,19 @@ const Services = () => {
       </section>
 
       {/* Category Filter - Horizontal scroll */}
-      <section className="py-3 border-b border-border bg-background/50">
-        <div className="container mx-auto px-4">
-          <CategoryFilter
-            categories={categories}
-            activeCategory={activeCategory}
-            onCategoryChange={setActiveCategory}
-            showPopular={!isEditMode && featuredServicesData.length > 0}
-          />
-        </div>
-      </section>
 
       {/* Services List/Grid */}
-      <section className="py-6 md:py-16">
+      <section className="py-4 md:py-8">
         <div className="container mx-auto px-4">
           {isLoading ? (
-            <div className={isMobile ? 'space-y-3' : 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8'}>
+            <div className="space-y-4">
               {[...Array(6)].map((_, i) => (
-                <div key={i} className={isMobile ? 'flex gap-3' : 'space-y-4'}>
-                  <Skeleton className={isMobile ? 'h-16 w-16 rounded-lg' : 'h-48 w-full rounded-lg'} />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-3 w-1/2" />
+                <div key={i} className="space-y-3">
+                  <Skeleton className="h-8 w-32" />
+                  <div className="flex gap-3">
+                    <Skeleton className="h-[100px] w-[100px] rounded-xl" />
+                    <Skeleton className="h-[100px] w-[100px] rounded-xl" />
+                    <Skeleton className="h-[100px] w-[100px] rounded-xl" />
                   </div>
                 </div>
               ))}
@@ -407,91 +399,24 @@ const Services = () => {
               <p className="text-muted-foreground mb-4">Unable to load services at the moment.</p>
               <p className="text-sm text-muted-foreground">Please try again later.</p>
             </div>
-          ) : filteredServices.length === 0 ? (
+          ) : servicesByCategory.size === 0 ? (
             <div className="text-center py-12">
               <p className="text-muted-foreground">
-                {activeCategory === 'Most Popular' 
-                  ? 'No popular services yet. Use "Manage" to feature services.'
-                  : 'No services available in this category.'}
+                {searchQuery.trim() 
+                  ? 'No services match your search.'
+                  : 'No services available.'}
               </p>
             </div>
-          ) : isMobile ? (
-            /* Mobile: Compact list view */
-            <div className="flex flex-col gap-3">
-              {filteredServices.map((service, index) => (
-                <motion.div
-                  key={service.baseName}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: index * 0.05 }}
-                  className="relative"
-                >
-                  {isEditMode && (
-                    <div className="absolute left-2 top-1/2 -translate-y-1/2 z-10">
-                      <Checkbox
-                        checked={selectedServices.has(service.baseName)}
-                        onCheckedChange={() => toggleServiceSelection(service.baseName)}
-                        className="h-5 w-5 bg-background border-2"
-                      />
-                    </div>
-                  )}
-                  <div className={isEditMode ? 'pl-10' : ''}>
-                    <ServiceCardCompact
-                      id={service.variants[0].id}
-                      title={service.baseName}
-                      description={service.description}
-                      category={service.category}
-                      image={service.image}
-                      variants={service.variants}
-                      isHidden={isServiceHidden(service)}
-                      isFeatured={isServiceFeatured(service)}
-                      onToggleFeatured={() => handleToggleFeatured(service)}
-                      isEditMode={isEditMode}
-                    />
-                  </div>
-                </motion.div>
-              ))}
-            </div>
           ) : (
-            /* Desktop: Grid view */
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredServices.map((service, index) => (
-                <motion.div
-                  key={service.baseName}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: index * 0.1 }}
-                  className="relative"
-                >
-                  {isEditMode && (
-                    <div 
-                      className={`absolute -top-2 -left-2 z-10 flex items-center gap-2 ${
-                        isServiceHidden(service) ? 'opacity-50' : ''
-                      }`}
-                    >
-                      <Checkbox
-                        checked={selectedServices.has(service.baseName)}
-                        onCheckedChange={() => toggleServiceSelection(service.baseName)}
-                        className="h-6 w-6 bg-background border-2"
-                      />
-                      {isServiceHidden(service) && (
-                        <span className="text-xs bg-destructive text-destructive-foreground px-2 py-1 rounded">
-                          Hidden
-                        </span>
-                      )}
-                    </div>
-                  )}
-                  <div className={`${isEditMode && isServiceHidden(service) ? 'opacity-50' : ''}`}>
-                    <ServiceCard
-                      id={service.variants[0].id}
-                      title={service.baseName}
-                      description={service.description}
-                      category={service.category}
-                      image={service.image}
-                      variants={service.variants}
-                    />
-                  </div>
-                </motion.div>
+            /* Collapsible Category Sections */
+            <div className="space-y-2">
+              {Array.from(servicesByCategory.entries()).map(([category, categoryServices], index) => (
+                <CategorySection
+                  key={category}
+                  category={category}
+                  services={categoryServices}
+                  defaultExpanded={index < 3}
+                />
               ))}
             </div>
           )}
