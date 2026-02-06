@@ -1,0 +1,41 @@
+name: Build Widget
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/widget/**'
+      - 'vite.widget.config.ts'
+      - '.github/workflows/build-widget.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build widget
+        run: npx vite build --config vite.widget.config.ts
+
+      - name: Commit and push widget files
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/widget.js public/widget.css || true
+          git diff --staged --quiet || git commit -m "🔧 Auto-build widget bundle"
+          git push
