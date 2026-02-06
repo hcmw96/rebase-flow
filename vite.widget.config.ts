@@ -24,12 +24,7 @@ export default defineConfig({
     cssCodeSplit: false,
     outDir: 'public',
     emptyOutDir: false,
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: true,
-      },
-    },
+    minify: 'esbuild',
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
