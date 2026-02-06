@@ -25,7 +25,7 @@ export default defineConfig({
     cssCodeSplit: false,
     outDir: 'public',
     emptyOutDir: false,
-    minify: 'esbuild',
+    minify: false, // Disabled - we use terser CLI post-build in GitHub Actions
     rollupOptions: {
       output: {
         inlineDynamicImports: true,
