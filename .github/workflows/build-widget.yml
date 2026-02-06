@@ -34,13 +34,35 @@ jobs:
 
       - name: Debug environment
         run: |
+          echo "=== Build Info ==="
+          echo "Commit SHA: $GITHUB_SHA"
+          echo "Ref: $GITHUB_REF"
+          echo ""
+          echo "=== Node/npm versions ==="
           echo "Node version: $(node -v)"
           echo "npm version: $(npm -v)"
-          echo "Checking if terser is installed..."
-          node -e "try { console.log('terser found at:', require.resolve('terser')); } catch(e) { console.log('terser NOT found'); }"
+          echo ""
+          echo "=== Vite versions ==="
+          echo "Local Vite: $(./node_modules/.bin/vite --version)"
+          echo "npx Vite: $(npx vite --version)"
+          echo ""
+          echo "=== Terser check ==="
+          npm ls terser || echo "terser not in npm ls"
+          ls -la node_modules/terser 2>/dev/null || echo "node_modules/terser directory not found"
+          node -e "import('terser').then(()=>console.log('terser ESM import: OK')).catch(e=>{console.error('terser ESM import: FAILED', e.message)})"
+          echo ""
+          echo "=== Widget config (minify line) ==="
+          grep -n "minify" vite.widget.config.ts || echo "No minify setting found"
 
-      - name: Build widget
-        run: npx vite build --config vite.widget.config.ts --minify esbuild
+      - name: Build widget (no minification)
+        run: ./node_modules/.bin/vite build --config vite.widget.config.ts
+
+      - name: Minify with terser CLI
+        run: |
+          echo "Minifying public/widget.js with terser..."
+          ./node_modules/.bin/terser public/widget.js --compress --mangle --output public/widget.js
+          echo "Minification complete"
+          ls -la public/widget.js
 
       - name: Commit and push widget files
         run: |
