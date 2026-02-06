@@ -1,359 +1,87 @@
 
+## What’s happening (in plain English)
+Your GitHub build is failing because the build process is trying to use a tool called **terser** (Vite shows this as `[vite:terser]`), but in the environment running the build, it’s not being found.
 
-## Embeddable Web Component: `<rebase-services>` 
+Even though we already:
+- set the widget build config to `minify: 'esbuild'`, and
+- added `terser` to `package.json`
 
-### Overview
+…the GitHub Actions run you’re seeing is still behaving like it’s using terser. That usually happens for one of these reasons:
+1) The workflow run is re-running an **older commit** (so it doesn’t include the latest fixes), or  
+2) The workflow is still effectively using terser during minification, so we should hard-force esbuild at the command line, and add a “sanity check” step that proves terser is installed (or not) during the run.
 
-This plan creates a standalone, embeddable Web Component using the native Web Components API that packages your services listing and booking flow into a single `<rebase-services>` custom element. External websites can embed it with just:
-
-```html
-<rebase-services src="https://rebase-flow.lovable.app/widget.js"></rebase-services>
-```
-
-### Architecture
-
-```text
-External Website
-+--------------------------------------------------+
-|  <html>                                          |
-|    <body>                                        |
-|      <rebase-services                            |
-|        src="https://rebase.../widget.js"         |
-|      ></rebase-services>                         |
-|                                                  |
-|      +----------------------------------+        |
-|      | #shadow-root (closed)            |        |
-|      |   <style>/* Tailwind CSS */</style>       |
-|      |   <div id="widget-root">          |       |
-|      |     [React App Renders Here]      |       |
-|      |   </div>                          |        |
-|      +----------------------------------+        |
-|    </body>                                       |
-|  </html>                                         |
-+--------------------------------------------------+
-```
-
-### Key Features
-
-1. **Shadow DOM Isolation** - Styles are encapsulated, preventing conflicts with host website CSS
-2. **Single Script Load** - Embed via `src` attribute that fetches the bundled JavaScript
-3. **Self-Contained React** - Full React 18 renders inside the Shadow DOM
-4. **Theming Support** - Optional attributes for customization (theme, API endpoint)
-5. **Responsive** - Works across all screen sizes
-
-### Configuration Options (HTML Attributes)
-
-| Attribute | Default | Description |
-|-----------|---------|-------------|
-| `src` | Required | URL to the widget bundle |
-| `theme` | `dark` | `dark` or `light` theme |
-| `api-url` | Production URL | Override API endpoint |
-| `show-booking` | `true` | Enable/disable booking flow |
-| `category` | `null` | Filter to specific category |
-
-Example:
-```html
-<rebase-services 
-  src="https://rebase-flow.lovable.app/widget.js"
-  theme="light"
-  category="Recovery"
-></rebase-services>
-```
+## Goal
+Make the widget build succeed 100% of the time without you needing to do anything technical.
 
 ---
 
-## Implementation Plan
+## Changes I will implement (code + workflow)
+### A) Make the workflow force esbuild minification (hard override)
+Update the GitHub Actions build command to:
 
-### Phase 1: Create Widget Infrastructure
+- `npx vite build --config vite.widget.config.ts --minify esbuild`
 
-**1. Create widget entry point and registration**
+This makes the workflow override any config weirdness and ensures it does not attempt to use terser.
 
-Create a new entry point that:
-- Defines the `<rebase-services>` custom element class
-- Extends `HTMLElement` with Shadow DOM
-- Handles `src` attribute to load the main bundle
-- Injects styles and mounts React
+### B) Add a quick “debug/sanity check” in the workflow
+Add a step right after `npm ci` that prints:
+- Node + npm versions
+- confirms whether `terser` can be resolved (so we can stop guessing)
 
-**Files to create:**
-- `src/widget/index.ts` - Custom element definition
-- `src/widget/Widget.tsx` - Root React component for widget
-- `src/widget/styles.css` - Compiled Tailwind for widget
-- `src/widget/context/WidgetContext.tsx` - Widget-specific context
+For example:
+- `node -v`
+- `npm -v`
+- `node -e "console.log(require.resolve('terser'))"` (this will clearly pass/fail)
 
-**2. Custom Element Class Structure:**
+If it fails, we’ll know instantly that `npm ci` isn’t installing it (which points to a permissions/cache/lock mismatch issue).
 
-```typescript
-// src/widget/index.ts
-class RebaseServicesWidget extends HTMLElement {
-  private shadow: ShadowRoot;
-  private root: Root | null = null;
-  
-  static get observedAttributes() {
-    return ['theme', 'api-url', 'category', 'show-booking'];
-  }
-  
-  constructor() {
-    super();
-    this.shadow = this.attachShadow({ mode: 'closed' });
-  }
-  
-  connectedCallback() {
-    this.render();
-  }
-  
-  attributeChangedCallback() {
-    this.render();
-  }
-  
-  private render() {
-    // Inject styles and mount React
-  }
-}
+### C) Ensure the workflow can push the built files back to the repo
+Add explicit workflow permissions (GitHub has increasingly tightened defaults in some orgs/repos):
 
-customElements.define('rebase-services', RebaseServicesWidget);
-```
+- `permissions: contents: write`
 
-### Phase 2: Create Standalone Widget Components
+This prevents a “build succeeded but push failed” scenario once the build is green.
 
-**1. Widget-specific service components (simplified, no routing):**
+### D) Clean up the widget Vite config warning (nice-to-have, reduces noise)
+Right now you get this warning in the logs:
+> outDir .../public and publicDir .../public are not separate folders.
 
-- `src/widget/components/ServiceList.tsx` - Collapsible category sections
-- `src/widget/components/ServiceChip.tsx` - Compact service cards
-- `src/widget/components/BookingFlow.tsx` - Multi-step booking (modal-based, no navigation)
-- `src/widget/components/BookingCalendar.tsx` - Calendar picker
-- `src/widget/components/TimeSlots.tsx` - Time slot selection
+In the widget build config, we can set:
+- `publicDir: false`
 
-**2. Key differences from main app:**
-- No `react-router-dom` - all navigation is internal state
-- Modal-based booking flow instead of page navigation
-- Simplified authentication flow (popup-based OAuth)
-- All API calls use provided `api-url` attribute or default
+So Vite doesn’t try to treat `/public` as both “input public assets” and “output build folder” at the same time.
 
-### Phase 3: Styling Strategy
-
-**1. Shadow DOM CSS Injection:**
-
-Since Tailwind uses global styles, we need to:
-- Build a separate Tailwind bundle for the widget
-- Inject all CSS into the Shadow DOM
-
-**2. Add to vite.config.ts:**
-
-```typescript
-// Additional build config for widget
-export default defineConfig({
-  build: {
-    lib: {
-      entry: 'src/widget/index.ts',
-      name: 'RebaseServicesWidget',
-      fileName: 'widget',
-      formats: ['iife']
-    },
-    rollupOptions: {
-      output: {
-        // Inline all CSS into JS
-        inlineDynamicImports: true
-      }
-    }
-  }
-});
-```
-
-**3. Create widget-specific Tailwind config:**
-- `src/widget/tailwind.widget.config.ts`
-- Prefixes all classes to avoid conflicts
-
-### Phase 4: Build Configuration
-
-**1. Create separate Vite config for widget build:**
-
-Create `vite.widget.config.ts`:
-```typescript
-export default defineConfig({
-  build: {
-    lib: {
-      entry: resolve(__dirname, 'src/widget/index.ts'),
-      name: 'RebaseServicesWidget',
-      formats: ['iife'],
-      fileName: () => 'widget.js'
-    },
-    cssCodeSplit: false,
-    outDir: 'dist-widget',
-    emptyOutDir: true,
-    rollupOptions: {
-      output: {
-        inlineDynamicImports: true,
-        manualChunks: undefined
-      }
-    }
-  }
-});
-```
-
-**2. Add build scripts to package.json:**
-
-```json
-{
-  "scripts": {
-    "build:widget": "vite build --config vite.widget.config.ts",
-    "build:all": "vite build && npm run build:widget"
-  }
-}
-```
-
-### Phase 5: API Integration
-
-**1. Widget API client (no Vite env vars):**
-
-```typescript
-// src/widget/api/client.ts
-export function createApiClient(baseUrl: string) {
-  return {
-    async getServices() {
-      const res = await fetch(`${baseUrl}/functions/v1/mindbody-services`);
-      return res.json();
-    },
-    async getAvailability(params) {
-      // ...
-    },
-    async bookService(params) {
-      // ...
-    }
-  };
-}
-```
-
-**2. Authentication handling:**
-- OAuth popup flow for Mindbody login
-- Session stored in widget's isolated localStorage key
-- Callback handled via postMessage
-
-### Phase 6: Widget React Components
-
-**1. Main Widget.tsx structure:**
-
-```tsx
-// src/widget/Widget.tsx
-export function Widget({ config }: WidgetProps) {
-  const [view, setView] = useState<'services' | 'booking'>('services');
-  const [selectedService, setSelectedService] = useState(null);
-  
-  return (
-    <WidgetProvider config={config}>
-      <div className="rebase-widget">
-        {view === 'services' && (
-          <ServiceList onSelectService={(s) => {
-            setSelectedService(s);
-            setView('booking');
-          }} />
-        )}
-        {view === 'booking' && (
-          <BookingModal 
-            service={selectedService}
-            onClose={() => setView('services')}
-          />
-        )}
-      </div>
-    </WidgetProvider>
-  );
-}
-```
-
-**2. ServiceList (widget version):**
-- Reuses CategorySection and ServiceChip patterns
-- Horizontal scrolling categories
-- Click triggers booking modal (not navigation)
-
-**3. BookingModal:**
-- Steps: Service Options > Date > Time > Confirm
-- Renders as overlay within Shadow DOM
-- Uses same BookingCalendar and TimeSlotPicker logic
+This warning isn’t the cause of the terser error, but removing it makes the build logs clearer.
 
 ---
 
-## File Structure
+## How you’ll verify it (non-technical steps)
+After I implement the above and it’s synced to GitHub:
 
-```text
-src/
-├── widget/
-│   ├── index.ts                    # Custom element registration
-│   ├── Widget.tsx                  # Root React component
-│   ├── styles.css                  # Widget Tailwind styles
-│   ├── api/
-│   │   └── client.ts               # API client (no env vars)
-│   ├── components/
-│   │   ├── ServiceList.tsx         # Category sections
-│   │   ├── ServiceChip.tsx         # Compact service cards
-│   │   ├── BookingModal.tsx        # Modal-based booking
-│   │   ├── BookingCalendar.tsx     # Calendar (adapted)
-│   │   ├── TimeSlotPicker.tsx      # Time slots (adapted)
-│   │   └── ConfirmationStep.tsx    # Booking confirmation
-│   └── context/
-│       └── WidgetContext.tsx       # Config & state context
-├── vite.widget.config.ts           # Widget build config
-└── package.json                    # Updated scripts
-```
+1) Go to GitHub → **Actions** → **Build Widget**
+2) Click **Run workflow** (important: “Run workflow”, not “Re-run jobs” on an old failed run)
+3) Wait for the run to finish (usually ~1–2 minutes)
+4) Confirm it’s green and that these files exist/updated in your repo:
+   - `public/widget.js`
+   - `public/widget.css`
+5) Then test embedding on your site (Framer) using the same widget script URL.
 
 ---
 
-## Hosting & Distribution
-
-**1. After building, `widget.js` is served from:**
-```
-https://rebase-flow.lovable.app/widget.js
-```
-
-**2. Public serving:**
-- Add `widget.js` to `public/` folder after build
-- Or serve from CDN/separate hosting
-
-**3. CORS configuration:**
-- Edge functions already have `Access-Control-Allow-Origin: *`
-- Widget script loads from any domain
+## Edge cases (what we’ll do if it still fails)
+If it still says “terser not found” even after forcing `--minify esbuild`:
+- that would mean something deeper is off (like the workflow is still not using the config/command we expect, or the action is running against a different ref/branch).
+- The new debug steps will make that immediately obvious (we’ll see exactly what’s installed and what command is running).
 
 ---
 
-## Usage Examples
-
-**Basic embed:**
-```html
-<rebase-services src="https://rebase-flow.lovable.app/widget.js"></rebase-services>
-```
-
-**With custom options:**
-```html
-<rebase-services 
-  src="https://rebase-flow.lovable.app/widget.js"
-  theme="light"
-  category="Recovery"
-  show-booking="true"
-></rebase-services>
-```
-
-**Programmatic control:**
-```javascript
-const widget = document.querySelector('rebase-services');
-widget.setAttribute('category', 'Wellness'); // Filter changes
-```
-
----
-
-## Technical Considerations
-
-1. **Bundle Size** - Target under 250KB gzipped by tree-shaking unused Radix/UI components
-2. **Shadow DOM Limitations** - Some Radix components may need adaptation for Shadow DOM
-3. **Date Picker** - react-day-picker works in Shadow DOM with injected styles
-4. **Fonts** - Load fonts via link in Shadow DOM or use system fonts
-5. **Framer Motion** - Works in Shadow DOM, animations preserved
-
----
-
-## Summary
-
-This implementation creates a production-ready Web Component that:
-- Loads via a single `<script>` tag with `src` attribute
-- Uses Shadow DOM for complete style isolation
-- Renders the full services + booking flow inside any website
-- Requires no npm installation or build setup from embedders
-- Supports theming and configuration via HTML attributes
+## Implementation checklist (for me, in Lovable)
+1) Edit `.github/workflows/build-widget.yml`
+   - add `permissions: contents: write`
+   - add debug step after `npm ci`
+   - change build command to include `--minify esbuild`
+2) Edit `vite.widget.config.ts`
+   - add `publicDir: false` to remove the warning
+3) Trigger a fresh workflow run (a new commit will do this automatically)
+4) Validate the latest run is green and outputs `public/widget.js` + `public/widget.css`
 
