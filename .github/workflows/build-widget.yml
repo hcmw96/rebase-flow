@@ -32,6 +32,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Ensure terser available
+        run: |
+          echo "Ensuring terser is installed (CI hotfix)..."
+          npm i terser@5.46.0 --no-save
+          node -e "import('terser').then(()=>console.log('terser ESM import: OK')).catch(e=>{console.error('terser ESM import: FAILED', e); process.exit(1)})"
+
       - name: Debug environment
         run: |
           echo "=== Build Info ==="
