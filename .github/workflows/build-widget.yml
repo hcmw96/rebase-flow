@@ -10,6 +10,9 @@ on:
       - '.github/workflows/build-widget.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,8 +32,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Debug environment
+        run: |
+          echo "Node version: $(node -v)"
+          echo "npm version: $(npm -v)"
+          echo "Checking if terser is installed..."
+          node -e "try { console.log('terser found at:', require.resolve('terser')); } catch(e) { console.log('terser NOT found'); }"
+
       - name: Build widget
-        run: npx vite build --config vite.widget.config.ts
+        run: npx vite build --config vite.widget.config.ts --minify esbuild
 
       - name: Commit and push widget files
         run: |
