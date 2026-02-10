@@ -67,7 +67,11 @@ interface GroupedService {
   variants: ServiceVariant[];
 }
 
-const Services = () => {
+interface ServicesProps {
+  onSelectService?: (service: import('@/components/booking/BookingDrawer').BookingServiceData) => void;
+}
+
+const Services = ({ onSelectService }: ServicesProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const { data: services, isLoading, error } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
@@ -191,6 +195,7 @@ const Services = () => {
                 category={category}
                 services={categoryServices}
                 defaultExpanded={index < 3}
+                onSelectService={onSelectService}
               />
             ))}
           </div>

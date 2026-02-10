@@ -7,7 +7,6 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { MindbodyProvider } from "./contexts/MindbodyContext";
 import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
-import BookService from "./pages/BookService";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -21,7 +20,6 @@ const App = () => (
         <ScrollToTop />
         <Routes>
           <Route path="/" element={<AppShell />} />
-          <Route path="/book/:serviceId" element={<BookService />} />
           <Route path="*" element={<AppShell />} />
         </Routes>
       </BrowserRouter>

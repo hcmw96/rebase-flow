@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Home, Search, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -6,6 +6,7 @@ import HomePage from '@/pages/HomePage';
 import Services from '@/pages/Services';
 import MyBookings from '@/pages/MyBookings';
 import AccountPage from '@/pages/AccountPage';
+import BookingDrawer, { BookingServiceData } from '@/components/booking/BookingDrawer';
 
 type Tab = 'home' | 'services' | 'bookings' | 'account';
 
@@ -18,13 +19,24 @@ const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
 
 const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleSelectService = useCallback((service: BookingServiceData) => {
+    setBookingService(service);
+    setDrawerOpen(true);
+  }, []);
+
+  const handleCloseDrawer = useCallback(() => {
+    setDrawerOpen(false);
+  }, []);
 
   const renderContent = () => {
     switch (activeTab) {
       case 'home':
-        return <HomePage onNavigate={setActiveTab} />;
+        return <HomePage onNavigate={setActiveTab} onSelectService={handleSelectService} />;
       case 'services':
-        return <Services />;
+        return <Services onSelectService={handleSelectService} />;
       case 'bookings':
         return <MyBookings />;
       case 'account':
@@ -77,6 +89,13 @@ const AppShell = () => {
           </div>
         </div>
       </nav>
+
+      {/* Booking Drawer */}
+      <BookingDrawer
+        open={drawerOpen}
+        onClose={handleCloseDrawer}
+        service={bookingService}
+      />
     </div>
   );
 };
