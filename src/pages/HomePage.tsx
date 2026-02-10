@@ -138,7 +138,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
       >
         {nextBooking ? (
           <Card
-            className="cursor-pointer border border-champagne/10 bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] hover:shadow-champagne transition-all"
+            className="cursor-pointer border border-champagne/10 bg-white/[0.04] backdrop-blur-2xl active:shadow-champagne-strong active:border-champagne/25 transition-all"
             onClick={() => onNavigate('bookings')}
           >
             <CardContent className="p-4 space-y-2">
@@ -166,7 +166,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           </Card>
         ) : (
           <Card
-            className="cursor-pointer border border-champagne/10 bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] hover:shadow-champagne transition-all"
+            className="cursor-pointer border border-champagne/10 bg-white/[0.04] backdrop-blur-2xl active:shadow-champagne-strong active:border-champagne/25 transition-all"
             onClick={() => onNavigate('services')}
           >
             <CardContent className="p-4 flex items-center justify-between">
@@ -225,7 +225,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                   onClick={() => handleBookService(service)}
                   className="w-full text-left group"
                 >
-                  <div className="relative h-[18vh] rounded-lg overflow-hidden border border-champagne/8 hover:border-champagne/25 hover:shadow-champagne transition-all">
+                  <div className="relative h-[18vh] rounded-lg overflow-hidden border border-champagne/8 active:border-champagne/25 active:shadow-champagne-strong transition-all">
                     <img
                       src={service.image}
                       alt={service.name}
