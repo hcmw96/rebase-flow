@@ -121,7 +121,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     : 'Welcome to Rebase';
 
   return (
-    <div className="px-4 pt-6 pb-4 space-y-5 max-w-lg mx-auto">
+    <div className="px-4 pt-3 pb-4 space-y-4 max-w-lg mx-auto">
       {/* Logo */}
       <div className="flex justify-center">
         <Logo className="h-20 w-auto" />
