@@ -1,4 +1,6 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { useAuth } from './AuthContext';
+import { supabase } from '@/integrations/supabase/client';
 
 interface MindbodySession {
   sessionId: string;
@@ -9,148 +11,113 @@ interface MindbodySession {
 }
 
 interface MindbodyContextType {
-  session: MindbodySession | null;
-  isLoading: boolean;
-  isAuthenticated: boolean;
-  login: (redirectUri: string) => Promise<void>;
-  handleCallback: (code: string, redirectUri: string) => Promise<void>;
-  logout: () => void;
+  mbSession: MindbodySession | null;
+  isMindbodyLinked: boolean;
+  isLinking: boolean;
+  linkMindbody: () => void;
+  unlinkMindbody: () => Promise<void>;
 }
 
 const MindbodyContext = createContext<MindbodyContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'mb_session';
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const MB_STORAGE_KEY = 'mb_session';
 
 export function MindbodyProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<MindbodySession | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const { profile, refreshProfile, isAuthenticated } = useAuth();
+  const [mbSession, setMbSession] = useState<MindbodySession | null>(null);
+  const [isLinking, setIsLinking] = useState(false);
 
+  // Load MB session from localStorage if profile has mb_session_id
   useEffect(() => {
-    // Load session from localStorage on mount
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      try {
-        const parsed = JSON.parse(stored) as MindbodySession;
-        // Check if session is still valid
-        if (new Date(parsed.expiresAt) > new Date()) {
-          setSession(parsed);
-        } else {
-          // Try to refresh the token
-          refreshSession(parsed.sessionId);
+    if (profile?.mb_session_id) {
+      const stored = localStorage.getItem(MB_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored) as MindbodySession;
+          if (parsed.sessionId === profile.mb_session_id) {
+            setMbSession(parsed);
+          }
+        } catch {
+          // ignore
         }
-      } catch {
-        localStorage.removeItem(STORAGE_KEY);
       }
+    } else {
+      setMbSession(null);
     }
-    setIsLoading(false);
-  }, []);
+  }, [profile?.mb_session_id]);
 
-  const refreshSession = async (sessionId: string) => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-refresh-token`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId }),
-      });
+  const linkMindbody = useCallback(() => {
+    if (!isAuthenticated) return;
+    setIsLinking(true);
 
-      if (response.ok) {
-        const data = await response.json();
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          const updated = { ...JSON.parse(stored), expiresAt: data.expiresAt };
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-          setSession(updated);
-        }
-      } else {
-        // Session expired, clear it
-        localStorage.removeItem(STORAGE_KEY);
-        setSession(null);
+    const width = 500;
+    const height = 600;
+    const left = window.screenX + (window.outerWidth - width) / 2;
+    const top = window.screenY + (window.outerHeight - height) / 2;
+
+    const redirectUri = encodeURIComponent(window.location.origin);
+
+    const popup = window.open(
+      `${SUPABASE_URL}/functions/v1/mindbody-oauth-init?redirect_uri=${redirectUri}`,
+      'rebase-mb-link',
+      `width=${width},height=${height},left=${left},top=${top},popup=yes`
+    );
+
+    const handleMessage = async (event: MessageEvent) => {
+      if (event.data?.type === 'rebase-oauth-callback' && event.data.session) {
+        const mbData = event.data.session as MindbodySession;
+
+        // Save locally
+        localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(mbData));
+        setMbSession(mbData);
+
+        // Link to profile
+        await supabase
+          .from('profiles')
+          .update({ mb_session_id: mbData.sessionId } as any)
+          .eq('id', profile!.id);
+
+        await refreshProfile();
+        setIsLinking(false);
+        popup?.close();
+        window.removeEventListener('message', handleMessage);
       }
-    } catch (error) {
-      console.error('Failed to refresh session:', error);
-      localStorage.removeItem(STORAGE_KEY);
-      setSession(null);
-    }
-  };
+    };
 
-  const login = async (redirectUri: string) => {
-    try {
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ redirectUri }),
-      });
+    window.addEventListener('message', handleMessage);
 
-      if (!response.ok) {
-        throw new Error('Failed to initialize OAuth');
+    // Fallback: if popup closed without linking
+    const check = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(check);
+        setIsLinking(false);
+        window.removeEventListener('message', handleMessage);
       }
+    }, 500);
+  }, [isAuthenticated, profile, refreshProfile]);
 
-      const { authUrl, state } = await response.json();
-      
-      // Store state for verification
-      sessionStorage.setItem('mb_oauth_state', state);
-      sessionStorage.setItem('mb_redirect_after_login', window.location.pathname);
-      
-      // Redirect to Mindbody login
-      window.location.href = authUrl;
-    } catch (error) {
-      console.error('Login error:', error);
-      throw error;
+  const unlinkMindbody = useCallback(async () => {
+    localStorage.removeItem(MB_STORAGE_KEY);
+    setMbSession(null);
+
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ mb_session_id: null } as any)
+        .eq('id', profile.id);
+      await refreshProfile();
     }
-  };
-
-  const handleCallback = async (code: string, redirectUri: string) => {
-    try {
-      setIsLoading(true);
-      
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-callback`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code, redirectUri }),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to complete authentication');
-      }
-
-      const sessionData = await response.json();
-      const newSession: MindbodySession = {
-        sessionId: sessionData.sessionId,
-        email: sessionData.email,
-        firstName: sessionData.firstName,
-        lastName: sessionData.lastName,
-        expiresAt: sessionData.expiresAt,
-      };
-
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSession));
-      setSession(newSession);
-      
-      // Clear OAuth state
-      sessionStorage.removeItem('mb_oauth_state');
-    } catch (error) {
-      console.error('Callback error:', error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const logout = () => {
-    localStorage.removeItem(STORAGE_KEY);
-    setSession(null);
-  };
+  }, [profile, refreshProfile]);
 
   return (
     <MindbodyContext.Provider
       value={{
-        session,
-        isLoading,
-        isAuthenticated: !!session,
-        login,
-        handleCallback,
-        logout,
+        mbSession,
+        isMindbodyLinked: !!profile?.mb_session_id,
+        isLinking,
+        linkMindbody,
+        unlinkMindbody,
       }}
     >
       {children}

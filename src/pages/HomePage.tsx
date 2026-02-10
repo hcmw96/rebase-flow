@@ -4,6 +4,7 @@ import { Calendar, Clock, ArrowRight, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMindbody } from '@/contexts/MindbodyContext';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
@@ -43,7 +44,8 @@ const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
 ];
 
 const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
-  const { session, isAuthenticated } = useMindbody();
+  const { profile, isAuthenticated } = useAuth();
+  const { isMindbodyLinked } = useMindbody();
   const { data: services } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
   const { data: bookingsData } = useMyBookings();
@@ -116,8 +118,8 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     });
   };
 
-  const greeting = isAuthenticated && session?.firstName
-    ? `Hi, ${session.firstName}`
+  const greeting = isAuthenticated && profile?.first_name
+    ? `Hi, ${profile.first_name}`
     : 'Welcome to Rebase';
 
   return (

@@ -4,6 +4,7 @@ import * as React from "react";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "./contexts/AuthContext";
 import { MindbodyProvider } from "./contexts/MindbodyContext";
 import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
@@ -13,17 +14,19 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <MindbodyProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <ScrollToTop />
-        <Routes>
-          <Route path="/" element={<AppShell />} />
-          <Route path="*" element={<AppShell />} />
-        </Routes>
-      </BrowserRouter>
-    </MindbodyProvider>
+    <AuthProvider>
+      <MindbodyProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <ScrollToTop />
+          <Routes>
+            <Route path="/" element={<AppShell />} />
+            <Route path="*" element={<AppShell />} />
+          </Routes>
+        </BrowserRouter>
+      </MindbodyProvider>
+    </AuthProvider>
   </QueryClientProvider>
 );
 

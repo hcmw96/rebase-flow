@@ -11,6 +11,7 @@ import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
 import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMindbody } from '@/contexts/MindbodyContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
@@ -32,7 +33,8 @@ interface BookingDrawerProps {
 }
 
 const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
-  const { session, isAuthenticated, login } = useMindbody();
+  const { isAuthenticated } = useAuth();
+  const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -129,13 +131,12 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!isAuthenticated) {
-      const redirectUri = `${window.location.origin}/`;
-      login(redirectUri);
+    if (!isMindbodyLinked) {
+      linkMindbody();
       return;
     }
 
-    if (!selectedSlot || !session) return;
+    if (!selectedSlot || !mbSession) return;
 
     try {
       await bookServiceMutation.mutateAsync({
@@ -365,9 +366,9 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                         </div>
                       </div>
 
-                      {!isAuthenticated && (
+                      {!isMindbodyLinked && (
                         <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
-                          You'll need to log in with your Mindbody account to complete this booking.
+                          You'll need to connect your Mindbody account to complete this booking.
                         </div>
                       )}
 
@@ -378,10 +379,10 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                         <Button onClick={handleConfirmBooking} disabled={isBooking} className="flex-1">
                           {isBooking ? (
                             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
-                          ) : isAuthenticated ? (
+                          ) : isMindbodyLinked ? (
                             'Confirm Booking'
                           ) : (
-                            'Login & Confirm'
+                            'Connect Mindbody'
                           )}
                         </Button>
                       </div>
