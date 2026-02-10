@@ -71,9 +71,6 @@ const AppShell = () => {
                   )}
                 >
                   <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.5} />
-                  <span className={cn('text-[10px]', isActive && 'font-semibold')}>
-                    {tab.label}
-                  </span>
                 </button>
               );
             })}
