@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { LogOut, ExternalLink, User, Mail, Link2 } from 'lucide-react';
+import { LogOut, ExternalLink, User, Mail, Link2, MessageSquare } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -12,6 +14,7 @@ const AccountPage = () => {
   const { profile, isAuthenticated, signOut } = useAuth();
   const { isMindbodyLinked, linkMindbody, isLinking } = useMindbody();
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
+  const [message, setMessage] = useState('');
 
   if (!isAuthenticated) {
     if (authView === 'signup') {
@@ -113,11 +116,54 @@ const AccountPage = () => {
         </a>
       </motion.div>
 
+      {/* Contact Form */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.25 }}
+      >
+        <Card>
+          <CardContent className="p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
+                <MessageSquare className="h-4 w-4 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-foreground">Get in Touch</p>
+                <p className="text-xs text-muted-foreground">Questions or feedback</p>
+              </div>
+            </div>
+            <Textarea
+              placeholder="Write your message..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              className="min-h-[100px] resize-none"
+            />
+            <Button
+              size="sm"
+              className="w-full"
+              disabled={!message.trim()}
+              onClick={() => {
+                const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
+                const email = profile?.email || '';
+                const subject = encodeURIComponent(`Message from ${name}`);
+                const body = encodeURIComponent(`${message}\n\nFrom: ${name} (${email})`);
+                window.open(`mailto:reception@rebaserecovery.com?subject=${subject}&body=${body}`, '_self');
+                toast.success('Opening your email client...');
+                setMessage('');
+              }}
+            >
+              Send Message
+            </Button>
+          </CardContent>
+        </Card>
+      </motion.div>
+
       {/* Logout */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
+        transition={{ delay: 0.35 }}
       >
         <Button
           variant="outline"
