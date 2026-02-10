@@ -24,6 +24,7 @@ const categoryImages: Record<string, string> = {
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
   'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
+  'Premium Suite': '/images/rebase-private-suites.webp',
 };
 
 interface HomePageProps {
@@ -95,7 +96,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           groupName,
           serviceId: match.id,
           name: groupName,
-          image: serviceImages[match.name] || categoryImages[cat] || categoryImages['default'],
+          image: serviceImages[groupName] || serviceImages[match.name] || categoryImages[cat] || categoryImages['default'],
           price: match.price,
           duration: match.defaultTimeLength,
           category: cat,
