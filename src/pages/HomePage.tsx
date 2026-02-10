@@ -219,22 +219,20 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/90 via-background/30 to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
                     {/* Content */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
-                      <div>
-                        <h3 className="font-semibold text-foreground text-base">
-                          {service.name}
-                        </h3>
-                        {service.duration && (
-                          <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {service.duration} min
-                          </p>
-                        )}
-                      </div>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                      <h3 className="font-semibold text-foreground text-lg text-center">
+                        {service.name}
+                      </h3>
+                      {service.duration && (
+                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {service.duration} min
+                        </p>
+                      )}
                       {service.price != null && service.price > 0 && (
-                        <span className="text-sm font-semibold text-foreground">
+                        <span className="text-sm font-semibold text-foreground mt-1">
                           From £{service.price}
                         </span>
                       )}
