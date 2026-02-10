@@ -123,12 +123,12 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
   return (
     <div className="px-4 pt-2 pb-2 space-y-2 max-w-lg mx-auto">
       {/* Logo */}
-      <div className="flex justify-center drop-shadow-[0_0_12px_hsl(38_45%_70%/0.15)]">
-        <Logo className="h-16 w-auto" />
+      <div className="flex justify-center">
+        <Logo className="h-16 w-auto opacity-80" />
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-champagne/10 mx-2" />
+      <div className="h-px bg-black/10 mx-2" />
 
       {/* My Bookings / Next Appointment */}
       <motion.div
@@ -166,18 +166,18 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           </Card>
         ) : (
           <Card
-            className="cursor-pointer border border-white/[0.02] bg-white/[0.03] backdrop-blur-2xl active:shadow-champagne-strong active:border-champagne/15 transition-all"
+            className="cursor-pointer border border-black/[0.06] bg-black/[0.03] backdrop-blur-2xl active:shadow-champagne-strong active:border-champagne/15 transition-all"
             onClick={() => onNavigate('services')}
           >
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
+                <p className="text-xs font-medium text-black/40 uppercase tracking-wider">
                   My Bookings
                 </p>
-                <p className="text-sm text-foreground/80 mt-1">No sessions scheduled</p>
-                <p className="text-[11px] text-muted-foreground/50 mt-0.5">Book a moment of restoration</p>
+                <p className="text-sm text-black/70 mt-1">No sessions scheduled</p>
+                <p className="text-[11px] text-black/35 mt-0.5">Book a moment of restoration</p>
               </div>
-              <Button variant="outline" size="sm" className="shrink-0 border-white/[0.06] text-foreground/70">
+              <Button variant="outline" size="sm" className="shrink-0 border-black/10 text-black/60 hover:bg-black/5">
                 Book
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
@@ -187,7 +187,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
       </motion.div>
 
       {/* Divider */}
-      <div className="h-px bg-champagne/10 mx-2" />
+      <div className="h-px bg-black/10 mx-2" />
 
       {/* Popular Services */}
       <motion.div
@@ -196,12 +196,12 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
         transition={{ delay: 0.1 }}
       >
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+          <p className="text-xs font-medium text-black/40 uppercase tracking-wider">
             Popular
           </p>
           <button
             onClick={() => onNavigate('services')}
-            className="text-xs text-primary flex items-center gap-1 hover:underline"
+            className="text-xs text-black/50 flex items-center gap-1 hover:underline"
           >
             View all <ArrowRight className="h-3 w-3" />
           </button>
