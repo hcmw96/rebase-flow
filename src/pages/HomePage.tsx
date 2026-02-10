@@ -177,7 +177,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                 <p className="text-sm text-black/70 mt-1">No sessions scheduled</p>
                 <p className="text-[11px] text-black/35 mt-0.5">Book a moment of restoration</p>
               </div>
-              <Button variant="outline" size="sm" className="shrink-0 border-black/10 text-black/60 hover:bg-black/5">
+              <Button variant="outline" size="sm" className="shrink-0 border-black/10 text-black/50 hover:bg-black/5 bg-transparent">
                 Book
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
@@ -233,17 +233,11 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
-                    {/* Title + metadata – lower left */}
+                    {/* Title only – lower left */}
                     <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
                       <h3 className="font-medium text-foreground text-base">
                         {service.name}
                       </h3>
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {[
-                          service.duration ? `${service.duration} minutes` : null,
-                          service.price != null && service.price > 0 ? `£${service.price}` : null,
-                        ].filter(Boolean).join(' · ')}
-                      </p>
                     </div>
                   </div>
                 </button>
