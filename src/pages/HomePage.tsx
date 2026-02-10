@@ -121,10 +121,10 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     : 'Welcome to Rebase';
 
   return (
-    <div className="px-4 pt-3 pb-4 space-y-4 max-w-lg mx-auto">
+    <div className="px-4 pt-2 pb-2 space-y-2 max-w-lg mx-auto">
       {/* Logo */}
       <div className="flex justify-center">
-        <Logo className="h-20 w-auto" />
+        <Logo className="h-16 w-auto" />
       </div>
 
       {/* Divider */}
@@ -194,7 +194,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center justify-between mb-1.5">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
             Popular
           </p>
@@ -225,7 +225,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                   onClick={() => handleBookService(service)}
                   className="w-full text-left group"
                 >
-                  <div className="relative h-[22vh] rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all">
+                  <div className="relative h-[18vh] rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all">
                     <img
                       src={service.image}
                       alt={service.name}
