@@ -233,25 +233,17 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
-                    {/* Title – left-aligned, lower third */}
-                    <div className="absolute bottom-10 left-0 right-0 px-4">
+                    {/* Title + metadata – lower left */}
+                    <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
                       <h3 className="font-medium text-foreground text-base">
                         {service.name}
                       </h3>
-                    </div>
-                    {/* Bottom bar: duration + price */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
-                      {service.duration ? (
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {service.duration} min
-                        </p>
-                      ) : <span />}
-                      {service.price != null && service.price > 0 && (
-                        <p className="text-xs text-muted-foreground">
-                          From £{service.price}
-                        </p>
-                      )}
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        {[
+                          service.duration ? `${service.duration} minutes` : null,
+                          service.price != null && service.price > 0 ? `£${service.price}` : null,
+                        ].filter(Boolean).join(' · ')}
+                      </p>
                     </div>
                   </div>
                 </button>
