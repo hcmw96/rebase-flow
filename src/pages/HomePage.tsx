@@ -7,10 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useMindbody } from '@/contexts/MindbodyContext';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
-import { useFeaturedServices } from '@/hooks/useFeaturedServices';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
+import Logo from '@/components/Logo';
 
 // Same image maps from Services page
 const categoryImages: Record<string, string> = {
@@ -30,11 +30,20 @@ interface HomePageProps {
   onNavigate: (tab: 'home' | 'services' | 'bookings' | 'account') => void;
 }
 
+// The 3 popular service groups to feature
+const POPULAR_GROUPS = ['Infrared Sauna & Ice Bath', 'Premium Suite', 'Cryotherapy'];
+
+// Same grouping patterns from Services page
+const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
+  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
+  { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
+  { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
+];
+
 const HomePage = ({ onNavigate }: HomePageProps) => {
   const navigate = useNavigate();
   const { session, isAuthenticated } = useMindbody();
   const { data: services } = useMindbodyServices();
-  const { data: featuredServicesData = [] } = useFeaturedServices();
   const { data: hiddenServices = [] } = useHiddenServices();
   const { data: bookingsData } = useMyBookings();
 
@@ -70,17 +79,32 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
     return upcoming[0] || null;
   }, [bookingsData]);
 
-  // Featured services with resolved info
+  // Popular services: group services by pattern, pick the first variant from each popular group
   const popularServices = useMemo(() => {
-    return featuredServicesData
-      .map(f => {
-        const info = serviceInfoMap.get(f.service_id);
-        if (!info) return null;
-        return { ...f, ...info };
-      })
-      .filter(Boolean)
-      .slice(0, 4);
-  }, [featuredServicesData, serviceInfoMap]);
+    if (!services) return [];
+    const result: { groupName: string; serviceId: string; name: string; image: string; price: number | null; duration: number | null; category: string; description: string }[] = [];
+    
+    for (const groupName of POPULAR_GROUPS) {
+      const pattern = groupingPatterns.find(p => p.groupName === groupName);
+      if (!pattern) continue;
+      // Find first non-hidden service matching this group
+      const match = services.find(s => !hiddenIds.has(s.id) && pattern.pattern.test(s.name));
+      if (match) {
+        const cat = match.programName || match.category || 'Wellness';
+        result.push({
+          groupName,
+          serviceId: match.id,
+          name: groupName,
+          image: serviceImages[match.name] || categoryImages[cat] || categoryImages['default'],
+          price: match.price,
+          duration: match.defaultTimeLength,
+          category: cat,
+          description: match.onlineDescription || match.description || '',
+        });
+      }
+    }
+    return result;
+  }, [services, hiddenIds]);
 
   const handleBookService = (serviceId: string, info: any) => {
     localStorage.setItem('selectedService', JSON.stringify({
@@ -99,6 +123,11 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto">
+      {/* Logo */}
+      <div className="flex justify-center">
+        <Logo className="h-8 w-auto" />
+      </div>
+
       {/* Greeting */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -172,21 +201,21 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           </div>
         ) : (
           <div className="space-y-3">
-            {popularServices.map((service: any, index: number) => (
+            {popularServices.map((service, index) => (
               <motion.div
-                key={service.service_id}
+                key={service.serviceId}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 + index * 0.08 }}
               >
                 <button
-                  onClick={() => handleBookService(service.service_id, service)}
+                  onClick={() => handleBookService(service.serviceId, service)}
                   className="w-full text-left group"
                 >
                   <div className="relative h-32 rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
                     <img
                       src={service.image}
-                      alt={service.service_name || service.name}
+                      alt={service.name}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     {/* Gradient overlay */}
@@ -195,7 +224,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                     <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
                       <div>
                         <h3 className="font-semibold text-foreground text-base">
-                          {service.service_name || service.name}
+                          {service.name}
                         </h3>
                         {service.duration && (
                           <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
