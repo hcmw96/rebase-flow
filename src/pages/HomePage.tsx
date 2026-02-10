@@ -140,7 +140,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
       >
         {nextBooking ? (
           <Card
-            className="cursor-pointer hover:border-primary/50 transition-colors"
+            className="cursor-pointer border border-white/[0.06] bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] transition-colors"
             onClick={() => onNavigate('bookings')}
           >
             <CardContent className="p-4 space-y-2">
@@ -168,7 +168,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           </Card>
         ) : (
           <Card
-            className="cursor-pointer hover:border-primary/50 transition-colors"
+            className="cursor-pointer border border-white/[0.06] bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] transition-colors"
             onClick={() => onNavigate('services')}
           >
             <CardContent className="p-4 flex items-center justify-between">
