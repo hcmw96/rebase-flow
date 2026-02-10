@@ -4,8 +4,6 @@ import { format, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import Navigation from '@/components/Navigation';
-import Footer from '@/components/Footer';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
@@ -139,7 +137,7 @@ const BookService = () => {
 
   const handleBack = () => {
     if (currentStep === 1) {
-      navigate('/services');
+      navigate('/');
     } else {
       setCurrentStep(currentStep - 1);
     }
@@ -197,21 +195,19 @@ const BookService = () => {
   if (!service) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
-        <main className="pt-24 pb-16">
+        <main className="pt-12 pb-16">
           <div className="container mx-auto px-4 flex items-center justify-center min-h-[60vh]">
             <Card className="max-w-md w-full">
               <CardContent className="p-8 text-center space-y-4">
                 <p className="text-muted-foreground">Service not found.</p>
-                <Button onClick={() => navigate('/services')} variant="outline">
+                <Button onClick={() => navigate('/')} variant="outline">
                   <ArrowLeft className="h-4 w-4 mr-2" />
-                  Back to Services
+                  Back
                 </Button>
               </CardContent>
             </Card>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
@@ -219,8 +215,7 @@ const BookService = () => {
   if (bookingComplete && selectedSlot) {
     return (
       <div className="min-h-screen bg-background">
-        <Navigation />
-        <main className="pt-24 pb-16">
+        <main className="pt-12 pb-16">
           <div className="container mx-auto px-4 flex items-center justify-center min-h-[60vh]">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -266,11 +261,8 @@ const BookService = () => {
                   </div>
                   
                   <div className="flex flex-col gap-3">
-                    <Button onClick={() => navigate('/my-bookings')}>
-                      View My Bookings
-                    </Button>
-                    <Button onClick={() => navigate('/services')} variant="outline">
-                      Book Another Service
+                    <Button onClick={() => navigate('/')}>
+                      Back to Home
                     </Button>
                   </div>
                 </CardContent>
@@ -278,16 +270,13 @@ const BookService = () => {
             </motion.div>
           </div>
         </main>
-        <Footer />
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation />
-      
-      <main className="pt-24 pb-16">
+      <main className="pt-6 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}
           <div className="max-w-3xl mx-auto mb-8">
@@ -571,8 +560,6 @@ const BookService = () => {
           </div>
         </div>
       </main>
-      
-      <Footer />
     </div>
   );
 };
