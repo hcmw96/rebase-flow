@@ -166,17 +166,18 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           </Card>
         ) : (
           <Card
-            className="cursor-pointer border border-white/[0.04] bg-white/[0.04] backdrop-blur-2xl active:shadow-champagne-strong active:border-champagne/25 transition-all"
+            className="cursor-pointer border border-white/[0.02] bg-white/[0.03] backdrop-blur-2xl active:shadow-champagne-strong active:border-champagne/15 transition-all"
             onClick={() => onNavigate('services')}
           >
             <CardContent className="p-4 flex items-center justify-between">
               <div>
-                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                <p className="text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
                   My Bookings
                 </p>
-                <p className="text-sm text-foreground mt-1">No upcoming sessions</p>
+                <p className="text-sm text-foreground/80 mt-1">No sessions scheduled</p>
+                <p className="text-[11px] text-muted-foreground/50 mt-0.5">Book a moment of restoration</p>
               </div>
-              <Button variant="outline" size="sm" className="shrink-0">
+              <Button variant="outline" size="sm" className="shrink-0 border-white/[0.06] text-foreground/70">
                 Book
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
