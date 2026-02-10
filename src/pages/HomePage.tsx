@@ -212,7 +212,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                   onClick={() => handleBookService(service.serviceId, service)}
                   className="w-full text-left group"
                 >
-                  <div className="relative h-32 rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
+                  <div className="relative h-44 rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
                     <img
                       src={service.image}
                       alt={service.name}
