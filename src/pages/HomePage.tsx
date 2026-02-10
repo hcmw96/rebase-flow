@@ -178,7 +178,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                 <p className="text-sm text-foreground mt-1">No upcoming sessions</p>
               </div>
               <Button variant="outline" size="sm" className="shrink-0">
-                Make a Booking
+                Book
                 <ArrowRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             </CardContent>
