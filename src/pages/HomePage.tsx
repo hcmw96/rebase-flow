@@ -122,21 +122,82 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
     : 'Welcome to Rebase';
 
   return (
-    <div className="px-4 pt-6 pb-4 max-w-lg mx-auto flex flex-col h-full min-h-0">
+    <div className="px-4 pt-6 pb-4 space-y-5 max-w-lg mx-auto">
       {/* Logo */}
-      <div className="flex justify-center mb-4">
+      <div className="flex justify-center">
         <Logo className="h-14 w-auto" />
       </div>
 
-      {/* Greeting */}
+      {/* Popular Services */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
       >
-        <h1 className="text-2xl font-light text-foreground">{greeting}</h1>
-        <p className="text-sm text-muted-foreground mt-1">
-          Book your next recovery session
-        </p>
+        <div className="flex items-center justify-between mb-3">
+          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+            Popular
+          </p>
+          <button
+            onClick={() => onNavigate('services')}
+            className="text-xs text-primary flex items-center gap-1 hover:underline"
+          >
+            View all <ArrowRight className="h-3 w-3" />
+          </button>
+        </div>
+
+        {popularServices.length === 0 ? (
+          <div className="space-y-3">
+            <Skeleton className="h-[28vh] w-full rounded-xl" />
+            <Skeleton className="h-[28vh] w-full rounded-xl" />
+            <Skeleton className="h-[28vh] w-full rounded-xl" />
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {popularServices.map((service, index) => (
+              <motion.div
+                key={service.serviceId}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.15 + index * 0.08 }}
+              >
+                <button
+                  onClick={() => handleBookService(service.serviceId, service)}
+                  className="w-full text-left group"
+                >
+                  <div className="relative h-[22vh] rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
+                    <img
+                      src={service.image}
+                      alt={service.name}
+                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
+                    {/* Centred title */}
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
+                      <h3 className="font-semibold text-foreground text-lg text-center">
+                        {service.name}
+                      </h3>
+                    </div>
+                    {/* Bottom bar: duration + price */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+                      {service.duration ? (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {service.duration} min
+                        </p>
+                      ) : <span />}
+                      {service.price != null && service.price > 0 && (
+                        <span className="text-sm font-semibold text-foreground">
+                          From £{service.price}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        )}
       </motion.div>
 
       {/* Next Appointment */}
@@ -144,7 +205,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
+          transition={{ delay: 0.4 }}
         >
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
             Next Appointment
@@ -175,80 +236,6 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           </Card>
         </motion.div>
       )}
-
-      {/* Popular Services - fills remaining space */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.2 }}
-        className="flex-1 flex flex-col min-h-0 mt-4"
-      >
-        <div className="flex items-center justify-between mb-3">
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            Popular
-          </p>
-          <button
-            onClick={() => onNavigate('services')}
-            className="text-xs text-primary flex items-center gap-1 hover:underline"
-          >
-            View all <ArrowRight className="h-3 w-3" />
-          </button>
-        </div>
-
-        {popularServices.length === 0 ? (
-          <div className="flex-1 flex flex-col gap-3">
-            <Skeleton className="flex-1 w-full rounded-xl" />
-            <Skeleton className="flex-1 w-full rounded-xl" />
-          </div>
-        ) : (
-          <div className="flex-1 flex flex-col gap-3">
-            {popularServices.map((service, index) => (
-              <motion.div
-                key={service.serviceId}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 + index * 0.08 }}
-                className="flex-1 flex flex-col min-h-[100px]"
-              >
-                <button
-                  onClick={() => handleBookService(service.serviceId, service)}
-                  className="w-full text-left group flex-1 flex flex-col"
-                >
-                  <div className="relative flex-1 rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
-                    <img
-                      src={service.image}
-                      alt={service.name}
-                      className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {/* Gradient overlay */}
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-                    {/* Centred title */}
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                      <h3 className="font-semibold text-foreground text-lg text-center">
-                        {service.name}
-                      </h3>
-                    </div>
-                    {/* Bottom bar: duration + price */}
-                    <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
-                      {service.duration ? (
-                        <p className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {service.duration} min
-                        </p>
-                      ) : <span />}
-                      {service.price != null && service.price > 0 && (
-                        <span className="text-sm font-semibold text-foreground">
-                          From £{service.price}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        )}
-      </motion.div>
     </div>
   );
 };
