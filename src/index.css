@@ -114,7 +114,8 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
-    background: var(--gradient-dark);
+    background: url('/images/app-background.png') no-repeat center center fixed;
+    background-size: cover;
     min-height: 100vh;
   }
 
