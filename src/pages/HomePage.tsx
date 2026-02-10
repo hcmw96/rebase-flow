@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, ArrowRight, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
@@ -11,6 +10,7 @@ import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import Logo from '@/components/Logo';
+import { BookingServiceData } from '@/components/booking/BookingDrawer';
 
 // Same image maps from Services page
 const categoryImages: Record<string, string> = {
@@ -29,6 +29,7 @@ const serviceImages: Record<string, string> = {
 
 interface HomePageProps {
   onNavigate: (tab: 'home' | 'services' | 'bookings' | 'account') => void;
+  onSelectService: (service: BookingServiceData) => void;
 }
 
 // The 3 popular service groups to feature
@@ -41,8 +42,7 @@ const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
   { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
 ];
 
-const HomePage = ({ onNavigate }: HomePageProps) => {
-  const navigate = useNavigate();
+const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
   const { session, isAuthenticated } = useMindbody();
   const { data: services } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
@@ -80,42 +80,40 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
     return upcoming[0] || null;
   }, [bookingsData]);
 
-  // Popular services: group services by pattern, pick the first variant from each popular group
+  // Popular services: group services by pattern, collect all variants per group
   const popularServices = useMemo(() => {
     if (!services) return [];
-    const result: { groupName: string; serviceId: string; name: string; image: string; price: number | null; duration: number | null; category: string; description: string }[] = [];
+    const result: { groupName: string; name: string; image: string; price: number | null; duration: number | null; category: string; description: string; variants: { id: string; name: string; duration: number | null; price: number | null }[] }[] = [];
     
     for (const groupName of POPULAR_GROUPS) {
       const pattern = groupingPatterns.find(p => p.groupName === groupName);
       if (!pattern) continue;
-      // Find first non-hidden service matching this group
-      const match = services.find(s => !hiddenIds.has(s.id) && pattern.pattern.test(s.name));
-      if (match) {
-        const cat = match.programName || match.category || 'Wellness';
-        result.push({
-          groupName,
-          serviceId: match.id,
-          name: groupName,
-          image: serviceImages[groupName] || serviceImages[match.name] || categoryImages[cat] || categoryImages['default'],
-          price: match.price,
-          duration: match.defaultTimeLength,
-          category: cat,
-          description: match.onlineDescription || match.description || '',
-        });
-      }
+      const matches = services.filter(s => !hiddenIds.has(s.id) && pattern.pattern.test(s.name));
+      if (matches.length === 0) continue;
+      const first = matches[0];
+      const cat = first.programName || first.category || 'Wellness';
+      result.push({
+        groupName,
+        name: groupName,
+        image: serviceImages[groupName] || serviceImages[first.name] || categoryImages[cat] || categoryImages['default'],
+        price: first.price,
+        duration: first.defaultTimeLength,
+        category: cat,
+        description: first.onlineDescription || first.description || '',
+        variants: matches.map(m => ({ id: m.id, name: m.name, duration: m.defaultTimeLength, price: m.price })),
+      });
     }
     return result;
   }, [services, hiddenIds]);
 
-  const handleBookService = (serviceId: string, info: any) => {
-    localStorage.setItem('selectedService', JSON.stringify({
-      id: serviceId,
-      title: info.name,
-      description: info.description,
-      category: info.category,
-      image: info.image,
-    }));
-    navigate(`/book/${serviceId}`);
+  const handleBookService = (service: typeof popularServices[number]) => {
+    onSelectService({
+      title: service.name,
+      description: service.description,
+      category: service.category,
+      image: service.image,
+      variants: service.variants,
+    });
   };
 
   const greeting = isAuthenticated && session?.firstName
@@ -218,13 +216,13 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           <div className="space-y-3">
             {popularServices.map((service, index) => (
               <motion.div
-                key={service.serviceId}
+                key={service.groupName}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.15 + index * 0.08 }}
               >
                 <button
-                  onClick={() => handleBookService(service.serviceId, service)}
+                  onClick={() => handleBookService(service)}
                   className="w-full text-left group"
                 >
                   <div className="relative h-[22vh] rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all">
