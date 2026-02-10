@@ -66,6 +66,12 @@ All colors MUST be HSL.
     --gradient-dark: linear-gradient(135deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
     --gradient-warm: linear-gradient(180deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
     
+    /* Champagne / bronze glow tokens */
+    --champagne: 38 45% 70%;
+    --champagne-glow: 0 0 18px 2px hsl(38 45% 70% / 0.12);
+    --champagne-glow-strong: 0 0 28px 4px hsl(38 45% 70% / 0.18);
+    --champagne-border: 38 45% 70%;
+
     /* Shadows */
     --shadow-luxury: 0 25px 50px -12px hsl(25 8% 8% / 0.7);
     --shadow-gold: 0 10px 30px -10px hsl(36 85% 55% / 0.3);
