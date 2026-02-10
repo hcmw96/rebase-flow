@@ -35,7 +35,7 @@ const AppShell = () => {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       {/* Content area */}
-      <main className="flex-1 pb-[calc(64px+env(safe-area-inset-bottom,0px))] overflow-y-auto">
+      <main className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom,0px))] overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={activeTab}
@@ -49,30 +49,35 @@ const AppShell = () => {
         </AnimatePresence>
       </main>
 
-      {/* Bottom Tab Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-md">
-        <div className="flex items-stretch" style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}>
-          {tabs.map((tab) => {
-            const isActive = activeTab === tab.id;
-            const Icon = tab.icon;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={cn(
-                  'flex-1 flex flex-col items-center justify-center py-2 pt-3 gap-0.5 transition-colors',
-                  isActive
-                    ? 'text-primary'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.5} />
-                <span className={cn('text-[10px]', isActive && 'font-semibold')}>
-                  {tab.label}
-                </span>
-              </button>
-            );
-          })}
+      {/* Floating Bottom Tab Bar */}
+      <nav className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md">
+        <div
+          className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg shadow-black/20"
+          style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+        >
+          <div className="flex items-stretch">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={cn(
+                    'flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors rounded-2xl',
+                    isActive
+                      ? 'text-primary'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.5} />
+                  <span className={cn('text-[10px]', isActive && 'font-semibold')}>
+                    {tab.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </nav>
     </div>
