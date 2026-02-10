@@ -128,6 +128,9 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         <Logo className="h-14 w-auto" />
       </div>
 
+      {/* Divider */}
+      <div className="h-px bg-warm-gray/15 mx-2" />
+
       {/* My Bookings / Next Appointment */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -183,6 +186,9 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         )}
       </motion.div>
 
+      {/* Divider */}
+      <div className="h-px bg-warm-gray/15 mx-2" />
+
       {/* Popular Services */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -220,7 +226,7 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                   onClick={() => handleBookService(service.serviceId, service)}
                   className="w-full text-left group"
                 >
-                  <div className="relative h-[22vh] rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
+                  <div className="relative h-[22vh] rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all">
                     <img
                       src={service.image}
                       alt={service.name}
