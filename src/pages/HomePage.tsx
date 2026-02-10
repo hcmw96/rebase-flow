@@ -233,9 +233,9 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
-                    {/* Centred title */}
-                    <div className="absolute inset-0 flex items-center justify-center p-4">
-                      <h3 className="font-semibold text-foreground text-lg text-center">
+                    {/* Title – left-aligned, lower third */}
+                    <div className="absolute bottom-10 left-0 right-0 px-4">
+                      <h3 className="font-medium text-foreground text-base">
                         {service.name}
                       </h3>
                     </div>
