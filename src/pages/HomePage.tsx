@@ -128,6 +128,61 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         <Logo className="h-14 w-auto" />
       </div>
 
+      {/* My Bookings / Next Appointment */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.05 }}
+      >
+        {nextBooking ? (
+          <Card
+            className="cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => onNavigate('bookings')}
+          >
+            <CardContent className="p-4 space-y-2">
+              <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                Next Appointment
+              </p>
+              <h3 className="font-semibold text-foreground">{nextBooking.serviceName}</h3>
+              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {format(new Date(nextBooking.startDateTime), 'EEE, MMM d')}
+                </span>
+                <span className="flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {format(new Date(nextBooking.startDateTime), 'h:mm a')}
+                </span>
+                {nextBooking.locationName && (
+                  <span className="flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {nextBooking.locationName}
+                  </span>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card
+            className="cursor-pointer hover:border-primary/50 transition-colors"
+            onClick={() => onNavigate('services')}
+          >
+            <CardContent className="p-4 flex items-center justify-between">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                  My Bookings
+                </p>
+                <p className="text-sm text-foreground mt-1">No upcoming sessions</p>
+              </div>
+              <Button variant="outline" size="sm" className="shrink-0">
+                Make a Booking
+                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+      </motion.div>
+
       {/* Popular Services */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
@@ -199,43 +254,6 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           </div>
         )}
       </motion.div>
-
-      {/* Next Appointment */}
-      {nextBooking && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-        >
-          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">
-            Next Appointment
-          </p>
-          <Card
-            className="cursor-pointer hover:border-primary/50 transition-colors"
-            onClick={() => onNavigate('bookings')}
-          >
-            <CardContent className="p-4 space-y-2">
-              <h3 className="font-semibold text-foreground">{nextBooking.serviceName}</h3>
-              <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1">
-                  <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(nextBooking.startDateTime), 'EEE, MMM d')}
-                </span>
-                <span className="flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  {format(new Date(nextBooking.startDateTime), 'h:mm a')}
-                </span>
-                {nextBooking.locationName && (
-                  <span className="flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {nextBooking.locationName}
-                  </span>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </motion.div>
-      )}
     </div>
   );
 };
