@@ -124,7 +124,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     <div className="px-4 pt-6 pb-4 space-y-5 max-w-lg mx-auto">
       {/* Logo */}
       <div className="flex justify-center">
-        <Logo className="h-14 w-auto" />
+        <Logo className="h-20 w-auto" />
       </div>
 
       {/* Divider */}
