@@ -247,22 +247,6 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
           </div>
         )}
       </motion.div>
-
-      {/* Browse All CTA */}
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5 }}
-      >
-        <Button
-          variant="outline"
-          className="w-full"
-          onClick={() => onNavigate('services')}
-        >
-          Browse All Services
-          <ArrowRight className="h-4 w-4 ml-2" />
-        </Button>
-      </motion.div>
     </div>
   );
 };
