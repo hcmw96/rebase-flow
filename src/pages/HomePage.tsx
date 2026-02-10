@@ -122,9 +122,9 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
     : 'Welcome to Rebase';
 
   return (
-    <div className="px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto">
+    <div className="px-4 pt-6 pb-4 max-w-lg mx-auto flex flex-col h-full min-h-0">
       {/* Logo */}
-      <div className="flex justify-center">
+      <div className="flex justify-center mb-4">
         <Logo className="h-14 w-auto" />
       </div>
 
@@ -176,11 +176,12 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         </motion.div>
       )}
 
-      {/* Popular Services */}
+      {/* Popular Services - fills remaining space */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
+        className="flex-1 flex flex-col min-h-0 mt-4"
       >
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
@@ -195,24 +196,25 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
         </div>
 
         {popularServices.length === 0 ? (
-          <div className="space-y-3">
-            <Skeleton className="h-32 w-full rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
+          <div className="flex-1 flex flex-col gap-3">
+            <Skeleton className="flex-1 w-full rounded-xl" />
+            <Skeleton className="flex-1 w-full rounded-xl" />
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="flex-1 flex flex-col gap-3">
             {popularServices.map((service, index) => (
               <motion.div
                 key={service.serviceId}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.25 + index * 0.08 }}
+                className="flex-1 flex flex-col min-h-[100px]"
               >
                 <button
                   onClick={() => handleBookService(service.serviceId, service)}
-                  className="w-full text-left group"
+                  className="w-full text-left group flex-1 flex flex-col"
                 >
-                  <div className="relative h-44 rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
+                  <div className="relative flex-1 rounded-xl overflow-hidden border border-border hover:border-primary/50 transition-all">
                     <img
                       src={service.image}
                       alt={service.name}
