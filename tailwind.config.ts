@@ -67,6 +67,9 @@ export default {
 					light: 'hsl(var(--detail-light))',
 					dark: 'hsl(var(--detail-dark))'
 				},
+				champagne: {
+					DEFAULT: 'hsl(var(--champagne))',
+				},
 				sidebar: {
 					DEFAULT: 'hsl(var(--sidebar-background))',
 					foreground: 'hsl(var(--sidebar-foreground))',
@@ -86,6 +89,8 @@ export default {
 				'luxury': 'var(--shadow-luxury)',
 				'gold': 'var(--shadow-gold)',
 				'soft': 'var(--shadow-soft)',
+				'champagne': 'var(--champagne-glow)',
+				'champagne-strong': 'var(--champagne-glow-strong)',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',

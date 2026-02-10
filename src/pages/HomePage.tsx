@@ -123,12 +123,12 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
   return (
     <div className="px-4 pt-2 pb-2 space-y-2 max-w-lg mx-auto">
       {/* Logo */}
-      <div className="flex justify-center">
+      <div className="flex justify-center drop-shadow-[0_0_12px_hsl(38_45%_70%/0.15)]">
         <Logo className="h-16 w-auto" />
       </div>
 
       {/* Divider */}
-      <div className="h-px bg-warm-gray/15 mx-2" />
+      <div className="h-px bg-champagne/10 mx-2" />
 
       {/* My Bookings / Next Appointment */}
       <motion.div
@@ -138,7 +138,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
       >
         {nextBooking ? (
           <Card
-            className="cursor-pointer border border-white/[0.06] bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] transition-colors"
+            className="cursor-pointer border border-champagne/10 bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] hover:shadow-champagne transition-all"
             onClick={() => onNavigate('bookings')}
           >
             <CardContent className="p-4 space-y-2">
@@ -166,7 +166,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           </Card>
         ) : (
           <Card
-            className="cursor-pointer border border-white/[0.06] bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] transition-colors"
+            className="cursor-pointer border border-champagne/10 bg-white/[0.04] backdrop-blur-2xl hover:bg-white/[0.07] hover:shadow-champagne transition-all"
             onClick={() => onNavigate('services')}
           >
             <CardContent className="p-4 flex items-center justify-between">
@@ -186,7 +186,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
       </motion.div>
 
       {/* Divider */}
-      <div className="h-px bg-warm-gray/15 mx-2" />
+      <div className="h-px bg-champagne/10 mx-2" />
 
       {/* Popular Services */}
       <motion.div
@@ -225,7 +225,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                   onClick={() => handleBookService(service)}
                   className="w-full text-left group"
                 >
-                  <div className="relative h-[18vh] rounded-lg overflow-hidden border border-border hover:border-primary/50 transition-all">
+                  <div className="relative h-[18vh] rounded-lg overflow-hidden border border-champagne/8 hover:border-champagne/25 hover:shadow-champagne transition-all">
                     <img
                       src={service.image}
                       alt={service.name}
