@@ -248,9 +248,9 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                         </p>
                       ) : <span />}
                       {service.price != null && service.price > 0 && (
-                        <span className="text-sm font-semibold text-foreground">
+                        <p className="text-xs text-muted-foreground">
                           From £{service.price}
-                        </span>
+                        </p>
                       )}
                     </div>
                   </div>
