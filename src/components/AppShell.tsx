@@ -52,7 +52,7 @@ const AppShell = () => {
       {/* Floating Bottom Tab Bar */}
       <nav className="fixed bottom-4 left-4 right-4 z-50 mx-auto max-w-md">
         <div
-          className="rounded-2xl border border-border/50 bg-card/60 backdrop-blur-xl shadow-lg shadow-black/20"
+          className="rounded-2xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-2xl shadow-lg shadow-black/10"
           style={{ paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
         >
           <div className="flex items-stretch">
@@ -66,8 +66,8 @@ const AppShell = () => {
                   className={cn(
                     'flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors rounded-2xl',
                     isActive
-                      ? 'text-primary'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'text-warm-gray-light'
+                      : 'text-warm-gray/60 hover:text-warm-gray-light'
                   )}
                 >
                   <Icon className="h-5 w-5" strokeWidth={isActive ? 2.5 : 1.5} />
