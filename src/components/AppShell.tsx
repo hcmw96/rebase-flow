@@ -45,7 +45,7 @@ const AppShell = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="h-screen flex flex-col overflow-hidden">
       {/* Content area */}
       <main className="flex-1 pb-[calc(80px+env(safe-area-inset-bottom,0px))] overflow-y-auto">
         <AnimatePresence mode="wait">

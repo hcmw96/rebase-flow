@@ -144,14 +144,22 @@ All colors MUST be HSL.
     letter-spacing: -0.02em;
   }
 
-  /* Smooth scrolling */
+  /* Native app feel - no scrollbars, no bounce */
   html {
     scroll-behavior: smooth;
+    overflow: hidden;
+    height: 100%;
   }
 
-  /* Hide scrollbars - native app feel */
+  body {
+    overflow: hidden;
+    height: 100%;
+  }
+
   ::-webkit-scrollbar {
-    display: none;
+    display: none !important;
+    width: 0 !important;
+    height: 0 !important;
   }
 
   * {
@@ -159,7 +167,6 @@ All colors MUST be HSL.
     scrollbar-width: none;
   }
 
-  /* Disable overscroll bounce */
   html, body {
     overscroll-behavior: none;
     -webkit-overflow-scrolling: touch;
