@@ -220,19 +220,22 @@ const HomePage = ({ onNavigate }: HomePageProps) => {
                     />
                     {/* Gradient overlay */}
                     <div className="absolute inset-0 bg-gradient-to-t from-background/80 via-background/20 to-transparent" />
-                    {/* Content */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
+                    {/* Centred title */}
+                    <div className="absolute inset-0 flex items-center justify-center p-4">
                       <h3 className="font-semibold text-foreground text-lg text-center">
                         {service.name}
                       </h3>
-                      {service.duration && (
-                        <p className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
+                    </div>
+                    {/* Bottom bar: duration + price */}
+                    <div className="absolute bottom-0 left-0 right-0 p-4 flex items-end justify-between">
+                      {service.duration ? (
+                        <p className="text-xs text-muted-foreground flex items-center gap-1">
                           <Clock className="h-3 w-3" />
                           {service.duration} min
                         </p>
-                      )}
+                      ) : <span />}
                       {service.price != null && service.price > 0 && (
-                        <span className="text-sm font-semibold text-foreground mt-1">
+                        <span className="text-sm font-semibold text-foreground">
                           From £{service.price}
                         </span>
                       )}
