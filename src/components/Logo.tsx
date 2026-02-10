@@ -9,7 +9,7 @@ const Logo = ({ className = "h-8 w-auto" }: LogoProps) => {
     <img
       src={rebaseLogo}
       alt="Rebase"
-      className={className}
+      className={`${className} invert`}
     />
   );
 };
