@@ -34,17 +34,17 @@ interface CancelParams {
 }
 
 export function useMyBookings() {
-  const { session, isAuthenticated } = useMindbody();
+  const { mbSession, isMindbodyLinked } = useMindbody();
 
   return useQuery({
-    queryKey: ['my-bookings', session?.sessionId],
+    queryKey: ['my-bookings', mbSession?.sessionId],
     queryFn: async () => {
-      if (!session?.sessionId) {
+      if (!mbSession?.sessionId) {
         throw new Error('Not authenticated');
       }
 
       const response = await fetch(
-        `${SUPABASE_URL}/functions/v1/mindbody-my-bookings?sessionId=${session.sessionId}`
+        `${SUPABASE_URL}/functions/v1/mindbody-my-bookings?sessionId=${mbSession.sessionId}`
       );
       
       if (!response.ok) {
@@ -54,26 +54,26 @@ export function useMyBookings() {
       
       return response.json();
     },
-    enabled: isAuthenticated && !!session?.sessionId,
-    staleTime: 30 * 1000, // 30 seconds
+    enabled: isMindbodyLinked && !!mbSession?.sessionId,
+    staleTime: 30 * 1000,
   });
 }
 
 export function useBookService() {
-  const { session } = useMindbody();
+  const { mbSession } = useMindbody();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: BookingParams) => {
-      if (!session?.sessionId) {
-        throw new Error('Please log in to book');
+      if (!mbSession?.sessionId) {
+        throw new Error('Please connect Mindbody to book');
       }
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: session.sessionId,
+          sessionId: mbSession.sessionId,
           ...params,
         }),
       });
@@ -86,27 +86,26 @@ export function useBookService() {
       return response.json();
     },
     onSuccess: () => {
-      // Invalidate bookings cache
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
     },
   });
 }
 
 export function useCancelBooking() {
-  const { session } = useMindbody();
+  const { mbSession } = useMindbody();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: CancelParams) => {
-      if (!session?.sessionId) {
-        throw new Error('Please log in to cancel');
+      if (!mbSession?.sessionId) {
+        throw new Error('Please connect Mindbody to cancel');
       }
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-cancel`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          sessionId: session.sessionId,
+          sessionId: mbSession.sessionId,
           ...params,
         }),
       });

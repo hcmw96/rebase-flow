@@ -9,6 +9,7 @@ import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
 import { ArrowLeft, ArrowRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
+import { useAuth } from '@/contexts/AuthContext';
 import { useMindbody } from '@/contexts/MindbodyContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
@@ -36,7 +37,8 @@ interface StoredService {
 const BookService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
-  const { session, isAuthenticated, login } = useMindbody();
+  const { isAuthenticated } = useAuth();
+  const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -152,18 +154,12 @@ const BookService = () => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!isAuthenticated) {
-      localStorage.setItem('bookingIntent', JSON.stringify({
-        serviceId: activeServiceId,
-        selectedDate: selectedDate?.toISOString(),
-        selectedSlot,
-      }));
-      const redirectUri = `${window.location.origin}/book/${activeServiceId}`;
-      login(redirectUri);
+    if (!isMindbodyLinked) {
+      linkMindbody();
       return;
     }
 
-    if (!selectedSlot || !session) return;
+    if (!selectedSlot || !mbSession) return;
 
     try {
       await bookServiceMutation.mutateAsync({
