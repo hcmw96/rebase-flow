@@ -180,9 +180,11 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       'Premium Suite': 1,
       'Cryotherapy': 2,
       'Osteopathy': 10,
-      'Massage': 11,
-      'Holistic Face Sculpting': 12,
-      'Divine Facial Healing': 13,
+      'Ozone Therapy': 11,
+      'Structural Fascia Therapy': 12,
+      'Massage': 13,
+      'Holistic Face Sculpting': 14,
+      'Divine Facial Healing': 15,
     };
     
     grouped.sort((a, b) => {
