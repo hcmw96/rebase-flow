@@ -1,19 +1,27 @@
 import { useState } from 'react';
+import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { LogOut, ExternalLink, User, Mail, Link2, MessageSquare } from 'lucide-react';
+import { LogOut, ExternalLink, User, Mail, Link2, MessageSquare, Calendar, Clock, History } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMindbody } from '@/contexts/MindbodyContext';
+import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import SignIn from '@/pages/SignIn';
 import SignUp from '@/pages/SignUp';
 
 const AccountPage = () => {
   const { profile, isAuthenticated, signOut } = useAuth();
   const { isMindbodyLinked, linkMindbody, isLinking } = useMindbody();
+  const { data: bookingsData } = useMyBookings();
   const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
   const [message, setMessage] = useState('');
+  const [showAllHistory, setShowAllHistory] = useState(false);
+
+  const pastBookings = (bookingsData?.bookings || [])
+    .filter((b: any) => new Date(b.startDateTime) < new Date())
+    .sort((a: any, b: any) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
 
   if (!isAuthenticated) {
     if (authView === 'signup') {
@@ -21,6 +29,8 @@ const AccountPage = () => {
     }
     return <SignIn onSwitchToSignUp={() => setAuthView('signup')} />;
   }
+
+  const visibleHistory = showAllHistory ? pastBookings : pastBookings.slice(0, 5);
 
   return (
     <div className="px-4 pt-6 pb-4 space-y-6 max-w-lg mx-auto">
@@ -92,6 +102,67 @@ const AccountPage = () => {
           )}
         </div>
       </motion.div>
+
+      {/* Session History */}
+      {isMindbodyLinked && pastBookings.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.18 }}
+        >
+          <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center">
+                <History className="h-4 w-4 text-black/40" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-black/80">Session History</p>
+                <p className="text-xs text-black/40">{pastBookings.length} past session{pastBookings.length !== 1 ? 's' : ''}</p>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              {visibleHistory.map((booking: any, index: number) => (
+                <motion.div
+                  key={booking.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.03 }}
+                  className="flex items-center justify-between py-2 border-b border-black/[0.04] last:border-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-black/70 truncate">{booking.serviceName}</p>
+                    <div className="flex items-center gap-2 text-xs text-black/40">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {format(new Date(booking.startDateTime), 'MMM d, yyyy')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(new Date(booking.startDateTime), 'h:mm a')}
+                      </span>
+                    </div>
+                  </div>
+                  {booking.staffName && (
+                    <p className="text-xs text-black/30 ml-2 flex-shrink-0">{booking.staffName}</p>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+
+            {pastBookings.length > 5 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="w-full text-black/50 hover:text-black/70"
+                onClick={() => setShowAllHistory(!showAllHistory)}
+              >
+                {showAllHistory ? 'Show Less' : `View All ${pastBookings.length} Sessions`}
+              </Button>
+            )}
+          </div>
+        </motion.div>
+      )}
 
       {/* Links */}
       <motion.div
