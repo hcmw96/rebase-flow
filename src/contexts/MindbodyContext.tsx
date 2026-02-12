@@ -47,22 +47,35 @@ export function MindbodyProvider({ children }: { children: ReactNode }) {
     }
   }, [profile?.mb_session_id]);
 
-  const linkMindbody = useCallback(() => {
+  const linkMindbody = useCallback(async () => {
     if (!isAuthenticated) return;
     setIsLinking(true);
 
-    const width = 500;
-    const height = 600;
-    const left = window.screenX + (window.outerWidth - width) / 2;
-    const top = window.screenY + (window.outerHeight - height) / 2;
+    try {
+      const redirectUri = window.location.origin;
 
-    const redirectUri = encodeURIComponent(window.location.origin);
+      // Call the edge function properly via POST to get the Mindbody auth URL
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ redirectUri }),
+      });
 
-    const popup = window.open(
-      `${SUPABASE_URL}/functions/v1/mindbody-oauth-init?redirect_uri=${redirectUri}`,
-      'rebase-mb-link',
-      `width=${width},height=${height},left=${left},top=${top},popup=yes`
-    );
+      const data = await res.json();
+      if (!res.ok || !data.authUrl) {
+        throw new Error(data.error || 'Failed to get Mindbody login URL');
+      }
+
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(
+        data.authUrl,
+        'rebase-mb-link',
+        `width=${width},height=${height},left=${left},top=${top},popup=yes`
+      );
 
     const handleMessage = async (event: MessageEvent) => {
       if (event.data?.type === 'rebase-oauth-callback' && event.data.session) {
@@ -95,6 +108,10 @@ export function MindbodyProvider({ children }: { children: ReactNode }) {
         window.removeEventListener('message', handleMessage);
       }
     }, 500);
+    } catch (error) {
+      console.error('Mindbody link error:', error);
+      setIsLinking(false);
+    }
   }, [isAuthenticated, profile, refreshProfile]);
 
   const unlinkMindbody = useCallback(async () => {
