@@ -35,12 +35,6 @@ export function ServiceChip({ service, onSelect }: ServiceChipProps) {
           alt={service.baseName}
           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
         />
-        {/* Price badge */}
-        {price && (
-          <div className="absolute bottom-1.5 right-1.5 bg-[hsl(25,18%,12%)]/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
-            <span className="text-xs font-semibold text-[hsl(35,15%,88%)]">£{price}</span>
-          </div>
-        )}
       </div>
       
       {/* Title */}
