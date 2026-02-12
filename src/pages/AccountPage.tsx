@@ -4,7 +4,6 @@ import { LogOut, ExternalLink, User, Mail, Link2, MessageSquare } from 'lucide-r
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMindbody } from '@/contexts/MindbodyContext';
 import SignIn from '@/pages/SignIn';
@@ -29,7 +28,7 @@ const AccountPage = () => {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
       >
-        <h1 className="text-2xl font-light text-foreground">Account</h1>
+        <h1 className="text-2xl font-light text-black/80">Account</h1>
       </motion.div>
 
       {/* Profile info */}
@@ -38,26 +37,24 @@ const AccountPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.1 }}
       >
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                <User className="h-6 w-6 text-muted-foreground" />
-              </div>
-              <div>
-                <h2 className="font-semibold text-foreground">
-                  {profile?.first_name} {profile?.last_name}
-                </h2>
-                {profile?.email && (
-                  <p className="text-sm text-muted-foreground flex items-center gap-1">
-                    <Mail className="h-3 w-3" />
-                    {profile.email}
-                  </p>
-                )}
-              </div>
+        <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5 space-y-4">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-black/[0.04] flex items-center justify-center">
+              <User className="h-6 w-6 text-black/40" />
             </div>
-          </CardContent>
-        </Card>
+            <div>
+              <h2 className="font-semibold text-black/80">
+                {profile?.first_name} {profile?.last_name}
+              </h2>
+              {profile?.email && (
+                <p className="text-sm text-black/40 flex items-center gap-1">
+                  <Mail className="h-3 w-3" />
+                  {profile.email}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
       </motion.div>
 
       {/* Mindbody link status */}
@@ -66,36 +63,34 @@ const AccountPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.15 }}
       >
-        <Card>
-          <CardContent className="p-5">
-            {isMindbodyLinked ? (
+        <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5">
+          {isMindbodyLinked ? (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
+                <Link2 className="h-4 w-4 text-green-700" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-black/80">Mindbody Connected</p>
+                <p className="text-xs text-black/40">You can book and manage appointments</p>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-3">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                  <Link2 className="h-4 w-4 text-green-600" />
+                <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center">
+                  <Link2 className="h-4 w-4 text-black/40" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">Mindbody Connected</p>
-                  <p className="text-xs text-muted-foreground">You can book and manage appointments</p>
+                  <p className="text-sm font-medium text-black/80">Connect Mindbody</p>
+                  <p className="text-xs text-black/40">Required to book services</p>
                 </div>
               </div>
-            ) : (
-              <div className="space-y-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                    <Link2 className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <div>
-                    <p className="text-sm font-medium text-foreground">Connect Mindbody</p>
-                    <p className="text-xs text-muted-foreground">Required to book services</p>
-                  </div>
-                </div>
-                <Button onClick={linkMindbody} disabled={isLinking} className="w-full" size="sm">
-                  {isLinking ? 'Connecting...' : 'Connect Mindbody Account'}
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              <Button onClick={linkMindbody} disabled={isLinking} className="w-full bg-black/80 hover:bg-black text-white" size="sm">
+                {isLinking ? 'Connecting...' : 'Connect Mindbody Account'}
+              </Button>
+            </div>
+          )}
+        </div>
       </motion.div>
 
       {/* Links */}
@@ -109,10 +104,10 @@ const AccountPage = () => {
           href="https://rebase.co.uk"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between p-4 rounded-xl border border-border hover:bg-secondary/50 transition-colors"
+          className="flex items-center justify-between p-4 rounded-lg border border-black/[0.06] bg-white/40 hover:bg-white/60 transition-colors"
         >
-          <span className="text-sm text-foreground">Visit Rebase Website</span>
-          <ExternalLink className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm text-black/70">Visit Rebase Website</span>
+          <ExternalLink className="h-4 w-4 text-black/30" />
         </a>
       </motion.div>
 
@@ -122,41 +117,39 @@ const AccountPage = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.25 }}
       >
-        <Card>
-          <CardContent className="p-5 space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center">
-                <MessageSquare className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-foreground">Get in Touch</p>
-                <p className="text-xs text-muted-foreground">Questions or feedback</p>
-              </div>
+        <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center">
+              <MessageSquare className="h-4 w-4 text-black/40" />
             </div>
-            <Textarea
-              placeholder="Write your message..."
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              className="min-h-[100px] resize-none"
-            />
-            <Button
-              size="sm"
-              className="w-full"
-              disabled={!message.trim()}
-              onClick={() => {
-                const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
-                const email = profile?.email || '';
-                const subject = encodeURIComponent(`Message from ${name}`);
-                const body = encodeURIComponent(`${message}\n\nFrom: ${name} (${email})`);
-                window.open(`mailto:reception@rebaserecovery.com?subject=${subject}&body=${body}`, '_self');
-                toast.success('Opening your email client...');
-                setMessage('');
-              }}
-            >
-              Send Message
-            </Button>
-          </CardContent>
-        </Card>
+            <div>
+              <p className="text-sm font-medium text-black/80">Get in Touch</p>
+              <p className="text-xs text-black/40">Questions or feedback</p>
+            </div>
+          </div>
+          <Textarea
+            placeholder="Write your message..."
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            className="min-h-[100px] resize-none bg-white/60 border-black/10 text-black placeholder:text-black/30 focus-visible:ring-black/20"
+          />
+          <Button
+            size="sm"
+            className="w-full bg-black/80 hover:bg-black text-white"
+            disabled={!message.trim()}
+            onClick={() => {
+              const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
+              const email = profile?.email || '';
+              const subject = encodeURIComponent(`Message from ${name}`);
+              const body = encodeURIComponent(`${message}\n\nFrom: ${name} (${email})`);
+              window.open(`mailto:reception@rebaserecovery.com?subject=${subject}&body=${body}`, '_self');
+              toast.success('Opening your email client...');
+              setMessage('');
+            }}
+          >
+            Send Message
+          </Button>
+        </div>
       </motion.div>
 
       {/* Logout */}
@@ -167,7 +160,7 @@ const AccountPage = () => {
       >
         <Button
           variant="outline"
-          className="w-full text-destructive hover:text-destructive"
+          className="w-full border-black/10 text-red-600 hover:text-red-700 hover:bg-red-50/50"
           onClick={signOut}
         >
           <LogOut className="h-4 w-4 mr-2" />
