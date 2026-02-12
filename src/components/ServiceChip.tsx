@@ -73,13 +73,13 @@ const ServiceChip = ({
       </div>
       
       {/* Title */}
-      <p className="text-xs font-medium text-foreground mt-2 line-clamp-2 leading-tight">
+      <p className="text-xs font-medium text-black/70 mt-2 line-clamp-2 leading-tight">
         {title}
       </p>
       
       {/* Duration */}
       {duration && (
-        <p className="text-[10px] text-muted-foreground mt-0.5 flex items-center gap-0.5">
+        <p className="text-[10px] text-black/40 mt-0.5 flex items-center gap-0.5">
           <Clock className="h-2.5 w-2.5" />
           {duration} min
         </p>
