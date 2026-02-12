@@ -102,7 +102,9 @@ serve(async (req) => {
     }
 
     // Get all session type IDs
-    const sessionTypes = sessionTypesData.SessionTypes || [];
+    const allSessionTypes = sessionTypesData.SessionTypes || [];
+    const sessionTypes = allSessionTypes.filter((st: any) => st.Active !== false);
+    console.log(`Filtered: ${allSessionTypes.length} total -> ${sessionTypes.length} active session types`);
     
     console.log(`Fetching prices for ${sessionTypes.length} session types`);
 
