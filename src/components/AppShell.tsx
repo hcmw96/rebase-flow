@@ -3,6 +3,8 @@ import { Home, Search, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
+import { useAuth } from '@/contexts/AuthContext';
+import AuthPage from '@/pages/AuthPage';
 import HomePage from '@/pages/HomePage';
 import Services from '@/pages/Services';
 import MyBookings from '@/pages/MyBookings';
@@ -19,6 +21,7 @@ const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
 ];
 
 const AppShell = () => {
+  const { isAuthenticated, isLoading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -44,6 +47,21 @@ const AppShell = () => {
         return <AccountPage />;
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="app-root">
+        <div className="safe-area-top" />
+        <main className="app-content flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground text-sm">Loading...</div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <AuthPage />;
+  }
 
   return (
     <div className="app-root">
