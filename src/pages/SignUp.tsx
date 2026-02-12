@@ -42,7 +42,7 @@ const SignUp = ({ onSwitchToSignIn }: SignUpProps) => {
           animate={{ opacity: 1, y: 0 }}
           className="w-full space-y-6 text-center"
         >
-          <Logo className="h-14 w-auto opacity-80 mx-auto" />
+          <Logo className="h-14 w-auto opacity-80 mx-auto" invert={false} />
           <div>
             <h2 className="text-lg font-medium text-white/80">Check your email</h2>
             <p className="text-sm text-white/50 mt-2">
@@ -65,7 +65,7 @@ const SignUp = ({ onSwitchToSignIn }: SignUpProps) => {
         className="w-full space-y-8"
       >
         <div className="flex flex-col items-center space-y-3">
-          <Logo className="h-14 w-auto opacity-80" />
+          <Logo className="h-14 w-auto opacity-80" invert={false} />
           <p className="text-sm text-white/50">Create your account</p>
         </div>
 

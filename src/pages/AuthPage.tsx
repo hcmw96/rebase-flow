@@ -17,6 +17,13 @@ const AuthPage = () => {
           loop
           playsInline
           className="w-full h-full object-cover"
+          onLoadedMetadata={(e) => { e.currentTarget.currentTime = 2; }}
+          onTimeUpdate={(e) => {
+            const vid = e.currentTarget;
+            if (vid.duration && vid.currentTime >= vid.duration - 2) {
+              vid.currentTime = 2;
+            }
+          }}
         >
           <source src={VIDEO_URL} type="video/quicktime" />
           <source src={VIDEO_URL} type="video/mp4" />
