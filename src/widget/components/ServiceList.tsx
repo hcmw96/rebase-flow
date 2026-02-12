@@ -55,6 +55,22 @@ const hiddenGroupNames = new Set([
   'Rebase Packages',
   'Corporate Credits',
   'Classes',
+  'Off Peak Access',
+  'MOCK CLASS',
+  'Vitamin Stack',
+  'Club Takeover',
+  'Ozone Aesthetics Packages',
+  'Hydro Pro Facial',
+]);
+
+// Program IDs to hide entirely (e.g. Aesthetics/Injectables)
+const hiddenProgramIds = new Set([12]);
+
+// Individual service names to hide
+const hiddenServiceNames = new Set([
+  'Add On: Lymphatic Drainage Compression',
+  'Full Facial/Body Consultation',
+  'Ozone - Aesthetics',
 ]);
 
 function canonicalizeServiceName(baseName: string): string {
@@ -99,6 +115,10 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
     const groups = new Map<string, GroupedService>();
 
     for (const service of services) {
+      // Skip hidden program IDs and individual service names
+      if (hiddenProgramIds.has(service.programId)) continue;
+      if (hiddenServiceNames.has(service.name)) continue;
+
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
       const rawCategory = service.programName || service.category || 'Wellness';
