@@ -59,27 +59,40 @@ serve(async (req) => {
 
     const staffToken = await getStaffToken();
 
-    // Fetch session types (services)
-    const sessionTypesResponse = await fetch(
-      `https://api.mindbodyonline.com/public/v6/site/sessiontypes`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Key": apiKey,
-          "SiteId": siteId,
-          "Authorization": `Bearer ${staffToken}`,
-        },
+    // Fetch all session types with pagination
+    const allSessionTypesRaw: any[] = [];
+    let stOffset = 0;
+    const stLimit = 100;
+    
+    while (true) {
+      const sessionTypesResponse = await fetch(
+        `https://api.mindbodyonline.com/public/v6/site/sessiontypes?Limit=${stLimit}&Offset=${stOffset}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "SiteId": siteId,
+            "Authorization": `Bearer ${staffToken}`,
+          },
+        }
+      );
+
+      if (!sessionTypesResponse.ok) {
+        const errorText = await sessionTypesResponse.text();
+        console.error("Session types error:", errorText);
+        throw new Error("Failed to fetch session types");
       }
-    );
 
-    if (!sessionTypesResponse.ok) {
-      const errorText = await sessionTypesResponse.text();
-      console.error("Session types error:", errorText);
-      throw new Error("Failed to fetch session types");
+      const sessionTypesData = await sessionTypesResponse.json();
+      const batch = sessionTypesData.SessionTypes || [];
+      allSessionTypesRaw.push(...batch);
+      
+      console.log(`Session types batch: offset=${stOffset}, got ${batch.length}`);
+      
+      if (batch.length < stLimit) break;
+      stOffset += stLimit;
     }
-
-    const sessionTypesData = await sessionTypesResponse.json();
 
     // Fetch programs for categorization
     const programsResponse = await fetch(
@@ -102,7 +115,7 @@ serve(async (req) => {
     }
 
     // Get all session type IDs
-    const allSessionTypes = sessionTypesData.SessionTypes || [];
+    const allSessionTypes = allSessionTypesRaw;
     const sessionTypes = allSessionTypes.filter((st: any) => st.Active !== false);
     console.log(`Filtered: ${allSessionTypes.length} total -> ${sessionTypes.length} active session types`);
     
