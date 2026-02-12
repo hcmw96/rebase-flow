@@ -10,6 +10,7 @@ interface ServiceChipProps {
   category: string;
   image: string;
   variants: ServiceVariant[];
+  fillWidth?: boolean;
   onSelectService?: (service: BookingServiceData) => void;
 }
 
@@ -20,6 +21,7 @@ const ServiceChip = ({
   category,
   image,
   variants,
+  fillWidth = false,
   onSelectService,
 }: ServiceChipProps) => {
   const handleClick = () => {
@@ -53,8 +55,9 @@ const ServiceChip = ({
     <button
       onClick={handleClick}
       className={cn(
-        'w-[100px] flex-shrink-0 text-left group',
-        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl'
+        'text-left group',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded-xl',
+        fillWidth ? 'w-full' : 'w-[100px] flex-shrink-0'
       )}
     >
       {/* Thumbnail */}
