@@ -149,7 +149,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
   return (
     <div className="min-h-full">
       {/* Search bar */}
-      <div className="sticky top-0 z-20 px-4 py-3">
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-white/10 px-4 py-3">
         <div className="relative max-w-lg mx-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
           <Input
@@ -157,7 +157,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
             placeholder="Search services..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full pl-10 text-sm text-white placeholder:text-white/40 bg-black/40 backdrop-blur-2xl border-white/[0.08] rounded-full focus-visible:ring-white/20"
+            className="h-10 w-full pl-10 text-sm text-white placeholder:text-white/40 bg-white/[0.06] border-white/10 rounded-md focus-visible:ring-white/20"
           />
         </div>
       </div>
