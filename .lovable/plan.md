@@ -1,45 +1,30 @@
 
+## Fix: Mindbody OAuth Connection Flow
 
-# White Logo on Auth Page + Video Trim
+### Problem
+When you tap "Connect Mindbody Account," the app opens a popup directly to the backend function URL. But that function expects to receive data as a POST request with a JSON body. Since the popup opens it as a regular page load (GET request), the function crashes with "Unexpected end of JSON input" and you see a broken page instead of the Mindbody login.
 
-## Changes
+### Solution
+Change the flow so the app first calls the backend function properly (as a background request), gets back the Mindbody login URL, and then opens that URL in the popup.
 
-### 1. Logo - White on Auth Page Only
-**File: `src/components/Logo.tsx`**
-- The Logo component currently applies `invert` universally. Since it's used on both the light cream background (home) and the dark video background (auth), we need a prop to control this.
-- Add an optional `invert` prop (default `true` to preserve current behavior).
-- On the auth page (SignIn.tsx and SignUp.tsx), pass `invert={false}` so the logo renders as-is (white) against the dark video.
+---
 
-### 2. Video Trimming (Skip First/Last 2 Seconds)
-**File: `src/pages/AuthPage.tsx`**
-- Add an `onLoadedMetadata` handler to the video element that sets `currentTime = 2` to skip the first 2 seconds.
-- Add an `onTimeUpdate` handler that checks if the current time is within 2 seconds of the end, and if so, loops back to second 2.
-- This creates the effect of cropping the first and last 2 seconds without needing to re-encode the video file.
+### Technical Details
 
-## Technical Details
+**File: `src/contexts/MindbodyContext.tsx`**
 
-Logo change:
-```
-// Logo.tsx - add invert prop
-const Logo = ({ className, invert = true }) => (
-  <img src={rebaseLogo} alt="Rebase" className={`${className} ${invert ? 'invert' : ''}`} />
-);
+Update the `linkMindbody` function to:
 
-// SignIn.tsx / SignUp.tsx
-<Logo className="h-14 w-auto opacity-80" invert={false} />
+1. First, make a `fetch` POST request to `mindbody-oauth-init` with `{ redirectUri }` in the JSON body
+2. Parse the response to get the `authUrl`
+3. Then open the popup with that `authUrl` (the actual Mindbody sign-in page)
+
+Current broken flow:
+```text
+User clicks Connect --> Popup opens backend URL (GET) --> Error
 ```
 
-Video trim:
+Fixed flow:
+```text
+User clicks Connect --> fetch POST to backend --> Get authUrl --> Popup opens Mindbody login
 ```
-<video
-  onLoadedMetadata={(e) => { e.currentTarget.currentTime = 2; }}
-  onTimeUpdate={(e) => {
-    const vid = e.currentTarget;
-    if (vid.duration && vid.currentTime >= vid.duration - 2) {
-      vid.currentTime = 2;
-    }
-  }}
-  ...
-/>
-```
-
