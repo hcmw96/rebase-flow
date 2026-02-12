@@ -173,6 +173,10 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       'Infrared Sauna & Ice Bath': 0,
       'Premium Suite': 1,
       'Cryotherapy': 2,
+      'Massage': 10,
+      'Holistic Face Sculpting': 11,
+      'Divine Facial Healing': 12,
+      'Osteopathy': 13,
     };
     
     grouped.sort((a, b) => {
