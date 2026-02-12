@@ -63,6 +63,7 @@ const hiddenGroupNames = new Set([
   'Club Takeover',
   'Ozone Aesthetics Packages',
   'Hydro Pro Facial',
+  'Injectables',
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
@@ -173,10 +174,10 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       'Infrared Sauna & Ice Bath': 0,
       'Premium Suite': 1,
       'Cryotherapy': 2,
-      'Massage': 10,
-      'Holistic Face Sculpting': 11,
-      'Divine Facial Healing': 12,
-      'Osteopathy': 13,
+      'Osteopathy': 10,
+      'Massage': 11,
+      'Holistic Face Sculpting': 12,
+      'Divine Facial Healing': 13,
     };
     
     grouped.sort((a, b) => {
