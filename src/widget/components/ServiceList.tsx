@@ -117,12 +117,14 @@ const hiddenServiceNames = new Set([
   'Follow Up Consultation',
 ]);
 
-function canonicalizeServiceName(baseName: string): string {
+function canonicalizeServiceName(baseName: string, programName?: string): string {
   for (const { pattern, groupName } of serviceGroupMappings) {
     if (pattern.test(baseName)) {
       return groupName;
     }
   }
+  // Fallback: use programName for known categories
+  if (programName === 'Reflexology') return 'Reflexology';
   return baseName;
 }
 
@@ -164,7 +166,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       if (hiddenServiceNames.has(service.name.trim())) continue;
 
       const { baseName, duration } = extractDurationFromName(service.name);
-      const canonicalName = canonicalizeServiceName(baseName);
+      const canonicalName = canonicalizeServiceName(baseName, service.programName);
       const rawCategory = service.programName || service.category || 'Wellness';
       const category = rawCategory.startsWith('Sauna Suite') ? 'Sauna' : rawCategory;
       
