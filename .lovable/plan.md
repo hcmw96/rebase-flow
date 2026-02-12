@@ -1,35 +1,45 @@
 
-# Align and Fill Sauna Category Services
 
-## Problem
-When a category has only 2 services (like the Sauna category with "Infrared Sauna & Ice Bath" and "Premium Suite"), the chips are small (100px wide) and left-aligned, leaving lots of empty space. They should fill the available width evenly.
-
-## Solution
-Make the `CategorySection` and `ServiceChip` components responsive to the number of items -- when there are few services (2 or 3), chips expand to fill the row equally instead of staying at a fixed 100px width.
+# White Logo on Auth Page + Video Trim
 
 ## Changes
 
-### 1. `src/components/CategorySection.tsx`
-- When `services.length <= 3`, switch from a horizontal scroll flex layout to a CSS grid that distributes items evenly across the full width.
-- Use `grid-cols-2` for 2 items, `grid-cols-3` for 3 items.
-- Keep the horizontal scroll behavior for 4+ items (current behavior).
+### 1. Logo - White on Auth Page Only
+**File: `src/components/Logo.tsx`**
+- The Logo component currently applies `invert` universally. Since it's used on both the light cream background (home) and the dark video background (auth), we need a prop to control this.
+- Add an optional `invert` prop (default `true` to preserve current behavior).
+- On the auth page (SignIn.tsx and SignUp.tsx), pass `invert={false}` so the logo renders as-is (white) against the dark video.
 
-### 2. `src/components/ServiceChip.tsx`
-- Accept an optional `fillWidth` prop (boolean).
-- When `fillWidth` is true, remove the fixed `w-[100px]` and `flex-shrink-0` classes so the chip fills its grid cell.
-- This keeps the existing compact behavior for categories with many items.
+### 2. Video Trimming (Skip First/Last 2 Seconds)
+**File: `src/pages/AuthPage.tsx`**
+- Add an `onLoadedMetadata` handler to the video element that sets `currentTime = 2` to skip the first 2 seconds.
+- Add an `onTimeUpdate` handler that checks if the current time is within 2 seconds of the end, and if so, loops back to second 2.
+- This creates the effect of cropping the first and last 2 seconds without needing to re-encode the video file.
 
-## Technical Detail
-In `CategorySection.tsx`, the render logic for the services container will branch:
+## Technical Details
 
+Logo change:
 ```
-if (services.length <= 3) {
-  // Use grid layout: grid grid-cols-{n} gap-3
-  // Pass fillWidth={true} to ServiceChip
-} else {
-  // Keep current horizontal scroll layout
-  // Pass fillWidth={false} (default)
-}
+// Logo.tsx - add invert prop
+const Logo = ({ className, invert = true }) => (
+  <img src={rebaseLogo} alt="Rebase" className={`${className} ${invert ? 'invert' : ''}`} />
+);
+
+// SignIn.tsx / SignUp.tsx
+<Logo className="h-14 w-auto opacity-80" invert={false} />
 ```
 
-This ensures vertical alignment and equal sizing for small categories while preserving horizontal scrolling for larger ones.
+Video trim:
+```
+<video
+  onLoadedMetadata={(e) => { e.currentTarget.currentTime = 2; }}
+  onTimeUpdate={(e) => {
+    const vid = e.currentTarget;
+    if (vid.duration && vid.currentTime >= vid.duration - 2) {
+      vid.currentTime = 2;
+    }
+  }}
+  ...
+/>
+```
+
