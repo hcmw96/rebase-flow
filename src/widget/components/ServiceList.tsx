@@ -54,6 +54,7 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
 const hiddenGroupNames = new Set([
   'Rebase Packages',
   'Corporate Credits',
+  'Corporate credits',
   'Classes',
   'Off Peak Access',
   'MOCK CLASS',
