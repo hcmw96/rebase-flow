@@ -94,7 +94,8 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
     for (const service of services) {
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
-      const category = service.programName || service.category || 'Wellness';
+      const rawCategory = service.programName || service.category || 'Wellness';
+      const category = rawCategory.startsWith('Sauna Suite') ? 'Sauna' : rawCategory;
       
       // Make image URLs absolute
       const baseUrl = config.apiUrl.replace('/functions/v1', '').replace('/functions', '');
