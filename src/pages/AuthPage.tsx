@@ -16,7 +16,19 @@ const AuthPage = () => {
           muted
           loop
           playsInline
+          controls={false}
+          webkit-playsinline="true"
+          x-webkit-airplay="deny"
+          disablePictureInPicture
           className="w-full h-full object-cover"
+          style={{ pointerEvents: 'none' }}
+          ref={(el) => {
+            if (el) {
+              el.setAttribute('playsinline', '');
+              el.setAttribute('webkit-playsinline', '');
+              el.play().catch(() => {});
+            }
+          }}
           onLoadedMetadata={(e) => { e.currentTarget.currentTime = 3; }}
           onTimeUpdate={(e) => {
             const vid = e.currentTarget;
