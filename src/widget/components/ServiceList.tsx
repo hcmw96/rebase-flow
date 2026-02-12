@@ -162,9 +162,14 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       });
     }
 
-    // Sort variants by duration
+    // Sort variants: "first consultation" first, then by duration
     for (const group of groups.values()) {
-      group.variants.sort((a, b) => (a.duration ?? 0) - (b.duration ?? 0));
+      group.variants.sort((a, b) => {
+        const aFirst = /first\s*consult/i.test(a.name) ? 0 : 1;
+        const bFirst = /first\s*consult/i.test(b.name) ? 0 : 1;
+        if (aFirst !== bFirst) return aFirst - bFirst;
+        return (a.duration ?? 0) - (b.duration ?? 0);
+      });
     }
 
     const grouped = Array.from(groups.values());
