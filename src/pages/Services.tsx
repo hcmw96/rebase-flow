@@ -87,7 +87,8 @@ const Services = ({ onSelectService }: ServicesProps) => {
     for (const service of visibleServices) {
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
-      const category = service.programName || service.category || 'Wellness';
+      const rawCategory = service.programName || service.category || 'Wellness';
+      const category = rawCategory.startsWith('Sauna Suite') ? 'Sauna' : rawCategory;
       const image = serviceImages[canonicalName] || categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
 
       if (!groups.has(canonicalName)) {
