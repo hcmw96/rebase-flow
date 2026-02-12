@@ -17,11 +17,11 @@ const AuthPage = () => {
           loop
           playsInline
           className="w-full h-full object-cover"
-          onLoadedMetadata={(e) => { e.currentTarget.currentTime = 2; }}
+          onLoadedMetadata={(e) => { e.currentTarget.currentTime = 3; }}
           onTimeUpdate={(e) => {
             const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 2) {
-              vid.currentTime = 2;
+            if (vid.duration && vid.currentTime >= vid.duration - 5) {
+              vid.currentTime = 3;
             }
           }}
         >
