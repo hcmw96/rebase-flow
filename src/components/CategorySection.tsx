@@ -33,7 +33,7 @@ const CategorySection = ({
   if (services.length === 0) return null;
 
   return (
-    <div className="border-b border-border/50 last:border-b-0">
+    <div className="border-b border-black/[0.08] last:border-b-0">
       {/* Category Header */}
       <button
         onClick={() => setIsExpanded(!isExpanded)}
@@ -44,8 +44,8 @@ const CategorySection = ({
         )}
       >
         <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-foreground">{category}</h2>
-          <span className="text-xs text-muted-foreground bg-black/[0.06] px-1.5 py-0.5 rounded-full">
+          <h2 className="text-base font-semibold text-black/80">{category}</h2>
+          <span className="text-xs text-black/40 bg-black/[0.06] px-1.5 py-0.5 rounded-full">
             {services.length}
           </span>
         </div>
