@@ -77,7 +77,7 @@ serve(async (req) => {
           body: JSON.stringify({
             ClassId: parseInt(classId),
             ClientId: session.mindbody_client_id,
-            RequirePayment: false,
+            RequirePayment: true,
             Waitlist: false,
             SendEmail: true,
           }),
@@ -114,7 +114,7 @@ serve(async (req) => {
             StaffId: parseInt(staffId),
             SessionTypeId: parseInt(sessionTypeId),
             StartDateTime: startDateTime,
-            ApplyPayment: false,
+            ApplyPayment: true,
             SendConfirmationEmail: true,
           }),
         }
