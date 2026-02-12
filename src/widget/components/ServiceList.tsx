@@ -50,6 +50,13 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^all\s*classes$/i, groupName: 'Classes' },
 ];
 
+// Service groups to hide from the UI
+const hiddenGroupNames = new Set([
+  'Rebase Packages',
+  'Corporate Credits',
+  'Classes',
+]);
+
 function canonicalizeServiceName(baseName: string): string {
   for (const { pattern, groupName } of serviceGroupMappings) {
     if (pattern.test(baseName)) {
@@ -110,6 +117,9 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
         categoryImages[service.category] || 
         categoryImages['default']
       );
+
+      // Skip hidden groups
+      if (hiddenGroupNames.has(canonicalName)) continue;
 
       if (!groups.has(canonicalName)) {
         groups.set(canonicalName, {
