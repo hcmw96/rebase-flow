@@ -1,31 +1,34 @@
 
 
-# Add Contact Form to Account Page
+# Filter Out Inactive Mindbody Services
 
-## What changes
-Add a minimal, elegant contact form at the bottom of the Account page (above Sign Out). The form will have name (pre-filled from profile), email (pre-filled), and a message field. On submit, it opens the user's mail client with the content addressed to `reception@rebaserecovery.com`.
+## Problem
+The `mindbody-services` edge function fetches all session types from Mindbody's API without checking whether they are active. This means inactive/retired services appear in your app.
 
-No backend needed -- a simple `mailto:` link keeps it lightweight and functional.
+## Solution
+Add a filter in the edge function to only include session types where the Mindbody API marks them as active. The Mindbody `/site/sessiontypes` response includes fields like `Active` (boolean) on each session type object.
 
-## Design
-- Appears between the "Visit Rebase Website" link and the Sign Out button
-- Soft card with the same styling as the rest of the page
-- Label: "Get in Touch" with a subtle subtitle
-- Three fields: Name (pre-filled, readonly), Email (pre-filled, readonly), Message (textarea)
-- Submit button opens `mailto:reception@rebaserecovery.com` with subject and body composed from the form fields
-- Toast confirmation after sending
-- Animated in with the same staggered `motion.div` pattern
+## Changes
 
-## Technical details
+### 1. Update `supabase/functions/mindbody-services/index.ts`
 
-### File: `src/pages/AccountPage.tsx`
-- Add `useState` for `message` field
-- Import `Textarea` from `@/components/ui/textarea`, `MessageSquare` from `lucide-react`, and `toast` from `sonner`
-- Insert a new `motion.div` block (delay 0.25) between the links section and the logout button containing:
-  - A card with "Get in Touch" heading and "Questions or feedback" subtitle
-  - A single `<Textarea>` for the message (name and email pulled from profile automatically)
-  - A submit button that constructs a `mailto:` URL: `mailto:reception@rebaserecovery.com?subject=Message from {name}&body={message}%0A%0AFrom: {name} ({email})`
-  - Uses `encodeURIComponent` for safe URL encoding
-  - Shows a toast on submit
-- Adjust the Sign Out delay from 0.3 to 0.35
+After fetching session types on line 105, add a filter to remove inactive ones:
+
+```typescript
+const allSessionTypes = sessionTypesData.SessionTypes || [];
+const sessionTypes = allSessionTypes.filter((st: any) => st.Active !== false);
+console.log(`Filtered: ${allSessionTypes.length} total -> ${sessionTypes.length} active session types`);
+```
+
+This single change filters at the source before any price matching or mapping occurs, so inactive services won't appear anywhere in the app (main app, widget, or homepage).
+
+### What this affects
+- The Services page listing
+- The Homepage popular services
+- The embeddable widget service list
+- All share the same edge function, so one fix covers everything
+
+### Approach details
+- Uses `st.Active !== false` (rather than `=== true`) to be safe in case the field is undefined on some session types -- those will still be included
+- Logs the before/after count so you can verify which services were filtered out
 
