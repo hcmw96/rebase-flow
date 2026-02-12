@@ -38,14 +38,14 @@ const CategorySection = ({
       <button
         onClick={() => setIsExpanded(!isExpanded)}
         className={cn(
-          'w-full flex items-center justify-between py-4 px-1',
-          'hover:bg-muted/30 transition-colors rounded-lg -mx-1',
+          'w-full flex items-center justify-between py-3 px-1',
+          'transition-colors rounded-lg -mx-1',
           'focus:outline-none focus-visible:ring-2 focus-visible:ring-primary'
         )}
       >
-        <div className="flex items-center gap-3">
-          <h2 className="text-lg font-semibold text-foreground">{category}</h2>
-          <span className="text-sm text-muted-foreground bg-muted px-2 py-0.5 rounded-full">
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-foreground">{category}</h2>
+          <span className="text-xs text-muted-foreground bg-black/[0.06] px-1.5 py-0.5 rounded-full">
             {services.length}
           </span>
         </div>
