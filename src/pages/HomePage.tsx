@@ -23,9 +23,9 @@ const categoryImages: Record<string, string> = {
 };
 
 const serviceImages: Record<string, string> = {
-  'Cryotherapy': '/images/rebase-cryo.webp',
   'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
-  'Premium Suite': '/images/rebase-private-suites.webp',
+  'Members Suite': '/images/rebase-private-suites.webp',
+  'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
 };
 
 interface HomePageProps {
@@ -34,13 +34,13 @@ interface HomePageProps {
 }
 
 // The 3 popular service groups to feature
-const POPULAR_GROUPS = ['Infrared Sauna & Ice Bath', 'Premium Suite', 'Cryotherapy'];
+const POPULAR_GROUPS = ['Infrared Sauna & Ice Bath', 'Members Suite', 'Hyperbaric Oxygen'];
 
 // Same grouping patterns from Services page
 const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
   { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
-  { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
-  { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
+  { pattern: /^members?\s*suite/i, groupName: 'Members Suite' },
+  { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
 ];
 
 const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
