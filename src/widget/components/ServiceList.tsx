@@ -35,18 +35,37 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^skin\s*rejuv(enation)?/i, groupName: 'Skin Rejuvenation' },
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
   { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
-  { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Massage' },
-  { pattern: /^sports\s*massage/i, groupName: 'Massage' },
-  { pattern: /massage/i, groupName: 'Massage' },
+  { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Deep Tissue Massage' },
+  { pattern: /^sports\s*massage/i, groupName: 'Sports Massage' },
+  { pattern: /^destress\s*head/i, groupName: 'Destress Head, Neck & Shoulder Massage' },
+  { pattern: /^indian\s*head\s*massage/i, groupName: 'Indian Head Massage' },
+  { pattern: /^brazilian\s*lymphatic/i, groupName: 'Brazilian Lymphatic' },
+  { pattern: /^brazillian\s*lymphatic/i, groupName: 'Brazilian Lymphatic' },
+  { pattern: /^assisted\s*stretching/i, groupName: 'Assisted Stretching' },
+  { pattern: /^deo.*body\s*alignment/i, groupName: "Deo's Body Alignment Method" },
   { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
   { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
   { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
   { pattern: /^structural\s*fascia/i, groupName: 'Structural Fascia Therapy' },
+  { pattern: /^myofascial\s*dry\s*needling/i, groupName: 'Myofascial Dry Needling' },
   { pattern: /^holistic\s*face\s*sculpt/i, groupName: 'Holistic Face Sculpting' },
   { pattern: /^divine\s*facial/i, groupName: 'Divine Facial Healing' },
+  { pattern: /^four\s*hand\s*divine/i, groupName: 'Four Hand Divine Healing' },
   { pattern: /^osteopathy/i, groupName: 'Osteopathy' },
   { pattern: /^(oxygen-?)?ozone/i, groupName: 'Ozone Therapy' },
+  { pattern: /^iv\s*drip/i, groupName: 'IV Drip' },
+  { pattern: /^nad\+/i, groupName: 'NAD+' },
+  { pattern: /^vitamin\s*shots?/i, groupName: 'Vitamin Shots' },
+  { pattern: /^touch\s*&\s*(flow|glow)/i, groupName: 'Reflexology' },
+  { pattern: /^flow\s*&\s*glow/i, groupName: 'Reflexology' },
+  { pattern: /^ultimate\s*flow/i, groupName: 'Reflexology' },
+  { pattern: /^the\s*midday\s*reset\s*-\s*infrared/i, groupName: 'The Midday Reset - Infrared Suite' },
+  { pattern: /^the\s*midday\s*reset\s*-\s*premium/i, groupName: 'The Midday Reset - Premium Suite' },
+  { pattern: /^gate\s*\+?\s*ground/i, groupName: 'Gate + Ground' },
+  { pattern: /^acupuncture/i, groupName: 'Acupuncture' },
+  { pattern: /^sound\s*bath/i, groupName: 'Sound Bath' },
+  { pattern: /^neuro\s*regulation/i, groupName: 'Neuro Regulation' },
   { pattern: /minute\s*classes$/i, groupName: 'Classes' },
   { pattern: /^all\s*classes$/i, groupName: 'Classes' },
 ];
@@ -59,7 +78,6 @@ const hiddenGroupNames = new Set([
   'Classes',
   'Off Peak Access',
   'MOCK CLASS',
-  'Vitamin Stack',
   'Club Takeover',
   'Ozone Aesthetics Packages',
   'Hydro Pro Facial',
@@ -67,13 +85,36 @@ const hiddenGroupNames = new Set([
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
-const hiddenProgramIds = new Set([12]);
+const hiddenProgramIds = new Set([12, 34]); // 12=Aesthetics/Injectables, 34=Members Only
 
 // Individual service names to hide
 const hiddenServiceNames = new Set([
   'Add On: Lymphatic Drainage Compression',
   'Full Facial/Body Consultation',
   'Ozone - Aesthetics',
+  'Iv add on',
+  'IV Add On - Paracetamol',
+  'Blood Test',
+  'First Consultation',
+  'Thursday Buffer',
+  'Saturday Buffer',
+  'members only',
+  'Rebase Biohack Protocol',
+  'Free Neurotox Top Up',
+  'Facial Augmentation - Chin',
+  'Members wellness event',
+  'Vitamin Stack',
+  'Hyalouronic Acid - 1 Joint',
+  'Hyalouronic Acid - 2 Joints',
+  'Hyde Pro Facial - Deluxe',
+  'Hydro Pro Facial - Express',
+  'Discovery Call',
+  'Athlete Performance Package',
+  'Longevity Package',
+  'High Performance Recovery',
+  'Core Radiance (Women\'s Health Package)',
+  'Initial Consultation',
+  'Follow Up Consultation',
 ]);
 
 function canonicalizeServiceName(baseName: string): string {
@@ -120,7 +161,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
     for (const service of services) {
       // Skip hidden program IDs and individual service names
       if (hiddenProgramIds.has(service.programId)) continue;
-      if (hiddenServiceNames.has(service.name)) continue;
+      if (hiddenServiceNames.has(service.name.trim())) continue;
 
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
@@ -177,14 +218,33 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
     // Custom sort order
     const serviceOrder: Record<string, number> = {
       'Infrared Sauna & Ice Bath': 0,
-      'Premium Suite': 1,
-      'Cryotherapy': 2,
+      'The Midday Reset - Infrared Suite': 1,
+      'Premium Suite': 2,
+      'The Midday Reset - Premium Suite': 3,
+      'Cryotherapy': 4,
+      'Hyperbaric Oxygen': 5,
       'Osteopathy': 10,
       'Ozone Therapy': 11,
       'Structural Fascia Therapy': 12,
-      'Massage': 13,
-      'Holistic Face Sculpting': 14,
-      'Divine Facial Healing': 15,
+      'Myofascial Dry Needling': 13,
+      'Deep Tissue Massage': 20,
+      'Sports Massage': 21,
+      'Destress Head, Neck & Shoulder Massage': 22,
+      'Indian Head Massage': 23,
+      'Brazilian Lymphatic': 24,
+      'Assisted Stretching': 25,
+      "Deo's Body Alignment Method": 26,
+      'Holistic Face Sculpting': 30,
+      'Divine Facial Healing': 31,
+      'Four Hand Divine Healing': 32,
+      'Reflexology': 40,
+      'IV Drip': 50,
+      'NAD+': 51,
+      'Vitamin Shots': 52,
+      'Neuro Regulation': 53,
+      'Acupuncture': 60,
+      'Gate + Ground': 61,
+      'Sound Bath': 70,
     };
     
     grouped.sort((a, b) => {
