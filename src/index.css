@@ -116,6 +116,16 @@ All colors MUST be HSL.
 @layer base {
   * {
     @apply border-border;
+    box-sizing: border-box;
+  }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    overflow: hidden;
+    overscroll-behavior: none;
+    -webkit-overflow-scrolling: touch;
   }
 
   body {
@@ -125,7 +135,6 @@ All colors MUST be HSL.
     background-repeat: repeat;
     background-size: 256px 256px;
     background-blend-mode: overlay;
-    min-height: 100vh;
   }
 
   /* Subtle film grain overlay */
@@ -147,18 +156,7 @@ All colors MUST be HSL.
     letter-spacing: -0.02em;
   }
 
-  /* Native app feel - no scrollbars, no bounce */
-  html {
-    scroll-behavior: smooth;
-    overflow: hidden;
-    height: 100%;
-  }
-
-  body {
-    overflow: hidden;
-    height: 100%;
-  }
-
+  /* Hide all scrollbars for native feel */
   ::-webkit-scrollbar {
     display: none !important;
     width: 0 !important;
@@ -170,9 +168,37 @@ All colors MUST be HSL.
     scrollbar-width: none;
   }
 
-  html, body {
-    overscroll-behavior: none;
+  /* Despia root frame structure */
+  .app-root {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Safe area spacers with Despia variable → env() → 0 fallback chain */
+  .safe-area-top {
+    flex-shrink: 0;
+    height: var(--safe-area-top, env(safe-area-inset-top, 0px));
+    background-color: #F3EEE6;
+  }
+
+  .safe-area-bottom {
+    flex-shrink: 0;
+    height: var(--safe-area-bottom, env(safe-area-inset-bottom, 0px));
+  }
+
+  /* Scrollable content container */
+  .app-content {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
   }
 }
 
