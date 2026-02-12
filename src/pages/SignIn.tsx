@@ -35,7 +35,7 @@ const SignIn = ({ onSwitchToSignUp }: SignInProps) => {
         className="w-full space-y-8"
       >
         <div className="flex flex-col items-center space-y-3">
-          <Logo className="h-14 w-auto opacity-80" />
+          <Logo className="h-14 w-auto opacity-80" invert={false} />
           <p className="text-sm text-white/50">Sign in to your account</p>
         </div>
 
