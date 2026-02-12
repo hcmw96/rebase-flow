@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import despia from 'despia-native';
 import { Button } from '@/components/ui/button';
 import {
   Drawer,
@@ -149,8 +150,14 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
       });
       setBookingComplete(true);
       toast.success('Booking confirmed!');
+      if (navigator.userAgent.includes('despia')) {
+        despia('successhaptic://');
+      }
     } catch (error) {
       toast.error('Failed to complete booking. Please try again.');
+      if (navigator.userAgent.includes('despia')) {
+        despia('errorhaptic://');
+      }
     }
   };
 

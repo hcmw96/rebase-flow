@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Home, Search, Calendar, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import despia from 'despia-native';
 import HomePage from '@/pages/HomePage';
 import Services from '@/pages/Services';
 import MyBookings from '@/pages/MyBookings';
@@ -74,7 +75,12 @@ const AppShell = () => {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    if (navigator.userAgent.includes('despia')) {
+                      despia('lighthaptic://');
+                    }
+                  }}
                   className={cn(
                     'flex-1 flex flex-col items-center justify-center py-3 gap-0.5 transition-colors rounded-2xl',
                     isActive
