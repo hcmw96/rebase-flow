@@ -67,8 +67,11 @@ const CategorySection = ({
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            <ScrollArea className="w-full pb-4">
-              <div className="flex gap-3 px-1">
+            {services.length <= 3 ? (
+              <div className={cn(
+                'grid gap-3 px-1 pb-4',
+                services.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
+              )}>
                 {services.map((service) => (
                   <ServiceChip
                     key={service.baseName}
@@ -78,12 +81,30 @@ const CategorySection = ({
                     category={service.category}
                     image={service.image}
                     variants={service.variants}
+                    fillWidth
                     onSelectService={onSelectService}
                   />
                 ))}
               </div>
-              <ScrollBar orientation="horizontal" className="mt-2" />
-            </ScrollArea>
+            ) : (
+              <ScrollArea className="w-full pb-4">
+                <div className="flex gap-3 px-1">
+                  {services.map((service) => (
+                    <ServiceChip
+                      key={service.baseName}
+                      id={service.variants[0].id}
+                      title={service.baseName}
+                      description={service.description}
+                      category={service.category}
+                      image={service.image}
+                      variants={service.variants}
+                      onSelectService={onSelectService}
+                    />
+                  ))}
+                </div>
+                <ScrollBar orientation="horizontal" className="mt-2" />
+              </ScrollArea>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
