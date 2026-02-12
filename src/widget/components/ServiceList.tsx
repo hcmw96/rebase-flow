@@ -16,6 +16,7 @@ const categoryImages: Record<string, string> = {
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
   'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
+  'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
 };
 
 // Extract duration from service name
