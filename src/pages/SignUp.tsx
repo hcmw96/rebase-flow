@@ -44,12 +44,12 @@ const SignUp = ({ onSwitchToSignIn }: SignUpProps) => {
         >
           <Logo className="h-14 w-auto opacity-80 mx-auto" />
           <div>
-            <h2 className="text-lg font-medium text-black/80">Check your email</h2>
-            <p className="text-sm text-black/40 mt-2">
-              We've sent a verification link to <strong className="text-black/60">{email}</strong>. Please verify your email to sign in.
+            <h2 className="text-lg font-medium text-white/80">Check your email</h2>
+            <p className="text-sm text-white/50 mt-2">
+              We've sent a verification link to <strong className="text-white/70">{email}</strong>. Please verify your email to sign in.
             </p>
           </div>
-          <Button variant="outline" onClick={onSwitchToSignIn} className="w-full border-black/10 text-black/60">
+          <Button variant="outline" onClick={onSwitchToSignIn} className="w-full border-white/20 text-white/70 hover:bg-white/10">
             Back to Sign In
           </Button>
         </motion.div>
@@ -66,48 +66,48 @@ const SignUp = ({ onSwitchToSignIn }: SignUpProps) => {
       >
         <div className="flex flex-col items-center space-y-3">
           <Logo className="h-14 w-auto opacity-80" />
-          <p className="text-sm text-black/40">Create your account</p>
+          <p className="text-sm text-white/50">Create your account</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="firstName" className="text-black/60 text-xs">First Name</Label>
+              <Label htmlFor="firstName" className="text-white/70 text-xs">First Name</Label>
               <Input
                 id="firstName"
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
                 required
-                className="bg-white/60 border-black/10 text-black placeholder:text-black/30 focus-visible:ring-black/20"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-white/20"
                 placeholder="First"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lastName" className="text-black/60 text-xs">Last Name</Label>
+              <Label htmlFor="lastName" className="text-white/70 text-xs">Last Name</Label>
               <Input
                 id="lastName"
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
                 required
-                className="bg-white/60 border-black/10 text-black placeholder:text-black/30 focus-visible:ring-black/20"
+                className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-white/20"
                 placeholder="Last"
               />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="email" className="text-black/60 text-xs">Email</Label>
+            <Label htmlFor="email" className="text-white/70 text-xs">Email</Label>
             <Input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="bg-white/60 border-black/10 text-black placeholder:text-black/30 focus-visible:ring-black/20"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-white/20"
               placeholder="you@example.com"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="password" className="text-black/60 text-xs">Password</Label>
+            <Label htmlFor="password" className="text-white/70 text-xs">Password</Label>
             <Input
               id="password"
               type="password"
@@ -115,7 +115,7 @@ const SignUp = ({ onSwitchToSignIn }: SignUpProps) => {
               onChange={(e) => setPassword(e.target.value)}
               required
               minLength={6}
-              className="bg-white/60 border-black/10 text-black placeholder:text-black/30 focus-visible:ring-black/20"
+              className="bg-white/10 border-white/20 text-white placeholder:text-white/30 focus-visible:ring-white/20"
               placeholder="••••••••"
             />
           </div>
@@ -124,14 +124,14 @@ const SignUp = ({ onSwitchToSignIn }: SignUpProps) => {
             <p className="text-sm text-red-600">{error}</p>
           )}
 
-          <Button type="submit" disabled={loading} className="w-full bg-black/80 hover:bg-black text-white">
+          <Button type="submit" disabled={loading} className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm">
             {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Create Account'}
           </Button>
         </form>
 
-        <p className="text-center text-sm text-black/40">
+        <p className="text-center text-sm text-white/40">
           Already have an account?{' '}
-          <button onClick={onSwitchToSignIn} className="text-black/70 underline underline-offset-2">
+          <button onClick={onSwitchToSignIn} className="text-white/70 underline underline-offset-2">
             Sign In
           </button>
         </p>
