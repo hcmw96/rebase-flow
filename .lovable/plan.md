@@ -1,34 +1,35 @@
 
-
-# Filter Out Inactive Mindbody Services
+# Align and Fill Sauna Category Services
 
 ## Problem
-The `mindbody-services` edge function fetches all session types from Mindbody's API without checking whether they are active. This means inactive/retired services appear in your app.
+When a category has only 2 services (like the Sauna category with "Infrared Sauna & Ice Bath" and "Premium Suite"), the chips are small (100px wide) and left-aligned, leaving lots of empty space. They should fill the available width evenly.
 
 ## Solution
-Add a filter in the edge function to only include session types where the Mindbody API marks them as active. The Mindbody `/site/sessiontypes` response includes fields like `Active` (boolean) on each session type object.
+Make the `CategorySection` and `ServiceChip` components responsive to the number of items -- when there are few services (2 or 3), chips expand to fill the row equally instead of staying at a fixed 100px width.
 
 ## Changes
 
-### 1. Update `supabase/functions/mindbody-services/index.ts`
+### 1. `src/components/CategorySection.tsx`
+- When `services.length <= 3`, switch from a horizontal scroll flex layout to a CSS grid that distributes items evenly across the full width.
+- Use `grid-cols-2` for 2 items, `grid-cols-3` for 3 items.
+- Keep the horizontal scroll behavior for 4+ items (current behavior).
 
-After fetching session types on line 105, add a filter to remove inactive ones:
+### 2. `src/components/ServiceChip.tsx`
+- Accept an optional `fillWidth` prop (boolean).
+- When `fillWidth` is true, remove the fixed `w-[100px]` and `flex-shrink-0` classes so the chip fills its grid cell.
+- This keeps the existing compact behavior for categories with many items.
 
-```typescript
-const allSessionTypes = sessionTypesData.SessionTypes || [];
-const sessionTypes = allSessionTypes.filter((st: any) => st.Active !== false);
-console.log(`Filtered: ${allSessionTypes.length} total -> ${sessionTypes.length} active session types`);
+## Technical Detail
+In `CategorySection.tsx`, the render logic for the services container will branch:
+
+```
+if (services.length <= 3) {
+  // Use grid layout: grid grid-cols-{n} gap-3
+  // Pass fillWidth={true} to ServiceChip
+} else {
+  // Keep current horizontal scroll layout
+  // Pass fillWidth={false} (default)
+}
 ```
 
-This single change filters at the source before any price matching or mapping occurs, so inactive services won't appear anywhere in the app (main app, widget, or homepage).
-
-### What this affects
-- The Services page listing
-- The Homepage popular services
-- The embeddable widget service list
-- All share the same edge function, so one fix covers everything
-
-### Approach details
-- Uses `st.Active !== false` (rather than `=== true`) to be safe in case the field is undefined on some session types -- those will still be included
-- Logs the before/after count so you can verify which services were filtered out
-
+This ensures vertical alignment and equal sizing for small categories while preserving horizontal scrolling for larger ones.
