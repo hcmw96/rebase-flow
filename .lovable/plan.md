@@ -1,25 +1,58 @@
 
 
-## Fix: Bring Back Reflexology Services
+## Two Changes
 
-### Problem
-Reflexology services (programId 16, programName "Reflexology") are present in the API response but not appearing in the widget. After reviewing the code, the regex patterns and filtering logic are all correct -- the services should be displaying.
+### 1. Sort "Initial Consultation" variants before "Follow Up" variants
 
-The most likely cause is that the recent edge function deployment (pagination fix) hasn't fully propagated yet, or there's a rendering issue related to how the "Touch & Flow/..." service names are being processed.
+Currently, `src/pages/Services.tsx` sorts variants only by duration. The widget (`ServiceList.tsx`) already prioritizes "first consultation" variants but doesn't handle "initial" vs "follow up" ordering.
 
-### Investigation Findings
-- The API returns 10+ Reflexology services under programId 16 (e.g., "Touch & Flow/ Foot reflexology (60 mins)", "Flow & Glow/Facial & Foot Reflexology (90 mins)")
-- The regex patterns on lines 60-62 correctly match these names and map them to the group name "Reflexology"
-- "Reflexology" is NOT in the `hiddenGroupNames` set
-- ProgramId 16 is NOT in the `hiddenProgramIds` set
-- "Reflexology" has order position 40 in `serviceOrder`
+**Changes in both files** (`src/pages/Services.tsx` and `src/widget/components/ServiceList.tsx`):
+- Update variant sorting to place any variant whose name contains "initial" or "first consult" before variants containing "follow up", then sort by duration as a tiebreaker.
 
-### Plan
-1. **Verify the edge function deployment** -- redeploy `mindbody-services` to ensure the pagination fix is live
-2. **Add a safety net** -- add an explicit regex pattern for service names that start with "Touch & Glow" (with slash separator) to ensure all reflexology variant names are captured, since some use "/" directly after the ampersand phrase
-3. **Test end-to-end** -- confirm Reflexology appears in the widget after deployment
+### 2. Remove images from non-tech-therapy service chips
+
+"Tech therapies" are: Infrared Sauna & Ice Bath, The Midday Reset (Infrared/Premium), Premium Suite, Cryotherapy, and Hyperbaric Oxygen. All other services (massages, osteopathy, reflexology, IV drips, etc.) should render without an image thumbnail.
+
+**Changes:**
+- In `src/components/ServiceChip.tsx` (app): Accept an optional `hideImage` prop. When true, skip rendering the image/thumbnail and show a simpler text-only chip.
+- In `src/components/CategorySection.tsx` (app): Determine whether a category's services are "tech therapies" based on their names. Pass `hideImage` to `ServiceChip` for non-tech services.
+- In `src/widget/components/ServiceChip.tsx` (widget): Same `hideImage` logic.
+- In `src/widget/components/CategorySection.tsx` (widget): Same category-level logic.
 
 ### Technical Details
-- Ensure all "Touch & Glow/..." variants (like "Touch & Glow/Cranial & Facial Reflexology") are captured by the existing pattern `/^touch\s*&\s*(flow|glow)/i` -- this pattern already handles both "flow" and "glow", so it should work
-- If the issue persists, add a fallback pattern matching on programName "Reflexology" directly, so any service in that program is automatically grouped under "Reflexology" regardless of its name
 
+**Variant sorting** (both files):
+```typescript
+group.variants.sort((a, b) => {
+  const aInitial = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
+  const bInitial = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
+  const aFollowUp = /follow\s*up/i.test(a.name) ? 1 : 0;
+  const bFollowUp = /follow\s*up/i.test(b.name) ? 1 : 0;
+  if (aInitial !== bInitial) return aInitial - bInitial;
+  if (aFollowUp !== bFollowUp) return aFollowUp - bFollowUp;
+  return (a.duration ?? 0) - (b.duration ?? 0);
+});
+```
+
+**Tech therapy detection** (used in CategorySection to decide `hideImage`):
+```typescript
+const techTherapies = new Set([
+  'Infrared Sauna & Ice Bath',
+  'The Midday Reset - Infrared Suite',
+  'Premium Suite',
+  'The Midday Reset - Premium Suite',
+  'Cryotherapy',
+  'Hyperbaric Oxygen',
+]);
+const showImage = techTherapies.has(service.baseName);
+```
+
+**ServiceChip without image**: When `hideImage` is true, render just the title, duration, and price in a compact card without the square image thumbnail.
+
+### Files to modify
+- `src/pages/Services.tsx` -- variant sort fix
+- `src/widget/components/ServiceList.tsx` -- variant sort fix
+- `src/components/ServiceChip.tsx` -- add `hideImage` prop
+- `src/components/CategorySection.tsx` -- pass `hideImage` based on tech therapy check
+- `src/widget/components/ServiceChip.tsx` -- add `hideImage` prop
+- `src/widget/components/CategorySection.tsx` -- pass `hideImage` based on tech therapy check
