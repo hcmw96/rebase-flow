@@ -24,6 +24,7 @@ const categoryImages: Record<string, string> = {
 
 const serviceImages: Record<string, string> = {
   'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
+  'Cryotherapy': '/images/rebase-cryo.webp',
   'Members Suite': '/images/rebase-private-suites.webp',
   'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
 };
@@ -34,11 +35,12 @@ interface HomePageProps {
 }
 
 // The 3 popular service groups to feature
-const POPULAR_GROUPS = ['Infrared Sauna & Ice Bath', 'Members Suite', 'Hyperbaric Oxygen'];
+const POPULAR_GROUPS = ['Infrared Sauna & Ice Bath', 'Cryotherapy', 'Members Suite', 'Hyperbaric Oxygen'];
 
 // Same grouping patterns from Services page
 const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
   { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
+  { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
   { pattern: /^members?\s*suite/i, groupName: 'Members Suite' },
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
 ];
