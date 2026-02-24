@@ -2,10 +2,11 @@ import { GroupedService } from '../context/WidgetContext';
 
 interface ServiceChipProps {
   service: GroupedService;
+  hideImage?: boolean;
   onSelect: (service: GroupedService) => void;
 }
 
-export function ServiceChip({ service, onSelect }: ServiceChipProps) {
+export function ServiceChip({ service, hideImage = false, onSelect }: ServiceChipProps) {
   // Get price for display
   const getPrice = () => {
     const prices = service.variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
@@ -29,13 +30,20 @@ export function ServiceChip({ service, onSelect }: ServiceChipProps) {
       className="w-[100px] flex-shrink-0 text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(35,15%,75%)] rounded-xl"
     >
       {/* Thumbnail */}
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-[hsl(25,12%,15%)]">
-        <img
-          src={service.image}
-          alt={service.baseName}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-        />
-      </div>
+      {!hideImage && (
+        <div className="relative aspect-square rounded-xl overflow-hidden bg-[hsl(25,12%,15%)]">
+          <img
+            src={service.image}
+            alt={service.baseName}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+        </div>
+      )}
+      {hideImage && price && (
+        <div className="mt-1">
+          <span className="text-xs font-semibold text-[hsl(35,8%,55%)]">from £{price}</span>
+        </div>
+      )}
       
       {/* Title */}
       <p className="text-xs font-medium text-[hsl(35,15%,88%)] mt-2 line-clamp-2 leading-tight">

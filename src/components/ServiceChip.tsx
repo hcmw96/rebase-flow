@@ -11,6 +11,7 @@ interface ServiceChipProps {
   image: string;
   variants: ServiceVariant[];
   fillWidth?: boolean;
+  hideImage?: boolean;
   onSelectService?: (service: BookingServiceData) => void;
 }
 
@@ -22,6 +23,7 @@ const ServiceChip = ({
   image,
   variants,
   fillWidth = false,
+  hideImage = false,
   onSelectService,
 }: ServiceChipProps) => {
   const handleClick = () => {
@@ -61,19 +63,26 @@ const ServiceChip = ({
       )}
     >
       {/* Thumbnail */}
-      <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
-        <img
-          src={image}
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-        />
-        {/* Price badge */}
-        {price && (
-          <div className="absolute bottom-1.5 right-1.5 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
-            <span className="text-xs font-semibold text-foreground">£{price}</span>
-          </div>
-        )}
-      </div>
+      {!hideImage && (
+        <div className="relative aspect-square rounded-xl overflow-hidden bg-muted">
+          <img
+            src={image}
+            alt={title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+          />
+          {/* Price badge */}
+          {price && (
+            <div className="absolute bottom-1.5 right-1.5 bg-background/90 backdrop-blur-sm px-1.5 py-0.5 rounded-md">
+              <span className="text-xs font-semibold text-foreground">£{price}</span>
+            </div>
+          )}
+        </div>
+      )}
+      {hideImage && price && (
+        <div className="mt-1">
+          <span className="text-xs font-semibold text-foreground/70">from £{price}</span>
+        </div>
+      )}
       
       {/* Title */}
       <p className="text-xs font-medium text-black/70 mt-2 line-clamp-2 leading-tight">

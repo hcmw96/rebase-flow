@@ -9,6 +9,15 @@ interface CategorySectionProps {
   onSelectService: (service: GroupedService) => void;
 }
 
+const techTherapies = new Set([
+  'Infrared Sauna & Ice Bath',
+  'The Midday Reset - Infrared Suite',
+  'Premium Suite',
+  'The Midday Reset - Premium Suite',
+  'Cryotherapy',
+  'Hyperbaric Oxygen',
+]);
+
 export function CategorySection({
   category,
   services,
@@ -58,6 +67,7 @@ export function CategorySection({
                 <ServiceChip
                   key={service.baseName}
                   service={service}
+                  hideImage={!techTherapies.has(service.baseName)}
                   onSelect={onSelectService}
                 />
               ))}

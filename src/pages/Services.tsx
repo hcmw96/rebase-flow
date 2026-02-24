@@ -142,7 +142,15 @@ const Services = ({ onSelectService }: ServicesProps) => {
     }
 
     for (const group of groups.values()) {
-      group.variants.sort((a, b) => (a.duration ?? 0) - (b.duration ?? 0));
+      group.variants.sort((a, b) => {
+        const aInitial = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
+        const bInitial = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
+        const aFollowUp = /follow\s*up/i.test(a.name) ? 1 : 0;
+        const bFollowUp = /follow\s*up/i.test(b.name) ? 1 : 0;
+        if (aInitial !== bInitial) return aInitial - bInitial;
+        if (aFollowUp !== bFollowUp) return aFollowUp - bFollowUp;
+        return (a.duration ?? 0) - (b.duration ?? 0);
+      });
     }
 
     const grouped = Array.from(groups.values());

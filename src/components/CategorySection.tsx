@@ -22,6 +22,15 @@ interface CategorySectionProps {
   onSelectService?: (service: BookingServiceData) => void;
 }
 
+const techTherapies = new Set([
+  'Infrared Sauna & Ice Bath',
+  'The Midday Reset - Infrared Suite',
+  'Premium Suite',
+  'The Midday Reset - Premium Suite',
+  'Cryotherapy',
+  'Hyperbaric Oxygen',
+]);
+
 const CategorySection = ({
   category,
   services,
@@ -82,6 +91,7 @@ const CategorySection = ({
                     image={service.image}
                     variants={service.variants}
                     fillWidth
+                    hideImage={!techTherapies.has(service.baseName)}
                     onSelectService={onSelectService}
                   />
                 ))}
@@ -98,6 +108,7 @@ const CategorySection = ({
                       category={service.category}
                       image={service.image}
                       variants={service.variants}
+                      hideImage={!techTherapies.has(service.baseName)}
                       onSelectService={onSelectService}
                     />
                   ))}
