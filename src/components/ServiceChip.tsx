@@ -12,6 +12,7 @@ interface ServiceChipProps {
   variants: ServiceVariant[];
   fillWidth?: boolean;
   hideImage?: boolean;
+  listMode?: boolean;
   onSelectService?: (service: BookingServiceData) => void;
 }
 
@@ -24,6 +25,7 @@ const ServiceChip = ({
   variants,
   fillWidth = false,
   hideImage = false,
+  listMode = false,
   onSelectService,
 }: ServiceChipProps) => {
   const handleClick = () => {
@@ -52,6 +54,37 @@ const ServiceChip = ({
 
   const price = getPrice();
   const duration = getDuration();
+  const hasMultipleVariants = variants.length > 1;
+
+  // List mode: full-width horizontal row
+  if (listMode) {
+    return (
+      <button
+        onClick={handleClick}
+        className="w-full flex items-center justify-between px-4 py-3 bg-black/[0.03] rounded-lg border border-black/[0.05] hover:bg-black/[0.06] transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-primary min-h-[44px]"
+      >
+        <div className="flex flex-col items-start gap-0.5 min-w-0 flex-1 mr-3">
+          <span className="text-sm font-medium text-black/70 text-left">{title}</span>
+          {hasMultipleVariants && (
+            <span className="text-[11px] text-black/35">{variants.length} options</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3 flex-shrink-0">
+          {duration && (
+            <span className="text-xs text-black/40 flex items-center gap-1">
+              <Clock className="h-3 w-3" />
+              {duration} min
+            </span>
+          )}
+          {price && (
+            <span className="text-sm font-semibold text-black/70">
+              {hasMultipleVariants ? 'from ' : ''}£{price}
+            </span>
+          )}
+        </div>
+      </button>
+    );
+  }
 
   return (
     <button
