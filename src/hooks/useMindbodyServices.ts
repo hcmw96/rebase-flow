@@ -55,7 +55,7 @@ export interface Staff {
   bio: string | null;
 }
 
-async function fetchServices(): Promise<MindbodyService[]> {
+export async function fetchServices(): Promise<MindbodyService[]> {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-services`);
   if (!response.ok) {
     throw new Error('Failed to fetch services');
