@@ -66,6 +66,8 @@ const hiddenGroupNames = new Set([
   'Club Takeover',
   'Ozone Aesthetics Packages',
   'Hydro Pro Facial',
+  'Members Wellness Event',
+  'Members Only',
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
