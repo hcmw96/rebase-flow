@@ -9,8 +9,16 @@ import { MindbodyProvider } from "./contexts/MindbodyContext";
 import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
+import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
+
+// Prefetch services immediately on app load (no auth required)
+queryClient.prefetchQuery({
+  queryKey: ['mindbody-services'],
+  queryFn: fetchServices,
+  staleTime: 5 * 60 * 1000,
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
