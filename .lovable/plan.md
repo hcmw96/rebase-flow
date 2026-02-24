@@ -1,42 +1,60 @@
 
 
-## Preload Services During Login
+## Redesign Non-Image Services as Compact List Rows
 
 ### Problem
-Services only start fetching after the user successfully logs in and the Home/Services page mounts. The Mindbody services API call takes several seconds, so there's a noticeable delay.
+Services without images (General, Massage Therapy, IV Drip, etc.) are displayed as 100px-wide text-only chips in a horizontal scroll. On mobile, this looks messy -- floating text with no visual container, hard to read, and awkward to scroll through.
 
 ### Solution
-Prefetch the services data at the app root level so the fetch begins immediately on app load -- even while the user is still on the login screen. Since the services endpoint doesn't require authentication, we can safely call it before the user signs in.
+Switch non-image service categories from horizontal scroll chips to a **vertical list of compact rows**. Each row spans full width with a subtle background, showing the service name, duration, and price in a clean, scannable layout. Tech therapy categories (with images) keep their current chip/grid layout.
+
+### Layout Comparison
+
+**Before (current):**
+Horizontal scroll of tiny 100px text blocks -- no background, hard to tap, text gets truncated.
+
+**After (proposed):**
+Full-width rows stacked vertically, each with:
+- Service name (left-aligned)
+- Duration badge (inline)
+- Price (right-aligned)
+- Subtle background and border for visual structure
+- Chevron or tap affordance
 
 ### Technical Details
 
-**File: `src/App.tsx`**
-- Import `fetchServices` (currently not exported) and the `queryClient`
-- Call `queryClient.prefetchQuery` for `['mindbody-services']` at module level (outside the component) so it fires on initial page load, before auth resolves
+**File: `src/components/CategorySection.tsx`**
+- Check if services in the category are non-tech (all have `hideImage`)
+- If so, render a vertical list of row items instead of chips/scroll
+- Each row: full-width button with `flex items-center justify-between`, subtle `bg-black/[0.03]` background, rounded corners
 
-**File: `src/hooks/useMindbodyServices.ts`**
-- Export the `fetchServices` function so it can be imported by `App.tsx`
+**File: `src/components/ServiceChip.tsx`**
+- Add a `listMode` prop (or reuse `hideImage` + `fillWidth` combination)
+- When in list mode, render as a horizontal row: name on left, duration + price on right
+- Proper padding, tap target size (min 44px height), and visual affordance
 
-**Implementation:**
-```typescript
-// In useMindbodyServices.ts - just add "export" to fetchServices
-export async function fetchServices(): Promise<MindbodyService[]> { ... }
+**File: `src/widget/components/CategorySection.tsx`** and **`src/widget/components/ServiceChip.tsx`**
+- Mirror the same changes for the widget version
 
-// In App.tsx - prefetch at module level
-import { fetchServices } from '@/hooks/useMindbodyServices';
-
-const queryClient = new QueryClient();
-
-// Fire immediately on app load, before any component renders
-queryClient.prefetchQuery({
-  queryKey: ['mindbody-services'],
-  queryFn: fetchServices,
-  staleTime: 5 * 60 * 1000,
-});
+### Row Design
+```
++--------------------------------------------------+
+|  Acupuncture Initial Consultation    60 min  £120 |
++--------------------------------------------------+
+|  Acupuncture Follow Up               60 min   £95 |
++--------------------------------------------------+
 ```
 
-This means the services data will already be cached by the time the user finishes typing their credentials and signing in. No component changes needed -- `useMindbodyServices()` will find the data already in the React Query cache.
+- Background: `bg-black/[0.03]` with `rounded-lg`
+- Padding: `px-4 py-3`
+- Name: `text-sm font-medium text-black/70`
+- Duration: `text-xs text-black/40` with clock icon
+- Price: `text-sm font-semibold text-black/70` right-aligned
+- Gap between rows: `gap-2`
+- Variant count shown as subtle subtext if multiple options exist
 
 ### Files to modify
-- `src/hooks/useMindbodyServices.ts` -- export `fetchServices`
-- `src/App.tsx` -- add prefetch call
+- `src/components/ServiceChip.tsx` -- add list row rendering mode
+- `src/components/CategorySection.tsx` -- use vertical list for non-tech categories
+- `src/widget/components/ServiceChip.tsx` -- same for widget
+- `src/widget/components/CategorySection.tsx` -- same for widget
