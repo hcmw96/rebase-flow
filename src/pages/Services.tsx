@@ -74,6 +74,7 @@ const hiddenServiceNames = new Set([
   'Add On: Lymphatic Drainage Compression',
   'Full Facial/Body Consultation',
   'Ozone - Aesthetics',
+  'Discovery Call',
 ]);
 
 function canonicalizeServiceName(baseName: string): string {
