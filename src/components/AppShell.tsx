@@ -86,7 +86,7 @@ const AppShell = () => {
       {/* Floating Bottom Tab Bar */}
       <nav className="fixed bottom-0 left-4 right-4 z-50 mx-auto max-w-md" style={{ paddingBottom: 'var(--safe-area-bottom, env(safe-area-inset-bottom, 0px))' }}>
         <div
-          className="rounded-2xl border border-white/[0.06] bg-white/[0.04] backdrop-blur-2xl shadow-lg shadow-black/10 mb-2"
+          className="rounded-2xl border border-white/[0.08] bg-black/60 backdrop-blur-2xl shadow-lg shadow-black/20 mb-2"
         >
           <div className="flex items-stretch">
             {tabs.map((tab) => {
