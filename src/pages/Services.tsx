@@ -33,6 +33,7 @@ function extractDurationFromName(name: string): { baseName: string; duration: nu
 }
 
 const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
+  { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
   { pattern: /^skin\s*rejuv(enation)?/i, groupName: 'Skin Rejuvenation' },
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
   { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
