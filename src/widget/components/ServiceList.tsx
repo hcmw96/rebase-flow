@@ -205,12 +205,15 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       });
     }
 
-    // Sort variants: "first consultation" first, then by duration
+    // Sort variants: initial/first consult first, follow-up last, then by duration
     for (const group of groups.values()) {
       group.variants.sort((a, b) => {
-        const aFirst = /first\s*consult/i.test(a.name) ? 0 : 1;
-        const bFirst = /first\s*consult/i.test(b.name) ? 0 : 1;
-        if (aFirst !== bFirst) return aFirst - bFirst;
+        const aInitial = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
+        const bInitial = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
+        const aFollowUp = /follow\s*up/i.test(a.name) ? 1 : 0;
+        const bFollowUp = /follow\s*up/i.test(b.name) ? 1 : 0;
+        if (aInitial !== bInitial) return aInitial - bInitial;
+        if (aFollowUp !== bFollowUp) return aFollowUp - bFollowUp;
         return (a.duration ?? 0) - (b.duration ?? 0);
       });
     }
