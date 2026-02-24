@@ -68,6 +68,9 @@ const hiddenGroupNames = new Set([
   'Hydro Pro Facial',
   'Members Wellness Event',
   'Members Only',
+  'Sound Bath',
+  'Midday Reset',
+  'Midday Resets',
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
