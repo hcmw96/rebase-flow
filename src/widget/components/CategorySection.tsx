@@ -26,6 +26,8 @@ export function CategorySection({
 }: CategorySectionProps) {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  const isNonImageCategory = services.every(s => !techTherapies.has(s.baseName));
+
   if (services.length === 0) return null;
 
   return (
@@ -61,18 +63,31 @@ export function CategorySection({
             animation: 'slideDown 0.25s ease-out',
           }}
         >
-          <div className="w-full pb-4 overflow-x-auto">
-            <div className="flex gap-3 px-1">
+          {isNonImageCategory ? (
+            <div className="flex flex-col gap-2 px-1">
               {services.map((service) => (
                 <ServiceChip
                   key={service.baseName}
                   service={service}
-                  hideImage={!techTherapies.has(service.baseName)}
+                  listMode
                   onSelect={onSelectService}
                 />
               ))}
             </div>
-          </div>
+          ) : (
+            <div className="w-full overflow-x-auto">
+              <div className="flex gap-3 px-1">
+                {services.map((service) => (
+                  <ServiceChip
+                    key={service.baseName}
+                    service={service}
+                    hideImage={!techTherapies.has(service.baseName)}
+                    onSelect={onSelectService}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>

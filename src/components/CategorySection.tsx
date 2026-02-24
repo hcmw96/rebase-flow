@@ -39,6 +39,9 @@ const CategorySection = ({
 }: CategorySectionProps) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
 
+  // Check if all services in this category are non-tech (no images)
+  const isNonImageCategory = services.every(s => !techTherapies.has(s.baseName));
+
   if (services.length === 0) return null;
 
   return (
@@ -76,7 +79,23 @@ const CategorySection = ({
             transition={{ duration: 0.25, ease: 'easeInOut' }}
             className="overflow-hidden"
           >
-            {services.length <= 3 ? (
+            {isNonImageCategory ? (
+              <div className="flex flex-col gap-2 px-1 pb-4">
+                {services.map((service) => (
+                  <ServiceChip
+                    key={service.baseName}
+                    id={service.variants[0].id}
+                    title={service.baseName}
+                    description={service.description}
+                    category={service.category}
+                    image={service.image}
+                    variants={service.variants}
+                    listMode
+                    onSelectService={onSelectService}
+                  />
+                ))}
+              </div>
+            ) : services.length <= 3 ? (
               <div className={cn(
                 'grid gap-3 px-1 pb-4',
                 services.length === 2 ? 'grid-cols-2' : 'grid-cols-3'
