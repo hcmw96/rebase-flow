@@ -10,7 +10,7 @@ import {
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
-import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
+import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMindbody } from '@/contexts/MindbodyContext';
@@ -25,6 +25,7 @@ export interface BookingServiceData {
   category: string;
   image: string;
   variants: ServiceVariant[];
+  contactOnly?: boolean;
 }
 
 interface BookingDrawerProps {
@@ -32,6 +33,33 @@ interface BookingDrawerProps {
   onClose: () => void;
   service: BookingServiceData | null;
 }
+
+const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
+  <motion.div
+    initial={{ opacity: 0, scale: 0.95 }}
+    animate={{ opacity: 1, scale: 1 }}
+    className="text-center space-y-5 py-6"
+  >
+    <div className="flex justify-center">
+      <div className="w-16 h-16 rounded-full bg-accent/20 flex items-center justify-center">
+        <Mail className="h-8 w-8 text-foreground/70" />
+      </div>
+    </div>
+    <div className="space-y-2">
+      <h3 className="text-lg font-semibold text-foreground">Contact Reception</h3>
+      <p className="text-sm text-muted-foreground leading-relaxed">
+        To book <span className="font-medium text-foreground">{serviceName}</span>, please contact reception.
+      </p>
+    </div>
+    <a
+      href="mailto:reception@rebaserecovery.com"
+      className="inline-flex items-center gap-2 px-5 py-2.5 bg-primary text-primary-foreground rounded-lg text-sm font-medium transition-colors hover:bg-primary/90"
+    >
+      <Mail className="h-4 w-4" />
+      reception@rebaserecovery.com
+    </a>
+  </motion.div>
+);
 
 const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
   const { isAuthenticated } = useAuth();
@@ -48,7 +76,6 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       onClose();
-      // Reset after close animation
       setTimeout(() => {
         setCurrentStep(1);
         setSelectedDate(undefined);
@@ -59,6 +86,9 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
     }
   };
 
+  // Check if this entire service is contact-only
+  const isFullContactOnly = service?.contactOnly === true;
+
   // Auto-select single variant
   const hasVariants = service?.variants && service.variants.length > 1;
 
@@ -67,6 +97,10 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
     if (service?.variants?.length === 1) return service.variants[0];
     return null;
   }, [selectedVariant, service]);
+
+  // Check if the selected variant is contact-only
+  const isVariantContactOnly = activeVariant?.contactOnly === true;
+  const showContactMessage = isFullContactOnly || isVariantContactOnly;
 
   const steps = useMemo(() => {
     if (hasVariants) {
@@ -102,13 +136,15 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
     sessionTypeId: activeServiceId,
     startDate: dateRange?.startDate,
     endDate: dateRange?.endDate,
-    enabled: !!activeServiceId && !!selectedDate,
+    enabled: !!activeServiceId && !!selectedDate && !showContactMessage,
   });
 
   const availableSlots = availabilityData?.availableItems || [];
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
+    // If variant is contact-only, don't advance to date step
+    if (variant.contactOnly) return;
     setCurrentStep(2);
   };
 
@@ -124,6 +160,12 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
   };
 
   const handleBack = () => {
+    // If variant is contact-only, go back to variant selection
+    if (isVariantContactOnly && hasVariants) {
+      setSelectedVariant(null);
+      setCurrentStep(1);
+      return;
+    }
     if (currentStep === 1) {
       onClose();
     } else {
@@ -183,9 +225,9 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
             </button>
             <div className="flex-1 min-w-0">
               <h2 className="text-base font-semibold text-foreground truncate">
-                {bookingComplete ? 'Confirmed' : `Book ${service.title}`}
+                {bookingComplete ? 'Confirmed' : showContactMessage ? service.title : `Book ${service.title}`}
               </h2>
-              {activeVariant && !bookingComplete && (
+              {activeVariant && !bookingComplete && !showContactMessage && (
                 <p className="text-xs text-muted-foreground">
                   {[displayDuration, activeVariant.price ? `£${activeVariant.price}` : null].filter(Boolean).join(' · ')}
                 </p>
@@ -195,7 +237,12 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            {bookingComplete && selectedSlot ? (
+            {/* Contact-only: full service */}
+            {isFullContactOnly && !hasVariants ? (
+              <ContactReceptionMessage serviceName={service.title} />
+            ) : showContactMessage && isVariantContactOnly ? (
+              <ContactReceptionMessage serviceName={activeVariant?.name || service.title} />
+            ) : bookingComplete && selectedSlot ? (
               /* ── Success ── */
               <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
@@ -236,7 +283,9 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
             ) : (
               <>
                 {/* Steps indicator */}
-                <BookingSteps steps={steps} currentStep={currentStep} className="mb-5" />
+                {!showContactMessage && (
+                  <BookingSteps steps={steps} currentStep={currentStep} className="mb-5" />
+                )}
 
                 <AnimatePresence mode="wait">
                   {/* ── Variant Selection ── */}
@@ -272,7 +321,9 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-foreground">
-                              {variant.price ? `£${variant.price.toFixed(2)}` : 'Contact'}
+                              {variant.contactOnly && (variant.price === 0 || variant.price === null)
+                                ? 'Free — Contact'
+                                : variant.price ? `£${variant.price.toFixed(2)}` : 'Contact'}
                             </span>
                             {selectedVariant?.id === variant.id && (
                               <div className="w-5 h-5 rounded-full bg-primary flex items-center justify-center">
@@ -286,7 +337,7 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                   )}
 
                   {/* ── Date ── */}
-                  {currentStep === dateStep && (
+                  {currentStep === dateStep && !showContactMessage && (
                     <motion.div
                       key="step-date"
                       initial={{ opacity: 0, x: 20 }}
@@ -302,7 +353,7 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                   )}
 
                   {/* ── Time ── */}
-                  {currentStep === timeStep && (
+                  {currentStep === timeStep && !showContactMessage && (
                     <motion.div
                       key="step-time"
                       initial={{ opacity: 0, x: 20 }}
@@ -328,7 +379,7 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                   )}
 
                   {/* ── Confirm ── */}
-                  {currentStep === confirmStep && selectedSlot && (
+                  {currentStep === confirmStep && selectedSlot && !showContactMessage && (
                     <motion.div
                       key="step-confirm"
                       initial={{ opacity: 0, x: 20 }}

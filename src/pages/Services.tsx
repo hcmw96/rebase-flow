@@ -7,6 +7,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ServiceVariant } from '@/components/ServiceCard';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import ClassSchedule from '@/components/ClassSchedule';
 
 // Fallback images for services without images
 const categoryImages: Record<string, string> = {
@@ -52,6 +54,10 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^(oxygen-?)?ozone/i, groupName: 'Ozone Therapy' },
   { pattern: /minute\s*classes$/i, groupName: 'Classes' },
   { pattern: /^all\s*classes$/i, groupName: 'Classes' },
+  { pattern: /^brazil+ian\s*lymphatic/i, groupName: 'Brazilian Lymphatic' },
+  { pattern: /^(the\s+)?midday\s*resets?/i, groupName: 'Midday Reset' },
+  { pattern: /^nutritional\s*therap/i, groupName: 'Nutritional Therapy' },
+  { pattern: /^myofascial\s*dry\s*needl/i, groupName: 'Myofascial Dry Needling' },
 ];
 
 // Service groups to hide from the UI
@@ -69,8 +75,11 @@ const hiddenGroupNames = new Set([
   'Members Wellness Event',
   'Members Only',
   'Sound Bath',
-  'Midday Reset',
-  'Midday Resets',
+  "Member's Suite",
+  'Members Suite',
+  'Wellness Event',
+  'Saturday Buffer',
+  'Thursday Buffer',
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
@@ -82,6 +91,31 @@ const hiddenServiceNames = new Set([
   'Full Facial/Body Consultation',
   'Ozone - Aesthetics',
   'Discovery Call',
+  'Saturday Buffer',
+  'Thursday Buffer',
+  'Destress Head Neck and Shoulders',
+  'Destress Head, Neck & Shoulders',
+  'Destress Head, Neck and Shoulders',
+  'Indian Head Massage',
+  'Indian Massage',
+]);
+
+// Category overrides: force certain groups into specific categories
+const categoryOverrides: Record<string, string> = {
+  'Midday Reset': 'Private Suites',
+};
+
+// Whitelist for Regen and Manual Therapies
+const regenWhitelist = new Set([
+  'Osteopathy',
+  'Myofascial Dry Needling',
+  'Structural Fascia Therapy',
+]);
+
+// Contact-only service groups (show "contact reception" instead of booking)
+export const contactOnlyGroups = new Set([
+  'Osteopathy',
+  'Nutritional Therapy',
 ]);
 
 function canonicalizeServiceName(baseName: string): string {
@@ -97,6 +131,7 @@ interface GroupedService {
   category: string;
   image: string;
   variants: ServiceVariant[];
+  contactOnly?: boolean;
 }
 
 interface ServicesProps {
@@ -105,6 +140,7 @@ interface ServicesProps {
 
 const Services = ({ onSelectService }: ServicesProps) => {
   const [searchQuery, setSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState('services');
   const { data: services, isLoading, error } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
 
@@ -124,11 +160,23 @@ const Services = ({ onSelectService }: ServicesProps) => {
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
       const rawCategory = service.programName || service.category || 'Wellness';
-      const category = rawCategory.startsWith('Sauna Suite') ? 'Sauna' : rawCategory;
-      const image = serviceImages[canonicalName] || categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
+      
+      // Apply category overrides, then standard mapping
+      let category = categoryOverrides[canonicalName] 
+        || (rawCategory.startsWith('Sauna Suite') ? 'Private Suites' : rawCategory);
+
+      // Hide "General" category
+      if (category === 'General') continue;
 
       // Skip hidden groups
       if (hiddenGroupNames.has(canonicalName)) continue;
+
+      // Regen / Manual Therapies whitelist
+      if (/regen|manual\s*therap/i.test(category) && !regenWhitelist.has(canonicalName)) continue;
+
+      const image = serviceImages[canonicalName] || categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
+
+      const isContactOnly = contactOnlyGroups.has(canonicalName);
 
       if (!groups.has(canonicalName)) {
         groups.set(canonicalName, {
@@ -137,14 +185,19 @@ const Services = ({ onSelectService }: ServicesProps) => {
           category,
           image,
           variants: [],
+          contactOnly: isContactOnly,
         });
       }
+
+      // Check if this is an IV Drip first consultation variant
+      const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
 
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: duration ?? service.defaultTimeLength,
-        price: service.price,
+        price: isIvFirstConsult ? 0 : service.price,
         name: service.name,
+        contactOnly: isIvFirstConsult || isContactOnly,
       });
     }
 
@@ -164,7 +217,8 @@ const Services = ({ onSelectService }: ServicesProps) => {
     const serviceOrder: Record<string, number> = {
       'Infrared Sauna & Ice Bath': 0,
       'Premium Suite': 1,
-      'Cryotherapy': 2,
+      'Midday Reset': 2,
+      'Cryotherapy': 3,
     };
     grouped.sort((a, b) => {
       const orderA = serviceOrder[a.baseName] ?? 999;
@@ -194,10 +248,17 @@ const Services = ({ onSelectService }: ServicesProps) => {
     return categoryMap;
   }, [groupedServices, searchQuery]);
 
+  const handleSelectService = (service: any) => {
+    onSelectService?.({
+      ...service,
+      contactOnly: service.contactOnly,
+    });
+  };
+
   return (
     <div className="min-h-full">
-      {/* Search bar */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-white/10 px-4 py-3">
+      {/* Search bar + Tabs */}
+      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-white/10 px-4 py-3 space-y-3">
         <div className="relative max-w-lg mx-auto">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
           <Input
@@ -208,45 +269,57 @@ const Services = ({ onSelectService }: ServicesProps) => {
             className="h-10 w-full pl-10 text-sm text-white placeholder:text-white/40 bg-white/[0.06] border-white/10 rounded-md focus-visible:ring-white/20"
           />
         </div>
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-lg mx-auto">
+          <TabsList className="w-full grid grid-cols-2">
+            <TabsTrigger value="services">Services</TabsTrigger>
+            <TabsTrigger value="classes">Classes</TabsTrigger>
+          </TabsList>
+        </Tabs>
       </div>
 
-      {/* Services */}
+      {/* Content */}
       <div className="px-4 py-4 max-w-lg mx-auto">
-        {isLoading ? (
-          <div className="space-y-4">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="space-y-3">
-                <Skeleton className="h-6 w-24" />
-                <div className="flex gap-3">
-                  <Skeleton className="h-[100px] w-[100px] rounded-xl" />
-                  <Skeleton className="h-[100px] w-[100px] rounded-xl" />
-                  <Skeleton className="h-[100px] w-[100px] rounded-xl" />
-                </div>
+        {activeTab === 'services' ? (
+          <>
+            {isLoading ? (
+              <div className="space-y-4">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="space-y-3">
+                    <Skeleton className="h-6 w-24" />
+                    <div className="flex gap-3">
+                      <Skeleton className="h-[100px] w-[100px] rounded-xl" />
+                      <Skeleton className="h-[100px] w-[100px] rounded-xl" />
+                      <Skeleton className="h-[100px] w-[100px] rounded-xl" />
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">Unable to load services.</p>
-          </div>
-        ) : servicesByCategory.size === 0 ? (
-          <div className="text-center py-12">
-            <p className="text-muted-foreground">
-              {searchQuery.trim() ? 'No services match your search.' : 'No services available.'}
-            </p>
-          </div>
+            ) : error ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">Unable to load services.</p>
+              </div>
+            ) : servicesByCategory.size === 0 ? (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">
+                  {searchQuery.trim() ? 'No services match your search.' : 'No services available.'}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {Array.from(servicesByCategory.entries()).map(([category, categoryServices], index) => (
+                  <CategorySection
+                    key={category}
+                    category={category}
+                    services={categoryServices}
+                    defaultExpanded={index < 3}
+                    onSelectService={handleSelectService}
+                  />
+                ))}
+              </div>
+            )}
+          </>
         ) : (
-          <div className="space-y-2">
-            {Array.from(servicesByCategory.entries()).map(([category, categoryServices], index) => (
-              <CategorySection
-                key={category}
-                category={category}
-                services={categoryServices}
-                defaultExpanded={index < 3}
-                onSelectService={onSelectService}
-              />
-            ))}
-          </div>
+          <ClassSchedule />
         )}
       </div>
     </div>
