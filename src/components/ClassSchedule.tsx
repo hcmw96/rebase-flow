@@ -111,7 +111,7 @@ const ClassSchedule = () => {
                       <div className="shrink-0 text-right">
                         <div className={cn(
                           'text-xs font-medium flex items-center gap-1',
-                          isFull ? 'text-destructive' : spotsLeft <= 3 ? 'text-orange-500' : 'text-muted-foreground'
+                          isFull ? 'text-destructive' : spotsLeft <= 3 ? 'text-accent-foreground' : 'text-muted-foreground'
                         )}>
                           <Users className="h-3 w-3" />
                           {isFull ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''}`}
