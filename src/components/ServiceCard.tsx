@@ -10,6 +10,7 @@ export interface ServiceVariant {
   duration: number | null;
   price: number | null;
   name: string;
+  contactOnly?: boolean;
 }
 
 interface ServiceCardProps {
