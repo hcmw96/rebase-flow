@@ -1,10 +1,11 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
-import heroVideo from "@/assets/herobase.mp4";
+import { ArrowRight } from "lucide-react";
+
+const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids/REBASE - CHAPTER ONE - 03.01.mov`;
 
 const Hero = () => {
   return (
-    <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <section className="relative h-screen flex items-center justify-center overflow-hidden">
       {/* Background Video */}
       <div className="absolute inset-0">
         <video
@@ -13,35 +14,52 @@ const Hero = () => {
           loop
           playsInline
           className="w-full h-full object-cover"
+          ref={(el) => {
+            if (el) {
+              el.setAttribute("playsinline", "");
+              el.play().catch(() => {});
+            }
+          }}
+          onLoadedMetadata={(e) => {
+            e.currentTarget.currentTime = 3;
+          }}
+          onTimeUpdate={(e) => {
+            const vid = e.currentTarget;
+            if (vid.duration && vid.currentTime >= vid.duration - 5) {
+              vid.currentTime = 3;
+            }
+          }}
         >
-          <source src={heroVideo} type="video/mp4" />
+          <source src={VIDEO_URL} type="video/quicktime" />
+          <source src={VIDEO_URL} type="video/mp4" />
         </video>
-        <div className="absolute inset-0 bg-background/40"></div>
+        <div className="absolute inset-0 bg-black/45" />
       </div>
 
-      {/* Content */}
-      <div className="relative z-10 text-center max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-white mb-6 tracking-wider uppercase animate-fade-in">
-          Elevate Your Wellness
+      {/* Center content */}
+      <div className="relative z-10 text-center px-6">
+        <h1 className="font-serif text-4xl sm:text-5xl lg:text-7xl font-light text-white tracking-wide leading-tight">
+          Elevate your wellness
         </h1>
-        <p className="text-white/80 text-base sm:text-lg lg:text-xl font-light mb-12 max-w-2xl mx-auto animate-fade-in" style={{ animationDelay: '0.1s' }}>
-          Experience a novel approach to lasting wellbeing at Rebase, London's new Home of Social Wellness.
-        </p>
-        
-        <div className="flex justify-center animate-fade-in" style={{ animationDelay: '0.2s' }}>
-          <Button 
-            variant="outline" 
-            size="lg" 
-            className="glass-button text-white text-base px-12 py-6 border-white/30 hover:bg-white/10 uppercase tracking-widest"
+        <div className="mt-10">
+          <Button
+            className="bg-foreground text-background hover:bg-foreground/90 text-sm uppercase tracking-[0.1em] px-8 h-12 rounded-full"
             onClick={() => {
-              document.getElementById('most-popular')?.scrollIntoView({ behavior: 'smooth' });
+              document.getElementById("most-popular")?.scrollIntoView({ behavior: "smooth" });
             }}
           >
             Book Now
+            <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>
 
+      {/* Bottom-left subtitle */}
+      <div className="absolute bottom-12 left-6 sm:left-10 z-10 max-w-md">
+        <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed">
+          Experience a novel approach to lasting wellbeing at Rebase, London's Home of Social Wellness.
+        </p>
+      </div>
     </section>
   );
 };
