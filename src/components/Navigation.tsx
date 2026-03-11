@@ -201,19 +201,44 @@ const Navigation = () => {
         {isOpen && (
           <div className="lg:hidden border-t border-border/40">
             <div className="py-4 space-y-1">
-              {navItems.map((item) => (
-                <Link
-                  key={item.href}
-                  to={item.href}
-                  className={cn(
-                    "block px-3 py-2.5 text-sm font-medium tracking-wider transition-colors",
-                    isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
-                  )}
-                  onClick={() => setIsOpen(false)}
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {navItems.map((item) => {
+                if (item.href.includes("#")) {
+                  return (
+                    <a
+                      key={item.href}
+                      href={item.href}
+                      onClick={(e) => {
+                        const hash = item.href.split("#")[1];
+                        const el = document.getElementById(hash);
+                        if (el) {
+                          e.preventDefault();
+                          el.scrollIntoView({ behavior: "smooth" });
+                        }
+                        setIsOpen(false);
+                      }}
+                      className={cn(
+                        "block px-3 py-2.5 text-sm font-medium tracking-wider transition-colors",
+                        `${textMuted} hover:${textColor}`
+                      )}
+                    >
+                      {item.label}
+                    </a>
+                  );
+                }
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    className={cn(
+                      "block px-3 py-2.5 text-sm font-medium tracking-wider transition-colors",
+                      isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
+                    )}
+                    onClick={() => setIsOpen(false)}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
 
               {/* Mobile location */}
               <div className="px-3 py-2.5">
