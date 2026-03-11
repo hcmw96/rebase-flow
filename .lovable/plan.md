@@ -1,27 +1,22 @@
 
 
-## Preload Popular Service Images
+## Add route for the marketing landing page
 
-### Problem
-The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
+The redesigned Hero and Navigation components exist but `Index.tsx` is never mounted because `App.tsx` routes everything to `AppShell`.
 
-### Solution
-Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
+### Change
 
-### Technical Details
+**`src/App.tsx`** — Add a `/website` route that renders `Index`:
 
-**File: `index.html`**
-Add preload link tags in the `<head>` for the 4 popular service images:
+```tsx
+import Index from "./pages/Index";
 
-```html
-<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
-<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
-<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
-<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+<Routes>
+  <Route path="/website" element={<Index />} />
+  <Route path="/" element={<AppShell />} />
+  <Route path="*" element={<AppShell />} />
+</Routes>
 ```
 
-This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
-
-### Files to modify
-- `index.html` -- add 4 preload link tags in the head
+This keeps the app at `/` and makes the marketing page accessible at `/website`. If you'd prefer the marketing page at `/` instead (and move the app to `/app`), I can do that instead.
 
