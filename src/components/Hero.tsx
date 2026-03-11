@@ -21,12 +21,12 @@ const Hero = () => {
             }
           }}
           onLoadedMetadata={(e) => {
-            e.currentTarget.currentTime = 3;
+            e.currentTarget.currentTime = 3.5;
           }}
           onTimeUpdate={(e) => {
             const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 5) {
-              vid.currentTime = 3;
+            if (vid.duration && vid.currentTime >= vid.duration - 5.5) {
+              vid.currentTime = 3.5;
             }
           }}
         >
