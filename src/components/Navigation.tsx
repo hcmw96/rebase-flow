@@ -75,18 +75,42 @@ const Navigation = () => {
 
           {/* Right side: nav links + location + buttons — desktop */}
           <div className="hidden lg:flex items-center gap-8">
-            {navItems.map((item) => (
-              <Link
-                key={item.href}
-                to={item.href}
-                className={cn(
-                  "text-[13px] font-medium tracking-[0.08em] transition-colors duration-300",
-                  isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
-                )}
-              >
-                {item.label}
-              </Link>
-            ))}
+            {navItems.map((item) => {
+              if (item.href.includes("#")) {
+                return (
+                  <a
+                    key={item.href}
+                    href={item.href}
+                    onClick={(e) => {
+                      const hash = item.href.split("#")[1];
+                      const el = document.getElementById(hash);
+                      if (el) {
+                        e.preventDefault();
+                        el.scrollIntoView({ behavior: "smooth" });
+                      }
+                    }}
+                    className={cn(
+                      "text-[13px] font-medium tracking-[0.08em] transition-colors duration-300",
+                      `${textMuted} hover:${textColor}`
+                    )}
+                  >
+                    {item.label}
+                  </a>
+                );
+              }
+              return (
+                <Link
+                  key={item.href}
+                  to={item.href}
+                  className={cn(
+                    "text-[13px] font-medium tracking-[0.08em] transition-colors duration-300",
+                    isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
+                  )}
+                >
+                  {item.label}
+                </Link>
+              );
+            })}
 
             {/* Location dropdown */}
             <div ref={locationRef} className="relative">
