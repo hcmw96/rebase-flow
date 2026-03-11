@@ -188,7 +188,7 @@ const Navigation = () => {
 
               <div className="flex gap-3 px-3 pt-3">
                 <Link to="/book" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-full border-foreground/20 text-foreground uppercase tracking-wider text-sm">
+                  <Button variant="outline" className="w-full rounded-none border-foreground/20 text-foreground uppercase tracking-wider text-sm">
                     Book Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 </Link>
