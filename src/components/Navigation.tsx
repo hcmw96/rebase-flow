@@ -15,6 +15,7 @@ const Navigation = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(locations[0]);
+  const [scrolled, setScrolled] = useState(false);
   const locationRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
 
@@ -37,8 +38,27 @@ const Navigation = () => {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
+  // Scroll listener
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const textColor = scrolled ? "text-[#3B2712]" : "text-[#F9ECD9]";
+  const textMuted = scrolled ? "text-[#3B2712]/60" : "text-[#F9ECD9]/60";
+  const borderColor = scrolled ? "border-[#3B2712]/20" : "border-[#F9ECD9]/20";
+
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent border-b border-white/10">
+    <nav
+      className={cn(
+        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
+        scrolled
+          ? "bg-[#F9ECD9] border-[#3B2712]/10"
+          : "bg-transparent border-white/10"
+      )}
+    >
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -46,32 +66,36 @@ const Navigation = () => {
             <img
               src={wordmark}
               alt="Rebase"
-              className="h-12 w-auto brightness-0 invert"
+              className={cn(
+                "h-12 w-auto transition-all duration-300",
+                scrolled ? "brightness-0" : "brightness-0 invert"
+              )}
             />
           </Link>
 
-          {/* Center nav links + location — desktop */}
+          {/* Right side: nav links + location + buttons — desktop */}
           <div className="hidden lg:flex items-center gap-8">
             {navItems.map((item) => (
               <Link
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "text-[13px] font-medium tracking-[0.08em] uppercase transition-colors duration-300",
-                  isActive(item.href)
-                    ? "text-foreground"
-                    : "text-foreground/60 hover:text-foreground"
+                  "text-[13px] font-medium tracking-[0.08em] transition-colors duration-300",
+                  isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
                 )}
               >
                 {item.label}
               </Link>
             ))}
 
-            {/* Location dropdown — inline */}
+            {/* Location dropdown */}
             <div ref={locationRef} className="relative">
               <button
                 onClick={() => setLocationOpen(!locationOpen)}
-                className="flex items-center gap-1.5 text-[13px] font-medium tracking-[0.08em] uppercase text-foreground/60 hover:text-foreground transition-colors"
+                className={cn(
+                  "flex items-center gap-1.5 text-[13px] font-medium tracking-[0.08em] transition-colors",
+                  textMuted
+                )}
               >
                 {selectedLocation.name}
                 <ChevronDown className={cn("h-3.5 w-3.5 transition-transform", locationOpen && "rotate-180")} />
@@ -106,21 +130,31 @@ const Navigation = () => {
                 </div>
               )}
             </div>
-          </div>
 
-          {/* Right side buttons — desktop */}
-          <div className="hidden lg:flex items-center gap-3">
+            {/* Buttons */}
             <Link to="/book">
               <Button
                 variant="outline"
-                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 rounded-none"
+                className={cn(
+                  "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md rounded-none transition-all duration-300",
+                  scrolled
+                    ? "border-[#3B2712]/20 bg-[#3B2712]/10 text-[#3B2712] hover:bg-[#3B2712]/20"
+                    : "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
+                )}
               >
                 Book Now
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </Link>
             <Link to="/login">
-              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 rounded-none">
+              <Button
+                className={cn(
+                  "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
+                  scrolled
+                    ? "bg-[#3B2712]/10 border-[#3B2712]/10 text-[#3B2712] hover:bg-[#3B2712]/20"
+                    : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
+                )}
+              >
                 Members
               </Button>
             </Link>
@@ -132,7 +166,7 @@ const Navigation = () => {
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
-              className="text-foreground"
+              className={textColor}
             >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
@@ -148,8 +182,8 @@ const Navigation = () => {
                   key={item.href}
                   to={item.href}
                   className={cn(
-                    "block px-3 py-2.5 text-sm font-medium uppercase tracking-wider transition-colors",
-                    isActive(item.href) ? "text-foreground" : "text-foreground/70 hover:text-foreground"
+                    "block px-3 py-2.5 text-sm font-medium tracking-wider transition-colors",
+                    isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
                   )}
                   onClick={() => setIsOpen(false)}
                 >
@@ -170,9 +204,9 @@ const Navigation = () => {
                     className={cn(
                       "block w-full text-left py-1.5 text-sm",
                       loc.active && selectedLocation.name === loc.name
-                        ? "text-foreground"
+                        ? textColor
                         : loc.active
-                        ? "text-foreground/60"
+                        ? textMuted
                         : "text-muted-foreground/40"
                     )}
                   >
@@ -188,12 +222,12 @@ const Navigation = () => {
 
               <div className="flex gap-3 px-3 pt-3">
                 <Link to="/book" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-none border-foreground/20 text-foreground uppercase tracking-wider text-sm">
+                  <Button variant="outline" className={cn("w-full rounded-none tracking-wider text-sm", borderColor, textColor)}>
                     Book Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 </Link>
                 <Link to="/login" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full rounded-none bg-foreground text-background uppercase tracking-wider text-sm">
+                  <Button className={cn("w-full rounded-none tracking-wider text-sm", scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]")}>
                     Members
                   </Button>
                 </Link>
