@@ -1,27 +1,34 @@
 
 
-## Preload Popular Service Images
+## Redesign the "Next Section" after the Hero
 
-### Problem
-The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
+Based on the reference screenshot and requirements, this section sits below the hero and features:
+1. A dark bokeh background image (the uploaded `Untitled_design_72.png`)
+2. A centered italic tagline paragraph (as seen in the reference)
+3. A grid of 6 service cards that are taller, spread across the page, with hover-reveal descriptions and a "Reserve" button
 
-### Solution
-Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
+### Cards (6 total)
+From the reference + user instructions:
+- **Contrast Studio** (Ice & Sauna) - "Reduced inflammation. Increased focus."
+- **Signature Classes** - "A wide range of classes led by our experts."
+- **Recovery Treatments** - "A wide range of recovery specialists."
+- **Private Suites** - existing image
+- **Hyperbaric Oxygen** - existing image
+- **Cryotherapy** - existing image
 
-### Technical Details
+### Design Details
+- **Background**: Use the uploaded bokeh image as a full-bleed section background
+- **Tagline**: Large, italic, light-weight centered text matching the reference ("Boost your baseline and achieve elemental balance...")
+- **Card layout**: 3-column grid on desktop, taller cards (~500px), edge-to-edge with small gaps
+- **Card default state**: Image with title + short subtitle at the bottom over a gradient
+- **Card hover state**: Expanded gradient overlay revealing more description text and a glassmorphic "Reserve" button
+- **No carousel** -- replace the current carousel with a static grid
 
-**File: `index.html`**
-Add preload link tags in the `<head>` for the 4 popular service images:
-
-```html
-<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
-<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
-<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
-<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
-```
-
-This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
-
-### Files to modify
-- `index.html` -- add 4 preload link tags in the head
+### Files to Change
+1. **Copy uploaded background** to `public/images/section-bg.png`
+2. **`src/components/AboutSection.tsx`**: Replace the collage gallery + carousel with:
+   - Full-width section using the bokeh background image
+   - Centered italic tagline paragraph
+   - 3x2 grid of tall service cards with hover interactions
+   - Each card: image, gradient overlay, title + subtitle visible by default, description + Reserve button revealed on hover with smooth transition
 
