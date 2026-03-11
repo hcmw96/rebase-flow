@@ -193,7 +193,7 @@ const Navigation = () => {
                   </Button>
                 </Link>
                 <Link to="/login" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full rounded-full bg-foreground text-background uppercase tracking-wider text-sm">
+                  <Button className="w-full rounded-none bg-foreground text-background uppercase tracking-wider text-sm">
                     Members
                   </Button>
                 </Link>

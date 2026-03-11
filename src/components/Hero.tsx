@@ -43,7 +43,7 @@ const Hero = () => {
         </h1>
         <div className="mt-10">
           <Button
-            className="bg-foreground text-background hover:bg-foreground/90 text-sm uppercase tracking-[0.1em] px-8 h-12 rounded-full"
+            className="bg-foreground text-background hover:bg-foreground/90 text-sm uppercase tracking-[0.1em] px-8 h-12 rounded-none"
             onClick={() => {
               document.getElementById("most-popular")?.scrollIntoView({ behavior: "smooth" });
             }}
