@@ -1,25 +1,27 @@
 
 
-## Navigation Updates
+## Preload Popular Service Images
 
-Three changes to `src/components/Navigation.tsx`:
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-### 1. Remove uppercase from nav link labels
-Remove `uppercase` class from nav links (desktop and mobile) so they render as written ("Experiences", "About", "Contact").
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-### 2. Move nav links to the left alongside buttons
-Change layout from the current logo-left / links-center / buttons-right to: logo-left / links+buttons all on the right. Remove the centered `div` and merge nav links into the right-side `div` so everything sits together on the right.
+### Technical Details
 
-### 3. Scroll-based background change
-Add a `scrolled` state using a scroll listener (threshold ~20px). When scrolled:
-- Nav background: `bg-[#F9ECD9]` with `border-[#3B2712]/10`
-- Logo: remove `invert` filter (logo goes dark brown naturally, or apply `brightness-0` without invert to make it dark)
-- Nav link text: `text-[#3B2712]` (dark brown)
-- Buttons: dark brown borders/text (`border-[#3B2712]/20`, `text-[#3B2712]`, `bg-[#3B2712]/10`)
-- Smooth transition on all properties (`transition-all duration-300`)
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
 
-When not scrolled (at top): keep current transparent background with cream `#F9ECD9` text/borders (replacing any remaining `white` references).
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+```
 
-### File
-- `src/components/Navigation.tsx` — single file change
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
+
+### Files to modify
+- `index.html` -- add 4 preload link tags in the head
 
