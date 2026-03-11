@@ -82,8 +82,8 @@ export default {
 				}
 			},
 		fontFamily: {
-			sans: ['SF Pro', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'SF Pro Text', 'system-ui', 'sans-serif'],
-			serif: ['SF Pro', '-apple-system', 'BlinkMacSystemFont', 'SF Pro Display', 'SF Pro Text', 'system-ui', 'sans-serif'],
+			sans: ['Inter', 'system-ui', 'sans-serif'],
+			serif: ['Inter', 'system-ui', 'sans-serif'],
 		},
 			boxShadow: {
 				'luxury': 'var(--shadow-luxury)',
