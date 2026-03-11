@@ -6,7 +6,7 @@ import AboutContent from "@/components/AboutContent";
 
 const Index = () => {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen overflow-y-auto" style={{ position: 'fixed', inset: 0, overflowY: 'auto' }}>
       <Navigation />
       <Hero />
       <AboutSection />
