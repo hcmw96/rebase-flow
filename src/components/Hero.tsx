@@ -25,7 +25,7 @@ const Hero = () => {
           }}
           onTimeUpdate={(e) => {
             const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 5.5) {
+            if (vid.duration && vid.currentTime >= vid.duration - 6) {
               vid.currentTime = 3.5;
             }
           }}
