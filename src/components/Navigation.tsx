@@ -46,7 +46,7 @@ const Navigation = () => {
             <img
               src={wordmark}
               alt="Rebase"
-              className="h-8 w-auto brightness-0 invert opacity-90"
+              className="h-12 w-auto brightness-0 invert"
             />
           </Link>
 
