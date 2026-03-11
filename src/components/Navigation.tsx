@@ -120,7 +120,7 @@ const Navigation = () => {
               </Button>
             </Link>
             <Link to="/login">
-              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-foreground text-background hover:bg-foreground/90 rounded-none">
+              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 rounded-none">
                 Members
               </Button>
             </Link>
