@@ -70,7 +70,7 @@ const ServiceCard = ({ service }: { service: (typeof services)[0] }) => {
       {/* Content */}
       <div className="absolute inset-0 flex flex-col justify-end p-6">
         {/* Title & subtitle — always visible */}
-        <h3 className="text-white text-xl font-light tracking-[0.2em] mb-1">
+        <h3 className="text-[#F9ECD9] text-xl font-light tracking-[0.08em] mb-1">
           {service.title}
         </h3>
         <p className="text-white/60 text-sm tracking-wider mb-0 group-hover:mb-4 transition-all duration-500">
