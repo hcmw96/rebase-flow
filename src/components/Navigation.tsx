@@ -46,7 +46,7 @@ const Navigation = () => {
             <img
               src={wordmark}
               alt="Rebase"
-              className="h-8 w-auto brightness-0 invert opacity-90"
+              className="h-12 w-auto brightness-0 invert"
             />
           </Link>
 
@@ -113,14 +113,14 @@ const Navigation = () => {
             <Link to="/book">
               <Button
                 variant="outline"
-                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-foreground/20 text-foreground hover:bg-foreground/5 rounded-none"
+                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-white/20 bg-white/10 backdrop-blur-md text-white hover:bg-white/20 rounded-none"
               >
                 Book Now
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </Link>
             <Link to="/login">
-              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-foreground text-background hover:bg-foreground/90 rounded-none">
+              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-black/40 backdrop-blur-md border border-white/10 text-white hover:bg-black/60 rounded-none">
                 Members
               </Button>
             </Link>
