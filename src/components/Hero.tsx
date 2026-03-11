@@ -56,7 +56,7 @@ const Hero = () => {
 
       {/* Bottom-left subtitle */}
       <div className="absolute bottom-12 left-6 sm:left-10 z-10 max-w-md">
-        <p className="text-white/70 text-sm sm:text-base font-light leading-relaxed">
+        <p className="text-[#F9ECD9]/70 text-sm sm:text-base font-light leading-relaxed">
           Experience a novel approach to lasting wellbeing at Rebase, London's Home of Social Wellness.
         </p>
       </div>
