@@ -30,6 +30,7 @@ const App = () => (
         <BrowserRouter>
           <ScrollToTop />
           <Routes>
+            <Route path="/website" element={<Index />} />
             <Route path="/" element={<AppShell />} />
             <Route path="*" element={<AppShell />} />
           </Routes>
