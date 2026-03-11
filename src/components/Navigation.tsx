@@ -113,7 +113,7 @@ const Navigation = () => {
             <Link to="/book">
               <Button
                 variant="outline"
-                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-foreground/20 text-foreground hover:bg-foreground/5 rounded-full"
+                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-foreground/20 text-foreground hover:bg-foreground/5 rounded-none"
               >
                 Book Now
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
