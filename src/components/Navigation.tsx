@@ -38,7 +38,7 @@ const Navigation = () => {
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 bg-background/60 backdrop-blur-xl">
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-transparent border-b border-white/10">
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <div className="flex justify-between items-center h-20">
           {/* Logo */}
@@ -46,7 +46,7 @@ const Navigation = () => {
             <img
               src={wordmark}
               alt="Rebase"
-              className="h-5 w-auto brightness-0 invert opacity-90"
+              className="h-8 w-auto brightness-0 invert opacity-90"
             />
           </Link>
 
@@ -113,14 +113,14 @@ const Navigation = () => {
             <Link to="/book">
               <Button
                 variant="outline"
-                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-foreground/20 text-foreground hover:bg-foreground/5 rounded-full"
+                className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 border-foreground/20 text-foreground hover:bg-foreground/5 rounded-none"
               >
                 Book Now
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
               </Button>
             </Link>
             <Link to="/login">
-              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-foreground text-background hover:bg-foreground/90 rounded-full">
+              <Button className="text-[13px] tracking-[0.08em] uppercase px-6 h-10 bg-foreground text-background hover:bg-foreground/90 rounded-none">
                 Members
               </Button>
             </Link>
@@ -188,12 +188,12 @@ const Navigation = () => {
 
               <div className="flex gap-3 px-3 pt-3">
                 <Link to="/book" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className="w-full rounded-full border-foreground/20 text-foreground uppercase tracking-wider text-sm">
+                  <Button variant="outline" className="w-full rounded-none border-foreground/20 text-foreground uppercase tracking-wider text-sm">
                     Book Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
                   </Button>
                 </Link>
                 <Link to="/login" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full rounded-full bg-foreground text-background uppercase tracking-wider text-sm">
+                  <Button className="w-full rounded-none bg-foreground text-background uppercase tracking-wider text-sm">
                     Members
                   </Button>
                 </Link>
