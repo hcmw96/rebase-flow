@@ -40,10 +40,19 @@ const Navigation = () => {
 
   // Scroll listener
   useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
+    const container = document.querySelector<HTMLElement>('[style*="position: fixed"][style*="overflow"]') ||
+      document.querySelector<HTMLElement>('[style*="overflowY: auto"]');
+    const onScroll = () => {
+      const scrollTop = window.scrollY || (container?.scrollTop ?? 0);
+      setScrolled(scrollTop > 20);
+    };
     window.addEventListener("scroll", onScroll, { passive: true });
+    container?.addEventListener("scroll", onScroll, { passive: true });
     onScroll();
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      container?.removeEventListener("scroll", onScroll);
+    };
   }, []);
 
   const textColor = scrolled ? "text-[#3B2712]" : "text-[#F9ECD9]";

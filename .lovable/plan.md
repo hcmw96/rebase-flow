@@ -1,19 +1,27 @@
 
 
-# Fix: Header Scroll Shrink Not Working
+## Preload Popular Service Images
 
-## Problem
-The scroll listener in `Navigation.tsx` uses `window.scrollY`, but on the marketing homepage (`Index.tsx`), the page uses a **fixed-position container** (`position: fixed; inset: 0; overflowY: auto`) for scrolling. The `window` itself never scrolls, so `scrollY` is always 0 and the header never transitions.
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-## Solution — `src/components/Navigation.tsx`
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-Update the scroll listener to also check for the fixed scrolling container used by the homepage. Query for the closest scrollable parent or the specific fixed container, and listen for its `scroll` event in addition to `window`.
+### Technical Details
 
-Specifically:
-1. In the scroll `useEffect`, find the scrollable container (`document.querySelector('[style*="position: fixed"]')` or the parent div with `overflow-y: auto`).
-2. Attach the scroll listener to **both** `window` and the container element.
-3. In the handler, check `window.scrollY || container.scrollTop > 20` to set `scrolled`.
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
+
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+```
+
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
 
 ### Files to modify
-- `src/components/Navigation.tsx` — update the scroll `useEffect` (lines 42-47) to detect and listen on the fixed scrolling container.
+- `index.html` -- add 4 preload link tags in the head
 
