@@ -312,7 +312,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                             <h4 className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
                               {service.baseName}
                             </h4>
-                            <p className="text-[#F9ECD9]/60 text-sm line-clamp-3 font-light leading-relaxed mb-3">
+                            <p className="text-[#F9ECD9]/60 text-xs line-clamp-2 font-light leading-relaxed mb-3">
                               {desc}
                             </p>
                             <div className="flex items-center gap-3 mb-4">
