@@ -236,73 +236,73 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
         </motion.div>
 
         {/* Categories */}
-        <div className="space-y-16">
+        <Accordion
+          type="multiple"
+          defaultValue={servicesByCategory.size > 0 ? [Array.from(servicesByCategory.keys())[0]] : []}
+        >
           {Array.from(servicesByCategory.entries()).map(([category, catServices]) => (
-            <motion.div
+            <AccordionItem
               key={category}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              value={category}
+              className="border-b border-[#F9ECD9]/10"
             >
-              <h3 className="text-sm uppercase tracking-[0.2em] text-[#F9ECD9]/50 font-medium mb-8 border-b border-[#F9ECD9]/10 pb-3">
+              <AccordionTrigger className="text-sm uppercase tracking-[0.2em] text-[#F9ECD9]/50 font-medium py-5 hover:no-underline hover:text-[#F9ECD9]/70 [&>svg]:text-[#F9ECD9]/40">
                 {category}
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {catServices.map((service) => {
-                  const fromPrice = getFromPrice(service.variants);
-                  const firstVariant = service.variants[0];
-                  const desc = stripHtml(service.description);
+              </AccordionTrigger>
+              <AccordionContent>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
+                  {catServices.map((service) => {
+                    const fromPrice = getFromPrice(service.variants);
+                    const firstVariant = service.variants[0];
+                    const desc = stripHtml(service.description);
 
-                  return (
-                    <motion.button
-                      key={service.baseName}
-                      onClick={() => handleClick(service)}
-                      whileHover={{ y: -4 }}
-                      transition={{ duration: 0.2 }}
-                      className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors"
-                    >
-                      {/* Image */}
-                      <div className="relative h-48 overflow-hidden">
-                        <img
-                          src={service.image}
-                          alt={service.baseName}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                          loading="lazy"
-                        />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
-                      </div>
-
-                      {/* Content */}
-                      <div className="p-5 space-y-3">
-                        <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
-                          {service.baseName}
-                        </h4>
-                        <p className="text-[#F9ECD9]/50 text-sm line-clamp-2 font-light leading-relaxed">
-                          {desc}
-                        </p>
-                        <div className="flex items-center justify-between pt-2">
-                          <div className="flex items-center gap-3">
-                            <span className="text-[#F9ECD9]/90 font-medium">
-                              {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
-                            </span>
-                            {firstVariant?.duration && (
-                              <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
-                                <Clock className="h-3 w-3" />
-                                {firstVariant.duration} min
-                              </span>
-                            )}
-                          </div>
-                          <ArrowRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
+                    return (
+                      <motion.button
+                        key={service.baseName}
+                        onClick={() => handleClick(service)}
+                        whileHover={{ y: -4 }}
+                        transition={{ duration: 0.2 }}
+                        className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors"
+                      >
+                        <div className="relative h-48 overflow-hidden">
+                          <img
+                            src={service.image}
+                            alt={service.baseName}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
                         </div>
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
-            </motion.div>
+                        <div className="p-5 space-y-3">
+                          <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
+                            {service.baseName}
+                          </h4>
+                          <p className="text-[#F9ECD9]/50 text-sm line-clamp-2 font-light leading-relaxed">
+                            {desc}
+                          </p>
+                          <div className="flex items-center justify-between pt-2">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[#F9ECD9]/90 font-medium">
+                                {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
+                              </span>
+                              {firstVariant?.duration && (
+                                <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
+                                  <Clock className="h-3 w-3" />
+                                  {firstVariant.duration} min
+                                </span>
+                              )}
+                            </div>
+                            <ArrowRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
+                          </div>
+                        </div>
+                      </motion.button>
+                    );
+                  })}
+                </div>
+              </AccordionContent>
+            </AccordionItem>
           ))}
-        </div>
+        </Accordion>
       </div>
     </section>
   );
