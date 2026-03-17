@@ -186,7 +186,7 @@ const Navigation = () => {
                 className={cn(
                   "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
                   scrolled
-                    ? "bg-[#3B2712]/10 border-[#3B2712]/10 text-[#3B2712] hover:bg-[#3B2712]/20"
+                    ? "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                     : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                 )}
               >
