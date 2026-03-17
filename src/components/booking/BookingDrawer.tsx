@@ -467,6 +467,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       )}
 
+                      {!isMindbodyLinked && (
                         <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
                           You'll need to connect your Mindbody account to complete this booking.
                         </div>
