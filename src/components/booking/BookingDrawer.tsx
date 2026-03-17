@@ -145,6 +145,14 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
   const availableSlots = availabilityData?.availableItems || [];
 
+  const handleToggleUpsell = (serviceName: string) => {
+    setAddedUpsells(prev =>
+      prev.includes(serviceName)
+        ? prev.filter(s => s !== serviceName)
+        : [...prev, serviceName]
+    );
+  };
+
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
     // If variant is contact-only, don't advance to date step
