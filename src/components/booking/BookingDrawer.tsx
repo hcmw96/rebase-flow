@@ -453,8 +453,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                       {addedUpsells.length > 0 && (
                         <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your add-ons</p>
-                          {addedUpsells.map(name => {
-                            const info = require('@/components/booking/UpsellSuggestions').serviceInfo?.[name];
+                          {addedUpsells.map(name => (
                             return (
                               <div key={name} className="flex items-center justify-between text-sm">
                                 <span className="text-foreground">{name}</span>
