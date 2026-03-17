@@ -450,7 +450,26 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       </div>
 
-                      {!isMindbodyLinked && (
+                      {addedUpsells.length > 0 && (
+                        <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your add-ons</p>
+                          {addedUpsells.map(name => {
+                            const info = require('@/components/booking/UpsellSuggestions').serviceInfo?.[name];
+                            return (
+                              <div key={name} className="flex items-center justify-between text-sm">
+                                <span className="text-foreground">{name}</span>
+                                <button
+                                  onClick={() => handleToggleUpsell(name)}
+                                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                                >
+                                  Remove
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+
                         <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
                           You'll need to connect your Mindbody account to complete this booking.
                         </div>
