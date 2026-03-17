@@ -10,7 +10,7 @@ import {
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
-import UpsellSuggestions from '@/components/booking/UpsellSuggestions';
+import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
@@ -73,6 +73,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [addedUpsells, setAddedUpsells] = useState<string[]>([]);
 
   // Reset state when drawer opens with new service
   const handleOpenChange = (isOpen: boolean) => {
@@ -84,6 +85,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         setSelectedSlot(null);
         setSelectedVariant(null);
         setBookingComplete(false);
+        setAddedUpsells([]);
       }, 300);
     }
   };
@@ -142,6 +144,14 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   });
 
   const availableSlots = availabilityData?.availableItems || [];
+
+  const handleToggleUpsell = (serviceName: string) => {
+    setAddedUpsells(prev =>
+      prev.includes(serviceName)
+        ? prev.filter(s => s !== serviceName)
+        : [...prev, serviceName]
+    );
+  };
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
@@ -281,12 +291,20 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                   </div>
                 </div>
                 <Button onClick={onClose} className="w-full">Done</Button>
-                {onSwitchService && (
+                {addedUpsells.length > 0 && onSwitchService ? (
                   <UpsellSuggestions
                     currentServiceTitle={service?.title || ''}
                     onSelectUpsell={onSwitchService}
+                    addedServices={addedUpsells}
+                    successMode
                   />
-                )}
+                ) : onSwitchService ? (
+                  <UpsellSuggestions
+                    currentServiceTitle={service?.title || ''}
+                    onSelectUpsell={handleToggleUpsell}
+                    addedServices={addedUpsells}
+                  />
+                ) : null}
               </motion.div>
             ) : (
               <>
@@ -432,6 +450,23 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       </div>
 
+                      {addedUpsells.length > 0 && (
+                        <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
+                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your add-ons</p>
+                          {addedUpsells.map(name => (
+                            <div key={name} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground">{name}</span>
+                              <button
+                                onClick={() => handleToggleUpsell(name)}
+                                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {!isMindbodyLinked && (
                         <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
                           You'll need to connect your Mindbody account to complete this booking.
@@ -453,12 +488,11 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </Button>
                       </div>
 
-                      {onSwitchService && (
-                        <UpsellSuggestions
-                          currentServiceTitle={service?.title || ''}
-                          onSelectUpsell={onSwitchService}
-                        />
-                      )}
+                      <UpsellSuggestions
+                        currentServiceTitle={service?.title || ''}
+                        onSelectUpsell={handleToggleUpsell}
+                        addedServices={addedUpsells}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
