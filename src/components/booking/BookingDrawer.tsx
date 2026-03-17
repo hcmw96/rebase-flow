@@ -85,6 +85,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         setSelectedSlot(null);
         setSelectedVariant(null);
         setBookingComplete(false);
+        setAddedUpsells([]);
       }, 300);
     }
   };
