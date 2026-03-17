@@ -278,7 +278,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                   {catServices.map((service) => {
                     const fromPrice = getFromPrice(service.variants);
                     const firstVariant = service.variants[0];
-                    const desc = stripHtml(service.description);
+                    const shortDesc = shortDescriptions[service.baseName] || 'Experience our premium wellness service.';
                     const isExpanded = expandedService === service.baseName;
 
                       return (
