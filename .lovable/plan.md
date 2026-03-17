@@ -1,13 +1,27 @@
 
 
-# Plan: Show Full Description on Hover
+## Preload Popular Service Images
 
-**File: `src/components/WebsiteServices.tsx`**
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-1. Import `HoverCard, HoverCardTrigger, HoverCardContent` from `@/components/ui/hover-card`
-2. Wrap each service card (`motion.button`) with `HoverCardTrigger`, and add a `HoverCardContent` that displays the full stripped description
-3. Style the hover card content to match the dark theme (`bg-[hsl(25,15%,14%)]`, `text-[#F9ECD9]`, `border-[#F9ECD9]/10`)
-4. Remove the `line-clamp-2` from the inline description since the hover card provides the full text — or keep it clipped inline and only show full text in the hover card
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-This uses the existing Radix HoverCard primitive already in the project. No other files change.
+### Technical Details
+
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
+
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+```
+
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
+
+### Files to modify
+- `index.html` -- add 4 preload link tags in the head
 
