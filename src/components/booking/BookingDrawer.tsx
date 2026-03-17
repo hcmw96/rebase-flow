@@ -454,18 +454,16 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
                           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your add-ons</p>
                           {addedUpsells.map(name => (
-                            return (
-                              <div key={name} className="flex items-center justify-between text-sm">
-                                <span className="text-foreground">{name}</span>
-                                <button
-                                  onClick={() => handleToggleUpsell(name)}
-                                  className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                                >
-                                  Remove
-                                </button>
-                              </div>
-                            );
-                          })}
+                            <div key={name} className="flex items-center justify-between text-sm">
+                              <span className="text-foreground">{name}</span>
+                              <button
+                                onClick={() => handleToggleUpsell(name)}
+                                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          ))}
                         </div>
                       )}
 
