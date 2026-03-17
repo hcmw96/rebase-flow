@@ -1,24 +1,27 @@
 
 
-# Fix: Glassmorphic Header on Scroll, Keep All Menu Items Visible
+## Preload Popular Service Images
 
-## Problem
-Currently on scroll, the nav links (Experiences, About, Contact, Location) are hidden via `max-w-0 opacity-0` and the background becomes solid cream `bg-[#F9ECD9]`. The user wants all items to remain visible and the scrolled state to use a glassmorphic (frosted glass) background instead.
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-## Solution — `src/components/Navigation.tsx`
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-### 1. Remove the hide-on-scroll behavior (line 87)
-Remove the conditional `max-w-0 opacity-0` / `max-w-[600px] opacity-100` classes from the nav items wrapper. Always show all items.
+### Technical Details
 
-### 2. Glassmorphic scrolled background (line 67)
-Replace `bg-[#F9ECD9]` with a frosted glass effect:
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
+
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
 ```
-scrolled ? "bg-[#F9ECD9]/70 backdrop-blur-xl border-[#3B2712]/10" : "bg-transparent border-white/10"
-```
 
-### 3. Keep text color logic
-The existing `textColor` / `textMuted` logic for dark text on scroll remains correct since the glassmorphic cream background still needs dark text for readability.
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
 
 ### Files to modify
-- `src/components/Navigation.tsx` — lines 67 and 87
+- `index.html` -- add 4 preload link tags in the head
 

@@ -64,7 +64,7 @@ const Navigation = () => {
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
         scrolled
-          ? "bg-[#F9ECD9] border-[#3B2712]/10"
+          ? "bg-[#F9ECD9]/70 backdrop-blur-xl border-[#3B2712]/10"
           : "bg-transparent border-white/10"
       )}
     >
@@ -84,7 +84,7 @@ const Navigation = () => {
 
           {/* Right side: nav links + location + buttons — desktop */}
           <div className="hidden lg:flex items-center gap-8">
-            <div className={cn("flex items-center gap-8 transition-all duration-300 overflow-hidden", scrolled ? "max-w-0 opacity-0" : "max-w-[600px] opacity-100")}>
+            <div className="flex items-center gap-8">
             {navItems.map((item) => {
               if (item.href.includes("#")) {
                 return (
