@@ -60,21 +60,22 @@ const Navigation = () => {
       )}
     >
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className={cn("flex justify-between items-center transition-all duration-300", scrolled ? "h-14" : "h-20")}>
           {/* Logo */}
           <Link to="/" className="flex-shrink-0">
             <img
               src={wordmark}
               alt="Rebase"
               className={cn(
-                "h-12 w-auto transition-all duration-300",
-                scrolled ? "brightness-0" : "brightness-0 invert"
+                "w-auto transition-all duration-300",
+                scrolled ? "h-8 brightness-0" : "h-12 brightness-0 invert"
               )}
             />
           </Link>
 
           {/* Right side: nav links + location + buttons — desktop */}
           <div className="hidden lg:flex items-center gap-8">
+            <div className={cn("flex items-center gap-8 transition-all duration-300 overflow-hidden", scrolled ? "max-w-0 opacity-0" : "max-w-[600px] opacity-100")}>
             {navItems.map((item) => {
               if (item.href.includes("#")) {
                 return (
@@ -153,6 +154,7 @@ const Navigation = () => {
                   ))}
                 </div>
               )}
+            </div>
             </div>
 
             {/* Buttons */}
