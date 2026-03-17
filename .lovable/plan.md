@@ -1,44 +1,27 @@
 
 
-# Plan: Integrate Booking into /website
+## Preload Popular Service Images
 
-## Overview
-Add a services/booking section to the marketing homepage (`/website`) so visitors can browse and book services directly, reusing the existing booking infrastructure (BookingDrawer, Mindbody services data, auth contexts).
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-## Current State
-- `/website` (Index.tsx) renders: Navigation → Hero → Footer
-- The app shell (`/`) has full booking: service browsing, BookingDrawer, Mindbody OAuth, availability, etc.
-- BookingDrawer is a self-contained component that handles variant selection, calendar, time slots, and confirmation
-- Services data comes from `useMindbodyServices` hook (fetches from edge function, no auth required)
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-## Changes
+### Technical Details
 
-### 1. Add a Services Section to the Website Page
-Create a new `WebsiteServices` component that displays grouped services in a style consistent with the marketing page aesthetic (not the mobile app style). This will:
-- Fetch services via `useMindbodyServices` (already works without auth)
-- Group and display them using the same grouping logic from `Services.tsx`
-- Use the marketing page's design language (serif fonts, warm tones, `#F9ECD9`/`#3B2712` palette)
-- Each service is clickable to open the BookingDrawer
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
 
-### 2. Wire BookingDrawer into Index.tsx
-- Import `BookingDrawer` and add state management (`bookingService`, `drawerOpen`) — same pattern as `AppShell.tsx`
-- Pass `onSelectService` callback down to the new services section
-- The drawer handles auth checks internally (prompts Mindbody login if needed)
-
-### 3. Update Hero CTA
-- The "Discover our experiences" button currently scrolls to `#most-popular` which doesn't exist on this page
-- Update it to scroll to the new services section
-
-### 4. Update Index.tsx Layout
-```text
-Navigation
-Hero
-WebsiteServices (new — services grid with booking)
-Footer
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
 ```
 
-### Technical Notes
-- `BookingDrawer` depends on `AuthContext` and `MindbodyContext` — both are already provided at the App level wrapping all routes, so no additional provider setup needed
-- The drawer uses `despia-native` for haptics but gracefully degrades on web
-- No database or edge function changes required — all existing APIs work as-is
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
+
+### Files to modify
+- `index.html` -- add 4 preload link tags in the head
 

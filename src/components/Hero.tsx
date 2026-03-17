@@ -45,7 +45,7 @@ const Hero = () => {
           <Button
             className="bg-[#F9ECD9]/10 backdrop-blur-md border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/20 text-sm uppercase tracking-[0.1em] px-8 h-12 rounded-none"
             onClick={() => {
-              document.getElementById("most-popular")?.scrollIntoView({ behavior: "smooth" });
+              document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
             }}
           >
             Book Now
