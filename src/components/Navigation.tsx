@@ -77,7 +77,7 @@ const Navigation = () => {
               alt="Rebase"
               className={cn(
                 "w-auto transition-all duration-300",
-                scrolled ? "h-8 brightness-0 invert" : "h-12 brightness-0 invert"
+                "h-12 brightness-0 invert"
               )}
             />
           </Link>
