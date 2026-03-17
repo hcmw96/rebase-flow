@@ -1,6 +1,5 @@
 import { motion } from 'framer-motion';
-import { Plus, Clock } from 'lucide-react';
-import { BookingServiceData } from './BookingDrawer';
+import { Plus } from 'lucide-react';
 
 // Logical upsell mappings: service group → complementary services
 const upsellMap: Record<string, string[]> = {
@@ -25,7 +24,6 @@ const upsellMap: Record<string, string[]> = {
   'Nutritional Therapy': ['IV Drip', 'NAD+', 'Hyperbaric Oxygen'],
 };
 
-// Minimal info for rendering upsell chips
 const serviceInfo: Record<string, { image: string; shortDesc: string }> = {
   'Cryotherapy': { image: '/images/rebase-cryo.webp', shortDesc: 'Whole-body cold therapy' },
   'Infrared Sauna & Ice Bath': { image: '/images/rebase-ice-sauna-new.webp', shortDesc: 'Heat & cold contrast therapy' },
@@ -94,4 +92,5 @@ const UpsellSuggestions = ({ currentServiceTitle, onSelectUpsell }: UpsellSugges
   );
 };
 
+export { upsellMap, serviceInfo };
 export default UpsellSuggestions;
