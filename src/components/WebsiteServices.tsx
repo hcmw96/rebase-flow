@@ -218,7 +218,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   }
 
   return (
-    <section id="services" className="py-24 px-6" style={{ background: 'hsl(25, 18%, 10%)' }}>
+    <section id="services" className="pt-44 pb-24 px-6 scroll-mt-20" style={{ background: 'hsl(25, 18%, 10%)' }}>
       <div className="max-w-6xl mx-auto">
         {/* Section header */}
         <motion.div
