@@ -1,46 +1,27 @@
 
 
-# Fix: Use Short Hand-Written Descriptions for Service Cards
+## Preload Popular Service Images
 
-## Problem
-The Mindbody API descriptions are long HTML blobs. Even with `line-clamp-2`, they just get truncated with "..." making them unreadable and pointless.
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-## Solution — `src/components/WebsiteServices.tsx`
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-Add a `shortDescriptions` map with concise, hand-written summaries (under ~80 chars) for each service group. Use these in the overlay instead of the API description. Fall back to a generic short string if a service isn't in the map.
+### Technical Details
 
-```ts
-const shortDescriptions: Record<string, string> = {
-  'Infrared Sauna & Ice Bath': 'Detoxifying infrared heat followed by an invigorating ice bath.',
-  'Premium Suite': 'Private suite with Finnish sauna, ice baths and bucket shower.',
-  'Midday Reset': 'A restorative midday escape in our private wellness suite.',
-  'Cryotherapy': 'Whole-body cold therapy to reduce inflammation and boost recovery.',
-  'Hyperbaric Oxygen': 'Pressurised oxygen therapy to accelerate healing and recovery.',
-  'IV Drip': 'Vitamin-rich IV infusions tailored to your wellness goals.',
-  'NAD+': 'Cellular regeneration therapy to restore energy and vitality.',
-  'Massage': 'Expert deep tissue and sports massage for total tension relief.',
-  'Skin Rejuvenation': 'Advanced facial treatments for radiant, youthful skin.',
-  'Skin Peel': 'Clinical-grade peels to resurface and refresh your complexion.',
-  'BioStimulation': 'Targeted bio-electric therapy to stimulate tissue repair.',
-  'Structural Fascia Therapy': 'Hands-on fascial release for posture and pain relief.',
-  'Holistic Face Sculpting': 'Natural face-lift technique using sculpting massage.',
-  'Divine Facial Healing': 'A deeply relaxing, restorative facial ritual.',
-  'Osteopathy': 'Manual therapy to restore movement and relieve pain.',
-  'Ozone Therapy': 'Medical-grade ozone to support detoxification and immunity.',
-  'Brazilian Lymphatic': 'Specialised drainage massage to reduce fluid retention.',
-  'Nutritional Therapy': 'Personalised nutrition guidance for optimal health.',
-  'Myofascial Dry Needling': 'Precision needling to release deep muscular tension.',
-};
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
+
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
 ```
 
-Then in the overlay, replace `{desc}` with:
-
-```ts
-const shortDesc = shortDescriptions[service.baseName] || 'Experience our premium wellness service.';
-```
-
-And use `{shortDesc}` in the `<p>` tag. These are all ~60-80 chars and will comfortably fit on 2 lines at `text-xs`.
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
 
 ### Files to modify
-- `src/components/WebsiteServices.tsx` — add `shortDescriptions` map, use it in overlay instead of `desc`
+- `index.html` -- add 4 preload link tags in the head
 
