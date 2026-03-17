@@ -10,6 +10,7 @@ import {
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
+import UpsellSuggestions from '@/components/booking/UpsellSuggestions';
 import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
@@ -32,6 +33,7 @@ interface BookingDrawerProps {
   open: boolean;
   onClose: () => void;
   service: BookingServiceData | null;
+  onSwitchService?: (serviceName: string) => void;
 }
 
 const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
@@ -61,7 +63,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
   </motion.div>
 );
 
-const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
+const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
   const { isAuthenticated } = useAuth();
   const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
   const bookServiceMutation = useBookService();
@@ -279,6 +281,12 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                   </div>
                 </div>
                 <Button onClick={onClose} className="w-full">Done</Button>
+                {onSwitchService && (
+                  <UpsellSuggestions
+                    currentServiceTitle={service?.title || ''}
+                    onSelectUpsell={onSwitchService}
+                  />
+                )}
               </motion.div>
             ) : (
               <>
@@ -444,6 +452,13 @@ const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
                           )}
                         </Button>
                       </div>
+
+                      {onSwitchService && (
+                        <UpsellSuggestions
+                          currentServiceTitle={service?.title || ''}
+                          onSelectUpsell={onSwitchService}
+                        />
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>

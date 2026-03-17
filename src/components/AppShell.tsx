@@ -121,6 +121,12 @@ const AppShell = () => {
         open={drawerOpen}
         onClose={handleCloseDrawer}
         service={bookingService}
+        onSwitchService={(serviceName) => {
+          setDrawerOpen(false);
+          setTimeout(() => {
+            setActiveTab('services');
+          }, 300);
+        }}
       />
     </div>
   );

@@ -28,6 +28,13 @@ const Index = () => {
         open={drawerOpen}
         onClose={handleCloseDrawer}
         service={bookingService}
+        onSwitchService={(serviceName) => {
+          setDrawerOpen(false);
+          setTimeout(() => {
+            const el = document.getElementById('services');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }, 300);
+        }}
       />
     </div>
   );
