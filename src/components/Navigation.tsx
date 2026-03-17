@@ -55,9 +55,9 @@ const Navigation = () => {
     };
   }, []);
 
-  const textColor = scrolled ? "text-[#3B2712]" : "text-[#F9ECD9]";
-  const textMuted = scrolled ? "text-[#3B2712]/60" : "text-[#F9ECD9]/60";
-  const borderColor = scrolled ? "border-[#3B2712]/20" : "border-[#F9ECD9]/20";
+  const textColor = "text-[#F9ECD9]";
+  const textMuted = "text-[#F9ECD9]/60";
+  const borderColor = "border-[#F9ECD9]/20";
 
   return (
     <nav
