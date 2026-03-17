@@ -75,6 +75,7 @@ const Navigation = () => {
 
           {/* Right side: nav links + location + buttons — desktop */}
           <div className="hidden lg:flex items-center gap-8">
+            <div className={cn("flex items-center gap-8 transition-all duration-300 overflow-hidden", scrolled ? "max-w-0 opacity-0" : "max-w-[600px] opacity-100")}>
             {navItems.map((item) => {
               if (item.href.includes("#")) {
                 return (
