@@ -110,6 +110,7 @@ const stripHtml = (html: string): string => {
 const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   const { data: services, isLoading } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
+  const [expandedService, setExpandedService] = useState<string | null>(null);
   const hiddenServiceIds = useMemo(() => new Set(hiddenServices.map(h => h.service_id)), [hiddenServices]);
 
   const groupedServices = useMemo(() => {
