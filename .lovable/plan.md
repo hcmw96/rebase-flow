@@ -1,20 +1,27 @@
 
 
-# Fix: Overlay Background & Shorter Description Text
+## Preload Popular Service Images
 
-## Problem
-Two issues with the service card overlay:
-1. `bg-[hsl(25,15%,12%)]/95` doesn't work — Tailwind can't apply opacity modifiers to arbitrary HSL values, so the background is transparent and text is unreadable.
-2. Description text is too long.
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-## Solution — `src/components/WebsiteServices.tsx`
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-### 1. Fix overlay background (line 307)
-Replace `bg-[hsl(25,15%,12%)]/95` with inline style `backgroundColor: 'hsla(25,15%,12%,0.95)'` or use the Tailwind-compatible syntax `bg-[hsla(25,15%,12%,0.95)]`.
+### Technical Details
 
-### 2. Shorten description text (line 314)
-Change `line-clamp-3` to `line-clamp-2` and reduce font size to `text-xs` for a more compact overlay.
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
+
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+```
+
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
 
 ### Files to modify
-- `src/components/WebsiteServices.tsx` — lines 306-316, fix bg color and shorten text clamp
+- `index.html` -- add 4 preload link tags in the head
 

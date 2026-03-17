@@ -304,14 +304,15 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
                           {/* Slide-up overlay */}
                           <div
-                            className={`absolute inset-0 bg-[hsl(25,15%,12%)]/95 backdrop-blur-sm flex flex-col justify-end p-5 transition-transform duration-300 ease-out ${
+                            className={`absolute inset-0 backdrop-blur-sm flex flex-col justify-end p-5 transition-transform duration-300 ease-out ${
                               isExpanded ? 'translate-y-0' : 'translate-y-full'
                             } sm:group-hover:translate-y-0`}
+                            style={{ backgroundColor: 'hsla(25, 15%, 12%, 0.95)' }}
                           >
                             <h4 className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
                               {service.baseName}
                             </h4>
-                            <p className="text-[#F9ECD9]/60 text-sm line-clamp-3 font-light leading-relaxed mb-3">
+                            <p className="text-[#F9ECD9]/60 text-xs line-clamp-2 font-light leading-relaxed mb-3">
                               {desc}
                             </p>
                             <div className="flex items-center gap-3 mb-4">
