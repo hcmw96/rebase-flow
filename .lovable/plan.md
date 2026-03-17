@@ -1,20 +1,27 @@
 
 
-# Plan: Collapse Service Categories into Accordions
+## Preload Popular Service Images
 
-## What
-Replace the current always-visible category sections in `WebsiteServices.tsx` with accordions so each category collapses/expands. The first category will default to open.
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-## How
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-**File: `src/components/WebsiteServices.tsx`**
+### Technical Details
 
-1. Import `Accordion, AccordionItem, AccordionTrigger, AccordionContent` from `@/components/ui/accordion`
-2. Replace the current `servicesByCategory` loop (which renders `<motion.div>` per category with an `<h3>` header and grid) with an `<Accordion type="multiple" defaultValue={[firstCategory]}>` wrapper
-3. Each category becomes an `<AccordionItem>` with:
-   - `AccordionTrigger`: the category name (styled with uppercase tracking, matching current `<h3>` style)
-   - `AccordionContent`: the service card grid (unchanged)
-4. Style overrides on the accordion primitives to match the dark theme — remove default underline hover, use `#F9ECD9` colors, border color `#F9ECD9/10`
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
 
-No other files need changes.
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+```
+
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
+
+### Files to modify
+- `index.html` -- add 4 preload link tags in the head
 
