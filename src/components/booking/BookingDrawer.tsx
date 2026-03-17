@@ -471,12 +471,11 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </Button>
                       </div>
 
-                      {onSwitchService && (
-                        <UpsellSuggestions
-                          currentServiceTitle={service?.title || ''}
-                          onSelectUpsell={onSwitchService}
-                        />
-                      )}
+                      <UpsellSuggestions
+                        currentServiceTitle={service?.title || ''}
+                        onSelectUpsell={handleToggleUpsell}
+                        addedServices={addedUpsells}
+                      />
                     </motion.div>
                   )}
                 </AnimatePresence>
