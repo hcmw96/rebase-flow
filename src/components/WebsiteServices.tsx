@@ -304,7 +304,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
                           {/* Slide-up overlay */}
                           <div
-                            className={`absolute inset-0 bg-[hsl(25,15%,12%)]/95 backdrop-blur-sm flex flex-col justify-end p-5 transition-transform duration-300 ease-out ${
+                            className={`absolute inset-0 backdrop-blur-sm flex flex-col justify-end p-5 transition-transform duration-300 ease-out ${
                               isExpanded ? 'translate-y-0' : 'translate-y-full'
                             } sm:group-hover:translate-y-0`}
                           >
