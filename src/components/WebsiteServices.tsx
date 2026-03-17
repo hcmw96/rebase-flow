@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { ServiceVariant } from '@/components/ServiceCard';
 import {
@@ -110,6 +110,7 @@ const stripHtml = (html: string): string => {
 const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   const { data: services, isLoading } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
+  const [expandedService, setExpandedService] = useState<string | null>(null);
   const hiddenServiceIds = useMemo(() => new Set(hiddenServices.map(h => h.service_id)), [hiddenServices]);
 
   const groupedServices = useMemo(() => {
@@ -256,57 +257,86 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                     const fromPrice = getFromPrice(service.variants);
                     const firstVariant = service.variants[0];
                     const desc = stripHtml(service.description);
+                    const isExpanded = expandedService === service.baseName;
 
                       return (
-                        <HoverCard key={service.baseName} openDelay={300} closeDelay={100}>
-                          <HoverCardTrigger asChild>
-                            <motion.button
-                              onClick={() => handleClick(service)}
-                              whileHover={{ y: -4 }}
-                              transition={{ duration: 0.2 }}
-                              className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors"
-                            >
-                              <div className="relative h-48 overflow-hidden">
-                                <img
-                                  src={service.image}
-                                  alt={service.baseName}
-                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                                  loading="lazy"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
+                        <motion.button
+                          key={service.baseName}
+                          onClick={() => {
+                            if (isExpanded) {
+                              setExpandedService(null);
+                            } else {
+                              setExpandedService(service.baseName);
+                            }
+                          }}
+                          whileHover={{ y: -4 }}
+                          transition={{ duration: 0.2 }}
+                          className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors relative"
+                        >
+                          <div className="relative h-48 overflow-hidden">
+                            <img
+                              src={service.image}
+                              alt={service.baseName}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                              loading="lazy"
+                            />
+                            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
+                          </div>
+                          <div className="p-5 space-y-3">
+                            <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
+                              {service.baseName}
+                            </h4>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <span className="text-[#F9ECD9]/90 font-medium">
+                                  {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
+                                </span>
+                                {firstVariant?.duration && (
+                                  <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
+                                    <Clock className="h-3 w-3" />
+                                    {firstVariant.duration} min
+                                  </span>
+                                )}
                               </div>
-                              <div className="p-5 space-y-3">
-                                <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
-                                  {service.baseName}
-                                </h4>
-                                <p className="text-[#F9ECD9]/50 text-sm line-clamp-2 font-light leading-relaxed">
-                                  {desc}
-                                </p>
-                                <div className="flex items-center justify-between pt-2">
-                                  <div className="flex items-center gap-3">
-                                    <span className="text-[#F9ECD9]/90 font-medium">
-                                      {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
-                                    </span>
-                                    {firstVariant?.duration && (
-                                      <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
-                                        <Clock className="h-3 w-3" />
-                                        {firstVariant.duration} min
-                                      </span>
-                                    )}
-                                  </div>
-                                  <ArrowRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
-                                </div>
-                              </div>
-                            </motion.button>
-                          </HoverCardTrigger>
-                          <HoverCardContent
-                            side="top"
-                            className="w-80 bg-[hsl(25,15%,14%)] border-[#F9ECD9]/10 text-[#F9ECD9]/80 text-sm font-light leading-relaxed p-4"
+                              <ArrowRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
+                            </div>
+                          </div>
+
+                          {/* Slide-up overlay */}
+                          <div
+                            className={`absolute inset-0 bg-[hsl(25,15%,12%)]/95 backdrop-blur-sm flex flex-col justify-end p-5 transition-transform duration-300 ease-out ${
+                              isExpanded ? 'translate-y-0' : 'translate-y-full'
+                            } sm:group-hover:translate-y-0`}
                           >
-                            <p className="font-serif text-[#F9ECD9] text-base mb-2">{service.baseName}</p>
-                            <p>{desc}</p>
-                          </HoverCardContent>
-                        </HoverCard>
+                            <h4 className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
+                              {service.baseName}
+                            </h4>
+                            <p className="text-[#F9ECD9]/60 text-sm line-clamp-3 font-light leading-relaxed mb-3">
+                              {desc}
+                            </p>
+                            <div className="flex items-center gap-3 mb-4">
+                              <span className="text-[#F9ECD9]/90 font-medium text-sm">
+                                {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
+                              </span>
+                              {firstVariant?.duration && (
+                                <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
+                                  <Clock className="h-3 w-3" />
+                                  {firstVariant.duration} min
+                                </span>
+                              )}
+                            </div>
+                            <Button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleClick(service);
+                              }}
+                              className="w-full bg-[#F9ECD9] text-[hsl(25,15%,12%)] hover:bg-[#F9ECD9]/90 font-medium"
+                              size="sm"
+                            >
+                              Book Now
+                            </Button>
+                          </div>
+                        </motion.button>
                       );
                   })}
                 </div>
