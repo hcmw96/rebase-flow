@@ -155,6 +155,7 @@ const Navigation = () => {
                 </div>
               )}
             </div>
+            </div>
 
             {/* Buttons */}
             <Link to="/book">
