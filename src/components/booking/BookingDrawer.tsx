@@ -73,6 +73,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [addedUpsells, setAddedUpsells] = useState<string[]>([]);
 
   // Reset state when drawer opens with new service
   const handleOpenChange = (isOpen: boolean) => {
