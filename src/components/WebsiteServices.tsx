@@ -1,11 +1,11 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Clock, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
-import { HoverCard, HoverCardTrigger, HoverCardContent } from '@/components/ui/hover-card';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Button } from '@/components/ui/button';
 import { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { ServiceVariant } from '@/components/ServiceCard';
 import {
