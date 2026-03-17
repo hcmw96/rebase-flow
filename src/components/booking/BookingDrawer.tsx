@@ -63,7 +63,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
   </motion.div>
 );
 
-const BookingDrawer = ({ open, onClose, service }: BookingDrawerProps) => {
+const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
   const { isAuthenticated } = useAuth();
   const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
   const bookServiceMutation = useBookService();
