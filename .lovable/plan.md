@@ -1,27 +1,17 @@
 
 
-## Preload Popular Service Images
+# Fix: Header Overlapping Content on Scroll
 
-### Problem
-The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
+## Problem
+The navigation bar is `fixed` with `z-50` and height `h-20` (80px), but the `WebsiteServices` section (and likely Hero) don't account for this. When scrolling, the "Our Experiences" heading and content scroll beneath the nav bar.
 
-### Solution
-Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
+## Solution
 
-### Technical Details
+**File: `src/components/WebsiteServices.tsx`**
 
-**File: `index.html`**
-Add preload link tags in the `<head>` for the 4 popular service images:
+Add `pt-20` (padding-top: 80px) to the outermost wrapper of the services section so content clears the fixed navbar. Alternatively, if the Hero already fills the viewport, the fix may only be needed on the services section's top padding — looking at the screenshot, the services section heading "Our Experiences" is directly under the nav, so adding `scroll-margin-top` or increasing the section's top padding by ~80px will fix the overlap.
 
-```html
-<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
-<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
-<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
-<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
-```
+Specifically: find the root `<section>` or container in `WebsiteServices` and increase its top padding from whatever it currently is to include an extra `5rem` (80px) to clear the fixed nav.
 
-This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
-
-### Files to modify
-- `index.html` -- add 4 preload link tags in the head
+Single file change, one line adjustment.
 
