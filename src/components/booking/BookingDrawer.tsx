@@ -291,12 +291,20 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                   </div>
                 </div>
                 <Button onClick={onClose} className="w-full">Done</Button>
-                {onSwitchService && (
+                {addedUpsells.length > 0 && onSwitchService ? (
                   <UpsellSuggestions
                     currentServiceTitle={service?.title || ''}
                     onSelectUpsell={onSwitchService}
+                    addedServices={addedUpsells}
+                    successMode
                   />
-                )}
+                ) : onSwitchService ? (
+                  <UpsellSuggestions
+                    currentServiceTitle={service?.title || ''}
+                    onSelectUpsell={handleToggleUpsell}
+                    addedServices={addedUpsells}
+                  />
+                ) : null}
               </motion.div>
             ) : (
               <>
