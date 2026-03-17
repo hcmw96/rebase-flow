@@ -55,16 +55,16 @@ const Navigation = () => {
     };
   }, []);
 
-  const textColor = scrolled ? "text-[#3B2712]" : "text-[#F9ECD9]";
-  const textMuted = scrolled ? "text-[#3B2712]/60" : "text-[#F9ECD9]/60";
-  const borderColor = scrolled ? "border-[#3B2712]/20" : "border-[#F9ECD9]/20";
+  const textColor = "text-[#F9ECD9]";
+  const textMuted = "text-[#F9ECD9]/60";
+  const borderColor = "border-[#F9ECD9]/20";
 
   return (
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
         scrolled
-          ? "bg-[#F9ECD9]/70 backdrop-blur-xl border-[#3B2712]/10"
+          ? "bg-black/40 backdrop-blur-xl border-[#F9ECD9]/10"
           : "bg-transparent border-white/10"
       )}
     >
@@ -77,7 +77,7 @@ const Navigation = () => {
               alt="Rebase"
               className={cn(
                 "w-auto transition-all duration-300",
-                scrolled ? "h-8 brightness-0" : "h-12 brightness-0 invert"
+                scrolled ? "h-8 brightness-0 invert" : "h-12 brightness-0 invert"
               )}
             />
           </Link>
@@ -173,7 +173,7 @@ const Navigation = () => {
                 className={cn(
                   "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md rounded-none transition-all duration-300",
                   scrolled
-                    ? "border-[#3B2712]/20 bg-[#3B2712]/10 text-[#3B2712] hover:bg-[#3B2712]/20"
+                    ? "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
                     : "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
                 )}
               >
@@ -186,7 +186,7 @@ const Navigation = () => {
                 className={cn(
                   "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
                   scrolled
-                    ? "bg-[#3B2712]/10 border-[#3B2712]/10 text-[#3B2712] hover:bg-[#3B2712]/20"
+                    ? "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                     : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                 )}
               >
