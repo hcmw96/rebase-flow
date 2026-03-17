@@ -67,8 +67,8 @@ const Navigation = () => {
               src={wordmark}
               alt="Rebase"
               className={cn(
-                "h-12 w-auto transition-all duration-300",
-                scrolled ? "brightness-0" : "brightness-0 invert"
+                "w-auto transition-all duration-300",
+                scrolled ? "h-8 brightness-0" : "h-12 brightness-0 invert"
               )}
             />
           </Link>
