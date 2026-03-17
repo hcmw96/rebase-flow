@@ -33,6 +33,7 @@ interface BookingDrawerProps {
   open: boolean;
   onClose: () => void;
   service: BookingServiceData | null;
+  onSwitchService?: (serviceName: string) => void;
 }
 
 const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
