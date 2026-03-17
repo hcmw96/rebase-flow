@@ -10,6 +10,7 @@ import {
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
+import UpsellSuggestions from '@/components/booking/UpsellSuggestions';
 import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
