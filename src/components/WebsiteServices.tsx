@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Clock, ArrowRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
@@ -367,6 +368,21 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
             </AccordionItem>
           ))}
         </Accordion>
+
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="mt-16 flex justify-center"
+        >
+          <Link
+            to="/auth"
+            className="px-10 py-4 bg-white/10 backdrop-blur-md border border-[#F9ECD9]/20 text-[#F9ECD9] rounded-full hover:bg-white/20 hover:border-[#F9ECD9]/40 transition-all duration-300 uppercase tracking-[0.2em] text-sm font-light"
+          >
+            Join Our Community
+          </Link>
+        </motion.div>
       </div>
     </section>
   );

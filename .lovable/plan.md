@@ -1,19 +1,27 @@
 
 
-# Add "Join Our Community" Button Below Services Accordion
+## Preload Popular Service Images
 
-## Change
+### Problem
+The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
 
-Add a glassmorphic CTA button below the services accordion on `/website` that links to sign up.
+### Solution
+Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
 
-## Technical Details
+### Technical Details
 
-**File: `src/components/WebsiteServices.tsx`** (lines ~369-371)
+**File: `index.html`**
+Add preload link tags in the `<head>` for the 4 popular service images:
 
-After the `</Accordion>` closing tag and before the section's closing `</div>`/`</section>`, insert a centered container with a `Link` to `/auth` (or `/signup`) containing a glassmorphic button styled consistently with the "Book Now" CTA:
+```html
+<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
+<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
+<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
+<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
+```
 
-- `bg-white/10 backdrop-blur-md border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-white/20`
-- Tracking/letter-spacing to match brand aesthetic
-- Padding and sizing for prominence
-- Uses `react-router-dom` `Link` component
+This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
+
+### Files to modify
+- `index.html` -- add 4 preload link tags in the head
 
