@@ -1,27 +1,22 @@
 
 
-## Preload Popular Service Images
+# Use `vids2` Hero Film for Website Hero Video
 
-### Problem
-The home page shows 4 popular service cards with images, but those images only start downloading when the component renders. This causes visible grey placeholder boxes while images load (as seen in the screenshot).
+## What changes
+Update `Hero.tsx` and `AuthPage.tsx` to use the new video file from the `vids2` storage bucket, with 5 seconds clipped from both start and end.
 
-### Solution
-Preload the 4 popular service images at the app level so they're already cached by the time the home page renders. Since these are static, known URLs, we can add them as `<link rel="preload">` tags in `index.html`.
-
-### Technical Details
-
-**File: `index.html`**
-Add preload link tags in the `<head>` for the 4 popular service images:
-
-```html
-<link rel="preload" as="image" href="/images/rebase-ice-sauna-new.webp" />
-<link rel="preload" as="image" href="/images/rebase-cryo.webp" />
-<link rel="preload" as="image" href="/images/rebase-private-suites.webp" />
-<link rel="preload" as="image" href="/images/rebase-hbot-treatment.webp" />
-```
-
-This tells the browser to start fetching these images immediately on page load -- before any JavaScript executes -- so they'll be in the browser cache by the time the home page renders.
+## Technical details
 
 ### Files to modify
-- `index.html` -- add 4 preload link tags in the head
+
+**`src/components/Hero.tsx`**
+- Change `VIDEO_URL` to point to `vids2/REBASE - HERO FILM - 03.01.mp4`
+- Update `onLoadedMetadata` to seek to `5` (clip 5s from start)
+- Update `onTimeUpdate` to loop back to `5` when `currentTime >= duration - 5` (clip 5s from end)
+- Change source type from `video/quicktime` to `video/mp4`
+
+**`src/pages/AuthPage.tsx`**
+- Same `VIDEO_URL` update to `vids2/REBASE - HERO FILM - 03.01.mp4`
+- Same clipping logic: start at 5s, loop 5s before end
+- Update source type to `video/mp4`
 
