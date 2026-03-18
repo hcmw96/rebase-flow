@@ -2,7 +2,7 @@ import { useState } from 'react';
 import SignIn from '@/pages/SignIn';
 import SignUp from '@/pages/SignUp';
 
-const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids/REBASE - CHAPTER ONE - 03.01.mov`;
+const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/REBASE - HERO FILM - 03.01.mp4`;
 
 const AuthPage = () => {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
