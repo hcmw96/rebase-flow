@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
 
-const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids/REBASE - CHAPTER ONE - 03.01.mov`;
+const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/REBASE - HERO FILM - 03.01.mp4`;
 
 const Hero = () => {
   return (
@@ -21,16 +21,15 @@ const Hero = () => {
             }
           }}
           onLoadedMetadata={(e) => {
-            e.currentTarget.currentTime = 3.5;
+            e.currentTarget.currentTime = 5;
           }}
           onTimeUpdate={(e) => {
             const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 6) {
-              vid.currentTime = 3.5;
+            if (vid.duration && vid.currentTime >= vid.duration - 5) {
+              vid.currentTime = 5;
             }
           }}
         >
-          <source src={VIDEO_URL} type="video/quicktime" />
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
         <div className="absolute inset-0 bg-black/45" />
