@@ -52,13 +52,11 @@ export function MindbodyProvider({ children }: { children: ReactNode }) {
     setIsLinking(true);
 
     try {
-      const redirectUri = window.location.origin;
-
-      // Call the edge function properly via POST to get the Mindbody auth URL
+      // Call the edge function to get the Mindbody auth URL (redirect URI is server-determined)
       const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ redirectUri }),
+        body: JSON.stringify({}),
       });
 
       const data = await res.json();
