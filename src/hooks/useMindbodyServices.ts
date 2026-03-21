@@ -111,7 +111,9 @@ export function useMindbodyServices() {
   return useQuery({
     queryKey: ['mindbody-services'],
     queryFn: fetchServices,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes — service list rarely changes
+    gcTime: 60 * 60 * 1000, // keep in cache for 1 hour
+    refetchOnWindowFocus: false,
   });
 }
 
