@@ -143,7 +143,8 @@ export function useMindbodyAvailability(params: {
   return useQuery({
     queryKey: ['mindbody-availability', params],
     queryFn: () => fetchAvailability(params),
-    staleTime: 1 * 60 * 1000, // 1 minute
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
     enabled: params.enabled !== false && !!params.sessionTypeId,
   });
 }

@@ -18,7 +18,7 @@ const queryClient = new QueryClient();
 queryClient.prefetchQuery({
   queryKey: ['mindbody-services'],
   queryFn: fetchServices,
-  staleTime: 5 * 60 * 1000,
+  staleTime: 30 * 60 * 1000, // 30 minutes
 });
 
 const App = () => (
