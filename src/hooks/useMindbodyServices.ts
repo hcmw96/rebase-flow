@@ -111,7 +111,9 @@ export function useMindbodyServices() {
   return useQuery({
     queryKey: ['mindbody-services'],
     queryFn: fetchServices,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 60 * 1000, // 30 minutes — service list rarely changes
+    gcTime: 60 * 60 * 1000, // keep in cache for 1 hour
+    refetchOnWindowFocus: false,
   });
 }
 
@@ -125,7 +127,8 @@ export function useMindbodyClasses(params: {
   return useQuery({
     queryKey: ['mindbody-classes', params],
     queryFn: () => fetchClasses(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
     enabled: params.enabled !== false,
   });
 }
@@ -140,7 +143,8 @@ export function useMindbodyAvailability(params: {
   return useQuery({
     queryKey: ['mindbody-availability', params],
     queryFn: () => fetchAvailability(params),
-    staleTime: 1 * 60 * 1000, // 1 minute
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    refetchOnWindowFocus: false,
     enabled: params.enabled !== false && !!params.sessionTypeId,
   });
 }
