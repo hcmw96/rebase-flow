@@ -91,6 +91,7 @@ const serviceImages: Record<string, string> = {
   'IV Drip': '/images/rebase-suite.webp',
   'NAD+': '/images/rebase-suite.webp',
   'Massage': '/images/rebase-suite.webp',
+  'Assisted Stretching': '/images/rebase-treatment-room.jpg',
 };
 
 const categoryImages: Record<string, string> = {
