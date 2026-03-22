@@ -25,7 +25,7 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /massage/i, groupName: 'Massage' },
   { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
-  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
+  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Suite' },
   { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
   { pattern: /^structural\s*fascia/i, groupName: 'Structural Fascia Therapy' },
   { pattern: /^holistic\s*face\s*sculpt/i, groupName: 'Holistic Face Sculpting' },
