@@ -25,7 +25,7 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /massage/i, groupName: 'Massage' },
   { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
-  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
+  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Suite' },
   { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
   { pattern: /^structural\s*fascia/i, groupName: 'Structural Fascia Therapy' },
   { pattern: /^holistic\s*face\s*sculpt/i, groupName: 'Holistic Face Sculpting' },
@@ -58,7 +58,7 @@ const hiddenServiceNames = new Set([
 ]);
 
 const shortDescriptions: Record<string, string> = {
-  'Infrared Sauna & Ice Bath': 'Detoxifying infrared heat followed by an invigorating ice bath.',
+  'Infrared Suite': 'Detoxifying infrared heat followed by an invigorating ice bath.',
   'Premium Suite': 'Private suite with Finnish sauna, ice baths and bucket shower.',
   'Midday Reset': 'A restorative midday escape in our private wellness suite.',
   'Cryotherapy': 'Whole-body cold therapy to reduce inflammation and boost recovery.',
@@ -84,7 +84,7 @@ const regenWhitelist = new Set(['Osteopathy', 'Myofascial Dry Needling', 'Struct
 
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
-  'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
+  'Infrared Suite': '/images/rebase-ice-sauna-new.webp',
   'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
   'Premium Suite': '/images/rebase-private-suites.webp',
   'IV Drip': '/images/rebase-suite.webp',
@@ -188,7 +188,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
     const grouped = Array.from(groups.values());
     const order: Record<string, number> = {
-      'Infrared Sauna & Ice Bath': 0, 'Premium Suite': 1, 'Midday Reset': 2, 'Cryotherapy': 3,
+      'Infrared Suite': 0, 'Premium Suite': 1, 'Midday Reset': 2, 'Cryotherapy': 3,
     };
     grouped.sort((a, b) => {
       const oA = order[a.baseName] ?? 999;
