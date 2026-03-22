@@ -95,6 +95,7 @@ const serviceImages: Record<string, string> = {
   'Assisted Stretching': '/images/rebase-treatment-room.jpg',
   'Brazilian Lymphatic': '/images/rebase-brazilian-lymphatic.jpg',
   "Deo's Body Alignment Method": '/images/rebase-deo-body-alignment.jpg',
+  'Holistic Face Sculpting': '/images/rebase-holistic-face-sculpting.jpg',
   'Divine Facial Healing': '/images/rebase-divine-facial.jpg',
 };
 
