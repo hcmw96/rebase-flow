@@ -304,11 +304,6 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                               src={service.image}
                               alt={service.baseName}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                              style={
-                                ['Assisted Stretching', 'Infrared Suite'].includes(service.baseName)
-                                  ? { transform: 'scale(0.85)', objectPosition: 'center 40%' }
-                                  : undefined
-                              }
                               loading="lazy"
                             />
                             <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
