@@ -38,6 +38,7 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^(the\s+)?midday\s*resets?/i, groupName: 'Midday Reset' },
   { pattern: /^nutritional\s*therap/i, groupName: 'Nutritional Therapy' },
   { pattern: /^myofascial\s*dry\s*needl/i, groupName: 'Myofascial Dry Needling' },
+  { pattern: /^assisted\s*stretching/i, groupName: 'Assisted Stretching' },
 ];
 
 const hiddenGroupNames = new Set([
@@ -90,6 +91,7 @@ const serviceImages: Record<string, string> = {
   'IV Drip': '/images/rebase-suite.webp',
   'NAD+': '/images/rebase-suite.webp',
   'Massage': '/images/rebase-suite.webp',
+  'Assisted Stretching': '/images/rebase-treatment-room.jpg',
 };
 
 const categoryImages: Record<string, string> = {
