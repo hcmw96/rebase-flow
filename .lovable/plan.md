@@ -1,29 +1,51 @@
 
 
-# Add Cookie Policy Page to Website
+# Full-Screen Booking Drawer with Hero Image
 
 ## What changes
 
-1. Create a new `/cookie-policy` page displaying the uploaded cookie policy content, styled consistently with the site's dark theme.
-2. Add a route for it in `App.tsx`.
-3. Add a "Cookie Policy" link in the Footer.
+Transform the booking drawer from a bottom sheet (90vh) into a full-screen overlay. The service image fills the top half of the screen, and the booking flow (steps, variant selection, date/time/confirm) occupies the bottom half with scrollable content.
 
 ## Technical Details
 
-### 1. New file: `src/pages/CookiePolicy.tsx`
-- Static page with Navigation and Footer (same layout as `/website`)
-- Renders the cookie policy content from the uploaded document as styled HTML
-- Dark background (`bg-[#1A1A1A]`), cream text (`text-[#F9ECD9]`) to match site aesthetic
-- Sections: intro, cookie types (strictly necessary, analytical, functionality, targeting), cookie table placeholder, usage examples, opt-out info, contact email
+### File: `src/components/booking/BookingDrawer.tsx`
 
-### 2. `src/App.tsx`
-- Add route: `<Route path="/cookie-policy" element={<CookiePolicy />} />`
+1. **Make drawer full-screen**: Change `DrawerContent` className from `max-h-[90vh]` to `h-[100dvh] max-h-[100dvh]` and remove the rounded top corners / drag handle
+2. **Add hero image section**: Insert a top-half image container above the booking flow content:
+   - Uses `service.image` as background with `object-cover`
+   - Takes up ~45-50% of viewport height (`h-[45vh]`)
+   - Overlays the service title and variant info at the bottom with a gradient fade
+   - Back button and close button positioned over the image
+3. **Restructure layout**: 
+   - Remove the current text-only header bar
+   - Move back/close buttons to overlay the image (white icons on dark gradient)
+   - Bottom half contains the scrollable booking steps content as-is
+4. **Hide image on success/contact screens**: When `bookingComplete` or `showContactMessage`, collapse the image area or hide it
 
-### 3. `src/components/Footer.tsx`
-- Add "Cookie Policy" link in the Quick Links section or the bottom copyright bar, linking to `/cookie-policy`
+### File: `src/components/ui/drawer.tsx`
+
+- Add option to hide the drag handle indicator (the gray bar) since this is now full-screen, not a swipeable sheet. Could pass a prop or add a variant class.
+
+### Layout structure
+```text
+┌──────────────────────┐
+│   ← (back)    ✕      │  ← overlaid on image
+│                      │
+│   SERVICE IMAGE      │  ~45vh
+│                      │
+│   Service Title      │  ← gradient overlay at bottom
+│   Duration · Price   │
+├──────────────────────┤
+│  Step indicators     │
+│                      │
+│  Booking flow        │  ~55vh, scrollable
+│  (type/date/time/    │
+│   confirm)           │
+│                      │
+└──────────────────────┘
+```
 
 ### Files to modify
-- **New**: `src/pages/CookiePolicy.tsx`
-- **Edit**: `src/App.tsx` — add route
-- **Edit**: `src/components/Footer.tsx` — add link
+- `src/components/booking/BookingDrawer.tsx` — restructure to full-screen with hero image
+- `src/components/ui/drawer.tsx` — support hiding drag handle
 
