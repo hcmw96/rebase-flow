@@ -10,6 +10,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import CookiePolicy from "./pages/CookiePolicy";
 import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
