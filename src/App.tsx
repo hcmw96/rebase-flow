@@ -32,6 +32,7 @@ const App = () => (
           <ScrollToTop />
           <Routes>
             <Route path="/website" element={<Index />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/" element={<AppShell />} />
             <Route path="*" element={<AppShell />} />
           </Routes>
