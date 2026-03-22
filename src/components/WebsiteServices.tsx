@@ -188,7 +188,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
     const grouped = Array.from(groups.values());
     const order: Record<string, number> = {
-      'Infrared Sauna & Ice Bath': 0, 'Premium Suite': 1, 'Midday Reset': 2, 'Cryotherapy': 3,
+      'Infrared Suite': 0, 'Premium Suite': 1, 'Midday Reset': 2, 'Cryotherapy': 3,
     };
     grouped.sort((a, b) => {
       const oA = order[a.baseName] ?? 999;
