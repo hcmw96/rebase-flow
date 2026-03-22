@@ -102,10 +102,13 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-border/50 mt-8 pt-8 text-center">
+        <div className="border-t border-[#F9ECD9]/10 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center gap-2">
           <p className="text-foreground/60 text-sm">
             © 2025 Rebase Recovery. All rights reserved.
           </p>
+          <Link to="/cookie-policy" className="text-foreground/60 hover:text-foreground transition-colors text-sm">
+            Cookie Policy
+          </Link>
         </div>
       </div>
     </footer>

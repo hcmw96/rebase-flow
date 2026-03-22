@@ -10,6 +10,7 @@ import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
 import Index from "./pages/Index";
+import CookiePolicy from "./pages/CookiePolicy";
 import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
@@ -31,6 +32,7 @@ const App = () => (
           <ScrollToTop />
           <Routes>
             <Route path="/website" element={<Index />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/" element={<AppShell />} />
             <Route path="*" element={<AppShell />} />
           </Routes>
