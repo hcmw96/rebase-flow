@@ -91,7 +91,7 @@ const serviceImages: Record<string, string> = {
   'Premium Suite': '/images/rebase-private-suites.webp',
   'IV Drip': '/images/rebase-suite.webp',
   'NAD+': '/images/rebase-suite.webp',
-  'Massage': '/images/rebase-suite.webp',
+  'Massage': '/images/rebase-massage.jpg',
   'Assisted Stretching': '/images/rebase-treatment-room.jpg',
   'Brazilian Lymphatic': '/images/rebase-brazilian-lymphatic.jpg',
   "Deo's Body Alignment Method": '/images/rebase-deo-body-alignment.jpg',
