@@ -223,29 +223,72 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
   if (!service) return null;
 
+  const showHeroImage = !bookingComplete && !showContactMessage;
+
   return (
     <Drawer open={open} onOpenChange={handleOpenChange}>
-      <DrawerContent className="max-h-[90vh] outline-none">
-        <div className="flex flex-col max-h-[85vh] overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center gap-3 px-4 pt-2 pb-3 border-b border-border/50 shrink-0">
-            <button
-              onClick={handleBack}
-              className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted/50 transition-colors press-scale-none"
-            >
-              <ArrowLeft className="h-5 w-5 text-foreground" />
-            </button>
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base font-semibold text-foreground truncate">
-                {bookingComplete ? 'Confirmed' : showContactMessage ? service.title : `Book ${service.title}`}
-              </h2>
-              {activeVariant && !bookingComplete && !showContactMessage && (
-                <p className="text-xs text-muted-foreground">
-                  {[displayDuration, activeVariant.price ? `£${activeVariant.price}` : null].filter(Boolean).join(' · ')}
-                </p>
-              )}
+      <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-none border-none outline-none" hideHandle>
+        <div className="flex flex-col h-full overflow-hidden">
+          {/* Hero Image Section */}
+          {showHeroImage && (
+            <div className="relative shrink-0 h-[40vh]">
+              <img
+                src={service.image}
+                alt={service.title}
+                className="absolute inset-0 w-full h-full object-cover"
+              />
+              {/* Gradient overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+
+              {/* Back & Close buttons overlaid on image */}
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+                <button
+                  onClick={handleBack}
+                  className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
+                >
+                  <ArrowLeft className="h-5 w-5 text-white" />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
+                >
+                  <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <line x1="18" y1="6" x2="6" y2="18" />
+                    <line x1="6" y1="6" x2="18" y2="18" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Service info overlaid at bottom of image */}
+              <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+                <h2 className="text-xl font-semibold text-foreground">
+                  {hasVariants ? service.title : `Book ${service.title}`}
+                </h2>
+                {activeVariant && !hasVariants && (
+                  <p className="text-sm text-muted-foreground mt-0.5">
+                    {[displayDuration, activeVariant.price ? `£${activeVariant.price}` : null].filter(Boolean).join(' · ')}
+                  </p>
+                )}
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Non-image header for success/contact states */}
+          {!showHeroImage && (
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/50 shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+              <button
+                onClick={handleBack}
+                className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted/50 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 text-foreground" />
+              </button>
+              <div className="flex-1 min-w-0">
+                <h2 className="text-base font-semibold text-foreground truncate">
+                  {bookingComplete ? 'Confirmed' : service.title}
+                </h2>
+              </div>
+            </div>
+          )}
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
