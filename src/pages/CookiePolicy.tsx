@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 
 const CookiePolicy = () => {
   return (
-    <div className="min-h-screen bg-[#1A1A1A] text-[#F9ECD9]">
+    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1A1A1A] text-[#F9ECD9]">
       <Navigation />
       <main className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
         <h1 className="text-3xl sm:text-4xl font-light tracking-wide mb-4">Cookie Policy</h1>
