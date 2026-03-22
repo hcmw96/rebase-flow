@@ -39,6 +39,7 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^nutritional\s*therap/i, groupName: 'Nutritional Therapy' },
   { pattern: /^myofascial\s*dry\s*needl/i, groupName: 'Myofascial Dry Needling' },
   { pattern: /^assisted\s*stretching/i, groupName: 'Assisted Stretching' },
+  { pattern: /^deo.*body\s*alignment/i, groupName: "Deo's Body Alignment Method" },
 ];
 
 const hiddenGroupNames = new Set([
