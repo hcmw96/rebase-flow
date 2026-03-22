@@ -84,7 +84,7 @@ const regenWhitelist = new Set(['Osteopathy', 'Myofascial Dry Needling', 'Struct
 
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
-  'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
+  'Infrared Suite': '/images/rebase-ice-sauna-new.webp',
   'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
   'Premium Suite': '/images/rebase-private-suites.webp',
   'IV Drip': '/images/rebase-suite.webp',
