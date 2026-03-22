@@ -97,6 +97,7 @@ const serviceImages: Record<string, string> = {
   "Deo's Body Alignment Method": '/images/rebase-deo-body-alignment.jpg',
   'Holistic Face Sculpting': '/images/rebase-holistic-face-sculpting.jpg',
   'Divine Facial Healing': '/images/rebase-divine-facial.jpg',
+  'Blood Test': '/images/rebase-blood-test.jpg',
 };
 
 const categoryImages: Record<string, string> = {
