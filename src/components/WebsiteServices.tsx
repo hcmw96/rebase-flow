@@ -94,6 +94,7 @@ const serviceImages: Record<string, string> = {
   'Massage': '/images/rebase-suite.webp',
   'Assisted Stretching': '/images/rebase-treatment-room.jpg',
   'Brazilian Lymphatic': '/images/rebase-brazilian-lymphatic.jpg',
+  "Deo's Body Alignment Method": '/images/rebase-deo-body-alignment.jpg',
 };
 
 const categoryImages: Record<string, string> = {
