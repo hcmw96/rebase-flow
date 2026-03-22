@@ -58,7 +58,7 @@ const hiddenServiceNames = new Set([
 ]);
 
 const shortDescriptions: Record<string, string> = {
-  'Infrared Sauna & Ice Bath': 'Detoxifying infrared heat followed by an invigorating ice bath.',
+  'Infrared Suite': 'Detoxifying infrared heat followed by an invigorating ice bath.',
   'Premium Suite': 'Private suite with Finnish sauna, ice baths and bucket shower.',
   'Midday Reset': 'A restorative midday escape in our private wellness suite.',
   'Cryotherapy': 'Whole-body cold therapy to reduce inflammation and boost recovery.',
