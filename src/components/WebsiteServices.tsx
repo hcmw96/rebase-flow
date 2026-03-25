@@ -89,7 +89,7 @@ const serviceImages: Record<string, string> = {
   'Infrared Suite': '/images/rebase-infrared-suite.jpg',
   'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
   'Premium Suite': '/images/rebase-private-suites.webp',
-  'IV Drip': '/images/rebase-suite.webp',
+  'IV Drip': '/images/rebase-iv-drip.jpg',
   'NAD+': '/images/rebase-suite.webp',
   'Massage': '/images/rebase-massage.jpg',
   'Assisted Stretching': '/images/rebase-treatment-room.jpg',
