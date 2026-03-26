@@ -5,6 +5,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const classOfferings = [
+  { name: 'Urban Oasis', image: '/images/rebase-class-urban-oasis.jpg', description: 'Breathwork & meditation in candlelit surroundings.' },
+  { name: 'Contrast Immersion', image: '/images/rebase-class-contrast-immersion.jpg', description: 'Guided hot-cold contrast therapy.' },
+  { name: 'Yoga', image: '/images/rebase-class-yoga.jpg', description: 'Prana Flow & Dynamic Flow sessions.' },
+  { name: 'Mat Pilates', image: '/images/rebase-class-mat-pilates.jpg', description: 'Core-focused mat work for posture & tone.' },
+];
+
 const ClassSchedule = () => {
   const today = useMemo(() => new Date(), []);
   const startDate = format(today, 'yyyy-MM-dd');
