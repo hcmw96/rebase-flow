@@ -70,6 +70,22 @@ const ClassSchedule = () => {
 
   return (
     <div className="space-y-6">
+      {/* Class type cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {classOfferings.map((cls) => (
+          <div key={cls.name} className="rounded-xl overflow-hidden border border-border/30 bg-black/[0.03]">
+            <div className="relative h-24 overflow-hidden">
+              <img src={cls.image} alt={cls.name} className="w-full h-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <h4 className="absolute bottom-2 left-3 text-white text-xs font-medium">{cls.name}</h4>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Schedule heading */}
+      <h3 className="text-sm font-semibold text-foreground/50 uppercase tracking-wider">Upcoming Schedule</h3>
+
       {Array.from(classesByDay.entries()).map(([dayKey, dayClasses]) => {
         const date = new Date(dayKey + 'T00:00:00');
         const isToday = startOfDay(date).getTime() === startOfDay(today).getTime();
