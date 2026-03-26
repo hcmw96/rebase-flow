@@ -98,6 +98,7 @@ const serviceImages: Record<string, string> = {
   'Holistic Face Sculpting': '/images/rebase-holistic-face-sculpting.jpg',
   'Divine Facial Healing': '/images/rebase-divine-facial.jpg',
   'Blood Test': '/images/rebase-blood-test.jpg',
+  'Osteopathy': '/images/rebase-osteopathy.jpg',
 };
 
 const categoryImages: Record<string, string> = {
