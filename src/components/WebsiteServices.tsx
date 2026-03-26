@@ -43,10 +43,10 @@ const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
 ];
 
 const hiddenGroupNames = new Set([
-  'Rebase Packages', 'Corporate Credits', 'Corporate credits', 'Classes',
+  'Rebase Packages', 'Corporate Credits', 'Corporate credits',
   'Off Peak Access', 'MOCK CLASS', 'Vitamin Stack', 'Club Takeover',
   'Ozone Aesthetics Packages', 'Hydro Pro Facial', 'Members Wellness Event',
-  'Members Only', 'Sound Bath', "Member's Suite", 'Members Suite',
+  'Members Only', 'Sound Bath',
   'Wellness Event', 'Saturday Buffer', 'Thursday Buffer', 'Nutritional Therapy',
 ]);
 
@@ -81,8 +81,43 @@ const shortDescriptions: Record<string, string> = {
   'Myofascial Dry Needling': 'Precision needling to release deep muscular tension.',
 };
 
-const categoryOverrides: Record<string, string> = { 'Midday Reset': 'Private Suites' };
-const regenWhitelist = new Set(['Osteopathy', 'Myofascial Dry Needling', 'Structural Fascia Therapy']);
+const categoryOverrides: Record<string, string> = {
+  'Infrared Suite': 'Communal Members Suite',
+  "Member's Suite": 'Communal Members Suite',
+  'Members Suite': 'Communal Members Suite',
+  'Classes': 'Signature Classes',
+  'Premium Suite': 'Private Suites',
+  'Midday Reset': 'Private Suites',
+  'Hyperbaric Oxygen': 'Hyperbaric Oxygen',
+  'Cryotherapy': 'Cryotherapy',
+  'Massage': 'Massage Therapy',
+  'Brazilian Lymphatic': 'Massage Therapy',
+  'Assisted Stretching': 'Massage Therapy',
+  "Deo's Body Alignment Method": 'Massage Therapy',
+  'IV Drip': 'IV Drips',
+  'NAD+': 'IV Drips',
+  'Blood Test': 'IV Drips',
+  'Osteopathy': 'Regen and Manual Therapies',
+  'Myofascial Dry Needling': 'Regen and Manual Therapies',
+  'Structural Fascia Therapy': 'Regen and Manual Therapies',
+  'Ozone Therapy': 'Regen and Manual Therapies',
+  'Divine Facial Healing': 'Regen and Manual Therapies',
+  'Holistic Face Sculpting': 'Regen and Manual Therapies',
+  'Skin Rejuvenation': 'Regen and Manual Therapies',
+  'Skin Peel': 'Regen and Manual Therapies',
+  'BioStimulation': 'Regen and Manual Therapies',
+};
+
+const categoryOrder = [
+  'Communal Members Suite',
+  'Signature Classes',
+  'Private Suites',
+  'Hyperbaric Oxygen',
+  'Cryotherapy',
+  'Massage Therapy',
+  'IV Drips',
+  'Regen and Manual Therapies',
+];
 
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
@@ -186,7 +221,6 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
       if (category === 'General') continue;
       if (hiddenGroupNames.has(canonicalName)) continue;
-      if (/regen|manual\s*therap/i.test(category) && !regenWhitelist.has(canonicalName)) continue;
 
       const image = serviceImages[canonicalName] || categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
       const isContactOnly = contactOnlyGroups.has(canonicalName);
@@ -219,16 +253,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       });
     }
 
-    const grouped = Array.from(groups.values());
-    const order: Record<string, number> = {
-      'Infrared Suite': 0, 'Premium Suite': 1, 'Midday Reset': 2, 'Cryotherapy': 3,
-    };
-    grouped.sort((a, b) => {
-      const oA = order[a.baseName] ?? 999;
-      const oB = order[b.baseName] ?? 999;
-      return oA !== oB ? oA - oB : a.baseName.localeCompare(b.baseName);
-    });
-    return grouped;
+    return Array.from(groups.values());
   }, [services, hiddenServiceIds]);
 
   const servicesByCategory = useMemo(() => {
@@ -237,7 +262,16 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       if (!map.has(service.category)) map.set(service.category, []);
       map.get(service.category)!.push(service);
     }
-    return map;
+    // Sort by defined category order
+    const sorted = new Map<string, GroupedService[]>();
+    for (const cat of categoryOrder) {
+      if (map.has(cat)) sorted.set(cat, map.get(cat)!);
+    }
+    // Add any remaining categories not in the order
+    for (const [cat, services] of map) {
+      if (!sorted.has(cat)) sorted.set(cat, services);
+    }
+    return sorted;
   }, [groupedServices]);
 
   const handleClick = (service: GroupedService) => {
@@ -308,7 +342,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                 {category}
               </AccordionTrigger>
               <AccordionContent>
-                {category === 'Classes' ? (
+                {category === 'Signature Classes' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-4">
                     {classOfferings.map((cls) => (
                       <motion.div
