@@ -138,6 +138,29 @@ const stripHtml = (html: string): string => {
   return doc.body.textContent || '';
 };
 
+const classOfferings = [
+  {
+    name: 'Urban Oasis',
+    image: '/images/rebase-class-urban-oasis.jpg',
+    description: 'A calming escape combining breathwork and meditation in candlelit surroundings.',
+  },
+  {
+    name: 'Contrast Immersion',
+    image: '/images/rebase-class-contrast-immersion.jpg',
+    description: 'Guided hot-cold contrast therapy to boost circulation and recovery.',
+  },
+  {
+    name: 'Yoga',
+    image: '/images/rebase-class-yoga.jpg',
+    description: 'Prana Flow and Dynamic Flow sessions to build strength and flexibility.',
+  },
+  {
+    name: 'Mat Pilates',
+    image: '/images/rebase-class-mat-pilates.jpg',
+    description: 'Core-focused mat work to improve posture, tone and stability.',
+  },
+];
+
 const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   const { data: services, isLoading } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
@@ -283,6 +306,36 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                 {category}
               </AccordionTrigger>
               <AccordionContent>
+                {category === 'Classes' ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-4">
+                    {classOfferings.map((cls) => (
+                      <motion.div
+                        key={cls.name}
+                        whileHover={{ y: -4 }}
+                        transition={{ duration: 0.2 }}
+                        className="group rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors"
+                      >
+                        <div className="relative h-48 overflow-hidden">
+                          <img
+                            src={cls.image}
+                            alt={cls.name}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
+                        </div>
+                        <div className="p-5 space-y-2">
+                          <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
+                            {cls.name}
+                          </h4>
+                          <p className="text-[#F9ECD9]/50 text-xs font-light leading-relaxed">
+                            {cls.description}
+                          </p>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
                   {catServices.map((service) => {
                     const fromPrice = getFromPrice(service.variants);
@@ -372,6 +425,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                       );
                   })}
                 </div>
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}

@@ -5,6 +5,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+const classOfferings = [
+  { name: 'Urban Oasis', image: '/images/rebase-class-urban-oasis.jpg', description: 'Breathwork & meditation in candlelit surroundings.' },
+  { name: 'Contrast Immersion', image: '/images/rebase-class-contrast-immersion.jpg', description: 'Guided hot-cold contrast therapy.' },
+  { name: 'Yoga', image: '/images/rebase-class-yoga.jpg', description: 'Prana Flow & Dynamic Flow sessions.' },
+  { name: 'Mat Pilates', image: '/images/rebase-class-mat-pilates.jpg', description: 'Core-focused mat work for posture & tone.' },
+];
+
 const ClassSchedule = () => {
   const today = useMemo(() => new Date(), []);
   const startDate = format(today, 'yyyy-MM-dd');
@@ -63,6 +70,22 @@ const ClassSchedule = () => {
 
   return (
     <div className="space-y-6">
+      {/* Class type cards */}
+      <div className="grid grid-cols-2 gap-3">
+        {classOfferings.map((cls) => (
+          <div key={cls.name} className="rounded-xl overflow-hidden border border-border/30 bg-black/[0.03]">
+            <div className="relative h-24 overflow-hidden">
+              <img src={cls.image} alt={cls.name} className="w-full h-full object-cover" loading="lazy" />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+              <h4 className="absolute bottom-2 left-3 text-white text-xs font-medium">{cls.name}</h4>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Schedule heading */}
+      <h3 className="text-sm font-semibold text-foreground/50 uppercase tracking-wider">Upcoming Schedule</h3>
+
       {Array.from(classesByDay.entries()).map(([dayKey, dayClasses]) => {
         const date = new Date(dayKey + 'T00:00:00');
         const isToday = startOfDay(date).getTime() === startOfDay(today).getTime();
