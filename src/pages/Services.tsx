@@ -22,6 +22,7 @@ const categoryImages: Record<string, string> = {
 const serviceImages: Record<string, string> = {
   'Cryotherapy': '/images/rebase-cryo.webp',
   'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
+  'Osteopathy': '/images/rebase-osteopathy.jpg',
 };
 
 function extractDurationFromName(name: string): { baseName: string; duration: number | null } {
