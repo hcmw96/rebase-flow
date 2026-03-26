@@ -81,6 +81,7 @@ const hiddenGroupNames = new Set([
   'Wellness Event',
   'Saturday Buffer',
   'Thursday Buffer',
+  'Nutritional Therapy',
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
