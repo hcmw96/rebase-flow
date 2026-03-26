@@ -9,6 +9,7 @@ import { MindbodyProvider } from "./contexts/MindbodyContext";
 import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
+import CookieConsent from "./components/CookieConsent";
 import Index from "./pages/Index";
 import CookiePolicy from "./pages/CookiePolicy";
 import { fetchServices } from "@/hooks/useMindbodyServices";
@@ -29,6 +30,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <CookieConsent />
           <ScrollToTop />
           <Routes>
             <Route path="/website" element={<Index />} />
