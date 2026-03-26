@@ -99,6 +99,7 @@ const serviceImages: Record<string, string> = {
   'Divine Facial Healing': '/images/rebase-divine-facial.jpg',
   'Blood Test': '/images/rebase-blood-test.jpg',
   'Osteopathy': '/images/rebase-osteopathy.jpg',
+  'Structural Fascia Therapy': '/images/rebase-structural-fascia.jpg',
 };
 
 const categoryImages: Record<string, string> = {
