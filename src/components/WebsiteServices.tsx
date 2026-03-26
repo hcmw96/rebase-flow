@@ -99,6 +99,7 @@ const serviceImages: Record<string, string> = {
   'Divine Facial Healing': '/images/rebase-divine-facial.jpg',
   'Blood Test': '/images/rebase-blood-test.jpg',
   'Osteopathy': '/images/rebase-osteopathy.jpg',
+};
 
 const categoryImages: Record<string, string> = {
   'Recovery': '/images/rebase-hbot-new.png',
