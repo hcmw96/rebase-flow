@@ -47,7 +47,7 @@ const hiddenGroupNames = new Set([
   'Off Peak Access', 'MOCK CLASS', 'Vitamin Stack', 'Club Takeover',
   'Ozone Aesthetics Packages', 'Hydro Pro Facial', 'Members Wellness Event',
   'Members Only', 'Sound Bath', "Member's Suite", 'Members Suite',
-  'Wellness Event', 'Saturday Buffer', 'Thursday Buffer',
+  'Wellness Event', 'Saturday Buffer', 'Thursday Buffer', 'Nutritional Therapy',
 ]);
 
 const hiddenProgramIds = new Set([12]);
