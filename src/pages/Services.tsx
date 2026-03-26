@@ -81,6 +81,7 @@ const hiddenGroupNames = new Set([
   'Wellness Event',
   'Saturday Buffer',
   'Thursday Buffer',
+  'Nutritional Therapy',
 ]);
 
 // Program IDs to hide entirely (e.g. Aesthetics/Injectables)
@@ -116,7 +117,6 @@ const regenWhitelist = new Set([
 // Contact-only service groups (show "contact reception" instead of booking)
 export const contactOnlyGroups = new Set([
   'Osteopathy',
-  'Nutritional Therapy',
 ]);
 
 function canonicalizeServiceName(baseName: string): string {
