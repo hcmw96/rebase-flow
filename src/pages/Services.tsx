@@ -117,7 +117,6 @@ const regenWhitelist = new Set([
 // Contact-only service groups (show "contact reception" instead of booking)
 export const contactOnlyGroups = new Set([
   'Osteopathy',
-  'Nutritional Therapy',
 ]);
 
 function canonicalizeServiceName(baseName: string): string {
