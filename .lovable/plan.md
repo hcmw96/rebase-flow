@@ -1,33 +1,63 @@
 
 
-# Fix Missing "Communal Members Suite" Category
+# Synchronize Service Configuration Across App, Website, and Widget
 
 ## Problem
-Services from the "Member's Suite" Mindbody program are not appearing because their raw `programName` ("Member's Suite") doesn't match the category order key "Communal Members Suite". The `categoryOverrides` map only works for canonical service names, not for services that fall through to using their raw programName as the category.
+The service grouping, ordering, images, category mappings, and hidden items are defined independently in three files with significant drift:
+- **`src/pages/Services.tsx`** (mobile app) — missing many grouping patterns, category overrides, images; still hides Members Suite; uses old group name "Infrared Sauna & Ice Bath" instead of "Infrared Suite"; no reflexology/four-hand/assisted-stretching groupings
+- **`src/widget/components/ServiceList.tsx`** (embeddable widget) — completely independent config; different hidden lists; no category overrides; different ordering; hides Blood Test
+- **`src/components/WebsiteServices.tsx`** (marketing site) — most up-to-date but is the only source of truth
 
-## Root Cause
-In the category assignment logic (line 220-221), when a service's canonical name isn't found in `categoryOverrides`, the raw `programName` is used as the category. But `programName` values like "Member's Suite" don't match "Communal Members Suite" in `categoryOrder`, so they get filtered out.
+## Solution
+Extract shared configuration into a single file and import it everywhere.
 
-## Fix
+### New file: `src/config/serviceConfig.ts`
+A single source of truth containing:
+- `serviceGroupMappings` — all regex-to-group-name patterns (union of all three files, using consistent names like "Infrared Suite", "Massage", "Reflexology")
+- `hiddenGroupNames`, `hiddenProgramIds`, `hiddenServiceNames` — unified hidden lists
+- `categoryOverrides` — the full map from WebsiteServices (Massage Therapy, IV Drips, Private Suites, etc.)
+- `programNameOverrides` — Member's Suite → Communal Members Suite
+- `categoryOrder` — the 8-category ordering
+- `serviceImages` — all service-specific images (including NAD+ → iv-drip, Infrared Suite, Divine Facial, etc.)
+- `categoryImages` — fallback images
+- `serviceOrderWithinCategory` — IV Drips ordering (IV Drip > Blood Test > NAD+)
+- `contactOnlyGroups` — Osteopathy
+- `shortDescriptions` — for website cards
+- `classOfferings` — for website classes section
+- Helper functions: `extractDurationFromName`, `canonicalizeServiceName`
 
-**File: `src/components/WebsiteServices.tsx`**
+### Modified: `src/pages/Services.tsx`
+- Import all config from `serviceConfig.ts`
+- Remove all duplicated constants
+- Add missing grouping patterns (Reflexology, Four Hand, Assisted Stretching, Deo's Body Alignment, Blood Test, Vitamin Shot)
+- Add missing category overrides so the app groups services into the same 8 categories
+- Use consistent image map (e.g., Infrared Suite image, massage image, etc.)
+- Remove "Member's Suite" / "Members Suite" from hiddenGroupNames (they should show under Communal Members Suite)
+- Apply `programNameOverrides` in category assignment
+- Apply `categoryOrder` for section ordering instead of the current ad-hoc `serviceOrder`
 
-Add a `programNameOverrides` map that translates raw Mindbody program names to the correct display category:
+### Modified: `src/components/WebsiteServices.tsx`
+- Import shared config from `serviceConfig.ts`
+- Remove all duplicated constants, keep only website-specific rendering logic
 
-```typescript
-const programNameOverrides: Record<string, string> = {
-  "Member's Suite": 'Communal Members Suite',
-  'Members Suite': 'Communal Members Suite',
-};
-```
+### Modified: `src/widget/components/ServiceList.tsx`
+- Import shared config from `serviceConfig.ts`
+- Remove duplicated constants
+- Apply same category overrides and ordering
+- Stop hiding Blood Test (it belongs in IV Drips)
+- Use same image map
 
-Then update the category assignment (around line 220) to use this map as a fallback:
+### Modified: `src/pages/HomePage.tsx`
+- Import `serviceImages` and `categoryImages` from shared config instead of defining its own partial copies
 
-```typescript
-let category = categoryOverrides[canonicalName]
-  || programNameOverrides[rawCategory]
-  || (rawCategory.startsWith('Sauna Suite') ? 'Private Suites' : rawCategory);
-```
-
-This ensures any service whose programName is "Member's Suite" (or "Members Suite") that doesn't already have a canonical name override will correctly land in the "Communal Members Suite" accordion.
+## Key Consistency Fixes
+| Issue | Before | After |
+|-------|--------|-------|
+| Infrared group name | "Infrared Sauna & Ice Bath" (app/widget) vs "Infrared Suite" (website) | "Infrared Suite" everywhere |
+| Members Suite | Hidden in app, missing in widget | Shows as "Communal Members Suite" everywhere |
+| Reflexology/Four Hand | Not grouped in app | Grouped under Massage Therapy |
+| Blood Test | Hidden in widget | Visible under IV Drips |
+| IV Drips order | No ordering in app/widget | IV Drip → Blood Test → NAD+ everywhere |
+| Images | 3 partial, inconsistent maps | Single complete map |
+| Category order | Ad-hoc in app, missing in widget | Same 8-category order everywhere |
 
