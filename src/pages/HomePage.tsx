@@ -23,11 +23,10 @@ interface HomePageProps {
 }
 
 // Popular service groups (removed Members Suite)
-const POPULAR_GROUPS = ['Infrared Sauna & Ice Bath', 'Cryotherapy', 'Hyperbaric Oxygen'];
+const POPULAR_GROUPS = ['Infrared Suite', 'Cryotherapy', 'Hyperbaric Oxygen'];
 
-// Same grouping patterns from Services page
 const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
-  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
+  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Suite' },
   { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
   { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
 ];
