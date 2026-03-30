@@ -276,7 +276,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       const items = map.get(cat)!;
       const orderMap = serviceOrderWithinCategory[cat];
       if (orderMap) {
-        items.sort((a, b) => (orderMap[a.name] ?? 99) - (orderMap[b.name] ?? 99));
+        items.sort((a, b) => (orderMap[a.baseName] ?? 99) - (orderMap[b.baseName] ?? 99));
       }
       sorted.set(cat, items);
     }
