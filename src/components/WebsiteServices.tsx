@@ -82,10 +82,10 @@ const shortDescriptions: Record<string, string> = {
 };
 
 const categoryOverrides: Record<string, string> = {
-  'Infrared Suite': 'Communal Members Suite',
   "Member's Suite": 'Communal Members Suite',
   'Members Suite': 'Communal Members Suite',
   'Classes': 'Signature Classes',
+  'Infrared Suite': 'Private Suites',
   'Premium Suite': 'Private Suites',
   'Midday Reset': 'Private Suites',
   'Hyperbaric Oxygen': 'Hyperbaric Oxygen',
@@ -94,15 +94,16 @@ const categoryOverrides: Record<string, string> = {
   'Brazilian Lymphatic': 'Massage Therapy',
   'Assisted Stretching': 'Massage Therapy',
   "Deo's Body Alignment Method": 'Massage Therapy',
+  'Holistic Face Sculpting': 'Massage Therapy',
+  'Divine Facial Healing': 'Massage Therapy',
   'IV Drip': 'IV Drips',
   'NAD+': 'IV Drips',
   'Blood Test': 'IV Drips',
+  'Vitamin Shot': 'IV Drips',
   'Osteopathy': 'Regen and Manual Therapies',
   'Myofascial Dry Needling': 'Regen and Manual Therapies',
   'Structural Fascia Therapy': 'Regen and Manual Therapies',
   'Ozone Therapy': 'Regen and Manual Therapies',
-  'Divine Facial Healing': 'Regen and Manual Therapies',
-  'Holistic Face Sculpting': 'Regen and Manual Therapies',
   'Skin Rejuvenation': 'Regen and Manual Therapies',
   'Skin Peel': 'Regen and Manual Therapies',
   'BioStimulation': 'Regen and Manual Therapies',
@@ -259,6 +260,8 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   const servicesByCategory = useMemo(() => {
     const map = new Map<string, GroupedService[]>();
     for (const service of groupedServices) {
+      // Only include services in allowed categories
+      if (!categoryOrder.includes(service.category)) continue;
       if (!map.has(service.category)) map.set(service.category, []);
       map.get(service.category)!.push(service);
     }
@@ -266,10 +269,6 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     const sorted = new Map<string, GroupedService[]>();
     for (const cat of categoryOrder) {
       if (map.has(cat)) sorted.set(cat, map.get(cat)!);
-    }
-    // Add any remaining categories not in the order
-    for (const [cat, services] of map) {
-      if (!sorted.has(cat)) sorted.set(cat, services);
     }
     return sorted;
   }, [groupedServices]);

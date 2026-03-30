@@ -105,6 +105,9 @@ const hiddenServiceNames = new Set([
 // Category overrides: force certain groups into specific categories
 const categoryOverrides: Record<string, string> = {
   'Midday Reset': 'Private Suites',
+  'Infrared Sauna & Ice Bath': 'Private Suites',
+  'Holistic Face Sculpting': 'Massage Therapy',
+  'Divine Facial Healing': 'Massage Therapy',
 };
 
 // Whitelist for Regen and Manual Therapies
