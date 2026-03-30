@@ -62,9 +62,11 @@ const Navigation = () => {
     <nav
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
-        scrolled
-          ? "bg-black/40 backdrop-blur-xl border-[#F9ECD9]/10"
-          : "bg-transparent border-white/10"
+        isOpen
+          ? "bg-[#3B2712] border-[#F9ECD9]/10"
+          : scrolled
+            ? "bg-black/40 backdrop-blur-xl border-[#F9ECD9]/10"
+            : "bg-transparent border-white/10"
       )}
     >
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
@@ -209,7 +211,7 @@ const Navigation = () => {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="lg:hidden border-t border-border/40">
+          <div className="lg:hidden border-t border-[#F9ECD9]/10 bg-[#3B2712] min-h-[calc(100vh-3.5rem)]">
             <div className="py-4 space-y-1">
               {navItems.map((item) => {
                 if (item.href.includes("#")) {
