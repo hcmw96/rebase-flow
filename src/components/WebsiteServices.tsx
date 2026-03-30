@@ -126,7 +126,7 @@ const serviceImages: Record<string, string> = {
   'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
   'Premium Suite': '/images/rebase-private-suites.webp',
   'IV Drip': '/images/rebase-iv-drip.jpg',
-  'NAD+': '/images/rebase-suite.webp',
+  'NAD+': '/images/rebase-iv-drip.jpg',
   'Massage': '/images/rebase-massage.jpg',
   'Assisted Stretching': '/images/rebase-treatment-room.jpg',
   'Brazilian Lymphatic': '/images/rebase-brazilian-lymphatic.jpg',
@@ -265,10 +265,20 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       if (!map.has(service.category)) map.set(service.category, []);
       map.get(service.category)!.push(service);
     }
+    // Within-category ordering
+    const serviceOrderWithinCategory: Record<string, Record<string, number>> = {
+      'IV Drips': { 'IV Drip': 0, 'Blood Test': 1, 'NAD+': 2 },
+    };
     // Sort by defined category order
     const sorted = new Map<string, GroupedService[]>();
     for (const cat of categoryOrder) {
-      if (map.has(cat)) sorted.set(cat, map.get(cat)!);
+      if (!map.has(cat)) continue;
+      const items = map.get(cat)!;
+      const orderMap = serviceOrderWithinCategory[cat];
+      if (orderMap) {
+        items.sort((a, b) => (orderMap[a.name] ?? 99) - (orderMap[b.name] ?? 99));
+      }
+      sorted.set(cat, items);
     }
     return sorted;
   }, [groupedServices]);
