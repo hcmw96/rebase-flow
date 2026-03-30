@@ -12,21 +12,10 @@ import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import Logo from '@/components/Logo';
 import { BookingServiceData } from '@/components/booking/BookingDrawer';
-
-// Same image maps from Services page
-const categoryImages: Record<string, string> = {
-  'Recovery': '/images/rebase-hbot-new.png',
-  'Wellness': '/images/rebase-ice-sauna.webp',
-  'Classes': '/images/rebase-class.webp',
-  'Private': '/images/rebase-private-suites.webp',
-  'default': '/images/rebase-suite.webp',
-};
-
-const serviceImages: Record<string, string> = {
-  'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
-  'Cryotherapy': '/images/rebase-cryo.webp',
-  'Hyperbaric Oxygen': '/images/rebase-hbot-treatment.webp',
-};
+import {
+  serviceImages,
+  categoryImages,
+} from '@/config/serviceConfig';
 
 interface HomePageProps {
   onNavigate: (tab: 'home' | 'services' | 'bookings' | 'account') => void;
