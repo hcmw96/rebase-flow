@@ -81,6 +81,11 @@ const shortDescriptions: Record<string, string> = {
   'Myofascial Dry Needling': 'Precision needling to release deep muscular tension.',
 };
 
+const programNameOverrides: Record<string, string> = {
+  "Member's Suite": 'Communal Members Suite',
+  'Members Suite': 'Communal Members Suite',
+};
+
 const categoryOverrides: Record<string, string> = {
   "Member's Suite": 'Communal Members Suite',
   'Members Suite': 'Communal Members Suite',
@@ -218,6 +223,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       const canonicalName = canonicalizeServiceName(baseName);
       const rawCategory = service.programName || service.category || 'Wellness';
       let category = categoryOverrides[canonicalName]
+        || programNameOverrides[rawCategory]
         || (rawCategory.startsWith('Sauna Suite') ? 'Private Suites' : rawCategory);
 
       if (category === 'General') continue;
