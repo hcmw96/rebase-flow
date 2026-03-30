@@ -1,16 +1,19 @@
 
 
-# Reorder IV Drips & Update NAD+ Image
+# Fix Mobile Menu Background
 
-## Changes
+## Problem
+The mobile hamburger menu has no solid background — the page content shows through behind the menu items.
 
-### 1. Add within-category ordering for IV Drips
-**File: `src/components/WebsiteServices.tsx`**
-- Add a `serviceOrderWithinCategory` map that defines explicit ordering for services within specific categories
-- For IV Drips: `IV Drip` → 0, `Blood Test` → 1, `NAD+` → 2 (remaining services like Vitamin Shot get pushed after)
-- In `servicesByCategory`, sort services within each category using this map before returning
+## Change
 
-### 2. Update NAD+ image
-**File: `src/components/WebsiteServices.tsx`**
-- Change `'NAD+': '/images/rebase-suite.webp'` → `'NAD+': '/images/rebase-iv-drip.jpg'` in the `serviceImages` map (same image as IV Drip)
+**File: `src/components/Navigation.tsx`**
+
+The mobile menu currently only styles the dropdown content area (line 212). When open, the entire nav needs a solid dark background. Two changes:
+
+1. **Nav element** (line ~72): When `isOpen` on mobile, add a solid background like `bg-[#3B2712]` (the brand brown) so the full nav covers the screen content behind it.
+
+2. **Mobile menu container** (line 212): Make the mobile menu take the full remaining viewport height (`min-h-[calc(100vh-3.5rem)]`) with `bg-[#3B2712]` so there's no see-through gap below the menu items.
+
+This matches the screenshot reference where the menu has a solid dark brown background filling the screen.
 
