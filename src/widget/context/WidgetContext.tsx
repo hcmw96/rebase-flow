@@ -12,6 +12,7 @@ export interface ServiceVariant {
   name: string;
   duration: number | null;
   price: number | null;
+  contactOnly?: boolean;
 }
 
 export interface GroupedService {

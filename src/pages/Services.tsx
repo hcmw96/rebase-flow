@@ -6,137 +6,26 @@ import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
-import { ServiceVariant } from '@/components/ServiceCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ClassSchedule from '@/components/ClassSchedule';
-
-// Fallback images for services without images
-const categoryImages: Record<string, string> = {
-  'Recovery': '/images/rebase-hbot-new.png',
-  'Wellness': '/images/rebase-ice-sauna.webp',
-  'Classes': '/images/rebase-class.webp',
-  'Private': '/images/rebase-private-suites.webp',
-  'default': '/images/rebase-suite.webp',
-};
-
-const serviceImages: Record<string, string> = {
-  'Cryotherapy': '/images/rebase-cryo.webp',
-  'Infrared Sauna & Ice Bath': '/images/rebase-ice-sauna-new.webp',
-  'Osteopathy': '/images/rebase-osteopathy.jpg',
-};
-
-function extractDurationFromName(name: string): { baseName: string; duration: number | null } {
-  const durationMatch = name.match(/\((\d+)\s*(?:mins?|minutes?)\)/i);
-  if (durationMatch) {
-    const duration = parseInt(durationMatch[1], 10);
-    const baseName = name.replace(durationMatch[0], '').trim();
-    return { baseName, duration };
-  }
-  return { baseName: name, duration: null };
-}
-
-const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
-  { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
-  { pattern: /^nad\+?/i, groupName: 'NAD+' },
-  { pattern: /^skin\s*rejuv(enation)?/i, groupName: 'Skin Rejuvenation' },
-  { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
-  { pattern: /^bio\s*stim(ulation)?/i, groupName: 'BioStimulation' },
-  { pattern: /^deep\s*tissue\s*massage/i, groupName: 'Massage' },
-  { pattern: /^sports\s*massage/i, groupName: 'Massage' },
-  { pattern: /massage/i, groupName: 'Massage' },
-  { pattern: /cryo(therapy)?/i, groupName: 'Cryotherapy' },
-  { pattern: /^hyperbaric\s*oxygen/i, groupName: 'Hyperbaric Oxygen' },
-  { pattern: /^infrared\s*sauna/i, groupName: 'Infrared Sauna & Ice Bath' },
-  { pattern: /^premium\s*suite/i, groupName: 'Premium Suite' },
-  { pattern: /^structural\s*fascia/i, groupName: 'Structural Fascia Therapy' },
-  { pattern: /^holistic\s*face\s*sculpt/i, groupName: 'Holistic Face Sculpting' },
-  { pattern: /^divine\s*facial/i, groupName: 'Divine Facial Healing' },
-  { pattern: /^osteopathy/i, groupName: 'Osteopathy' },
-  { pattern: /^(oxygen-?)?ozone/i, groupName: 'Ozone Therapy' },
-  { pattern: /minute\s*classes$/i, groupName: 'Classes' },
-  { pattern: /^all\s*classes$/i, groupName: 'Classes' },
-  { pattern: /^brazil+ian\s*lymphatic/i, groupName: 'Brazilian Lymphatic' },
-  { pattern: /^(the\s+)?midday\s*resets?/i, groupName: 'Midday Reset' },
-  { pattern: /^nutritional\s*therap/i, groupName: 'Nutritional Therapy' },
-  { pattern: /^myofascial\s*dry\s*needl/i, groupName: 'Myofascial Dry Needling' },
-];
-
-// Service groups to hide from the UI
-const hiddenGroupNames = new Set([
-  'Rebase Packages',
-  'Corporate Credits',
-  'Corporate credits',
-  'Classes',
-  'Off Peak Access',
-  'MOCK CLASS',
-  'Vitamin Stack',
-  'Club Takeover',
-  'Ozone Aesthetics Packages',
-  'Hydro Pro Facial',
-  'Members Wellness Event',
-  'Members Only',
-  'Sound Bath',
-  "Member's Suite",
-  'Members Suite',
-  'Wellness Event',
-  'Saturday Buffer',
-  'Thursday Buffer',
-  'Nutritional Therapy',
-]);
-
-// Program IDs to hide entirely (e.g. Aesthetics/Injectables)
-const hiddenProgramIds = new Set([12]);
-
-// Individual service names to hide (not caught by group canonicalization)
-const hiddenServiceNames = new Set([
-  'Add On: Lymphatic Drainage Compression',
-  'Full Facial/Body Consultation',
-  'Ozone - Aesthetics',
-  'Discovery Call',
-  'Saturday Buffer',
-  'Thursday Buffer',
-  'Destress Head Neck and Shoulders',
-  'Destress Head, Neck & Shoulders',
-  'Destress Head, Neck and Shoulders',
-  'Indian Head Massage',
-  'Indian Massage',
-]);
-
-// Category overrides: force certain groups into specific categories
-const categoryOverrides: Record<string, string> = {
-  'Midday Reset': 'Private Suites',
-  'Infrared Sauna & Ice Bath': 'Private Suites',
-  'Holistic Face Sculpting': 'Massage Therapy',
-  'Divine Facial Healing': 'Massage Therapy',
-};
-
-// Whitelist for Regen and Manual Therapies
-const regenWhitelist = new Set([
-  'Osteopathy',
-  'Myofascial Dry Needling',
-  'Structural Fascia Therapy',
-]);
-
-// Contact-only service groups (show "contact reception" instead of booking)
-export const contactOnlyGroups = new Set([
-  'Osteopathy',
-]);
-
-function canonicalizeServiceName(baseName: string): string {
-  for (const { pattern, groupName } of serviceGroupMappings) {
-    if (pattern.test(baseName)) return groupName;
-  }
-  return baseName;
-}
-
-interface GroupedService {
-  baseName: string;
-  description: string;
-  category: string;
-  image: string;
-  variants: ServiceVariant[];
-  contactOnly?: boolean;
-}
+import {
+  serviceGroupMappings,
+  hiddenGroupNames,
+  hiddenProgramIds,
+  hiddenServiceNames,
+  categoryOverrides,
+  programNameOverrides,
+  categoryOrder,
+  serviceOrderWithinCategory,
+  serviceImages,
+  categoryImages,
+  contactOnlyGroups,
+  extractDurationFromName,
+  canonicalizeServiceName,
+  resolveCategory,
+  resolveImage,
+  GroupedService,
+} from '@/config/serviceConfig';
 
 interface ServicesProps {
   onSelectService?: (service: import('@/components/booking/BookingDrawer').BookingServiceData) => void;
@@ -157,45 +46,29 @@ const Services = ({ onSelectService }: ServicesProps) => {
     const groups = new Map<string, GroupedService>();
 
     for (const service of visibleServices) {
-      // Skip hidden program IDs and individual service names
       if (hiddenProgramIds.has(service.programId)) continue;
       if (hiddenServiceNames.has(service.name)) continue;
 
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);
       const rawCategory = service.programName || service.category || 'Wellness';
-      
-      // Apply category overrides, then standard mapping
-      let category = categoryOverrides[canonicalName] 
-        || (rawCategory.startsWith('Sauna Suite') ? 'Private Suites' : rawCategory);
+      const category = resolveCategory(canonicalName, rawCategory);
 
-      // Hide "General" category
       if (category === 'General') continue;
-
-      // Skip hidden groups
       if (hiddenGroupNames.has(canonicalName)) continue;
 
-      // Regen / Manual Therapies whitelist
-      if (/regen|manual\s*therap/i.test(category) && !regenWhitelist.has(canonicalName)) continue;
-
-      const image = serviceImages[canonicalName] || categoryImages[service.programName] || categoryImages[service.category] || categoryImages['default'];
-
+      const image = resolveImage(canonicalName, service.programName, service.category);
       const isContactOnly = contactOnlyGroups.has(canonicalName);
 
       if (!groups.has(canonicalName)) {
         groups.set(canonicalName, {
           baseName: canonicalName,
           description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
-          category,
-          image,
-          variants: [],
-          contactOnly: isContactOnly,
+          category, image, variants: [], contactOnly: isContactOnly,
         });
       }
 
-      // Check if this is an IV Drip first consultation variant
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
-
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: duration ?? service.defaultTimeLength,
@@ -207,27 +80,32 @@ const Services = ({ onSelectService }: ServicesProps) => {
 
     for (const group of groups.values()) {
       group.variants.sort((a, b) => {
-        const aInitial = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
-        const bInitial = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
-        const aFollowUp = /follow\s*up/i.test(a.name) ? 1 : 0;
-        const bFollowUp = /follow\s*up/i.test(b.name) ? 1 : 0;
-        if (aInitial !== bInitial) return aInitial - bInitial;
-        if (aFollowUp !== bFollowUp) return aFollowUp - bFollowUp;
+        const aI = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
+        const bI = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
+        if (aI !== bI) return aI - bI;
+        const aF = /follow\s*up/i.test(a.name) ? 1 : 0;
+        const bF = /follow\s*up/i.test(b.name) ? 1 : 0;
+        if (aF !== bF) return aF - bF;
         return (a.duration ?? 0) - (b.duration ?? 0);
       });
     }
 
     const grouped = Array.from(groups.values());
-    const serviceOrder: Record<string, number> = {
-      'Infrared Sauna & Ice Bath': 0,
-      'Premium Suite': 1,
-      'Midday Reset': 2,
-      'Cryotherapy': 3,
-    };
+
+    // Sort by category order, then within-category order
     grouped.sort((a, b) => {
-      const orderA = serviceOrder[a.baseName] ?? 999;
-      const orderB = serviceOrder[b.baseName] ?? 999;
+      const catA = categoryOrder.indexOf(a.category);
+      const catB = categoryOrder.indexOf(b.category);
+      const orderA = catA >= 0 ? catA : 999;
+      const orderB = catB >= 0 ? catB : 999;
       if (orderA !== orderB) return orderA - orderB;
+      // Within same category
+      const withinOrder = serviceOrderWithinCategory[a.category];
+      if (withinOrder) {
+        const wA = withinOrder[a.baseName] ?? 99;
+        const wB = withinOrder[b.baseName] ?? 99;
+        if (wA !== wB) return wA - wB;
+      }
       return a.baseName.localeCompare(b.baseName);
     });
 
@@ -245,11 +123,17 @@ const Services = ({ onSelectService }: ServicesProps) => {
       );
     }
     for (const service of filtered) {
+      if (!categoryOrder.includes(service.category)) continue;
       const cat = service.category;
       if (!categoryMap.has(cat)) categoryMap.set(cat, []);
       categoryMap.get(cat)!.push(service);
     }
-    return categoryMap;
+    // Return in category order
+    const sorted = new Map<string, GroupedService[]>();
+    for (const cat of categoryOrder) {
+      if (categoryMap.has(cat)) sorted.set(cat, categoryMap.get(cat)!);
+    }
+    return sorted;
   }, [groupedServices, searchQuery]);
 
   const handleSelectService = (service: any) => {
