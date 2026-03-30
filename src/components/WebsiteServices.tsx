@@ -260,6 +260,8 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   const servicesByCategory = useMemo(() => {
     const map = new Map<string, GroupedService[]>();
     for (const service of groupedServices) {
+      // Only include services in allowed categories
+      if (!categoryOrder.includes(service.category)) continue;
       if (!map.has(service.category)) map.set(service.category, []);
       map.get(service.category)!.push(service);
     }
@@ -267,10 +269,6 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     const sorted = new Map<string, GroupedService[]>();
     for (const cat of categoryOrder) {
       if (map.has(cat)) sorted.set(cat, map.get(cat)!);
-    }
-    // Add any remaining categories not in the order
-    for (const [cat, services] of map) {
-      if (!sorted.has(cat)) sorted.set(cat, services);
     }
     return sorted;
   }, [groupedServices]);
