@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,16 @@ const Navigation = () => {
   const [scrolled, setScrolled] = useState(false);
   const locationRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
+  const navigate = useNavigate();
+
+  const handleBookNow = () => {
+    setIsOpen(false);
+    if (location.pathname === '/website') {
+      document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
+    } else {
+      navigate('/website#services');
+    }
+  };
 
   const navItems = [
     { href: "/services", label: "Experiences" },
@@ -168,20 +178,17 @@ const Navigation = () => {
             </div>
 
             {/* Buttons */}
-            <Link to="/book">
-              <Button
-                variant="outline"
-                className={cn(
-                  "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md rounded-none transition-all duration-300",
-                  scrolled
-                    ? "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
-                    : "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
-                )}
-              >
-                Book Now
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Button>
-            </Link>
+            <Button
+              variant="outline"
+              onClick={handleBookNow}
+              className={cn(
+                "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md rounded-none transition-all duration-300",
+                "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
+              )}
+            >
+              Book Now
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
             <Link to="/login">
               <Button
                 className={cn(
@@ -282,11 +289,9 @@ const Navigation = () => {
               </div>
 
               <div className="flex gap-3 px-3 pt-3">
-                <Link to="/book" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button variant="outline" className={cn("w-full rounded-none tracking-wider text-sm", borderColor, textColor)}>
-                    Book Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+                <Button variant="outline" onClick={handleBookNow} className={cn("flex-1 rounded-none tracking-wider text-sm", borderColor, textColor)}>
+                  Book Now <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                </Button>
                 <Link to="/login" className="flex-1" onClick={() => setIsOpen(false)}>
                   <Button className={cn("w-full rounded-none tracking-wider text-sm", scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]")}>
                     Members
