@@ -84,11 +84,6 @@ export const categoryOverrides: Record<string, string> = {
   'Vitamin Shot': 'IV Drips',
   'Osteopathy': 'Regen and Manual Therapies',
   'Myofascial Dry Needling': 'Regen and Manual Therapies',
-  'Structural Fascia Therapy': 'Regen and Manual Therapies',
-  'Ozone Therapy': 'Regen and Manual Therapies',
-  'Skin Rejuvenation': 'Regen and Manual Therapies',
-  'Skin Peel': 'Regen and Manual Therapies',
-  'BioStimulation': 'Regen and Manual Therapies',
 };
 
 export const categoryOrder = [
