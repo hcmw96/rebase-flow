@@ -102,6 +102,11 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     }
     const sorted = new Map<string, GroupedService[]>();
     for (const cat of categoryOrder) {
+      // Always include Signature Classes so the classOfferings grid renders
+      if (cat === 'Signature Classes') {
+        sorted.set(cat, map.get(cat) ?? []);
+        continue;
+      }
       if (!map.has(cat)) continue;
       const items = map.get(cat)!;
       const orderMap = serviceOrderWithinCategory[cat];
