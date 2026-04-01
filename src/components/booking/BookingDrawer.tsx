@@ -11,6 +11,7 @@ import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
+import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
 import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
@@ -26,6 +27,7 @@ export interface BookingServiceData {
   image: string;
   variants: ServiceVariant[];
   contactOnly?: boolean;
+  classDescriptionIds?: number[];
 }
 
 interface BookingDrawerProps {
@@ -87,6 +89,9 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
       }, 300);
     }
   };
+
+  // Check if this is a class booking
+  const isClassBooking = !!(service?.classDescriptionIds?.length);
 
   // Check if this entire service is contact-only
   const isFullContactOnly = service?.contactOnly === true;
@@ -285,8 +290,14 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            {/* Contact-only: full service */}
-            {isFullContactOnly && !hasVariants ? (
+            {/* Class booking flow */}
+            {isClassBooking ? (
+              <ClassScheduleFlow
+                classDescriptionIds={service.classDescriptionIds!}
+                className={service.title}
+                onClose={onClose}
+              />
+            ) : isFullContactOnly && !hasVariants ? (
               <ContactReceptionMessage serviceName={service.title} />
             ) : showContactMessage && isVariantContactOnly ? (
               <ContactReceptionMessage serviceName={activeVariant?.name || service.title} />
