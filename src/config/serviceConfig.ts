@@ -123,6 +123,7 @@ export const serviceImages: Record<string, string> = {
   'Osteopathy': '/images/rebase-osteopathy.jpg',
   'Structural Fascia Therapy': '/images/rebase-structural-fascia.jpg',
   'Midday Reset': '/images/rebase-midday-reset.jpg',
+  'Reflexology': '/images/rebase-reflexology.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
