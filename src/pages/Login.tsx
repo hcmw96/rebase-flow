@@ -226,8 +226,11 @@ const Login = () => {
             </TabsContent>
           </Tabs>
           
-          <div className="mt-4 text-center">
-            <Link to="/services" className="text-sm text-muted-foreground hover:underline">
+          <div className="mt-4 text-center space-y-2">
+            <Link to="/membership" className="block text-sm text-muted-foreground hover:underline">
+              Learn about Membership
+            </Link>
+            <Link to="/services" className="block text-sm text-muted-foreground hover:underline">
               Back to website
             </Link>
           </div>
