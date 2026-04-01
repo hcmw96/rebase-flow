@@ -34,6 +34,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /^myofascial\s*dry\s*needl/i, groupName: 'Myofascial Dry Needling' },
   { pattern: /^assisted\s*stretching/i, groupName: 'Assisted Stretching' },
   { pattern: /^deo.*body\s*alignment/i, groupName: "Deo's Body Alignment Method" },
+  { pattern: /high\s*performance\s*recovery/i, groupName: 'High Performance Recovery' },
 ];
 
 // ── Hidden items ───────────────────────────────────────────────────
