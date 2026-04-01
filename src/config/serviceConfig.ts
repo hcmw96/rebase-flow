@@ -4,7 +4,7 @@ import { ServiceVariant } from '@/components/ServiceCard';
 export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
   { pattern: /^nad\+?/i, groupName: 'NAD+' },
-  { pattern: /^vitamin\s*shots?/i, groupName: 'Vitamin Shot' },
+  { pattern: /^vitamin\s*shots?/i, groupName: 'IV Drip' },
   { pattern: /^blood\s*test/i, groupName: 'Blood Test' },
   { pattern: /^skin\s*rejuv(enation)?/i, groupName: 'Skin Rejuvenation' },
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
@@ -83,7 +83,7 @@ export const categoryOverrides: Record<string, string> = {
   'IV Drip': 'IV Drips',
   'NAD+': 'IV Drips',
   'Blood Test': 'IV Drips',
-  'Vitamin Shot': 'IV Drips',
+  
   'Osteopathy': 'Regen and Manual Therapies',
   'Myofascial Dry Needling': 'Regen and Manual Therapies',
 };
@@ -101,7 +101,7 @@ export const categoryOrder = [
 
 // ── Within-category ordering ───────────────────────────────────────
 export const serviceOrderWithinCategory: Record<string, Record<string, number>> = {
-  'IV Drips': { 'IV Drip': 0, 'Blood Test': 1, 'NAD+': 2, 'Vitamin Shot': 3 },
+  'IV Drips': { 'IV Drip': 0, 'Blood Test': 1, 'NAD+': 2 },
   'Regen and Manual Therapies': { 'Osteopathy': 0 },
 };
 
