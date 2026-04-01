@@ -1,19 +1,22 @@
 
 
-# Add Athletes Performance Package Image
+# Fix: Service Cards Not Opening Booking Drawer on Click
 
-## What changes
-1. **Save the uploaded image** to `public/images/rebase-athletes-performance.jpg`
-2. **Add a grouping pattern** in `serviceConfig.ts` to match "Athletes Performance" (and variations) from Mindbody API
-3. **Add image mapping** in the `serviceImages` record: `'Athletes Performance': '/images/rebase-athletes-performance.jpg'`
-4. **Ensure it's not hidden** — verify it's not in `hiddenGroupNames`
-5. **Add category override** if needed — likely fits under an existing category (will check what Mindbody program it falls under, but a reasonable default would be a recovery/wellness category)
+## Problem
+The service cards require a two-step interaction: first click to reveal an overlay, then click "Book Now" inside the overlay. On desktop, hover reveals the overlay but clicking the card toggles it away. This makes it feel broken — users expect clicking a service card to open the booking drawer directly.
 
-## Questions to confirm
-- The service name from Mindbody is assumed to be something like "Athletes Performance Package" — the regex pattern will be flexible to match variations.
-- If it should go under a specific category (e.g., "Private Suites", "Regen and Manual Therapies"), I'll need guidance, otherwise I'll let it fall through to its Mindbody program category.
+## Solution
+Make clicking the service card directly open the booking drawer (call `handleClick`), and keep the hover overlay as a visual enhancement on desktop only. Remove the `expandedService` toggle-on-click behavior.
 
-## Files modified
-- `public/images/rebase-athletes-performance.jpg` — new asset
-- `src/config/serviceConfig.ts` — add grouping pattern, image mapping
+### Changes to `src/components/WebsiteServices.tsx`
+
+1. **Remove `expandedService` state** — no longer needed
+2. **Change `<motion.button>` onClick** to directly call `handleClick(service)` instead of toggling `expandedService`
+3. **Remove mobile tap-to-expand logic** — the overlay becomes hover-only (desktop), and on mobile the card click goes straight to the drawer
+4. **Simplify overlay CSS** — remove `isExpanded ? 'translate-y-0' : 'translate-y-full'` conditional; keep only `sm:group-hover:translate-y-0` for desktop hover effect
+5. **Keep "Book Now" button** in overlay as a secondary click target (still calls `handleClick` with `stopPropagation`)
+
+### Result
+- **Desktop**: Hover shows overlay with description + "Book Now"; clicking anywhere on the card opens the drawer
+- **Mobile**: Tapping the card opens the drawer immediately (no intermediate overlay step)
 
