@@ -45,7 +45,7 @@ export const hiddenGroupNames = new Set([
   'Wellness Event', 'Saturday Buffer', 'Thursday Buffer',
   'Nutritional Therapy',
   'Structural Fascia Therapy', 'Ozone Therapy', 'Skin Rejuvenation',
-  'Skin Peel', 'BioStimulation',
+  'Skin Peel', 'BioStimulation', 'Myofascial Dry Needling',
 ]);
 
 export const hiddenProgramIds = new Set([12]);
