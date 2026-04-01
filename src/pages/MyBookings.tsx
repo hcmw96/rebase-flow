@@ -4,13 +4,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Calendar, Clock, MapPin, User, Link2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, User } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMindbody } from '@/contexts/MindbodyContext';
 import { useMyBookings, useCancelBooking } from '@/hooks/useMindbodyBookings';
-import SignIn from '@/pages/SignIn';
-import SignUp from '@/pages/SignUp';
-import { useState } from 'react';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,11 +20,9 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const MyBookings = () => {
-  const { isAuthenticated } = useAuth();
-  const { isMindbodyLinked, linkMindbody, isLinking, mbSession } = useMindbody();
+  const { mbSession, isAuthenticated, login } = useAuth();
   const { data: bookingsData, isLoading, error } = useMyBookings();
   const cancelMutation = useCancelBooking();
-  const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
 
   const bookings = bookingsData?.bookings || [];
   const now = new Date();
@@ -62,27 +56,11 @@ const MyBookings = () => {
   const isCancelling = cancelMutation.isPending;
 
   if (!isAuthenticated) {
-    if (authView === 'signup') {
-      return <SignUp onSwitchToSignIn={() => setAuthView('signin')} />;
-    }
-    return <SignIn onSwitchToSignUp={() => setAuthView('signup')} />;
-  }
-
-  if (!isMindbodyLinked) {
     return (
-      <div className="px-4 pt-6 pb-4 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh]">
-        <div className="w-full text-center space-y-6">
-          <Link2 className="h-12 w-12 text-muted-foreground mx-auto" />
-          <div className="space-y-2">
-            <h1 className="text-xl font-semibold text-foreground">Connect Mindbody</h1>
-            <p className="text-sm text-muted-foreground">
-              Connect your Mindbody account to view and manage your appointments.
-            </p>
-          </div>
-          <Button onClick={linkMindbody} disabled={isLinking} className="w-full">
-            {isLinking ? 'Connecting...' : 'Connect Mindbody Account'}
-          </Button>
-        </div>
+      <div className="px-4 pt-6 pb-4 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <Calendar className="h-12 w-12 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Sign in to view your bookings</p>
+        <Button onClick={login} className="w-full">Sign in with Mindbody</Button>
       </div>
     );
   }

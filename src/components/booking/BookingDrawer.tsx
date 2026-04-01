@@ -14,7 +14,6 @@ import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSugge
 import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMindbody } from '@/contexts/MindbodyContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -64,8 +63,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 );
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
-  const { isAuthenticated } = useAuth();
-  const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
+  const { mbSession, isAuthenticated } = useAuth();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -186,11 +184,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   };
 
   const handleConfirmBooking = async () => {
-    if (!isMindbodyLinked) {
-      linkMindbody();
-      return;
-    }
-
     if (!selectedSlot || !mbSession) return;
 
     try {
@@ -510,12 +503,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       )}
 
-                      {!isMindbodyLinked && (
-                        <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
-                          You'll need to connect your Mindbody account to complete this booking.
-                        </div>
-                      )}
-
                       <div className="flex gap-3">
                         <Button variant="outline" onClick={() => setCurrentStep(timeStep)} className="flex-1">
                           Change Time
@@ -523,10 +510,8 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         <Button onClick={handleConfirmBooking} disabled={isBooking} className="flex-1">
                           {isBooking ? (
                             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
-                          ) : isMindbodyLinked ? (
-                            'Confirm Booking'
                           ) : (
-                            'Connect Mindbody'
+                            'Confirm Booking'
                           )}
                         </Button>
                       </div>

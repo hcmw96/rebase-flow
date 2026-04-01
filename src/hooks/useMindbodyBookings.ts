@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useMindbody } from '@/contexts/MindbodyContext';
+import { useAuth } from '@/contexts/AuthContext';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -34,7 +34,7 @@ interface CancelParams {
 }
 
 export function useMyBookings() {
-  const { mbSession, isMindbodyLinked } = useMindbody();
+  const { mbSession, isAuthenticated } = useAuth();
 
   return useQuery({
     queryKey: ['my-bookings', mbSession?.sessionId],
@@ -54,19 +54,19 @@ export function useMyBookings() {
       
       return response.json();
     },
-    enabled: isMindbodyLinked && !!mbSession?.sessionId,
+    enabled: isAuthenticated && !!mbSession?.sessionId,
     staleTime: 30 * 1000,
   });
 }
 
 export function useBookService() {
-  const { mbSession } = useMindbody();
+  const { mbSession } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: BookingParams) => {
       if (!mbSession?.sessionId) {
-        throw new Error('Please connect Mindbody to book');
+        throw new Error('Please sign in to book');
       }
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
@@ -92,13 +92,13 @@ export function useBookService() {
 }
 
 export function useCancelBooking() {
-  const { mbSession } = useMindbody();
+  const { mbSession } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (params: CancelParams) => {
       if (!mbSession?.sessionId) {
-        throw new Error('Please connect Mindbody to cancel');
+        throw new Error('Please sign in to cancel');
       }
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-cancel`, {

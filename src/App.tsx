@@ -5,7 +5,6 @@ import * as React from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./contexts/AuthContext";
-import { MindbodyProvider } from "./contexts/MindbodyContext";
 import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
@@ -26,20 +25,18 @@ queryClient.prefetchQuery({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <MindbodyProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <CookieConsent />
-          <ScrollToTop />
-          <Routes>
-            <Route path="/website" element={<Index />} />
-            <Route path="/cookie-policy" element={<CookiePolicy />} />
-            <Route path="/" element={<AppShell />} />
-            <Route path="*" element={<AppShell />} />
-          </Routes>
-        </BrowserRouter>
-      </MindbodyProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <CookieConsent />
+        <ScrollToTop />
+        <Routes>
+          <Route path="/website" element={<Index />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/" element={<AppShell />} />
+          <Route path="*" element={<AppShell />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   </QueryClientProvider>
 );

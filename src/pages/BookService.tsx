@@ -10,7 +10,6 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import { ArrowLeft, ArrowRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMindbody } from '@/contexts/MindbodyContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -38,7 +37,7 @@ const BookService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
   const { isAuthenticated } = useAuth();
-  const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
+  const { mbSession } = useAuth();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -154,11 +153,6 @@ const BookService = () => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!isMindbodyLinked) {
-      linkMindbody();
-      return;
-    }
-
     if (!selectedSlot || !mbSession) return;
 
     try {
