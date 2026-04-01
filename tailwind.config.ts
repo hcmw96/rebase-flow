@@ -113,6 +113,10 @@ export default {
 					to: {
 						height: '0'
 					}
+				},
+				'ticker': {
+					'0%': { transform: 'translateX(0)' },
+					'100%': { transform: 'translateX(-50%)' },
 				}
 			},
 			animation: {
@@ -121,6 +125,7 @@ export default {
 				'fade-in': 'fadeIn 0.8s ease-out forwards',
 				'scale-in': 'scaleIn 0.6s ease-out forwards',
 				'float': 'float 6s ease-in-out infinite',
+				'ticker': 'ticker 20s linear infinite',
 			},
 			transitionTimingFunction: {
 				'smooth': 'cubic-bezier(0.4, 0, 0.2, 1)',
