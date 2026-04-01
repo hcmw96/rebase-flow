@@ -83,7 +83,7 @@ export const categoryOverrides: Record<string, string> = {
   'IV Drip': 'IV Drips',
   'NAD+': 'IV Drips',
   'Blood Test': 'IV Drips',
-  'Vitamin Shot': 'IV Drips',
+  
   'Osteopathy': 'Regen and Manual Therapies',
   'Myofascial Dry Needling': 'Regen and Manual Therapies',
 };
