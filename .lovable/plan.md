@@ -1,37 +1,46 @@
 
+Fix the Membership page by switching it to the same full-viewport scroll-container pattern already used by the marketing pages.
 
-# Add Membership Page with "Learn about Membership" Link
+1. Update `src/pages/Membership.tsx`
+- Replace the current root wrapper:
+```tsx
+<div className="min-h-screen overflow-y-auto bg-[#1a1a1a]">
+```
+- With a bounded viewport container:
+```tsx
+<div
+  className="bg-[#1a1a1a]"
+  style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
+>
+```
 
-## What changes
+2. Keep the existing page structure inside that container
+- `Navigation`
+- hero section
+- tier cards
+- `Footer`
 
-### 1. Add "Learn about Membership" link below the ticker in `WebsiteServices.tsx`
-After the logo ticker section (~line 345), add a centered text link "Learn about Membership" styled consistently with the section — subtle, uppercase tracking, linking to `/membership`.
+3. Why this is the real fix
+- Global CSS sets `html, body { overflow: hidden; height: 100%; }`
+- That means `/membership` cannot rely on normal document scrolling
+- `min-h-screen` or even `h-screen` alone is not enough here unless the page itself becomes the bounded scroll viewport
+- `/website` and `/cookie-policy` already solve this by using a fixed inset container with `overflowY: auto`
 
-### 2. Add ticker logos 7 and 8
-Save the two uploaded SVGs and add them to the ticker array.
+4. Optional cleanup while touching the file
+- Add `className="min-h-full bg-[#1a1a1a]"` to an inner wrapper only if needed for background continuity, but this is not required for scrolling
 
-### 3. Create new `src/pages/Membership.tsx`
-A full-page membership page using the existing `Navigation` + `Footer` layout (same pattern as `Contact.tsx` and `Index.tsx`). Contains:
+5. Files to modify
+- `src/pages/Membership.tsx`
 
-- **Hero section** with title "Membership" and a brief intro
-- **Three membership tier cards** displayed in a grid (1 col mobile, 3 col desktop):
-  - **Base** — entry level, 4 class passes, 4 cryo sessions, 1 HBOT, 8 communal passes, 10% off, 6 guest passes
-  - **Resident** — unlimited cryo, 8 class passes, 3 private suite, 3 HBOT, unlimited communal, 10% off, 12 guest passes
-  - **Ultimate** — unlimited classes + cryo, 6 private suite, 6 HBOT, unlimited communal, 10% off, 18 guest passes
-- Each card has: tier name, overview paragraph, bullet list of details, and an **"Enquire"** CTA button that links to `/contact` (or opens mailto)
-- Dark theme matching the site aesthetic (`bg-[#1a1a1a]`, `text-[#F9ECD9]`, etc.)
+Technical detail
+```text
+Current setup:
+html/body/root app -> overflow hidden
+membership page -> expands with content
+result -> no usable page scroll
 
-### 4. Add route in `App.tsx`
-Add `/membership` route pointing to the new `Membership` page, alongside the existing `/website` and `/cookie-policy` routes.
-
-### 5. Add "Membership" to Navigation
-Add a nav item for `/membership` in the `navItems` array in `Navigation.tsx`.
-
-## Files modified
-- `public/images/ticker-logo-7.svg` — new asset
-- `public/images/ticker-logo-8.svg` — new asset
-- `src/components/WebsiteServices.tsx` — add logos to ticker + "Learn about Membership" link
-- `src/pages/Membership.tsx` — new page with 3 tier cards
-- `src/App.tsx` — add `/membership` route
-- `src/components/Navigation.tsx` — add Membership nav link
-
+Target setup:
+html/body/root app -> overflow hidden
+membership page -> position: fixed; inset: 0; overflow-y: auto
+result -> membership becomes its own scroll viewport
+```
