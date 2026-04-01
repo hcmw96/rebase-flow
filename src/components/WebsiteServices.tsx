@@ -330,7 +330,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
             <div className="flex animate-ticker gap-16 w-max">
               {[...Array(2)].map((_, setIdx) => (
                 <div key={setIdx} className="flex items-center gap-16 shrink-0">
-                  {['/images/ticker-logo-1.svg', '/images/ticker-logo-2.svg', '/images/ticker-logo-3.svg', '/images/ticker-logo-4.svg', '/images/ticker-logo-5.svg', '/images/ticker-logo-6.svg'].map((logo, i) => (
+                  {['/images/ticker-logo-1.svg', '/images/ticker-logo-2.svg', '/images/ticker-logo-3.svg', '/images/ticker-logo-4.svg', '/images/ticker-logo-5.svg', '/images/ticker-logo-6.svg', '/images/ticker-logo-7.svg', '/images/ticker-logo-8.svg'].map((logo, i) => (
                     <img
                       key={`${setIdx}-${i}`}
                       src={logo}
@@ -342,6 +342,16 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Learn about Membership */}
+        <div className="mt-10 text-center">
+          <Link
+            to="/membership"
+            className="text-[#F9ECD9]/50 hover:text-[#F9ECD9]/80 text-xs uppercase tracking-[0.25em] font-light transition-colors duration-300"
+          >
+            Learn about Membership →
+          </Link>
         </div>
       </div>
     </section>
