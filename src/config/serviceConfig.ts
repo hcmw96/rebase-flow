@@ -36,6 +36,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /^deo.*body\s*alignment/i, groupName: "Deo's Body Alignment Method" },
   { pattern: /high\s*performance\s*recovery/i, groupName: 'High Performance Recovery' },
   { pattern: /longevity/i, groupName: 'Longevity' },
+  { pattern: /athletes?\s*performance/i, groupName: 'Athletes Performance' },
 ];
 
 // ── Hidden items ───────────────────────────────────────────────────
