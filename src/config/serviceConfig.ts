@@ -173,21 +173,25 @@ export const classOfferings = [
     name: 'Urban Oasis',
     image: '/images/rebase-class-urban-oasis.jpg',
     description: 'A calming escape combining breathwork and meditation in candlelit surroundings.',
+    classDescriptionIds: [7],
   },
   {
     name: 'Contrast Immersion',
     image: '/images/rebase-class-contrast-immersion.jpg',
     description: 'Guided hot-cold contrast therapy to boost circulation and recovery.',
+    classDescriptionIds: [8],
   },
   {
     name: 'Yoga',
     image: '/images/rebase-class-yoga.jpg',
     description: 'Prana Flow and Dynamic Flow sessions to build strength and flexibility.',
+    classDescriptionIds: [1, 10],
   },
   {
     name: 'Mat Pilates',
     image: '/images/rebase-class-mat-pilates.jpg',
     description: 'Core-focused mat work to improve posture, tone and stability.',
+    classDescriptionIds: [20],
   },
 ];
 

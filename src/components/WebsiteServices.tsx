@@ -187,11 +187,19 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                 {category === 'Signature Classes' ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 pb-4">
                     {classOfferings.map((cls) => (
-                      <motion.div
+                      <motion.button
                         key={cls.name}
+                        onClick={() => onSelectService({
+                          title: cls.name,
+                          description: cls.description,
+                          category: 'Signature Classes',
+                          image: cls.image,
+                          variants: [],
+                          classDescriptionIds: cls.classDescriptionIds,
+                        })}
                         whileHover={{ y: -4 }}
                         transition={{ duration: 0.2 }}
-                        className="group rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors"
+                        className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors cursor-pointer"
                       >
                         <div className="relative h-48 overflow-hidden">
                           <img
@@ -210,7 +218,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                             {cls.description}
                           </p>
                         </div>
-                      </motion.div>
+                      </motion.button>
                     ))}
                   </div>
                 ) : (
