@@ -1,49 +1,37 @@
 
 
-# Link Signature Class Cards to Mindbody Class Booking
+# Add Membership Page with "Learn about Membership" Link
 
-## Summary
-Make the four Signature Classes cards (Urban Oasis, Contrast Immersion, Yoga, Mat Pilates) clickable. Clicking a card will open the booking drawer showing upcoming class sessions for that specific class, filtered by its `classDescriptionId`.
+## What changes
 
-## Mindbody API Data Found
+### 1. Add "Learn about Membership" link below the ticker in `WebsiteServices.tsx`
+After the logo ticker section (~line 345), add a centered text link "Learn about Membership" styled consistently with the section — subtle, uppercase tracking, linking to `/membership`.
 
-All four classes exist in Mindbody under programId 26 ("Classes"):
+### 2. Add ticker logos 7 and 8
+Save the two uploaded SVGs and add them to the ticker array.
 
-- **Urban Oasis** — classDescriptionId: 7
-- **Contrast Immersion** — classDescriptionId: 8  
-- **Yoga** — classDescriptionIds: 1 (Prana Flow) and 10 (Dynamic Flow)
-- **Mat Pilates** — classDescriptionId: 20
+### 3. Create new `src/pages/Membership.tsx`
+A full-page membership page using the existing `Navigation` + `Footer` layout (same pattern as `Contact.tsx` and `Index.tsx`). Contains:
 
-## Technical Approach
+- **Hero section** with title "Membership" and a brief intro
+- **Three membership tier cards** displayed in a grid (1 col mobile, 3 col desktop):
+  - **Base** — entry level, 4 class passes, 4 cryo sessions, 1 HBOT, 8 communal passes, 10% off, 6 guest passes
+  - **Resident** — unlimited cryo, 8 class passes, 3 private suite, 3 HBOT, unlimited communal, 10% off, 12 guest passes
+  - **Ultimate** — unlimited classes + cryo, 6 private suite, 6 HBOT, unlimited communal, 10% off, 18 guest passes
+- Each card has: tier name, overview paragraph, bullet list of details, and an **"Enquire"** CTA button that links to `/contact` (or opens mailto)
+- Dark theme matching the site aesthetic (`bg-[#1a1a1a]`, `text-[#F9ECD9]`, etc.)
 
-### 1. Add classDescriptionIds to `classOfferings` in `serviceConfig.ts`
-Add a `classDescriptionIds` field to each class offering so we know which Mindbody classes to fetch:
-```typescript
-export const classOfferings = [
-  { name: 'Urban Oasis', image: '...', description: '...', classDescriptionIds: [7] },
-  { name: 'Contrast Immersion', image: '...', description: '...', classDescriptionIds: [8] },
-  { name: 'Yoga', image: '...', description: '...', classDescriptionIds: [1, 10] },
-  { name: 'Mat Pilates', image: '...', description: '...', classDescriptionIds: [20] },
-];
-```
+### 4. Add route in `App.tsx`
+Add `/membership` route pointing to the new `Membership` page, alongside the existing `/website` and `/cookie-policy` routes.
 
-### 2. Make class cards clickable in `WebsiteServices.tsx`
-Change `<motion.div>` to `<motion.button>` for class cards. On click, call `handleClick` with a constructed service object that includes the `classDescriptionIds` so the booking drawer knows this is a class booking.
+### 5. Add "Membership" to Navigation
+Add a nav item for `/membership` in the `navItems` array in `Navigation.tsx`.
 
-### 3. Extend `BookingServiceData` in `BookingDrawer.tsx`
-Add an optional `classDescriptionIds?: number[]` field. When present, the drawer switches to a **class booking flow**:
-- Fetch upcoming classes via `useMindbodyClasses` filtered by `classDescriptionId`
-- Show a date picker + list of available class sessions (time, instructor, spots remaining)
-- Book using the class booking endpoint (`mindbody-book` with class ID) instead of appointment booking
-
-### 4. Add class schedule view in the booking drawer
-When `classDescriptionIds` is present on the service data:
-- Step 1: Show a calendar + list of upcoming sessions for the next 7 days
-- Step 2: Confirm booking for the selected class session
-- Use the existing `useMindbodyClasses` hook with `classDescriptionId` filter
-
-## Files Modified
-- `src/config/serviceConfig.ts` — add `classDescriptionIds` to class offerings
-- `src/components/WebsiteServices.tsx` — make class cards clickable buttons
-- `src/components/booking/BookingDrawer.tsx` — handle class booking flow when `classDescriptionIds` is present
+## Files modified
+- `public/images/ticker-logo-7.svg` — new asset
+- `public/images/ticker-logo-8.svg` — new asset
+- `src/components/WebsiteServices.tsx` — add logos to ticker + "Learn about Membership" link
+- `src/pages/Membership.tsx` — new page with 3 tier cards
+- `src/App.tsx` — add `/membership` route
+- `src/components/Navigation.tsx` — add Membership nav link
 
