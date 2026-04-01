@@ -184,11 +184,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   };
 
   const handleConfirmBooking = async () => {
-    if (!isMindbodyLinked) {
-      linkMindbody();
-      return;
-    }
-
     if (!selectedSlot || !mbSession) return;
 
     try {

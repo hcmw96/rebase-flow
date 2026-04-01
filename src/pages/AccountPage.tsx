@@ -1,21 +1,16 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { LogOut, ExternalLink, User, Mail, Link2, MessageSquare, Calendar, Clock, History } from 'lucide-react';
+import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMindbody } from '@/contexts/MindbodyContext';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
-import SignIn from '@/pages/SignIn';
-import SignUp from '@/pages/SignUp';
 
 const AccountPage = () => {
-  const { profile, isAuthenticated, signOut } = useAuth();
-  const { isMindbodyLinked, linkMindbody, isLinking } = useMindbody();
+  const { mbSession, isAuthenticated, logout, login } = useAuth();
   const { data: bookingsData } = useMyBookings();
-  const [authView, setAuthView] = useState<'signin' | 'signup'>('signin');
   const [message, setMessage] = useState('');
   const [showAllHistory, setShowAllHistory] = useState(false);
 
@@ -24,10 +19,13 @@ const AccountPage = () => {
     .sort((a: any, b: any) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
 
   if (!isAuthenticated) {
-    if (authView === 'signup') {
-      return <SignUp onSwitchToSignIn={() => setAuthView('signin')} />;
-    }
-    return <SignIn onSwitchToSignUp={() => setAuthView('signup')} />;
+    return (
+      <div className="px-4 pt-6 pb-4 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <User className="h-12 w-12 text-muted-foreground" />
+        <p className="text-sm text-muted-foreground">Sign in to view your account</p>
+        <Button onClick={login} className="w-full">Sign in with Mindbody</Button>
+      </div>
+    );
   }
 
   const visibleHistory = showAllHistory ? pastBookings : pastBookings.slice(0, 5);
@@ -54,12 +52,12 @@ const AccountPage = () => {
             </div>
             <div>
               <h2 className="font-semibold text-black/80">
-                {profile?.first_name} {profile?.last_name}
+                {mbSession?.firstName} {mbSession?.lastName}
               </h2>
-              {profile?.email && (
+              {mbSession?.email && (
                 <p className="text-sm text-black/40 flex items-center gap-1">
                   <Mail className="h-3 w-3" />
-                  {profile.email}
+                  {mbSession.email}
                 </p>
               )}
             </div>
@@ -67,48 +65,12 @@ const AccountPage = () => {
         </div>
       </motion.div>
 
-      {/* Mindbody link status */}
-      <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.15 }}
-      >
-        <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5">
-          {isMindbodyLinked ? (
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-green-500/10 flex items-center justify-center">
-                <Link2 className="h-4 w-4 text-green-700" />
-              </div>
-              <div>
-                <p className="text-sm font-medium text-black/80">Mindbody Connected</p>
-                <p className="text-xs text-black/40">You can book and manage appointments</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center">
-                  <Link2 className="h-4 w-4 text-black/40" />
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-black/80">Connect Mindbody</p>
-                  <p className="text-xs text-black/40">Required to book services</p>
-                </div>
-              </div>
-              <Button onClick={linkMindbody} disabled={isLinking} className="w-full bg-black/80 hover:bg-black text-white" size="sm">
-                {isLinking ? 'Connecting...' : 'Connect Mindbody Account'}
-              </Button>
-            </div>
-          )}
-        </div>
-      </motion.div>
-
       {/* Session History */}
-      {isMindbodyLinked && pastBookings.length > 0 && (
+      {pastBookings.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.18 }}
+          transition={{ delay: 0.15 }}
         >
           <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5 space-y-4">
             <div className="flex items-center gap-3">
@@ -209,8 +171,8 @@ const AccountPage = () => {
             className="w-full bg-black/80 hover:bg-black text-white"
             disabled={!message.trim()}
             onClick={() => {
-              const name = `${profile?.first_name || ''} ${profile?.last_name || ''}`.trim();
-              const email = profile?.email || '';
+              const name = `${mbSession?.firstName || ''} ${mbSession?.lastName || ''}`.trim();
+              const email = mbSession?.email || '';
               const subject = encodeURIComponent(`Message from ${name}`);
               const body = encodeURIComponent(`${message}\n\nFrom: ${name} (${email})`);
               window.open(`mailto:reception@rebaserecovery.com?subject=${subject}&body=${body}`, '_self');
@@ -232,7 +194,7 @@ const AccountPage = () => {
         <Button
           variant="outline"
           className="w-full border-black/10 text-red-600 hover:text-red-700 hover:bg-red-50/50"
-          onClick={signOut}
+          onClick={logout}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out

@@ -25,20 +25,18 @@ queryClient.prefetchQuery({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
-      <MindbodyProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <CookieConsent />
-          <ScrollToTop />
-          <Routes>
-            <Route path="/website" element={<Index />} />
-            <Route path="/cookie-policy" element={<CookiePolicy />} />
-            <Route path="/" element={<AppShell />} />
-            <Route path="*" element={<AppShell />} />
-          </Routes>
-        </BrowserRouter>
-      </MindbodyProvider>
+      <Toaster />
+      <Sonner />
+      <BrowserRouter>
+        <CookieConsent />
+        <ScrollToTop />
+        <Routes>
+          <Route path="/website" element={<Index />} />
+          <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/" element={<AppShell />} />
+          <Route path="*" element={<AppShell />} />
+        </Routes>
+      </BrowserRouter>
     </AuthProvider>
   </QueryClientProvider>
 );

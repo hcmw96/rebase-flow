@@ -1,119 +1,104 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import type { User, Session } from '@supabase/supabase-js';
 
-interface Profile {
-  id: string;
+interface MindbodySession {
+  sessionId: string;
   email: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  mb_session_id: string | null;
-  created_at: string;
-  updated_at: string;
+  firstName: string | null;
+  lastName: string | null;
+  expiresAt: string;
 }
 
 interface AuthContextType {
-  user: User | null;
-  session: Session | null;
-  profile: Profile | null;
+  mbSession: MindbodySession | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  isMindbodyLinked: boolean;
-  signUp: (email: string, password: string, firstName: string, lastName: string) => Promise<{ error: string | null }>;
-  signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signOut: () => Promise<void>;
-  refreshProfile: () => Promise<void>;
+  login: () => void;
+  logout: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const MB_STORAGE_KEY = 'mb_session';
+
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
-  const [profile, setProfile] = useState<Profile | null>(null);
+  const [mbSession, setMbSession] = useState<MindbodySession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  const fetchProfile = useCallback(async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single();
-    if (!error && data) {
-      setProfile(data as Profile);
+  // Load session from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem(MB_STORAGE_KEY);
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored) as MindbodySession;
+        setMbSession(parsed);
+      } catch {
+        localStorage.removeItem(MB_STORAGE_KEY);
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  const login = useCallback(async () => {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({}),
+      });
+
+      const data = await res.json();
+      if (!res.ok || !data.authUrl) {
+        throw new Error(data.error || 'Failed to get login URL');
+      }
+
+      const width = 500;
+      const height = 600;
+      const left = window.screenX + (window.outerWidth - width) / 2;
+      const top = window.screenY + (window.outerHeight - height) / 2;
+
+      const popup = window.open(
+        data.authUrl,
+        'rebase-mb-login',
+        `width=${width},height=${height},left=${left},top=${top},popup=yes`
+      );
+
+      const handleMessage = (event: MessageEvent) => {
+        if (event.data?.type === 'rebase-oauth-callback' && event.data.session) {
+          const session = event.data.session as MindbodySession;
+          localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(session));
+          setMbSession(session);
+          popup?.close();
+          window.removeEventListener('message', handleMessage);
+        }
+      };
+
+      window.addEventListener('message', handleMessage);
+
+      const check = setInterval(() => {
+        if (popup?.closed) {
+          clearInterval(check);
+          window.removeEventListener('message', handleMessage);
+        }
+      }, 500);
+    } catch (error) {
+      console.error('Login error:', error);
     }
   }, []);
 
-  const refreshProfile = useCallback(async () => {
-    if (user) {
-      await fetchProfile(user.id);
-    }
-  }, [user, fetchProfile]);
-
-  useEffect(() => {
-    // Set up auth state listener first
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          // Use setTimeout to avoid potential deadlock with Supabase client
-          setTimeout(() => fetchProfile(session.user.id), 0);
-        } else {
-          setProfile(null);
-        }
-        setIsLoading(false);
-      }
-    );
-
-    // Then check existing session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setIsLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
-  }, [fetchProfile]);
-
-  const signUp = async (email: string, password: string, firstName: string, lastName: string) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: { first_name: firstName, last_name: lastName },
-        emailRedirectTo: window.location.origin,
-      },
-    });
-    return { error: error?.message ?? null };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error?.message ?? null };
-  };
-
-  const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-  };
+  const logout = useCallback(() => {
+    localStorage.removeItem(MB_STORAGE_KEY);
+    setMbSession(null);
+  }, []);
 
   return (
     <AuthContext.Provider
       value={{
-        user,
-        session,
-        profile,
-        isAuthenticated: !!user,
+        mbSession,
+        isAuthenticated: !!mbSession,
         isLoading,
-        isMindbodyLinked: !!profile?.mb_session_id,
-        signUp,
-        signIn,
-        signOut,
-        refreshProfile,
+        login,
+        logout,
       }}
     >
       {children}
