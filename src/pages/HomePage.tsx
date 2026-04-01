@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMindbody } from '@/contexts/MindbodyContext';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
