@@ -153,11 +153,6 @@ const BookService = () => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!isMindbodyLinked) {
-      linkMindbody();
-      return;
-    }
-
     if (!selectedSlot || !mbSession) return;
 
     try {
