@@ -37,7 +37,7 @@ const BookService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
   const { isAuthenticated } = useAuth();
-  const { mbSession, isMindbodyLinked, linkMindbody } = useMindbody();
+  const { mbSession } = useAuth();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
