@@ -503,12 +503,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       )}
 
-                      {!isMindbodyLinked && (
-                        <div className="bg-accent/50 rounded-lg p-3 text-xs text-muted-foreground">
-                          You'll need to connect your Mindbody account to complete this booking.
-                        </div>
-                      )}
-
                       <div className="flex gap-3">
                         <Button variant="outline" onClick={() => setCurrentStep(timeStep)} className="flex-1">
                           Change Time
@@ -516,10 +510,8 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         <Button onClick={handleConfirmBooking} disabled={isBooking} className="flex-1">
                           {isBooking ? (
                             <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
-                          ) : isMindbodyLinked ? (
-                            'Confirm Booking'
                           ) : (
-                            'Connect Mindbody'
+                            'Confirm Booking'
                           )}
                         </Button>
                       </div>

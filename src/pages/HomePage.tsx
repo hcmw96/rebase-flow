@@ -104,8 +104,8 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     });
   };
 
-  const greeting = isAuthenticated && profile?.first_name
-    ? `Hi, ${profile.first_name}`
+  const greeting = isAuthenticated && mbSession?.firstName
+    ? `Hi, ${mbSession.firstName}`
     : 'Welcome to Rebase';
 
   return (
