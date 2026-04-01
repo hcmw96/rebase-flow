@@ -343,6 +343,16 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
             </div>
           </div>
         </div>
+
+        {/* Learn about Membership */}
+        <div className="mt-10 text-center">
+          <Link
+            to="/membership"
+            className="text-[#F9ECD9]/50 hover:text-[#F9ECD9]/80 text-xs uppercase tracking-[0.25em] font-light transition-colors duration-300"
+          >
+            Learn about Membership →
+          </Link>
+        </div>
       </div>
     </section>
   );

@@ -34,6 +34,7 @@ const App = () => (
         <Routes>
           <Route path="/website" element={<Index />} />
           <Route path="/cookie-policy" element={<CookiePolicy />} />
+          <Route path="/membership" element={<Membership />} />
           <Route path="/" element={<AppShell />} />
           <Route path="*" element={<AppShell />} />
         </Routes>
