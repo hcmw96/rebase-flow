@@ -1,0 +1,238 @@
+import { useState, useMemo } from 'react';
+import { format, addDays } from 'date-fns';
+import { motion } from 'framer-motion';
+import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
+import { useAuth } from '@/contexts/AuthContext';
+import { useBookService } from '@/hooks/useMindbodyBookings';
+import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
+
+interface ClassScheduleFlowProps {
+  classDescriptionIds: number[];
+  className: string;
+  onClose: () => void;
+}
+
+const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }: ClassScheduleFlowProps) => {
+  const { mbSession, isAuthenticated } = useAuth();
+  const bookMutation = useBookService();
+
+  const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
+  const [bookingComplete, setBookingComplete] = useState(false);
+
+  const startDate = format(new Date(), 'yyyy-MM-dd');
+  const endDate = format(addDays(new Date(), 7), 'yyyy-MM-dd');
+
+  // Fetch classes for all classDescriptionIds
+  const { data: classes = [], isLoading } = useMindbodyClasses({
+    startDate,
+    endDate,
+    classDescriptionId: classDescriptionIds.join(','),
+    enabled: classDescriptionIds.length > 0,
+  });
+
+  // Filter to matching classDescriptionIds and not cancelled
+  const filteredClasses = useMemo(() => {
+    return classes
+      .filter(c => classDescriptionIds.includes(c.classDescriptionId) && !c.isCanceled)
+      .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+  }, [classes, classDescriptionIds]);
+
+  // Group by day
+  const groupedByDay = useMemo(() => {
+    const map = new Map<string, MindbodyClass[]>();
+    for (const cls of filteredClasses) {
+      const day = format(new Date(cls.startDateTime), 'yyyy-MM-dd');
+      if (!map.has(day)) map.set(day, []);
+      map.get(day)!.push(cls);
+    }
+    return map;
+  }, [filteredClasses]);
+
+  const handleBook = async () => {
+    if (!selectedClass || !mbSession) return;
+
+    try {
+      await bookMutation.mutateAsync({
+        bookingType: 'class',
+        classId: selectedClass.id,
+        serviceName: selectedClass.name,
+      });
+      setBookingComplete(true);
+      toast.success('Class booked successfully!');
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to book class. Please try again.');
+    }
+  };
+
+  if (bookingComplete && selectedClass) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="text-center space-y-5 py-6"
+      >
+        <div className="flex justify-center">
+          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
+            <CheckCircle className="h-8 w-8 text-primary" />
+          </div>
+        </div>
+        <div className="space-y-1">
+          <h3 className="text-xl font-semibold text-foreground">Class Booked!</h3>
+          <p className="text-sm text-muted-foreground">You're all set.</p>
+        </div>
+        <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-left text-sm">
+          <div className="font-medium text-foreground">{selectedClass.name}</div>
+          <div className="flex items-center gap-3">
+            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>{format(new Date(selectedClass.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>
+              {format(new Date(selectedClass.startDateTime), 'h:mm a')} – {format(new Date(selectedClass.endDateTime), 'h:mm a')}
+            </span>
+          </div>
+          {selectedClass.staffName && (
+            <div className="flex items-center gap-3">
+              <User className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{selectedClass.staffName}</span>
+            </div>
+          )}
+          <div className="flex items-center gap-3">
+            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+            <span>{selectedClass.locationName}</span>
+          </div>
+        </div>
+        <Button onClick={onClose} className="w-full">Done</Button>
+      </motion.div>
+    );
+  }
+
+  if (selectedClass) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, x: 20 }}
+        animate={{ opacity: 1, x: 0 }}
+        className="space-y-4"
+      >
+        <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-sm">
+          <h3 className="font-semibold text-base text-foreground">{selectedClass.name}</h3>
+          <div className="space-y-2">
+            <div className="flex items-center gap-3">
+              <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{format(new Date(selectedClass.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>
+                {format(new Date(selectedClass.startDateTime), 'h:mm a')} – {format(new Date(selectedClass.endDateTime), 'h:mm a')}
+              </span>
+            </div>
+            {selectedClass.staffName && (
+              <div className="flex items-center gap-3">
+                <User className="h-4 w-4 text-muted-foreground shrink-0" />
+                <span>{selectedClass.staffName}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-3">
+              <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{selectedClass.locationName}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Users className="h-4 w-4 text-muted-foreground shrink-0" />
+              <span>{selectedClass.availableSpots} spots remaining</span>
+            </div>
+          </div>
+        </div>
+
+        {!isAuthenticated && (
+          <p className="text-sm text-muted-foreground text-center">
+            Please sign in to book this class.
+          </p>
+        )}
+
+        <div className="flex gap-3">
+          <Button variant="outline" onClick={() => setSelectedClass(null)} className="flex-1">
+            Back
+          </Button>
+          <Button
+            onClick={handleBook}
+            disabled={bookMutation.isPending || !isAuthenticated}
+            className="flex-1"
+          >
+            {bookMutation.isPending ? (
+              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
+            ) : (
+              'Confirm Booking'
+            )}
+          </Button>
+        </div>
+      </motion.div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: 20 }}
+      animate={{ opacity: 1, x: 0 }}
+      className="space-y-4"
+    >
+      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+        Upcoming Sessions — Next 7 Days
+      </h3>
+
+      {isLoading ? (
+        <div className="flex items-center justify-center py-12">
+          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+        </div>
+      ) : filteredClasses.length === 0 ? (
+        <div className="text-center py-12 text-muted-foreground text-sm">
+          No upcoming sessions found for this class.
+        </div>
+      ) : (
+        Array.from(groupedByDay.entries()).map(([day, dayCls]) => (
+          <div key={day} className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+              {format(new Date(day), 'EEEE, MMM d')}
+            </p>
+            {dayCls.map((cls) => (
+              <button
+                key={cls.id}
+                onClick={() => setSelectedClass(cls)}
+                className={cn(
+                  'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
+                  'border-border hover:border-primary/50'
+                )}
+              >
+                <div className="space-y-1">
+                  <div className="font-medium text-foreground">{cls.name}</div>
+                  <div className="text-xs text-muted-foreground flex items-center gap-3">
+                    <span className="flex items-center gap-1">
+                      <Clock className="h-3 w-3" />
+                      {format(new Date(cls.startDateTime), 'h:mm a')}
+                    </span>
+                    {cls.staffName && (
+                      <span className="flex items-center gap-1">
+                        <User className="h-3 w-3" />
+                        {cls.staffName}
+                      </span>
+                    )}
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Users className="h-3 w-3" />
+                  {cls.availableSpots} spots
+                </div>
+              </button>
+            ))}
+          </div>
+        ))
+      )}
+    </motion.div>
+  );
+};
+
+export default ClassScheduleFlow;
