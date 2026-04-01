@@ -52,7 +52,7 @@ const tiers = [
 
 const Membership = () => {
   return (
-    <div className="min-h-screen bg-[#1a1a1a]">
+    <div className="min-h-screen overflow-y-auto bg-[#1a1a1a]">
       <Navigation />
 
       {/* Hero */}
