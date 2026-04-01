@@ -35,6 +35,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /^assisted\s*stretching/i, groupName: 'Assisted Stretching' },
   { pattern: /^deo.*body\s*alignment/i, groupName: "Deo's Body Alignment Method" },
   { pattern: /high\s*performance\s*recovery/i, groupName: 'High Performance Recovery' },
+  { pattern: /longevity/i, groupName: 'Longevity' },
 ];
 
 // ── Hidden items ───────────────────────────────────────────────────
@@ -127,6 +128,7 @@ export const serviceImages: Record<string, string> = {
   'Reflexology': '/images/rebase-reflexology.jpg',
   'Nervous System Reset': '/images/rebase-nervous-system-reset.jpg',
   'High Performance Recovery': '/images/rebase-high-performance-recovery.jpg',
+  'Longevity': '/images/rebase-longevity.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
