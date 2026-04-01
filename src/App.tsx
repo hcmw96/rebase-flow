@@ -11,6 +11,7 @@ import NotFound from "./pages/NotFound";
 import CookieConsent from "./components/CookieConsent";
 import Index from "./pages/Index";
 import CookiePolicy from "./pages/CookiePolicy";
+import Membership from "./pages/Membership";
 import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
