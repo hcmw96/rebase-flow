@@ -124,6 +124,7 @@ export const serviceImages: Record<string, string> = {
   'Structural Fascia Therapy': '/images/rebase-structural-fascia.jpg',
   'Midday Reset': '/images/rebase-midday-reset.jpg',
   'Reflexology': '/images/rebase-reflexology.jpg',
+  'Nervous System Reset': '/images/rebase-nervous-system-reset.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
