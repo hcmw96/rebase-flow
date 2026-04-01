@@ -322,6 +322,27 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
             Join Our Community
           </Link>
         </motion.div>
+
+        {/* Logo Ticker */}
+        <div className="mt-16 overflow-hidden">
+          <p className="text-center text-[#F9ECD9]/30 text-xs uppercase tracking-[0.25em] mb-6 font-light">As Featured In</p>
+          <div className="relative">
+            <div className="flex animate-ticker gap-16 w-max">
+              {[...Array(2)].map((_, setIdx) => (
+                <div key={setIdx} className="flex items-center gap-16 shrink-0">
+                  {['/images/ticker-logo-1.svg', '/images/ticker-logo-2.svg', '/images/ticker-logo-3.svg'].map((logo, i) => (
+                    <img
+                      key={`${setIdx}-${i}`}
+                      src={logo}
+                      alt=""
+                      className="h-8 w-auto opacity-40 brightness-0 invert"
+                    />
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </section>
   );
