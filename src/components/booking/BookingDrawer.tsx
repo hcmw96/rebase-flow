@@ -290,8 +290,14 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
           {/* Scrollable body */}
           <div className="flex-1 overflow-y-auto px-4 py-4">
-            {/* Contact-only: full service */}
-            {isFullContactOnly && !hasVariants ? (
+            {/* Class booking flow */}
+            {isClassBooking ? (
+              <ClassScheduleFlow
+                classDescriptionIds={service.classDescriptionIds!}
+                className={service.title}
+                onClose={onClose}
+              />
+            ) : isFullContactOnly && !hasVariants ? (
               <ContactReceptionMessage serviceName={service.title} />
             ) : showContactMessage && isVariantContactOnly ? (
               <ContactReceptionMessage serviceName={activeVariant?.name || service.title} />
