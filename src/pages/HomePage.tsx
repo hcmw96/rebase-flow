@@ -31,8 +31,7 @@ const groupingPatterns: { pattern: RegExp; groupName: string }[] = [
 ];
 
 const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
-  const { profile, isAuthenticated } = useAuth();
-  const { isMindbodyLinked } = useMindbody();
+  const { mbSession, isAuthenticated } = useAuth();
   const { data: services } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
   const { data: bookingsData } = useMyBookings();
