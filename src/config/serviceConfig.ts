@@ -122,6 +122,7 @@ export const serviceImages: Record<string, string> = {
   'Blood Test': '/images/rebase-blood-test.jpg',
   'Osteopathy': '/images/rebase-osteopathy.jpg',
   'Structural Fascia Therapy': '/images/rebase-structural-fascia.jpg',
+  'Midday Reset': '/images/rebase-midday-reset.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
