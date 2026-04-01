@@ -90,6 +90,9 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
     }
   };
 
+  // Check if this is a class booking
+  const isClassBooking = !!(service?.classDescriptionIds?.length);
+
   // Check if this entire service is contact-only
   const isFullContactOnly = service?.contactOnly === true;
 
