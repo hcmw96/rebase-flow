@@ -126,6 +126,7 @@ export const serviceImages: Record<string, string> = {
   'Midday Reset': '/images/rebase-midday-reset.jpg',
   'Reflexology': '/images/rebase-reflexology.jpg',
   'Nervous System Reset': '/images/rebase-nervous-system-reset.jpg',
+  'High Performance Recovery': '/images/rebase-high-performance-recovery.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
