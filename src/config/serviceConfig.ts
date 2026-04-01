@@ -130,6 +130,7 @@ export const serviceImages: Record<string, string> = {
   'Nervous System Reset': '/images/rebase-nervous-system-reset.jpg',
   'High Performance Recovery': '/images/rebase-high-performance-recovery.jpg',
   'Longevity': '/images/rebase-longevity.jpg',
+  'Athletes Performance': '/images/rebase-athletes-performance.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
