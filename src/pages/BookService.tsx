@@ -10,7 +10,6 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import { ArrowLeft, ArrowRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
-import { useMindbody } from '@/contexts/MindbodyContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
