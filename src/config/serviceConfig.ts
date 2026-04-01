@@ -4,7 +4,7 @@ import { ServiceVariant } from '@/components/ServiceCard';
 export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
   { pattern: /^nad\+?/i, groupName: 'NAD+' },
-  { pattern: /^vitamin\s*shots?/i, groupName: 'Vitamin Shot' },
+  { pattern: /^vitamin\s*shots?/i, groupName: 'IV Drip' },
   { pattern: /^blood\s*test/i, groupName: 'Blood Test' },
   { pattern: /^skin\s*rejuv(enation)?/i, groupName: 'Skin Rejuvenation' },
   { pattern: /^skin\s*peels?/i, groupName: 'Skin Peel' },
