@@ -27,6 +27,7 @@ export interface BookingServiceData {
   image: string;
   variants: ServiceVariant[];
   contactOnly?: boolean;
+  classDescriptionIds?: number[];
 }
 
 interface BookingDrawerProps {
