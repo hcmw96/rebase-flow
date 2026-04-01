@@ -101,7 +101,7 @@ export const categoryOrder = [
 
 // ── Within-category ordering ───────────────────────────────────────
 export const serviceOrderWithinCategory: Record<string, Record<string, number>> = {
-  'IV Drips': { 'IV Drip': 0, 'Blood Test': 1, 'NAD+': 2, 'Vitamin Shot': 3 },
+  'IV Drips': { 'IV Drip': 0, 'Blood Test': 1, 'NAD+': 2 },
   'Regen and Manual Therapies': { 'Osteopathy': 0 },
 };
 
