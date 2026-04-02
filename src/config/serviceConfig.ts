@@ -38,7 +38,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /longevity/i, groupName: 'Longevity' },
   { pattern: /athletes?\s*performance/i, groupName: 'Athletes Performance' },
   { pattern: /^core\s*radiance/i, groupName: 'Core Radiance' },
-  { pattern: /hyaluronic/i, groupName: 'Hyaluronic' },
+  { pattern: /hyalou?ronic/i, groupName: 'Hyaluronic' },
   { pattern: /injectables?/i, groupName: 'Injectables' },
   { pattern: /neuro.?\s*regulation/i, groupName: 'Neuro Regulation' },
 ];
