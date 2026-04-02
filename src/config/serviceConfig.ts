@@ -131,6 +131,7 @@ export const serviceImages: Record<string, string> = {
   'Osteopathy': '/images/rebase-osteopathy.jpg',
   'Structural Fascia Therapy': '/images/rebase-structural-fascia.jpg',
   'Midday Reset': '/images/rebase-midday-reset.jpg',
+  'Four Hand': '/images/rebase-four-hand.jpg',
   'Reflexology': '/images/rebase-reflexology.jpg',
   'Nervous System Reset': '/images/rebase-nervous-system-reset.jpg',
   'High Performance Recovery': '/images/rebase-high-performance-recovery.jpg',
