@@ -239,7 +239,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
               {/* Back & Close buttons overlaid on image */}
-              <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
                 <button
                   onClick={handleBack}
                   className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
