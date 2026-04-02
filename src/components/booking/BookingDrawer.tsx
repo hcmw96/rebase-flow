@@ -239,7 +239,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
               <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
 
               {/* Back & Close buttons overlaid on image */}
-              <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+              <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
                 <button
                   onClick={handleBack}
                   className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
@@ -273,7 +273,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
           {/* Non-image header for success/contact states */}
           {!showHeroImage && (
-            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/50 shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/50 shrink-0" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
               <button
                 onClick={handleBack}
                 className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted/50 transition-colors"
