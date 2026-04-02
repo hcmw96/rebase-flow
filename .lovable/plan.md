@@ -1,41 +1,46 @@
 
-Fix the Core Radiance image on `/website` by applying the existing focal-point config to the website services grid.
 
-1. Root cause
-- The current `Core Radiance` focal point is already defined in `src/config/serviceConfig.ts` as:
-```ts
-'Core Radiance': 'center 20%'
-```
-- But the `/website` page does not use that config.
-- `src/components/WebsiteServices.tsx` renders its own `<img>` for service cards and currently uses plain `object-cover` with no `objectPosition`, so the image defaults to centered cropping.
+# Fix Mindbody Login for Native Despia (TestFlight)
 
-2. Update `src/components/WebsiteServices.tsx`
-- Import `serviceImagePositions` from `@/config/serviceConfig`
-- In the service-card image inside the website grid, add:
-```tsx
-style={{ objectPosition: serviceImagePositions[service.baseName] || 'center' }}
-```
-- Keep the existing `object-cover`, lazy loading, and hover scale behavior
+## Problem
+The current login flow uses `window.open()` to open a popup for Mindbody OAuth, then relies on `window.opener.postMessage()` to pass session data back. In the Despia native WebView (iOS WKWebView), `window.open()` is blocked or returns `null`, so tapping "Sign in with Mindbody" does nothing.
 
-3. Leave central config as the source of truth
-- Do not hardcode Core Radiance positioning inside the component
-- Keep the focal point controlled from `src/config/serviceConfig.ts` so website, app cards, and compact cards all stay aligned
+## Solution
+Detect the native environment and use a **redirect-based flow** instead of a popup. In native mode, navigate the full page to Mindbody's auth URL. After authentication, the callback edge function redirects back to the app with session data encoded in the URL fragment.
 
-4. If needed after wiring it correctly
-- If `center 20%` still crops too low once actually applied on `/website`, then fine-tune only the config value for `Core Radiance` in `serviceImagePositions` (for example to something closer to the top)
+## Changes
 
-Files to modify
-- `src/components/WebsiteServices.tsx`
+### 1. `supabase/functions/mindbody-oauth-init/index.ts`
+- Accept an optional `native` flag in the request body
+- When native, store a `native=true` marker in the `state` parameter so the callback knows to redirect instead of postMessage
 
-Technical detail
+### 2. `supabase/functions/mindbody-oauth-callback/index.ts`
+- Parse the `state` parameter to detect native flow
+- When native: instead of returning HTML with `window.opener.postMessage`, return a **302 redirect** to the app origin with session data Base64-encoded in the URL hash fragment (e.g., `https://app-url/#auth-session=BASE64_JSON`)
+- When not native: keep existing popup/postMessage behavior unchanged
+
+### 3. `src/contexts/AuthContext.tsx`
+- In the `login` function, detect native via `navigator.userAgent.includes('despia')`
+- When native: navigate the current page (`window.location.href = authUrl`) instead of `window.open()`
+- Add a `useEffect` that checks `window.location.hash` on mount for `#auth-session=...`, decodes the session, saves to localStorage, clears the hash, and sets the session state
+
+### 4. `supabase/functions/mindbody-oauth-init/index.ts` (additional)
+- Accept an optional `origin` parameter from the client so the callback knows where to redirect back to in native mode
+
+## Flow Comparison
+
 ```text
-Current:
-serviceImagePositions exists
-ServiceCard uses it
-ServiceCardCompact uses it
-WebsiteServices does not
+Current (web/popup):
+  App -> window.open(authUrl) -> Mindbody login -> form_post to callback
+  -> callback returns HTML -> window.opener.postMessage(session) -> popup closes
 
-Target:
-WebsiteServices service card image also uses serviceImagePositions
-=> Core Radiance crop finally matches the intended focal point on /website
+Native (redirect):
+  App -> window.location.href = authUrl -> Mindbody login -> form_post to callback
+  -> callback returns 302 redirect to app#auth-session=BASE64 -> app reads hash on load
 ```
+
+## Files modified
+- `supabase/functions/mindbody-oauth-init/index.ts`
+- `supabase/functions/mindbody-oauth-callback/index.ts`
+- `src/contexts/AuthContext.tsx`
+
