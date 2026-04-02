@@ -1,26 +1,41 @@
 
+Fix the Core Radiance image on `/website` by applying the existing focal-point config to the website services grid.
 
-# Fix Hyaluronic Acid Service Hiding (Misspelling)
+1. Root cause
+- The current `Core Radiance` focal point is already defined in `src/config/serviceConfig.ts` as:
+```ts
+'Core Radiance': 'center 20%'
+```
+- But the `/website` page does not use that config.
+- `src/components/WebsiteServices.tsx` renders its own `<img>` for service cards and currently uses plain `object-cover` with no `objectPosition`, so the image defaults to centered cropping.
 
-## Problem
-The Mindbody API returns "Hyalouronic" (with an extra 'o') instead of "Hyaluronic", so the current regex `/hyaluronic/i` doesn't match.
+2. Update `src/components/WebsiteServices.tsx`
+- Import `serviceImagePositions` from `@/config/serviceConfig`
+- In the service-card image inside the website grid, add:
+```tsx
+style={{ objectPosition: serviceImagePositions[service.baseName] || 'center' }}
+```
+- Keep the existing `object-cover`, lazy loading, and hover scale behavior
 
-## Fix
+3. Leave central config as the source of truth
+- Do not hardcode Core Radiance positioning inside the component
+- Keep the focal point controlled from `src/config/serviceConfig.ts` so website, app cards, and compact cards all stay aligned
 
-### `src/config/serviceConfig.ts`
-1. Update the regex pattern in `serviceGroupMappings` to handle both spellings:
-   ```typescript
-   { pattern: /hyalou?ronic/i, groupName: 'Hyaluronic' },
-   ```
+4. If needed after wiring it correctly
+- If `center 20%` still crops too low once actually applied on `/website`, then fine-tune only the config value for `Core Radiance` in `serviceImagePositions` (for example to something closer to the top)
 
-2. Add the misspelled variants to `hiddenServiceNames`:
-   ```typescript
-   'Hyalouronic Acid - 1 Joint',
-   'Hyalouronic Acid - 2 Joints',
-   ```
+Files to modify
+- `src/components/WebsiteServices.tsx`
 
-This double-coverage ensures the services are caught both by group canonicalization and by exact name matching.
+Technical detail
+```text
+Current:
+serviceImagePositions exists
+ServiceCard uses it
+ServiceCardCompact uses it
+WebsiteServices does not
 
-## Files modified
-- `src/config/serviceConfig.ts`
-
+Target:
+WebsiteServices service card image also uses serviceImagePositions
+=> Core Radiance crop finally matches the intended focal point on /website
+```
