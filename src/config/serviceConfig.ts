@@ -38,6 +38,9 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /longevity/i, groupName: 'Longevity' },
   { pattern: /athletes?\s*performance/i, groupName: 'Athletes Performance' },
   { pattern: /^core\s*radiance/i, groupName: 'Core Radiance' },
+  { pattern: /hyaluronic/i, groupName: 'Hyaluronic' },
+  { pattern: /injectables?/i, groupName: 'Injectables' },
+  { pattern: /neuro.?\s*regulation/i, groupName: 'Neuro Regulation' },
 ];
 
 // ── Hidden items ───────────────────────────────────────────────────
@@ -50,6 +53,7 @@ export const hiddenGroupNames = new Set([
   'Nutritional Therapy',
   'Structural Fascia Therapy', 'Ozone Therapy', 'Skin Rejuvenation',
   'Skin Peel', 'BioStimulation', 'Myofascial Dry Needling',
+  'Hyaluronic', 'Injectables', 'Neuro Regulation',
 ]);
 
 export const hiddenProgramIds = new Set([12]);
