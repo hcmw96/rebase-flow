@@ -273,7 +273,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
           {/* Non-image header for success/contact states */}
           {!showHeroImage && (
-            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/50 shrink-0" style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}>
+            <div className="flex items-center gap-3 px-4 pt-4 pb-3 border-b border-border/50 shrink-0" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
               <button
                 onClick={handleBack}
                 className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted/50 transition-colors"
