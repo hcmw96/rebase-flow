@@ -1,46 +1,29 @@
 
-Fix the Membership page by switching it to the same full-viewport scroll-container pattern already used by the marketing pages.
 
-1. Update `src/pages/Membership.tsx`
-- Replace the current root wrapper:
-```tsx
-<div className="min-h-screen overflow-y-auto bg-[#1a1a1a]">
+# Adjust Core Radiance Image Position
+
+## Summary
+The Core Radiance card image crops at the top, hiding the face. Add a per-service `objectPosition` override so the image shifts down to show the face.
+
+## Changes
+
+### 1. `src/config/serviceConfig.ts`
+Add a new config map for custom image positions:
+```typescript
+export const serviceImagePositions: Record<string, string> = {
+  'Core Radiance': 'center 80%',
+};
 ```
-- With a bounded viewport container:
-```tsx
-<div
-  className="bg-[#1a1a1a]"
-  style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
->
-```
 
-2. Keep the existing page structure inside that container
-- `Navigation`
-- hero section
-- tier cards
-- `Footer`
+### 2. `src/components/ServiceCardCompact.tsx`
+- Import `serviceImagePositions` from config
+- On the `<img>` tag, apply `style={{ objectPosition: serviceImagePositions[title] || 'center' }}` so Core Radiance shifts the focal point down.
 
-3. Why this is the real fix
-- Global CSS sets `html, body { overflow: hidden; height: 100%; }`
-- That means `/membership` cannot rely on normal document scrolling
-- `min-h-screen` or even `h-screen` alone is not enough here unless the page itself becomes the bounded scroll viewport
-- `/website` and `/cookie-policy` already solve this by using a fixed inset container with `overflowY: auto`
+### 3. `src/components/ServiceCard.tsx`
+- Same change: import `serviceImagePositions` and apply the `objectPosition` style to the card image.
 
-4. Optional cleanup while touching the file
-- Add `className="min-h-full bg-[#1a1a1a]"` to an inner wrapper only if needed for background continuity, but this is not required for scrolling
+## Files modified
+- `src/config/serviceConfig.ts`
+- `src/components/ServiceCardCompact.tsx`
+- `src/components/ServiceCard.tsx`
 
-5. Files to modify
-- `src/pages/Membership.tsx`
-
-Technical detail
-```text
-Current setup:
-html/body/root app -> overflow hidden
-membership page -> expands with content
-result -> no usable page scroll
-
-Target setup:
-html/body/root app -> overflow hidden
-membership page -> position: fixed; inset: 0; overflow-y: auto
-result -> membership becomes its own scroll viewport
-```
