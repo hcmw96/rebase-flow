@@ -84,6 +84,7 @@ const ServiceCard = ({
           src={image}
           alt={title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          style={{ objectPosition: serviceImagePositions[title] || 'center' }}
         />
         <Badge className="absolute top-4 left-4 bg-background/90 text-foreground">
           {category}

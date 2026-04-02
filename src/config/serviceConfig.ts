@@ -135,6 +135,10 @@ export const serviceImages: Record<string, string> = {
   'Core Radiance': '/images/rebase-core-radiance.jpg',
 };
 
+export const serviceImagePositions: Record<string, string> = {
+  'Core Radiance': 'center 80%',
+};
+
 export const categoryImages: Record<string, string> = {
   'Recovery': '/images/rebase-hbot-new.png',
   'Wellness': '/images/rebase-ice-sauna.webp',

@@ -81,6 +81,7 @@ const ServiceCardCompact = ({
           src={image}
           alt={title}
           className="w-full h-full object-cover"
+          style={{ objectPosition: serviceImagePositions[title] || 'center' }}
         />
         {isFeatured && (
           <div className="absolute top-0.5 right-0.5 w-5 h-5 bg-gold rounded-full flex items-center justify-center">
