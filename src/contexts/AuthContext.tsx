@@ -25,8 +25,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mbSession, setMbSession] = useState<MindbodySession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Load session from localStorage on mount
+  // Check URL hash for native OAuth redirect session on mount
   useEffect(() => {
+    const hash = window.location.hash;
+
+    if (hash.includes('#auth-session=')) {
+      try {
+        const encoded = hash.split('#auth-session=')[1];
+        const decoded = JSON.parse(atob(decodeURIComponent(encoded)));
+        const session: MindbodySession = {
+          sessionId: decoded.sessionId,
+          email: decoded.email,
+          firstName: decoded.firstName,
+          lastName: decoded.lastName,
+          expiresAt: decoded.expiresAt,
+        };
+        localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(session));
+        setMbSession(session);
+        // Clear the hash from the URL
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      } catch (e) {
+        console.error('Failed to parse auth session from hash:', e);
+      }
+      setIsLoading(false);
+      return;
+    }
+
+    // Load session from localStorage
     const stored = localStorage.getItem(MB_STORAGE_KEY);
     if (stored) {
       try {
@@ -41,10 +66,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(async () => {
     try {
+      const isNative = navigator.userAgent.includes('despia');
+
       const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({}),
+        body: JSON.stringify({
+          native: isNative,
+          origin: window.location.origin,
+        }),
       });
 
       const data = await res.json();
@@ -52,6 +82,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Failed to get login URL');
       }
 
+      // Native: redirect the full page instead of popup
+      if (isNative) {
+        window.location.href = data.authUrl;
+        return;
+      }
+
+      // Web: open popup
       const width = 500;
       const height = 600;
       const left = window.screenX + (window.outerWidth - width) / 2;

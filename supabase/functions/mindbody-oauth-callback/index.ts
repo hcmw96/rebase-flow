@@ -21,12 +21,28 @@ interface IdTokenPayload {
   family_name?: string;
 }
 
+interface StatePayload {
+  csrf?: string;
+  native?: boolean;
+  origin?: string;
+}
+
 function decodeJwtPayload(token: string): IdTokenPayload {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid JWT format");
   const payload = parts[1];
   const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
   return JSON.parse(decoded);
+}
+
+function parseState(stateStr: string): StatePayload {
+  try {
+    const decoded = atob(stateStr);
+    return JSON.parse(decoded);
+  } catch {
+    // Legacy state format (plain UUID)
+    return { csrf: stateStr, native: false, origin: "" };
+  }
 }
 
 async function exchangeAndSaveSession(code: string, redirectUri: string) {
@@ -118,9 +134,21 @@ serve(async (req) => {
         const formData = await req.formData();
         const code = formData.get("code") as string;
         const error = formData.get("error") as string;
+        const stateStr = (formData.get("state") as string) || "";
+        const statePayload = parseState(stateStr);
 
         if (error) {
           console.error("OAuth error from Mindbody:", error);
+
+          // Native redirect flow
+          if (statePayload.native && statePayload.origin) {
+            const errorData = btoa(JSON.stringify({ error }));
+            return new Response(null, {
+              status: 302,
+              headers: { Location: `${statePayload.origin}/#auth-error=${errorData}` },
+            });
+          }
+
           return new Response(
             `<html><body><script>
               window.opener.postMessage({ type: 'rebase-oauth-callback', error: '${error}' }, '*');
@@ -136,7 +164,16 @@ serve(async (req) => {
 
         const sessionData = await exchangeAndSaveSession(code, redirectUri);
 
-        // Return HTML that posts the session back to the opener and closes
+        // Native redirect flow — redirect back to app with session in hash
+        if (statePayload.native && statePayload.origin) {
+          const sessionB64 = btoa(JSON.stringify(sessionData));
+          return new Response(null, {
+            status: 302,
+            headers: { Location: `${statePayload.origin}/#auth-session=${sessionB64}` },
+          });
+        }
+
+        // Web popup flow — postMessage back to opener
         return new Response(
           `<html><body><script>
             window.opener.postMessage({

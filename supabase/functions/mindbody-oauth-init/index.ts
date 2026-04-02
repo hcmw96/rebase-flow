@@ -19,11 +19,27 @@ serve(async (req) => {
       throw new Error("Missing Mindbody OAuth configuration");
     }
 
+    // Parse request body for optional native flag and origin
+    let native = false;
+    let origin = "";
+    try {
+      const body = await req.json();
+      native = !!body.native;
+      origin = body.origin || "";
+    } catch {
+      // empty body is fine
+    }
+
     // Server-determined redirect URI pointing to our callback edge function
     const redirectUri = `${supabaseUrl}/functions/v1/mindbody-oauth-callback`;
 
-    // Generate a random state for CSRF protection
-    const state = crypto.randomUUID();
+    // Encode native info into the state parameter
+    const statePayload = JSON.stringify({
+      csrf: crypto.randomUUID(),
+      native,
+      origin,
+    });
+    const state = btoa(statePayload);
 
     const authUrl = new URL("https://signin.mindbodyonline.com/connect/authorize");
     authUrl.searchParams.set("response_type", "code id_token");
