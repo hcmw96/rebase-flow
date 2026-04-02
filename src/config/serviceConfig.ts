@@ -145,7 +145,7 @@ export const serviceImages: Record<string, string> = {
 };
 
 export const serviceImagePositions: Record<string, string> = {
-  'Core Radiance': 'center 80%',
+  'Core Radiance': 'center 100%',
 };
 
 export const categoryImages: Record<string, string> = {
