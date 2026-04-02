@@ -24,6 +24,7 @@ import {
   canonicalizeServiceName,
   resolveCategory,
   resolveImage,
+  serviceImagePositions,
   GroupedService,
 } from '@/config/serviceConfig';
 
