@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Clock, ChevronRight, Star } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ServiceVariant } from '@/components/ServiceCard';
+import { serviceImagePositions } from '@/config/serviceConfig';
 
 interface ServiceCardCompactProps {
   id: string;
