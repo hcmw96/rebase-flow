@@ -65,6 +65,8 @@ export const hiddenServiceNames = new Set([
   'Destress Head, Neck and Shoulders', 'Indian Head Massage', 'Indian Massage',
   'Hyaluronic Acid - 1 Joint', 'Hyaluronic Acid - 2 Joints',
   'Hyaluronic Acid - 3 Joints', 'Hyaluronic Acid - 4 Joints',
+  'Hyalouronic Acid - 1 Joint', 'Hyalouronic Acid - 2 Joints',
+  'Hyalouronic Acid - 3 Joints', 'Hyalouronic Acid - 4 Joints',
 ]);
 
 // ── Category mapping ───────────────────────────────────────────────
