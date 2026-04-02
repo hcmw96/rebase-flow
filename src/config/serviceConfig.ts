@@ -38,7 +38,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /longevity/i, groupName: 'Longevity' },
   { pattern: /athletes?\s*performance/i, groupName: 'Athletes Performance' },
   { pattern: /^core\s*radiance/i, groupName: 'Core Radiance' },
-  { pattern: /hyaluronic/i, groupName: 'Hyaluronic' },
+  { pattern: /hyalou?ronic/i, groupName: 'Hyaluronic' },
   { pattern: /injectables?/i, groupName: 'Injectables' },
   { pattern: /neuro.?\s*regulation/i, groupName: 'Neuro Regulation' },
 ];
@@ -65,6 +65,8 @@ export const hiddenServiceNames = new Set([
   'Destress Head, Neck and Shoulders', 'Indian Head Massage', 'Indian Massage',
   'Hyaluronic Acid - 1 Joint', 'Hyaluronic Acid - 2 Joints',
   'Hyaluronic Acid - 3 Joints', 'Hyaluronic Acid - 4 Joints',
+  'Hyalouronic Acid - 1 Joint', 'Hyalouronic Acid - 2 Joints',
+  'Hyalouronic Acid - 3 Joints', 'Hyalouronic Acid - 4 Joints',
 ]);
 
 // ── Category mapping ───────────────────────────────────────────────
