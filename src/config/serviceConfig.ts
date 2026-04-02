@@ -53,6 +53,7 @@ export const hiddenGroupNames = new Set([
   'Nutritional Therapy',
   'Structural Fascia Therapy', 'Ozone Therapy', 'Skin Rejuvenation',
   'Skin Peel', 'BioStimulation', 'Myofascial Dry Needling',
+  'Hyaluronic', 'Injectables', 'Neuro Regulation',
 ]);
 
 export const hiddenProgramIds = new Set([12]);
