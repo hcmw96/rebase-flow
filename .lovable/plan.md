@@ -1,29 +1,26 @@
 
 
-# Adjust Core Radiance Image Position
+# Fix Hyaluronic Acid Service Hiding (Misspelling)
 
-## Summary
-The Core Radiance card image crops at the top, hiding the face. Add a per-service `objectPosition` override so the image shifts down to show the face.
+## Problem
+The Mindbody API returns "Hyalouronic" (with an extra 'o') instead of "Hyaluronic", so the current regex `/hyaluronic/i` doesn't match.
 
-## Changes
+## Fix
 
-### 1. `src/config/serviceConfig.ts`
-Add a new config map for custom image positions:
-```typescript
-export const serviceImagePositions: Record<string, string> = {
-  'Core Radiance': 'center 80%',
-};
-```
+### `src/config/serviceConfig.ts`
+1. Update the regex pattern in `serviceGroupMappings` to handle both spellings:
+   ```typescript
+   { pattern: /hyalou?ronic/i, groupName: 'Hyaluronic' },
+   ```
 
-### 2. `src/components/ServiceCardCompact.tsx`
-- Import `serviceImagePositions` from config
-- On the `<img>` tag, apply `style={{ objectPosition: serviceImagePositions[title] || 'center' }}` so Core Radiance shifts the focal point down.
+2. Add the misspelled variants to `hiddenServiceNames`:
+   ```typescript
+   'Hyalouronic Acid - 1 Joint',
+   'Hyalouronic Acid - 2 Joints',
+   ```
 
-### 3. `src/components/ServiceCard.tsx`
-- Same change: import `serviceImagePositions` and apply the `objectPosition` style to the card image.
+This double-coverage ensures the services are caught both by group canonicalization and by exact name matching.
 
 ## Files modified
 - `src/config/serviceConfig.ts`
-- `src/components/ServiceCardCompact.tsx`
-- `src/components/ServiceCard.tsx`
 
