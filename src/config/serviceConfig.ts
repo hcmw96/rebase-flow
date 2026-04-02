@@ -131,6 +131,7 @@ export const serviceImages: Record<string, string> = {
   'High Performance Recovery': '/images/rebase-high-performance-recovery.jpg',
   'Longevity': '/images/rebase-longevity.jpg',
   'Athletes Performance': '/images/rebase-athletes-performance.jpg',
+  'Core Radiance': '/images/rebase-core-radiance.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
