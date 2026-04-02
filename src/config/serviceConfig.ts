@@ -37,6 +37,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /high\s*performance\s*recovery/i, groupName: 'High Performance Recovery' },
   { pattern: /longevity/i, groupName: 'Longevity' },
   { pattern: /athletes?\s*performance/i, groupName: 'Athletes Performance' },
+  { pattern: /^core\s*radiance/i, groupName: 'Core Radiance' },
 ];
 
 // ── Hidden items ───────────────────────────────────────────────────
@@ -131,6 +132,7 @@ export const serviceImages: Record<string, string> = {
   'High Performance Recovery': '/images/rebase-high-performance-recovery.jpg',
   'Longevity': '/images/rebase-longevity.jpg',
   'Athletes Performance': '/images/rebase-athletes-performance.jpg',
+  'Core Radiance': '/images/rebase-core-radiance.jpg',
 };
 
 export const categoryImages: Record<string, string> = {
