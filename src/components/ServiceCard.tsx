@@ -4,6 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
+import { serviceImagePositions } from '@/config/serviceConfig';
 
 export interface ServiceVariant {
   id: string;
