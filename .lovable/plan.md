@@ -1,31 +1,37 @@
 
 
-# Fix Safe Area Insets for Despia Native — All Locations
+# Add "Book Now" Button to Mobile Header
 
 ## Problem
-`BookingDrawer.tsx` uses `env(safe-area-inset-top)` directly in two inline styles (lines 242 and 276), bypassing Despia's `--safe-area-top` CSS variable. This means the close/back buttons sit behind the native status bar.
-
-`AppShell.tsx` and `index.css` already use the correct `var(--safe-area-top, env(...))` fallback chain — no changes needed there.
+On mobile, the header only shows the logo and hamburger menu. The "Book Now" button is hidden inside the mobile menu drawer, so users can't see it while scrolling.
 
 ## Fix
 
-### `src/components/booking/BookingDrawer.tsx`
-Update the two inline `paddingTop` styles:
+### `src/components/Navigation.tsx`
+Add a compact "Book Now" button next to the hamburger icon in the mobile header bar (the `lg:hidden` section around line 207).
 
-**Line 242** (hero image header):
-```
-paddingTop: 'max(1rem, env(safe-area-inset-top))'
-→
-paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))'
+Change the mobile right-side from just the hamburger to a flex row with both a "Book Now" button and the hamburger:
+
+```tsx
+{/* Mobile: Book Now + Hamburger */}
+<div className="lg:hidden flex items-center gap-2">
+  <Button
+    variant="outline"
+    size="sm"
+    onClick={handleBookNow}
+    className="text-[11px] tracking-[0.08em] px-3 h-8 rounded-none border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
+  >
+    Book Now
+    <ArrowRight className="ml-1 h-3 w-3" />
+  </Button>
+  <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className={textColor}>
+    {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+  </Button>
+</div>
 ```
 
-**Line 276** (non-image header):
-```
-paddingTop: 'max(1rem, env(safe-area-inset-top))'
-→
-paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))'
-```
+This keeps the button always visible in the mobile header as you scroll, matching the screenshot reference.
 
 ## Files modified
-- `src/components/booking/BookingDrawer.tsx` (2 lines)
+- `src/components/Navigation.tsx`
 
