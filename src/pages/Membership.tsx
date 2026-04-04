@@ -109,6 +109,12 @@ const Membership = () => {
                 </span>
               )}
 
+              {tier.image && (
+                <div className="-mx-8 sm:-mx-10 -mt-8 sm:-mt-10 mb-6 overflow-hidden rounded-t-sm">
+                  <img src={tier.image} alt={tier.name} className="w-full h-48 object-cover" />
+                </div>
+              )}
+
               <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide uppercase mb-4">
                 {tier.name}
               </h2>
