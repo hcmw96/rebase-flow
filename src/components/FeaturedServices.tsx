@@ -170,7 +170,7 @@ const FeaturedServices = ({ featuredServices, servicesMap }: FeaturedServicesPro
                           </span>
                         )}
                         <span className="text-sm font-semibold text-foreground">
-                          {formatPrice(variant.price)}
+                          {formatPrice(variant.price, service.baseName)}
                         </span>
                       </div>
                     </div>

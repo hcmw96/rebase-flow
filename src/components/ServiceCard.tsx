@@ -66,9 +66,9 @@ const ServiceCard = ({
   // Get lowest price for "From £X" display
   const getFromPrice = () => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
-    if (prices.length === 0) return null;
-    const min = Math.min(...prices);
-    return min;
+    if (prices.length > 0) return Math.min(...prices);
+    if (priceOverrides[title] !== undefined) return priceOverrides[title];
+    return null;
   };
 
   const fromPrice = getFromPrice();

@@ -217,7 +217,11 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   const isBooking = bookServiceMutation.isPending;
 
   const displayDuration = activeVariant?.duration ? `${activeVariant.duration} min` : '';
-  const displayPrice = activeVariant?.price ? `£${activeVariant.price.toFixed(2)}` : 'Contact for pricing';
+  const displayPrice = activeVariant?.price
+    ? `£${activeVariant.price.toFixed(2)}`
+    : (service?.title && priceOverrides[service.title] !== undefined
+        ? `£${priceOverrides[service.title].toFixed(2)}`
+        : 'Contact for pricing');
   const displayTitle = activeVariant?.name || service?.title || '';
 
   if (!service) return null;

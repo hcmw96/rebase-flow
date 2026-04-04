@@ -228,7 +228,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                 ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
                   {catServices.map((service) => {
-                    const fromPrice = getFromPrice(service.variants);
+                    const fromPrice = getFromPrice(service.variants, service.baseName);
                     const firstVariant = service.variants[0];
                     const shortDesc = shortDescriptions[service.baseName] || 'Experience our premium wellness service.';
 
