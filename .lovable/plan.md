@@ -1,37 +1,22 @@
 
 
-# Add "Book Now" Button to Mobile Header
+# Map "Members Only" to Communal Members Suite
 
 ## Problem
-On mobile, the header only shows the logo and hamburger menu. The "Book Now" button is hidden inside the mobile menu drawer, so users can't see it while scrolling.
+A Mindbody service called "Members Only" is slipping through as a separate card with lowercase text and "Contact for pricing". Per the Mindbody dashboard, this is a Members Suite session and should appear under the "Communal Members Suite" category — not be hidden or shown as its own card.
 
 ## Fix
 
-### `src/components/Navigation.tsx`
-Add a compact "Book Now" button next to the hamburger icon in the mobile header bar (the `lg:hidden` section around line 207).
+### `src/config/serviceConfig.ts`
 
-Change the mobile right-side from just the hamburger to a flex row with both a "Book Now" button and the hamburger:
+1. **Remove** `'Members Only'` from `hiddenGroupNames` (line 51)
+2. **Add** a regex to `serviceGroupMappings` to canonicalize it to `"Members Suite"`:
+   ```ts
+   { pattern: /^members?\s*(only|suite)/i, groupName: "Members Suite" }
+   ```
+3. **Add** `'Members Suite'` to `categoryOverrides` mapping to `'Communal Members Suite'` (already partially there via `programNameOverrides`, but adding explicitly to `categoryOverrides` ensures it resolves correctly)
 
-```tsx
-{/* Mobile: Book Now + Hamburger */}
-<div className="lg:hidden flex items-center gap-2">
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={handleBookNow}
-    className="text-[11px] tracking-[0.08em] px-3 h-8 rounded-none border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
-  >
-    Book Now
-    <ArrowRight className="ml-1 h-3 w-3" />
-  </Button>
-  <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className={textColor}>
-    {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-  </Button>
-</div>
-```
-
-This keeps the button always visible in the mobile header as you scroll, matching the screenshot reference.
+This will make "Members Only" sessions appear as part of the existing Members Suite group under "Communal Members Suite".
 
 ## Files modified
-- `src/components/Navigation.tsx`
-
+- `src/config/serviceConfig.ts`
