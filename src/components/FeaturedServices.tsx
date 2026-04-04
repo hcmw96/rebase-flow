@@ -70,9 +70,10 @@ const FeaturedServices = ({ featuredServices, servicesMap }: FeaturedServicesPro
     navigate(`/book/${variant.id}`);
   };
 
-  const formatPrice = (price: number | null) => {
-    if (price === null || price === 0) return 'Contact';
-    return `£${price.toFixed(0)}`;
+  const formatPrice = (price: number | null, baseName?: string) => {
+    if (price !== null && price > 0) return `£${price.toFixed(0)}`;
+    if (baseName && priceOverrides[baseName] !== undefined) return `£${priceOverrides[baseName]}`;
+    return 'Contact';
   };
 
   // Filter to only show services that exist in the services map
