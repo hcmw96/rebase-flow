@@ -19,6 +19,7 @@ import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ServiceVariant } from '@/components/ServiceCard';
+import { priceOverrides } from '@/config/serviceConfig';
 
 export interface BookingServiceData {
   title: string;
