@@ -20,6 +20,7 @@ import {
   contactOnlyGroups,
   shortDescriptions,
   classOfferings,
+  priceOverrides,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
@@ -130,9 +131,11 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     });
   };
 
-  const getFromPrice = (variants: ServiceVariant[]) => {
+  const getFromPrice = (variants: ServiceVariant[], baseName?: string) => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
-    return prices.length ? Math.min(...prices) : null;
+    if (prices.length) return Math.min(...prices);
+    if (baseName && priceOverrides[baseName] !== undefined) return priceOverrides[baseName];
+    return null;
   };
 
   if (isLoading) {
@@ -225,7 +228,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                 ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 pb-4">
                   {catServices.map((service) => {
-                    const fromPrice = getFromPrice(service.variants);
+                    const fromPrice = getFromPrice(service.variants, service.baseName);
                     const firstVariant = service.variants[0];
                     const shortDesc = shortDescriptions[service.baseName] || 'Experience our premium wellness service.';
 

@@ -160,6 +160,11 @@ export const categoryImages: Record<string, string> = {
 // ── Contact-only groups ────────────────────────────────────────────
 export const contactOnlyGroups = new Set(['Osteopathy']);
 
+// ── Price overrides (when Mindbody API returns null) ──────────────
+export const priceOverrides: Record<string, number> = {
+  'Members Suite': 65,
+};
+
 // ── Short descriptions (website cards) ─────────────────────────────
 export const shortDescriptions: Record<string, string> = {
   'Infrared Suite': 'Detoxifying infrared heat followed by an invigorating ice bath.',

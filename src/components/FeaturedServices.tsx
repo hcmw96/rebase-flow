@@ -4,6 +4,7 @@ import { Star, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ServiceVariant } from '@/components/ServiceCard';
+import { priceOverrides } from '@/config/serviceConfig';
 
 interface FeaturedServiceData {
   id: string;
@@ -69,9 +70,10 @@ const FeaturedServices = ({ featuredServices, servicesMap }: FeaturedServicesPro
     navigate(`/book/${variant.id}`);
   };
 
-  const formatPrice = (price: number | null) => {
-    if (price === null || price === 0) return 'Contact';
-    return `£${price.toFixed(0)}`;
+  const formatPrice = (price: number | null, baseName?: string) => {
+    if (price !== null && price > 0) return `£${price.toFixed(0)}`;
+    if (baseName && priceOverrides[baseName] !== undefined) return `£${priceOverrides[baseName]}`;
+    return 'Contact';
   };
 
   // Filter to only show services that exist in the services map
@@ -168,7 +170,7 @@ const FeaturedServices = ({ featuredServices, servicesMap }: FeaturedServicesPro
                           </span>
                         )}
                         <span className="text-sm font-semibold text-foreground">
-                          {formatPrice(variant.price)}
+                          {formatPrice(variant.price, service.baseName)}
                         </span>
                       </div>
                     </div>
