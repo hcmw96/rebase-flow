@@ -4,6 +4,7 @@ import { Star, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ServiceVariant } from '@/components/ServiceCard';
+import { priceOverrides } from '@/config/serviceConfig';
 
 interface FeaturedServiceData {
   id: string;
