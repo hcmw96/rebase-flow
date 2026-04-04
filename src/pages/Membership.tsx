@@ -21,6 +21,7 @@ const tiers = [
   },
   {
     name: "Resident",
+    image: "/images/rebase-resident-membership.webp",
     overview:
       "Our Resident membership provides access to all treatments at Rebase. Perfect for those wanting to enjoy tailored sports recovery services, dedicated wellness stewardship and concentrated access to all of our contrast services. This membership is perfect for anyone with a focus on performance.",
     details: [
