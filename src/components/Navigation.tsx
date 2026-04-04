@@ -204,14 +204,18 @@ const Navigation = () => {
             </Link>
           </div>
 
-          {/* Hamburger — mobile */}
-          <div className="lg:hidden">
+          {/* Mobile: Book Now + Hamburger */}
+          <div className="lg:hidden flex items-center gap-2">
             <Button
-              variant="ghost"
+              variant="outline"
               size="sm"
-              onClick={() => setIsOpen(!isOpen)}
-              className={textColor}
+              onClick={handleBookNow}
+              className="text-[11px] tracking-[0.08em] px-3 h-8 rounded-none border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
             >
+              Book Now
+              <ArrowRight className="ml-1 h-3 w-3" />
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className={textColor}>
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>
