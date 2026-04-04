@@ -20,6 +20,7 @@ import {
   contactOnlyGroups,
   shortDescriptions,
   classOfferings,
+  priceOverrides,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
