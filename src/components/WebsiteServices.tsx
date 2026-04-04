@@ -131,9 +131,11 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     });
   };
 
-  const getFromPrice = (variants: ServiceVariant[]) => {
+  const getFromPrice = (variants: ServiceVariant[], baseName?: string) => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
-    return prices.length ? Math.min(...prices) : null;
+    if (prices.length) return Math.min(...prices);
+    if (baseName && priceOverrides[baseName] !== undefined) return priceOverrides[baseName];
+    return null;
   };
 
   if (isLoading) {
