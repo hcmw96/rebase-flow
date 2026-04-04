@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 const tiers = [
   {
     name: "Base",
+    image: "/images/rebase-base-membership.webp",
     overview:
       "Our Base membership is the perfect platform from which to begin your journey to optimal health. Providing value for money and a chance to try everything on offer at Rebase, this is the perfect entry level membership for those wishing to take their health seriously.",
     details: [
