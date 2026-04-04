@@ -1,22 +1,28 @@
 
 
-# Map "Members Only" to Communal Members Suite
+# Add Image to Ultimate Membership Tier
 
-## Problem
-A Mindbody service called "Members Only" is slipping through as a separate card with lowercase text and "Contact for pricing". Per the Mindbody dashboard, this is a Members Suite session and should appear under the "Communal Members Suite" category — not be hidden or shown as its own card.
+## What
+Copy the uploaded image to the project and display it as a hero/banner image on the Ultimate membership card.
 
-## Fix
+## Changes
 
-### `src/config/serviceConfig.ts`
+### 1. Copy image asset
+Copy `user-uploads://LouisWaite_RebaseRecovery_MembersSuite_Class_334_1.webp` to `public/images/rebase-ultimate-membership.webp`
 
-1. **Remove** `'Members Only'` from `hiddenGroupNames` (line 51)
-2. **Add** a regex to `serviceGroupMappings` to canonicalize it to `"Members Suite"`:
-   ```ts
-   { pattern: /^members?\s*(only|suite)/i, groupName: "Members Suite" }
-   ```
-3. **Add** `'Members Suite'` to `categoryOverrides` mapping to `'Communal Members Suite'` (already partially there via `programNameOverrides`, but adding explicitly to `categoryOverrides` ensures it resolves correctly)
+### 2. `src/pages/Membership.tsx`
+Add an `image` field to the Ultimate tier in the `tiers` array:
+```ts
+{
+  name: "Ultimate",
+  image: "/images/rebase-ultimate-membership.webp",
+  ...
+}
+```
 
-This will make "Members Only" sessions appear as part of the existing Members Suite group under "Communal Members Suite".
+Update the card rendering to show the image at the top of the card when present — a full-width image with `object-cover` above the tier name, inside the existing `motion.div`.
 
 ## Files modified
-- `src/config/serviceConfig.ts`
+- `src/pages/Membership.tsx`
+- `public/images/rebase-ultimate-membership.webp` (new)
+
