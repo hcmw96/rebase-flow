@@ -2,6 +2,7 @@ import { ServiceVariant } from '@/components/ServiceCard';
 
 // ── Grouping patterns ──────────────────────────────────────────────
 export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
+  { pattern: /^members?\s*(only|suite)/i, groupName: 'Members Suite' },
   { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
   { pattern: /^nad\+?/i, groupName: 'NAD+' },
   { pattern: /^vitamin\s*shots?/i, groupName: 'IV Drip' },
