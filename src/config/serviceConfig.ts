@@ -49,7 +49,7 @@ export const hiddenGroupNames = new Set([
   'Rebase Packages', 'Corporate Credits', 'Corporate credits',
   'Classes', 'Off Peak Access', 'MOCK CLASS', 'Vitamin Stack',
   'Club Takeover', 'Ozone Aesthetics Packages', 'Hydro Pro Facial',
-  'Members Wellness Event', 'Members Only', 'Sound Bath',
+  'Members Wellness Event', 'Sound Bath',
   'Wellness Event', 'Saturday Buffer', 'Thursday Buffer',
   'Nutritional Therapy',
   'Structural Fascia Therapy', 'Ozone Therapy', 'Skin Rejuvenation',
