@@ -36,6 +36,7 @@ const tiers = [
   },
   {
     name: "Ultimate",
+    image: "/images/rebase-ultimate-membership.webp",
     overview:
       "The Ultimate membership unlocks the full potential of Rebase. Develop a bespoke package to suit your wellness needs and achieve elemental balance through unlimited access to our Cryo and classes, along with a robust package of private suite sessions, HBOT and recovery practitioners. This membership is for corporate athletes, performance enthusiasts and anyone looking to unlock the full potential of their genetic code.",
     details: [
@@ -106,6 +107,12 @@ const Membership = () => {
                 <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#F9ECD9] text-[#1a1a1a] text-[10px] uppercase tracking-[0.2em] font-medium px-4 py-1">
                   Most Popular
                 </span>
+              )}
+
+              {tier.image && (
+                <div className="-mx-8 sm:-mx-10 -mt-8 sm:-mt-10 mb-6 overflow-hidden rounded-t-sm">
+                  <img src={tier.image} alt={tier.name} className="w-full h-48 object-cover" />
+                </div>
               )}
 
               <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide uppercase mb-4">
