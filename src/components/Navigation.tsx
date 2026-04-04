@@ -83,7 +83,7 @@ const Navigation = () => {
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <div className={cn("flex justify-between items-center transition-all duration-300", scrolled ? "h-14" : "h-20")}>
           {/* Logo */}
-          <Link to="/" className="flex-shrink-0">
+          <Link to="/website" className="flex-shrink-0">
             <img
               src={wordmark}
               alt="Rebase"
