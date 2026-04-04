@@ -36,6 +36,7 @@ const tiers = [
   },
   {
     name: "Ultimate",
+    image: "/images/rebase-ultimate-membership.webp",
     overview:
       "The Ultimate membership unlocks the full potential of Rebase. Develop a bespoke package to suit your wellness needs and achieve elemental balance through unlimited access to our Cryo and classes, along with a robust package of private suite sessions, HBOT and recovery practitioners. This membership is for corporate athletes, performance enthusiasts and anyone looking to unlock the full potential of their genetic code.",
     details: [
