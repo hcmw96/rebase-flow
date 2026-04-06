@@ -4,6 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Helmet } from "react-helmet-async";
+
+const SITE_URL = "https://rebase-flow.lovable.app";
 
 const tiers = [
   {
@@ -56,6 +59,16 @@ const tiers = [
 const Membership = () => {
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1a1a1a]">
+      <Helmet>
+        <title>Membership Plans — Rebase Recovery London</title>
+        <meta name="description" content="Choose from Base, Resident or Ultimate membership tiers at Rebase Recovery. Unlock cryotherapy, HBOT, private suites, classes and more in Marylebone, London." />
+        <link rel="canonical" href={`${SITE_URL}/membership`} />
+        <meta property="og:title" content="Membership Plans — Rebase Recovery London" />
+        <meta property="og:description" content="Elevate your recovery with Rebase membership. Unlimited cryotherapy, classes, private suites & more." />
+        <meta property="og:url" content={`${SITE_URL}/membership`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
+      </Helmet>
       <Navigation />
 
       {/* Hero */}

@@ -1,9 +1,17 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import { Helmet } from "react-helmet-async";
+
+const SITE_URL = "https://rebase-flow.lovable.app";
 
 const CookiePolicy = () => {
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1A1A1A] text-[#F9ECD9]">
+      <Helmet>
+        <title>Cookie Policy — Rebase Recovery</title>
+        <meta name="description" content="Learn how Rebase Recovery uses cookies to improve your experience on our website. Manage your cookie preferences." />
+        <link rel="canonical" href={`${SITE_URL}/cookie-policy`} />
+      </Helmet>
       <Navigation />
       <main className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
         <h1 className="text-3xl sm:text-4xl font-light tracking-wide mb-4">Cookie Policy</h1>
