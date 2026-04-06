@@ -133,6 +133,11 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
       >
         <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-sm">
           <h3 className="font-semibold text-base text-foreground">{selectedClass.name}</h3>
+          {selectedClass.description && (
+            <p className="text-sm text-muted-foreground">
+              {stripHtml(selectedClass.description)}
+            </p>
+          )}
           <div className="space-y-2">
             <div className="flex items-center gap-3">
               <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -249,6 +254,11 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
             >
               <div className="space-y-1">
                 <div className="font-medium text-foreground">{nextSession.name}</div>
+                {nextSession.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">
+                    {stripHtml(nextSession.description)}
+                  </p>
+                )}
                 <div className="text-xs text-muted-foreground flex items-center gap-3">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
