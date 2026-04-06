@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, addDays } from 'date-fns';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
@@ -21,6 +21,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
 
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), 7), 'yyyy-MM-dd');
@@ -40,16 +41,20 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
       .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
   }, [classes, classDescriptionIds]);
 
-  // Group by day
-  const groupedByDay = useMemo(() => {
+  // Split into next session and rest
+  const nextSession = filteredClasses[0] ?? null;
+  const otherSessions = filteredClasses.slice(1);
+
+  // Group remaining sessions by day
+  const otherGroupedByDay = useMemo(() => {
     const map = new Map<string, MindbodyClass[]>();
-    for (const cls of filteredClasses) {
+    for (const cls of otherSessions) {
       const day = format(new Date(cls.startDateTime), 'yyyy-MM-dd');
       if (!map.has(day)) map.set(day, []);
       map.get(day)!.push(cls);
     }
     return map;
-  }, [filteredClasses]);
+  }, [otherSessions]);
 
   const handleBook = async () => {
     if (!selectedClass || !mbSession) return;
@@ -174,62 +179,126 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
     );
   }
 
+
+  const renderClassButton = (cls: MindbodyClass) => (
+    <button
+      key={cls.id}
+      onClick={() => setSelectedClass(cls)}
+      className={cn(
+        'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
+        'border-border hover:border-primary/50'
+      )}
+    >
+      <div className="space-y-1">
+        <div className="font-medium text-foreground">{cls.name}</div>
+        <div className="text-xs text-muted-foreground flex items-center gap-3">
+          <span className="flex items-center gap-1">
+            <Clock className="h-3 w-3" />
+            {format(new Date(cls.startDateTime), 'h:mm a')}
+          </span>
+          {cls.staffName && (
+            <span className="flex items-center gap-1">
+              <User className="h-3 w-3" />
+              {cls.staffName}
+            </span>
+          )}
+        </div>
+      </div>
+      <div className="text-xs text-muted-foreground flex items-center gap-1">
+        <Users className="h-3 w-3" />
+        {cls.availableSpots} spots
+      </div>
+    </button>
+  );
+
   return (
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       className="space-y-4"
     >
-      <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-        Upcoming Sessions — Next 7 Days
-      </h3>
-
       {isLoading ? (
         <div className="flex items-center justify-center py-12">
           <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
         </div>
-      ) : filteredClasses.length === 0 ? (
+      ) : !nextSession ? (
         <div className="text-center py-12 text-muted-foreground text-sm">
           No upcoming sessions found for this class.
         </div>
       ) : (
-        Array.from(groupedByDay.entries()).map(([day, dayCls]) => (
-          <div key={day} className="space-y-2">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-              {format(new Date(day), 'EEEE, MMM d')}
-            </p>
-            {dayCls.map((cls) => (
-              <button
-                key={cls.id}
-                onClick={() => setSelectedClass(cls)}
-                className={cn(
-                  'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
-                  'border-border hover:border-primary/50'
-                )}
-              >
-                <div className="space-y-1">
-                  <div className="font-medium text-foreground">{cls.name}</div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-3">
+        <>
+          {/* Next available session */}
+          <div className="space-y-2">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Next Available
+            </h3>
+            <button
+              onClick={() => setSelectedClass(nextSession)}
+              className={cn(
+                'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
+                'border-primary/40 bg-primary/5 hover:border-primary/70'
+              )}
+            >
+              <div className="space-y-1">
+                <div className="font-medium text-foreground">{nextSession.name}</div>
+                <div className="text-xs text-muted-foreground flex items-center gap-3">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    {format(new Date(nextSession.startDateTime), 'EEE, MMM d')}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-3 w-3" />
+                    {format(new Date(nextSession.startDateTime), 'h:mm a')}
+                  </span>
+                  {nextSession.staffName && (
                     <span className="flex items-center gap-1">
-                      <Clock className="h-3 w-3" />
-                      {format(new Date(cls.startDateTime), 'h:mm a')}
+                      <User className="h-3 w-3" />
+                      {nextSession.staffName}
                     </span>
-                    {cls.staffName && (
-                      <span className="flex items-center gap-1">
-                        <User className="h-3 w-3" />
-                        {cls.staffName}
-                      </span>
-                    )}
-                  </div>
+                  )}
                 </div>
-                <div className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Users className="h-3 w-3" />
-                  {cls.availableSpots} spots
-                </div>
-              </button>
-            ))}
+              </div>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <Users className="h-3 w-3" />
+                {nextSession.availableSpots} spots
+              </div>
+            </button>
           </div>
-        ))
+
+          {/* Expandable remaining sessions */}
+          {otherSessions.length > 0 && (
+            <div className="space-y-3">
+              <button
+                onClick={() => setShowAll(!showAll)}
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors w-full"
+              >
+                <ChevronDown className={cn('h-4 w-4 transition-transform', showAll && 'rotate-180')} />
+                <span>{showAll ? 'Hide' : 'Show'} more sessions ({otherSessions.length})</span>
+              </button>
+
+              <AnimatePresence>
+                {showAll && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="overflow-hidden space-y-4"
+                  >
+                    {Array.from(otherGroupedByDay.entries()).map(([day, dayCls]) => (
+                      <div key={day} className="space-y-2">
+                        <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                          {format(new Date(day), 'EEEE, MMM d')}
+                        </p>
+                        {dayCls.map(renderClassButton)}
+                      </div>
+                    ))}
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          )}
+        </>
       )}
     </motion.div>
   );
