@@ -179,19 +179,6 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
     );
   }
 
-  const nextSession = filteredClasses[0] ?? null;
-  const otherSessions = filteredClasses.slice(1);
-
-  // Group remaining sessions by day
-  const otherGroupedByDay = useMemo(() => {
-    const map = new Map<string, MindbodyClass[]>();
-    for (const cls of otherSessions) {
-      const day = format(new Date(cls.startDateTime), 'yyyy-MM-dd');
-      if (!map.has(day)) map.set(day, []);
-      map.get(day)!.push(cls);
-    }
-    return map;
-  }, [otherSessions]);
 
   const renderClassButton = (cls: MindbodyClass) => (
     <button
