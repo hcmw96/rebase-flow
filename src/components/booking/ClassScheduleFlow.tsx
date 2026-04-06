@@ -9,6 +9,14 @@ import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
+const stripHtml = (html: string) => {
+  if (typeof DOMParser !== 'undefined') {
+    const doc = new DOMParser().parseFromString(html, 'text/html');
+    return doc.body.textContent || '';
+  }
+  return html.replace(/<[^>]*>?/gm, '');
+};
+
 interface ClassScheduleFlowProps {
   classDescriptionIds: number[];
   className: string;
