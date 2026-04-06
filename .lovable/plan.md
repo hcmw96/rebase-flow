@@ -1,34 +1,34 @@
 
 
-# Static Pre-Rendering for SEO — Not Feasible on Lovable
+# Fix Members Suite — Show £65 and Make Bookable
 
-## The Problem
+## Problem
+The Mindbody API returns two "members only" session types (IDs 1206 and 1207) both with `price: null`. The booking drawer shows "Contact" for each variant instead of £65, making it look unbookable.
 
-You're asking for static HTML snapshots or dynamic rendering (bot detection + pre-rendered HTML serving) for your public routes. This is a great SEO strategy, but **none of the proposed solutions work on the Lovable platform**:
+## Root Cause
+The `priceOverrides` map in `serviceConfig.ts` only applies at the card level (the "From £65" display). But when building variant objects in `WebsiteServices.tsx`, the raw `service.price` (null) is used directly. The booking drawer then shows "Contact" for any variant with a null price.
 
-### Why Each Option Fails Here
+## Fix
 
-| Solution | Why It Won't Work |
-|----------|-------------------|
-| **react-snap** | Requires a custom `postbuild` step that launches a headless browser. Lovable's build pipeline doesn't support custom post-build scripts. |
-| **Vite SSG plugin** | Requires server-side Node APIs and custom Vite plugins that modify the build output. Not compatible with Lovable's build system. |
-| **prerender.io** | Requires either a middleware/proxy configuration on the hosting server (to detect bots and redirect), or DNS-level changes. Lovable hosting doesn't expose server config. |
-| **Dynamic rendering (bot detection)** | Requires server-side logic to inspect User-Agent headers and serve different responses. There is no server layer to customize on Lovable hosting — it serves static files only. |
+### 1. `src/components/WebsiteServices.tsx`
+When pushing variants, apply `priceOverrides` as a fallback when `service.price` is null. Specifically, on the line that builds the variant object (~line 76-80), change the price assignment to:
 
-## What IS Possible (and already planned)
+```typescript
+price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null)
+```
 
-The previous SEO plan I proposed covers everything that **can** be done within Lovable's constraints:
+This ensures both "members only" variants get price 65 from the override, making them display "£65.00" in the booking drawer and proceed through the normal booking flow (date → time → confirm) instead of showing "Contact".
 
-1. **react-helmet-async** — per-page `<title>`, meta descriptions, canonical URLs, OG tags, Twitter cards
-2. **JSON-LD structured data** — Organization, LocalBusiness, Service, BreadcrumbList schemas injected via components
-3. **Semantic HTML** — proper heading hierarchy, `<main>`, `<section>`, `<article>`, `<nav>`
-4. **sitemap.xml** + improved **robots.txt**
-5. **Core Web Vitals** — image optimization, font loading, CLS prevention
-6. **Strong default metadata in index.html** — so even before JS executes, bots see meaningful tags
+### 2. Same fix in `src/pages/Services.tsx`
+Apply the identical price fallback logic in the Services page grouping code, which has the same variant-building pattern.
 
-**Google's crawler (Googlebot) has rendered JavaScript since 2019.** It will execute your React app and index the content. The key is ensuring metadata is correct, structured data is present, and performance is fast — all achievable in a client-side SPA.
+## Result
+- Members Suite card: still shows "From £65" (unchanged)
+- Booking drawer variants: each shows "£65.00" instead of "Contact"
+- Clicking a variant proceeds to date selection (bookable), not a dead end
+- Booking sends the correct Mindbody session type ID (1206 or 1207), so it appears on the Mindbody backend
 
-## Recommendation
-
-If you need true SSR/pre-rendering for competitive SEO rankings, that requires migrating to Next.js and self-hosting outside Lovable. Within Lovable, the best path is implementing the SPA SEO optimizations from the previous plan. Want me to proceed with those?
+## Files modified
+- `src/components/WebsiteServices.tsx`
+- `src/pages/Services.tsx`
 
