@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History } from 'lucide-react';
+import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History, CreditCard, Sparkles } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
+import { useClientMembership } from '@/hooks/useMindbodyMembership';
 
 const AccountPage = () => {
   const { mbSession, isAuthenticated, logout, login } = useAuth();
