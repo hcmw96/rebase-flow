@@ -21,6 +21,7 @@ import {
   shortDescriptions,
   classOfferings,
   priceOverrides,
+  classDescriptionIdMap,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
@@ -128,6 +129,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       image: service.image,
       variants: service.variants,
       contactOnly: service.contactOnly,
+      ...(classDescriptionIdMap[service.baseName] ? { classDescriptionIds: classDescriptionIdMap[service.baseName] } : {}),
     });
   };
 

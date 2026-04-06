@@ -161,6 +161,11 @@ export const categoryImages: Record<string, string> = {
 // ── Contact-only groups ────────────────────────────────────────────
 export const contactOnlyGroups = new Set(['Osteopathy']);
 
+// ── Class-based services (shown in Services grid but booked via class schedule) ──
+export const classDescriptionIdMap: Record<string, number[]> = {
+  'Members Suite': [5],
+};
+
 // ── Price overrides (when Mindbody API returns null) ──────────────
 export const priceOverrides: Record<string, number> = {
   'Members Suite': 65,
