@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
-import { ArrowLeft, ArrowRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
@@ -191,7 +191,7 @@ const BookService = () => {
               <CardContent className="p-8 text-center space-y-4">
                 <p className="text-muted-foreground">Service not found.</p>
                 <Button onClick={() => navigate('/')} variant="outline">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  <ChevronLeft className="h-4 w-4 mr-2" />
                   Back
                 </Button>
               </CardContent>
@@ -275,7 +275,7 @@ const BookService = () => {
               onClick={handleBack}
               className="mb-4"
             >
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ChevronLeft className="h-4 w-4 mr-2" />
               {currentStep === 1 ? 'Back to Services' : 'Back'}
             </Button>
 

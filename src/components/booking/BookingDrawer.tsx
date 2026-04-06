@@ -12,7 +12,7 @@ import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
-import { ArrowLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
@@ -249,7 +249,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                   onClick={handleBack}
                   className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
                 >
-                  <ArrowLeft className="h-5 w-5 text-white" />
+                  <ChevronLeft className="h-5 w-5 text-white" />
                 </button>
                 <button
                   onClick={onClose}
@@ -283,7 +283,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                 onClick={handleBack}
                 className="p-1.5 -ml-1.5 rounded-lg hover:bg-muted/50 transition-colors"
               >
-                <ArrowLeft className="h-5 w-5 text-foreground" />
+                <ChevronLeft className="h-5 w-5 text-foreground" />
               </button>
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-semibold text-foreground truncate">

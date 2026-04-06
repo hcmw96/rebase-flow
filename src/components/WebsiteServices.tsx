@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Clock, ArrowRight } from 'lucide-react';
+import { Clock, ChevronRight } from 'lucide-react';
 import { Accordion, AccordionItem, AccordionTrigger, AccordionContent } from '@/components/ui/accordion';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
@@ -268,7 +268,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                                   </span>
                                 )}
                               </div>
-                              <ArrowRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
+                              <ChevronRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
                             </div>
                           </div>
 

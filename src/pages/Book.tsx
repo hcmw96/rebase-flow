@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Drawer, DrawerContent, DrawerHeader, DrawerTitle, DrawerTrigger } from "@/components/ui/drawer";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Calendar as CalendarIcon, Clock, ArrowLeft, Check } from "lucide-react";
+import { Calendar as CalendarIcon, Clock, ChevronLeft, Check } from "lucide-react";
 import { format, addDays, startOfWeek, addWeeks } from "date-fns";
 
 const Book = () => {
@@ -92,7 +92,7 @@ const Book = () => {
       <div className="flex items-center justify-between p-4">
         {step > 1 && (
           <Button variant="ghost" size="icon" onClick={handleBack} className="h-8 w-8">
-            <ArrowLeft className="h-4 w-4" />
+            <ChevronLeft className="h-4 w-4" />
           </Button>
         )}
         <div className="flex-1 text-center">

@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { ArrowRight } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 
 const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/REBASE - HERO FILM - 03.01.mp4`;
 
@@ -48,7 +48,7 @@ const Hero = () => {
             }}
           >
             Book Now
-            <ArrowRight className="ml-2 h-4 w-4" />
+            <ChevronRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
       </div>
