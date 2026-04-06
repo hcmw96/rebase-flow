@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { format, addDays } from 'date-fns';
-import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2, ChevronDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
