@@ -67,7 +67,65 @@ const AccountPage = () => {
         </div>
       </motion.div>
 
-      {/* Session History */}
+      {/* Membership */}
+      {membershipData?.contracts && membershipData.contracts.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.12 }}
+        >
+          <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center">
+                <Sparkles className="h-4 w-4 text-black/40" />
+              </div>
+              <div>
+                <p className="text-sm font-medium text-black/80">Membership</p>
+                <p className="text-xs text-black/40">Active</p>
+              </div>
+            </div>
+
+            {membershipData.contracts.map((contract: any) => (
+              <div key={contract.id} className="py-2 border-b border-black/[0.04] last:border-0">
+                <p className="text-sm font-medium text-black/70">{contract.name}</p>
+                <div className="flex items-center gap-2 text-xs text-black/40 mt-1">
+                  <span className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    Since {format(new Date(contract.startDate), 'MMM d, yyyy')}
+                  </span>
+                  {contract.autopayEnabled && (
+                    <span className="text-emerald-600">Autopay</span>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {membershipData.clientServices && membershipData.clientServices.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <div className="flex items-center gap-2">
+                  <CreditCard className="h-3.5 w-3.5 text-black/40" />
+                  <p className="text-xs font-medium text-black/60">Credits</p>
+                </div>
+                {membershipData.clientServices.map((service: any) => (
+                  <div key={service.id} className="flex items-center justify-between text-xs">
+                    <span className="text-black/60">{service.name}</span>
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-black/70">{service.remaining} left</span>
+                      {service.expirationDate && (
+                        <span className="text-black/30">
+                          exp {format(new Date(service.expirationDate), 'MMM d')}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </motion.div>
+      )}
+
+
       {pastBookings.length > 0 && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
