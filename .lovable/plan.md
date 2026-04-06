@@ -1,42 +1,36 @@
 
 
-# Fix Members Suite Price Display — Show £65
+# Show Membership & Credits on Account Page
 
-## Problem
-The Mindbody API returns `price: null` for both "members only" session types (IDs 1206 and 1207). The sale/services endpoint doesn't link these session types to a £65 price. The booking flow itself works correctly (it uses the session type ID), but the UI shows "Contact for pricing" instead of £65.
+## What
+Create a new edge function that calls the Mindbody API to fetch the client's active contracts (memberships) and remaining service credits. Display a membership card on the Account page only when the client has an active membership.
 
-## Approach
-Add a frontend price override in `serviceConfig.ts` for the Members Suite group. This is the most reliable fix since the Mindbody API consistently fails to resolve this price. The booking will continue to work as-is — it already passes the correct session type ID to Mindbody.
+## Mindbody API
+- **`GET /public/v6/client/clientcontracts`** with `ClientId` param — returns active memberships (contract name, start/end dates, autopay status)
+- **`GET /public/v6/client/clientservices`** with `ClientId` param — returns remaining credits/packages (name, remaining count, expiration)
+
+Both use the same auth pattern as `mindbody-my-bookings` (API key + site ID + client access token from `mb_sessions`).
 
 ## Changes
 
-### 1. `src/config/serviceConfig.ts`
-Add a price override map:
-```ts
-export const priceOverrides: Record<string, number> = {
-  'Members Suite': 65,
-};
-```
+### 1. New edge function: `supabase/functions/mindbody-client-membership/index.ts`
+- Same auth pattern as `mindbody-my-bookings` — accepts `sessionId`, looks up `mb_sessions` for access token and client ID
+- Calls both Mindbody endpoints
+- Returns `{ contracts: [...], clientServices: [...] }` — empty arrays if the client has no membership
+- Only returns active/non-expired contracts
 
-### 2. `src/components/WebsiteServices.tsx`
-Import `priceOverrides` and use it as a fallback when computing the display price for service cards. If `fromPrice` is null and the group name is in `priceOverrides`, use the override value.
+### 2. New hook: `src/hooks/useMindbodyMembership.ts`
+- `useClientMembership()` react-query hook, enabled when authenticated
+- Returns the membership data (contracts + credits)
 
-### 3. `src/components/ServiceCard.tsx`
-Same fallback in the `getFromPrice()` function — check `priceOverrides` when all variant prices are null.
+### 3. Update: `src/pages/AccountPage.tsx`
+- Import and call `useClientMembership()`
+- Between profile info and session history, conditionally render a "Membership" card **only if** `contracts` has entries
+- Show: membership name, status (active/expiring), remaining credits with expiry dates
+- Matches existing card styling (rounded-lg, border, bg-white/40)
 
-### 4. `src/components/FeaturedServices.tsx`
-Same pattern if Members Suite appears in featured services.
-
-### 5. `src/components/booking/BookingDrawer.tsx`
-Same fallback for the price shown in the booking drawer.
-
-## Booking flow
-No changes needed — the booking already sends the correct Mindbody session type ID. When booked, it will appear on the Mindbody backend correctly.
-
-## Files modified
-- `src/config/serviceConfig.ts`
-- `src/components/WebsiteServices.tsx`
-- `src/components/ServiceCard.tsx`
-- `src/components/FeaturedServices.tsx`
-- `src/components/booking/BookingDrawer.tsx`
+## Files
+- `supabase/functions/mindbody-client-membership/index.ts` (new)
+- `src/hooks/useMindbodyMembership.ts` (new)
+- `src/pages/AccountPage.tsx` (updated)
 
