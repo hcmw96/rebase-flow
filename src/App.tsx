@@ -1,6 +1,7 @@
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import * as React from "react";
+import { HelmetProvider } from "react-helmet-async";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -25,24 +26,26 @@ queryClient.prefetchQuery({
 });
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <CookieConsent />
-        <ScrollToTop />
-        <Routes>
-          <Route path="/website" element={<Index />} />
-          <Route path="/cookie-policy" element={<CookiePolicy />} />
-          <Route path="/membership" element={<Membership />} />
-          <Route path="/account" element={<WebsiteAccount />} />
-          <Route path="/" element={<AppShell />} />
-          <Route path="*" element={<AppShell />} />
-        </Routes>
-      </BrowserRouter>
-    </AuthProvider>
-  </QueryClientProvider>
+  <HelmetProvider>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <CookieConsent />
+          <ScrollToTop />
+          <Routes>
+            <Route path="/website" element={<Index />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
+            <Route path="/membership" element={<Membership />} />
+            <Route path="/account" element={<WebsiteAccount />} />
+            <Route path="/" element={<AppShell />} />
+            <Route path="*" element={<AppShell />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
+  </HelmetProvider>
 );
 
 export default App;
