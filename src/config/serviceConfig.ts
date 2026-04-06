@@ -143,6 +143,7 @@ export const serviceImages: Record<string, string> = {
   'Longevity': '/images/rebase-longevity.jpg',
   'Athletes Performance': '/images/rebase-athletes-performance.jpg',
   'Core Radiance': '/images/rebase-core-radiance.jpg',
+  'Members Suite': '/images/rebase-members-suite.jpg',
 };
 
 export const serviceImagePositions: Record<string, string> = {
