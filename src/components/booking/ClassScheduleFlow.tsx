@@ -21,6 +21,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
 
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [showAll, setShowAll] = useState(false);
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), 7), 'yyyy-MM-dd');
