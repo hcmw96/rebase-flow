@@ -20,6 +20,7 @@ import {
   serviceImages,
   categoryImages,
   contactOnlyGroups,
+  priceOverrides,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
@@ -72,7 +73,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: duration ?? service.defaultTimeLength,
-        price: isIvFirstConsult ? 0 : service.price,
+        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
         name: service.name,
         contactOnly: isIvFirstConsult || isContactOnly,
       });
