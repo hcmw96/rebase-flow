@@ -12,6 +12,7 @@ import { useClientMembership } from '@/hooks/useMindbodyMembership';
 const AccountPage = () => {
   const { mbSession, isAuthenticated, logout, login } = useAuth();
   const { data: bookingsData } = useMyBookings();
+  const { data: membershipData } = useClientMembership();
   const [message, setMessage] = useState('');
   const [showAllHistory, setShowAllHistory] = useState(false);
 
