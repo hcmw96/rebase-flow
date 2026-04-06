@@ -268,7 +268,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                                   </span>
                                 )}
                               </div>
-                              <ArrowRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
+                              <ChevronRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
                             </div>
                           </div>
 

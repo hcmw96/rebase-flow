@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
-import { CalendarDays, Users, CreditCard, ArrowLeft } from 'lucide-react';
+import { CalendarDays, Users, CreditCard, ChevronLeft } from 'lucide-react';
 
 const Reception = () => {
   const navigate = useNavigate();
@@ -38,7 +38,7 @@ const Reception = () => {
                   variant="outline"
                   className="gap-2"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ChevronLeft className="h-4 w-4" />
                   Back to Home
                 </Button>
               </div>

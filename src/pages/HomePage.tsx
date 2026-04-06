@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, ArrowRight, MapPin } from 'lucide-react';
+import { Calendar, Clock, ChevronRight, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -167,7 +167,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
               </div>
               <Button variant="outline" size="sm" className="shrink-0 border-black/10 text-black/50 hover:bg-black/5 bg-transparent">
                 Book
-                <ArrowRight className="h-3.5 w-3.5 ml-1" />
+                <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>
             </CardContent>
           </Card>
@@ -191,7 +191,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
             onClick={() => onNavigate('services')}
             className="text-xs text-black/50 flex items-center gap-1 hover:underline"
           >
-            View all <ArrowRight className="h-3 w-3" />
+            View all <ChevronRight className="h-3 w-3" />
           </button>
         </div>
 
