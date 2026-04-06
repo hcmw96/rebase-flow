@@ -20,6 +20,7 @@ import {
   serviceImages,
   categoryImages,
   contactOnlyGroups,
+  priceOverrides,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
