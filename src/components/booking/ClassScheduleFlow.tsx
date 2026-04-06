@@ -41,16 +41,20 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
       .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
   }, [classes, classDescriptionIds]);
 
-  // Group by day
-  const groupedByDay = useMemo(() => {
+  // Split into next session and rest
+  const nextSession = filteredClasses[0] ?? null;
+  const otherSessions = filteredClasses.slice(1);
+
+  // Group remaining sessions by day
+  const otherGroupedByDay = useMemo(() => {
     const map = new Map<string, MindbodyClass[]>();
-    for (const cls of filteredClasses) {
+    for (const cls of otherSessions) {
       const day = format(new Date(cls.startDateTime), 'yyyy-MM-dd');
       if (!map.has(day)) map.set(day, []);
       map.get(day)!.push(cls);
     }
     return map;
-  }, [filteredClasses]);
+  }, [otherSessions]);
 
   const handleBook = async () => {
     if (!selectedClass || !mbSession) return;
