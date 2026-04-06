@@ -144,6 +144,7 @@ export const serviceImages: Record<string, string> = {
   'Athletes Performance': '/images/rebase-athletes-performance.jpg',
   'Core Radiance': '/images/rebase-core-radiance.jpg',
   'Members Suite': '/images/rebase-members-suite.jpg',
+};
 
 export const serviceImagePositions: Record<string, string> = {
   'Core Radiance': 'center 20%',
