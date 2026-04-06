@@ -21,6 +21,7 @@ import {
   categoryImages,
   contactOnlyGroups,
   priceOverrides,
+  classDescriptionIdMap,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
@@ -141,6 +142,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
     onSelectService?.({
       ...service,
       contactOnly: service.contactOnly,
+      ...(classDescriptionIdMap[service.baseName] ? { classDescriptionIds: classDescriptionIdMap[service.baseName] } : {}),
     });
   };
 
