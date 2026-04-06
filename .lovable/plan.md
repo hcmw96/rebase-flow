@@ -1,22 +1,38 @@
 
 
-# Fix Hover Overlay to Cover Entire Card Photo
+# Show Next Available Session with Expandable Dropdown
 
 ## Problem
-The hover overlay on service cards uses `inset-px` (1px inset from edges) which leaves a tiny border visible around the edges. Combined with `justify-end`, the text content sits at the bottom while the top shows through to the dark photo — this looks like incomplete coverage.
+The class schedule list shows all sessions for the next 7 days in a long scrollable list. User wants to see only the **next available session** prominently, with remaining sessions hidden behind an expandable dropdown.
 
-## Fix
-In `src/components/WebsiteServices.tsx` line 277, change `inset-px` to `inset-0` so the overlay covers the full card with no gap. This ensures the overlay sits flush with the card edges, fully covering the photo.
+## Changes
 
-### Single line change
-```
-// Before
-className="absolute inset-px rounded-lg backdrop-blur-sm flex-col justify-end p-5 ..."
+### `src/components/booking/ClassScheduleFlow.tsx`
 
-// After  
-className="absolute inset-0 rounded-lg backdrop-blur-sm flex-col justify-end p-5 ..."
+1. Add a `showAll` boolean state (default `false`)
+2. Extract the first class from `filteredClasses` as the "next available" session
+3. Render that session card prominently at the top with a "Book Next Available" feel
+4. Below it, add a collapsible section ("Show more sessions" button) that toggles `showAll`
+5. When expanded, render the remaining sessions grouped by day (same as current layout, minus the first one)
+6. Use `ChevronDown`/`ChevronUp` icon on the toggle button
+
+### Layout
+```text
+┌─────────────────────────────┐
+│  NEXT AVAILABLE SESSION     │
+│  ┌───────────────────────┐  │
+│  │ Member's Suite        │  │
+│  │ 🕐 7:00 AM  👤 Staff  │  │
+│  │ Mon, Apr 6   6 spots  │  │
+│  └───────────────────────┘  │
+│                             │
+│  ▼ Show more sessions (12) │
+│  ┌───────────────────────┐  │
+│  │ remaining sessions... │  │
+│  └───────────────────────┘  │
+└─────────────────────────────┘
 ```
 
 ## Files
-- `src/components/WebsiteServices.tsx` — change `inset-px` → `inset-0` on the hover overlay div
+- `src/components/booking/ClassScheduleFlow.tsx` — add `showAll` state, split first session from rest, add toggle button
 
