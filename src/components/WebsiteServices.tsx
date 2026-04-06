@@ -274,7 +274,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
                           {/* Hover-only overlay (desktop) */}
                           <div
-                            className="absolute inset-px rounded-lg backdrop-blur-sm flex-col justify-end p-5 translate-y-full transition-transform duration-300 ease-out hidden sm:flex sm:group-hover:translate-y-0"
+                            className="absolute inset-0 rounded-lg backdrop-blur-sm flex-col justify-end p-5 translate-y-full transition-transform duration-300 ease-out hidden sm:flex sm:group-hover:translate-y-0"
                             style={{ backgroundColor: 'hsla(25, 15%, 12%, 0.95)' }}
                           >
                             <h4 className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
