@@ -175,7 +175,6 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
     );
   }
 
-  const [showAll, setShowAll] = useState(false);
   const nextSession = filteredClasses[0] ?? null;
   const otherSessions = filteredClasses.slice(1);
 
