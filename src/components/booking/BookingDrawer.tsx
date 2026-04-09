@@ -234,7 +234,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         <div className="flex flex-col h-full overflow-hidden">
           {/* Hero Image Section */}
           {showHeroImage && (
-            <div className="relative shrink-0 h-[55vh]">
+            <div className="relative shrink-0 h-[35vh]">
               <img
                 src={service.image}
                 alt={service.title}
