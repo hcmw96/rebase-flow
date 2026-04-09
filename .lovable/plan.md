@@ -1,31 +1,22 @@
 
 
-# Pull Through Mindbody Descriptions for Classes/Experiences
+# Reduce Hero Image Height for More Booking Content
 
 ## Problem
-The Mindbody API already returns `description` for each class (from `ClassDescription.Description`), and it's already stored in the `MindbodyClass` interface. It's just never displayed in the UI.
+The hero image takes `h-[55vh]` (55% of viewport), leaving only ~45% for booking content. On many screens this cuts off sessions and requires scrolling. The user wants more space for the booking options.
 
-## Changes
+## Change
 
-### `src/components/booking/ClassScheduleFlow.tsx`
-1. **Next Available card** — show the class description below the class name (truncated to ~2 lines with `line-clamp-2`). Since all sessions for the same classDescriptionId share the same description, showing it on the first card is sufficient.
-2. **Confirmation step** (when a class is selected, before booking) — show the full description in the details panel.
-3. Strip HTML tags from the description (Mindbody often returns HTML) using a simple regex or DOMParser, consistent with the existing pattern noted in memory.
+### `src/components/booking/BookingDrawer.tsx` (line 237)
+Reduce the hero image height from `h-[55vh]` to `h-[35vh]`. This gives roughly 65% of the screen to the booking content area, showing more sessions without scrolling.
 
-### Layout change (Next Available card)
-```text
-┌───────────────────────────────┐
-│ Member's Suite                │
-│ A relaxing communal wellness  │
-│ experience featuring...       │  ← NEW: description
-│ 📅 Mon, Apr 7  🕐 3:00 PM    │
-│                    6 spots    │
-└───────────────────────────────┘
+```
+// Before
+<div className="relative shrink-0 h-[55vh]">
+
+// After
+<div className="relative shrink-0 h-[35vh]">
 ```
 
-### Helper
-Add a small `stripHtml` utility inline (or reuse existing pattern) to clean HTML tags from description strings before rendering.
-
-## Files
-- `src/components/booking/ClassScheduleFlow.tsx` — display description on next-available card and confirmation view
+Single line change, one file.
 
