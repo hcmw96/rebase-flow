@@ -20,15 +20,6 @@ const Hero = () => {
               el.play().catch(() => {});
             }
           }}
-          onLoadedMetadata={(e) => {
-            e.currentTarget.currentTime = 5;
-          }}
-          onTimeUpdate={(e) => {
-            const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 7) {
-              vid.currentTime = 5;
-            }
-          }}
         >
           <source src={VIDEO_URL} type="video/mp4" />
         </video>
