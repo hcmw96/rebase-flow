@@ -30,11 +30,11 @@ const AuthPage = () => {
               el.play().catch(() => {});
             }
           }}
-          onLoadedMetadata={(e) => { e.currentTarget.currentTime = 2; }}
+          onLoadedMetadata={(e) => { e.currentTarget.currentTime = 5; }}
           onTimeUpdate={(e) => {
             const vid = e.currentTarget;
             if (vid.duration && vid.currentTime >= vid.duration - 5) {
-              vid.currentTime = 2;
+              vid.currentTime = 5;
             }
           }}
         >
