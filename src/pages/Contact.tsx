@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, Phone, Mail, Clock } from "lucide-react";
+import { MapPin, Phone, Mail, Instagram } from "lucide-react";
 
 const Contact = () => {
   const handleSubmit = (e: React.FormEvent) => {
@@ -34,10 +34,10 @@ const Contact = () => {
       href: "mailto:reception@rebaserecovery.com"
     },
     {
-      icon: Clock,
-      title: "Hours",
-      content: "Mon-Fri: 6AM - 10PM\nSat-Sun: 7AM - 9PM",
-      href: null
+      icon: Instagram,
+      title: "Instagram",
+      content: "@rebaserecovery",
+      href: "https://instagram.com/rebaserecovery"
     }
   ];
 
