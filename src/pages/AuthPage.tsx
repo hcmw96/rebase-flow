@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/Logo';
 
-const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/REBASE - HERO FILM - 03.01.mp4`;
+const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/newbase.mp4`;
 
 const AuthPage = () => {
   const { login } = useAuth();
@@ -28,13 +28,6 @@ const AuthPage = () => {
               el.setAttribute('playsinline', '');
               el.setAttribute('webkit-playsinline', '');
               el.play().catch(() => {});
-            }
-          }}
-          onLoadedMetadata={(e) => { e.currentTarget.currentTime = 5; }}
-          onTimeUpdate={(e) => {
-            const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 5) {
-              vid.currentTime = 5;
             }
           }}
         >

@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 
-const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/REBASE - HERO FILM - 03.01.mp4`;
+const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/newbase.mp4`;
 
 const Hero = () => {
   return (
@@ -18,15 +18,6 @@ const Hero = () => {
             if (el) {
               el.setAttribute("playsinline", "");
               el.play().catch(() => {});
-            }
-          }}
-          onLoadedMetadata={(e) => {
-            e.currentTarget.currentTime = 5;
-          }}
-          onTimeUpdate={(e) => {
-            const vid = e.currentTarget;
-            if (vid.duration && vid.currentTime >= vid.duration - 7) {
-              vid.currentTime = 5;
             }
           }}
         >
