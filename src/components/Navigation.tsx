@@ -22,15 +22,11 @@ const Navigation = () => {
 
   const handleBookNow = () => {
     setIsOpen(false);
-    if (location.pathname === '/website') {
-      document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' });
-    } else {
-      navigate('/website#services');
-    }
+    navigate('/experiences');
   };
 
   const navItems = [
-    { href: "/website#services", label: "Experiences" },
+    { href: "/experiences", label: "Experiences" },
     { href: "/membership", label: "Membership" },
     { href: "/contact", label: "Contact" },
   ];
