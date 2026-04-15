@@ -1,29 +1,32 @@
 
 
-# Create Experiences Page
+# Debug Mindbody "Inactive Account" Error
 
-## Summary
-Create a new `/experiences` page styled like the Membership page, listing each treatment category with descriptions and images. Update the nav link to point to this page instead of `#services`.
+## Problem
+The Mindbody API returns `"Your account is inactive"` when requesting a staff token. The password was updated but the error persists, suggesting the issue is with the **API key**, **username**, or **site ID** — not the password.
 
-## Changes
+## Root Cause Hypothesis
+From the screenshot, there are two API keys ("Rebase" and "Leopold") and source credentials ("EchoLondon"). The stored `MINDBODY_API_KEY` may not match the correct key for the staff account, or the `MINDBODY_STAFF_USERNAME` may be mismatched.
 
-### 1. `src/pages/Experiences.tsx` — New file
-- Same layout pattern as Membership: Navigation + dark bg + hero section + card grid + Footer
-- Use `motion` animations matching Membership page
-- Define an array of experiences using data from `serviceConfig.ts` (categories, images, short descriptions)
-- Each card: image at top, treatment name, description paragraph, "Book Now" button linking to `/website#services`
-- Categories to feature: Communal Members Suite, Signature Classes, Private Suites, Hyperbaric Oxygen, Cryotherapy, Massage Therapy, IV Drips, Regen and Manual Therapies
-- Use existing images from `serviceImages` and `categoryImages`
-- Include Helmet meta tags
+## Plan
 
-### 2. `src/App.tsx` — Add route
-- Import `Experiences` and add `<Route path="/experiences" element={<Experiences />} />`
+### 1. Add diagnostic logging to the edge function
+Update `mindbody-services/index.ts` to log **non-sensitive metadata** when the token request fails:
+- Length of API key, first 4 chars
+- Length of username (not the value)
+- Site ID value
+- The full error response body from Mindbody
 
-### 3. `src/components/Navigation.tsx` — Update nav link
-- Change `{ href: "/website#services", label: "Experiences" }` to `{ href: "/experiences", label: "Experiences" }`
+This will help pinpoint which credential is wrong without exposing secrets.
 
-### 4. `handleBookNow` in Navigation — Update target
-- Change `handleBookNow` to navigate to `/experiences` instead of scrolling to `#services`
+### 2. User action required
+After deploying, we test the function and check logs to see which credentials are being sent. Then update whichever secret is mismatched:
+- `MINDBODY_API_KEY` — should match the visible "Rebase" key (`73477ac9290346e98e47e7322207f27f`)
+- `MINDBODY_STAFF_USERNAME` — confirm the exact value
+- `MINDBODY_SITE_ID` — confirm the exact value
 
-Three files modified, one new file.
+### Technical detail
+The only code change is adding 4 `console.log` lines to `getStaffToken()` before the fetch call, logging credential metadata (lengths/prefixes only). This is a temporary diagnostic — once fixed, these lines can be removed.
+
+One file modified: `supabase/functions/mindbody-services/index.ts`
 
