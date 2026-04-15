@@ -6,30 +6,43 @@ const corsHeaders = {
 };
 
 async function getStaffToken(): Promise<string> {
-  const apiKey = Deno.env.get("MINDBODY_API_KEY");
-  const siteId = Deno.env.get("MINDBODY_SITE_ID");
-  const username = Deno.env.get("MINDBODY_STAFF_USERNAME");
-  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD");
+  const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
+  const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
+  const username = Deno.env.get("MINDBODY_STAFF_USERNAME")?.trim();
+  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD")?.trim();
+  const sourceName = Deno.env.get("MINDBODY_SOURCE_NAME")?.trim();
+  const sourcePassword = Deno.env.get("MINDBODY_SOURCE_PASSWORD")?.trim();
 
   if (!apiKey || !siteId || !username || !password) {
     throw new Error("Missing Mindbody staff credentials");
   }
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Api-Key": apiKey,
+    "SiteId": siteId,
+  };
+
+  const body: Record<string, string> = {
+    Username: username,
+    Password: password,
+  };
+
+  if (sourceName && sourcePassword) {
+    body.SourceName = sourceName;
+    body.SourcePassword = sourcePassword;
+  }
+
   const response = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Api-Key": apiKey,
-      "SiteId": siteId,
-    },
-    body: JSON.stringify({
-      Username: username,
-      Password: password,
-    }),
+    headers,
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
-    throw new Error("Failed to get staff token");
+    const errorText = await response.text();
+    console.error("Staff token error (status", response.status, "):", errorText);
+    throw new Error(`Mindbody auth failed (${response.status}): ${errorText}`);
   }
 
   const data = await response.json();
