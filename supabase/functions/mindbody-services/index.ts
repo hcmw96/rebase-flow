@@ -18,8 +18,14 @@ async function getStaffToken(): Promise<string> {
   const password = Deno.env.get("MINDBODY_STAFF_PASSWORD");
 
   if (!apiKey || !siteId || !username || !password) {
+    console.error("Missing creds - apiKey:", !!apiKey, "siteId:", !!siteId, "username:", !!username, "password:", !!password);
     throw new Error("Missing Mindbody staff credentials");
   }
+
+  console.log("Debug - API Key length:", apiKey.length, "Prefix:", apiKey.substring(0, 8));
+  console.log("Debug - Site ID:", siteId);
+  console.log("Debug - Username length:", username.length, "Prefix:", username.substring(0, 3));
+  console.log("Debug - Password length:", password.length);
 
   const response = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
     method: "POST",
@@ -36,7 +42,7 @@ async function getStaffToken(): Promise<string> {
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error("Staff token error:", errorText);
+    console.error("Staff token error (status", response.status, "):", errorText);
     throw new Error("Failed to get staff token");
   }
 
