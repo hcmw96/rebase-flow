@@ -14,6 +14,7 @@ import Index from "./pages/Index";
 import CookiePolicy from "./pages/CookiePolicy";
 import Membership from "./pages/Membership";
 import WebsiteAccount from "./pages/WebsiteAccount";
+import Contact from "./pages/Contact";
 import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
@@ -39,6 +40,7 @@ const App = () => (
             <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/membership" element={<Membership />} />
             <Route path="/account" element={<WebsiteAccount />} />
+            <Route path="/contact" element={<Contact />} />
             <Route path="/" element={<AppShell />} />
             <Route path="*" element={<AppShell />} />
           </Routes>
