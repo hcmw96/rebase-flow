@@ -12,38 +12,45 @@ interface StaffCredentials {
 }
 
 async function getStaffToken(): Promise<string> {
-  const apiKey = Deno.env.get("MINDBODY_API_KEY");
-  const siteId = Deno.env.get("MINDBODY_SITE_ID");
-  const username = Deno.env.get("MINDBODY_STAFF_USERNAME");
-  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD");
+  const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
+  const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
+  const username = Deno.env.get("MINDBODY_STAFF_USERNAME")?.trim();
+  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD")?.trim();
+  const sourceName = Deno.env.get("MINDBODY_SOURCE_NAME")?.trim();
+  const sourcePassword = Deno.env.get("MINDBODY_SOURCE_PASSWORD")?.trim();
 
   if (!apiKey || !siteId || !username || !password) {
-    console.error("Missing creds - apiKey:", !!apiKey, "siteId:", !!siteId, "username:", !!username, "password:", !!password);
     throw new Error("Missing Mindbody staff credentials");
   }
 
-  console.log("Debug - API Key length:", apiKey.length, "Prefix:", apiKey.substring(0, 8));
-  console.log("Debug - Site ID:", siteId);
-  console.log("Debug - Username length:", username.length, "Prefix:", username.substring(0, 3));
-  console.log("Debug - Password length:", password.length);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "Api-Key": apiKey,
+    "SiteId": siteId,
+  };
+
+  const body: Record<string, string> = {
+    Username: username,
+    Password: password,
+  };
+
+  // Include source credentials if configured
+  if (sourceName && sourcePassword) {
+    body.SourceName = sourceName;
+    body.SourcePassword = sourcePassword;
+    console.log("Using source credentials:", sourceName);
+  }
 
   const response = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Api-Key": apiKey,
-      "SiteId": siteId,
-    },
-    body: JSON.stringify({
-      Username: username,
-      Password: password,
-    }),
+    headers,
+    body: JSON.stringify(body),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
     console.error("Staff token error (status", response.status, "):", errorText);
-    throw new Error("Failed to get staff token");
+    throw new Error(`Mindbody auth failed (${response.status}): ${errorText}`);
   }
 
   const data: StaffCredentials = await response.json();
