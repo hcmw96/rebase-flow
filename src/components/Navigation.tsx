@@ -273,9 +273,7 @@ const Navigation = () => {
                     }}
                     className={cn(
                       "block w-full text-left py-1.5 text-sm",
-                      loc.active && selectedLocation.name === loc.name
-                        ? textColor
-                        : loc.active
+                      loc.active
                         ? textMuted
                         : "text-muted-foreground/40"
                     )}
