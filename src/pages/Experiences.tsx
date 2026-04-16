@@ -1,10 +1,11 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 import { ChevronRight } from "lucide-react";
+import ExperienceDrawer from "@/components/ExperienceDrawer";
 
 const SITE_URL = "https://rebase-flow.lovable.app";
 
@@ -52,7 +53,7 @@ const experiences = [
       "Vitamin-rich IV infusions tailored to your wellness goals, NAD+ cellular regeneration therapy, and comprehensive blood testing — all administered by qualified practitioners in a relaxing clinical setting.",
   },
   {
-    name: "Regen & Manual Therapies",
+    name: "Regen and Manual Therapies",
     image: "/images/rebase-osteopathy.jpg",
     description:
       "Expert osteopathy and manual therapy to restore movement, correct alignment and relieve chronic pain. Our practitioners take a holistic approach to musculoskeletal health and long-term recovery.",
@@ -60,6 +61,14 @@ const experiences = [
 ];
 
 const Experiences = () => {
+  const [selectedExperience, setSelectedExperience] = useState<typeof experiences[0] | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const handleExplore = (exp: typeof experiences[0]) => {
+    setSelectedExperience(exp);
+    setDrawerOpen(true);
+  };
+
   return (
     <div
       style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
@@ -140,15 +149,14 @@ const Experiences = () => {
                 <p className="text-[#F9ECD9]/40 text-sm font-light leading-relaxed mb-8 flex-1">
                   {exp.description}
                 </p>
-                <Link to="/website#services">
-                  <Button
-                    className="w-full rounded-none uppercase tracking-[0.2em] text-sm font-light h-12 bg-transparent border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/10 hover:border-[#F9ECD9]/40 transition-all duration-300"
-                    variant="outline"
-                  >
-                    Book Now
-                    <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => handleExplore(exp)}
+                  className="w-full rounded-none uppercase tracking-[0.2em] text-sm font-light h-12 bg-transparent border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/10 hover:border-[#F9ECD9]/40 transition-all duration-300"
+                  variant="outline"
+                >
+                  Explore
+                  <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
+                </Button>
               </div>
             </motion.div>
           ))}
@@ -156,6 +164,12 @@ const Experiences = () => {
       </section>
 
       <Footer />
+
+      <ExperienceDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        experience={selectedExperience}
+      />
     </div>
   );
 };
