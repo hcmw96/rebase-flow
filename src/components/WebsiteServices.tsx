@@ -279,7 +279,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                             style={{ backgroundColor: 'hsla(25, 15%, 12%, 0.95)' }}
                           >
                             <h4 className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
-                              {service.baseName}
+                              {service.baseName}{packageGroups.has(service.baseName) ? ' Package' : ''}
                             </h4>
                             <p className="text-[#F9ECD9]/60 text-xs line-clamp-2 font-light leading-relaxed mb-3">
                               {shortDesc}
@@ -288,7 +288,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                               <span className="text-[#F9ECD9]/90 font-medium text-sm">
                                 {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
                               </span>
-                              {firstVariant?.duration && (
+                              {!packageGroups.has(service.baseName) && firstVariant?.duration && (
                                 <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
                                   <Clock className="h-3 w-3" />
                                   {firstVariant.duration} min
