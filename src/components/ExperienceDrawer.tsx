@@ -23,6 +23,7 @@ import {
   resolveImage,
   serviceImagePositions,
   GroupedService,
+  packageGroups,
 } from '@/config/serviceConfig';
 import { ServiceVariant } from '@/components/ServiceCard';
 

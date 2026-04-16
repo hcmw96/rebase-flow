@@ -28,6 +28,7 @@ import {
   resolveImage,
   serviceImagePositions,
   GroupedService,
+  packageGroups,
 } from '@/config/serviceConfig';
 
 interface WebsiteServicesProps {
