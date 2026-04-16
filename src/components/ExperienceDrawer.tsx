@@ -228,13 +228,15 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                         />
                       </div>
                       <div className="flex-1 min-w-0 space-y-1">
-                        <h4 className="text-[#F9ECD9] text-sm font-medium truncate">{service.baseName}</h4>
+                        <h4 className="text-[#F9ECD9] text-sm font-medium truncate">
+                          {service.baseName}{packageGroups.has(service.baseName) ? ' Package' : ''}
+                        </h4>
                         <p className="text-[#F9ECD9]/40 text-xs font-light line-clamp-1">{shortDesc}</p>
                         <div className="flex items-center gap-3">
                           <span className="text-[#F9ECD9]/70 text-xs font-medium">
                             {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
                           </span>
-                          {firstVariant?.duration && (
+                          {!packageGroups.has(service.baseName) && firstVariant?.duration && (
                             <span className="flex items-center gap-1 text-[10px] text-[#F9ECD9]/30">
                               <Clock className="h-2.5 w-2.5" />
                               {firstVariant.duration} min

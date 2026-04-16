@@ -254,14 +254,14 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                           </div>
                           <div className="p-5 space-y-3">
                             <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
-                              {service.baseName}
+                              {service.baseName}{packageGroups.has(service.baseName) ? ' Package' : ''}
                             </h4>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <span className="text-[#F9ECD9]/90 font-medium">
                                   {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
                                 </span>
-                                {firstVariant?.duration && (
+                                {!packageGroups.has(service.baseName) && firstVariant?.duration && (
                                   <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
                                     <Clock className="h-3 w-3" />
                                     {firstVariant.duration} min
