@@ -56,7 +56,7 @@ const Footer = () => {
             <h3 className="text-lg font-medium text-foreground">Services</h3>
             <ul className="space-y-2">
               {[
-                "Communal Members Suite",
+                "Communal Contrast",
                 "Signature Classes",
                 "Private Suites",
                 "Hyperbaric Oxygen",

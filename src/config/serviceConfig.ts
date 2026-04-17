@@ -72,13 +72,13 @@ export const hiddenServiceNames = new Set([
 
 // ── Category mapping ───────────────────────────────────────────────
 export const programNameOverrides: Record<string, string> = {
-  "Member's Suite": 'Communal Members Suite',
-  'Members Suite': 'Communal Members Suite',
+  "Member's Suite": 'Communal Contrast',
+  'Members Suite': 'Communal Contrast',
 };
 
 export const categoryOverrides: Record<string, string> = {
-  "Member's Suite": 'Communal Members Suite',
-  'Members Suite': 'Communal Members Suite',
+  "Member's Suite": 'Communal Contrast',
+  'Members Suite': 'Communal Contrast',
   'Classes': 'Signature Classes',
   'Infrared Suite': 'Private Suites',
   'Premium Suite': 'Private Suites',
@@ -102,7 +102,7 @@ export const categoryOverrides: Record<string, string> = {
 };
 
 export const categoryOrder = [
-  'Communal Members Suite',
+  'Communal Contrast',
   'Signature Classes',
   'Private Suites',
   'Hyperbaric Oxygen',

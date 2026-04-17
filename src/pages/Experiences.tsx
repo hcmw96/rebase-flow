@@ -11,7 +11,7 @@ const SITE_URL = "https://rebase-flow.lovable.app";
 
 const experiences = [
   {
-    name: "Communal Members Suite",
+    name: "Communal Contrast",
     image: "/images/rebase-members-suite.jpg",
     description:
       "Our communal wellness space featuring contrast therapy pools, relaxation areas and a curated recovery environment. Perfect for unwinding after a treatment or enjoying a social wellness session with friends.",
