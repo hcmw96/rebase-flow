@@ -1,15 +1,13 @@
 
-## Update Footer Services list
 
-Replace the hardcoded Services list in `src/components/Footer.tsx` (lines 58-65) with the 8 categories from `categoryOrder` in `serviceConfig.ts`, matching the dropdown menu:
+## Problem
+In the experience drawer, the service description text overlaps with the "X spots" availability badge on the right side, looking cramped/broken.
 
-- Communal Members Suite
-- Signature Classes
-- Private Suites
-- Hyperbaric Oxygen
-- Cryotherapy
-- Massage Therapy
-- IV Drips
-- Regen and Manual Therapies
+## Fix
+In `src/components/ExperienceDrawer.tsx`, add right-side padding to the description text container (or constrain its width) so the description always wraps before reaching the spots badge.
 
-That's the only change.
+Likely change: wrap the title/description block in a container with `pr-16` (or `flex-1 min-w-0` + `pr-4`) so text truncates/wraps cleanly before the absolutely/flex-positioned spots indicator.
+
+## Files
+- `src/components/ExperienceDrawer.tsx` — adjust the service/class card layout so description text reserves space for the spots badge.
+
