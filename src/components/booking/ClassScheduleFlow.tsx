@@ -217,8 +217,8 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
           )}
         </div>
       </div>
-      <div className="text-xs text-muted-foreground flex items-center gap-1">
-        <Users className="h-3 w-3" />
+      <div className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 whitespace-nowrap">
+        <Users className="h-3 w-3 shrink-0" />
         {cls.availableSpots} spots
       </div>
     </button>
