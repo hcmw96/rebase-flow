@@ -149,6 +149,35 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
   const availableSlots = availabilityData?.availableItems || [];
 
+  // Prefetch a 30-day availability window so the calendar can grey out
+  // days with no bookable slots (no availability OR fully booked).
+  const monthRange = useMemo(() => {
+    const start = new Date();
+    return {
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(addDays(start, 30), 'yyyy-MM-dd'),
+    };
+  }, []);
+
+  const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
+    sessionTypeId: activeServiceId,
+    startDate: monthRange.startDate,
+    endDate: monthRange.endDate,
+    enabled: !!activeServiceId && !showContactMessage,
+  });
+
+  const availableDates = useMemo(() => {
+    const items = monthAvailabilityData?.availableItems || [];
+    const dayKeys = new Set<string>();
+    for (const it of items) {
+      dayKeys.add(format(new Date(it.startDateTime), 'yyyy-MM-dd'));
+    }
+    return Array.from(dayKeys).map((k) => {
+      const [y, m, d] = k.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    });
+  }, [monthAvailabilityData]);
+
   const handleToggleUpsell = (serviceName: string) => {
     setAddedUpsells(prev =>
       prev.includes(serviceName)
