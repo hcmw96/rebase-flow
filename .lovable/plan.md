@@ -1,35 +1,22 @@
 
 
-## Hide "Corporate" service variants
+## Brand spelling rule: always "Rebase", never "ReBase"
 
-The Mindbody catalogue contains corporate variants (e.g. "Premium Suite (60 Mins) - Corporate" at £1920) that shouldn't appear in the public booking flow.
+### Status of the codebase
+I searched the entire codebase for `ReBase`, `REBASE`, `reBase`, `Re-Base`, `Re-base`, `RE-BASE` — **no occurrences exist**. Every current reference uses the correct "Rebase" form.
 
-### Change
+### Action
+This is a brand/style rule with no code change required right now. I'll save it to project memory so every future edit (UI copy, meta tags, alt text, JSON-LD, etc.) automatically conforms.
 
-**`src/config/serviceConfig.ts`** — add a regex-based hidden-name filter alongside the existing `hiddenServiceNames` set:
+The rule will be added to **Core memory** (applied to every action, every file, every session):
 
-```ts
-export const hiddenServiceNamePatterns: RegExp[] = [
-  /\bcorporate\b/i,
-];
+> Brand name is always **"Rebase"** — never "ReBase", "REBASE", "Re-Base", "rebase" (in user-facing copy), or any other variant. Applies to UI text, meta tags, alt text, structured data, and component output. Lowercase `rebase-` prefixes in filenames and the `<rebase-services>` web component tag are unchanged (technical identifiers).
 
-export function isHiddenServiceName(name: string): boolean {
-  const trimmed = name.trim();
-  if (hiddenServiceNames.has(name) || hiddenServiceNames.has(trimmed)) return true;
-  return hiddenServiceNamePatterns.some((re) => re.test(trimmed));
-}
-```
-
-**Update the 4 consumers** to call `isHiddenServiceName(service.name)` instead of `hiddenServiceNames.has(...)`:
-- `src/pages/Services.tsx`
-- `src/components/ExperienceDrawer.tsx`
-- `src/components/WebsiteServices.tsx`
-- `src/widget/components/ServiceList.tsx`
-
-### Result
-Any Mindbody service whose name contains "Corporate" (Premium Suite Corporate, Massage Corporate, etc.) is filtered out everywhere — mobile app, marketing site, experience drawer, and embeddable widget. This will also fix the misleading £1920 price showing on Premium Suite.
+### Files touched
+- `mem://style/brand-name` — new memory file with the rule
+- `mem://index.md` — add a one-line Core entry referencing it
 
 ### Out of scope
-- The existing `'Corporate Credits'` entry in `hiddenGroupNames` stays.
-- Copy on the Membership page mentioning "corporate athletes" is untouched — only Mindbody service/variant names are filtered.
+- No source files need editing — current spelling is already correct everywhere.
+- Asset filenames like `rebase-cryo.webp` and the `<rebase-services>` custom element name stay as-is (lowercase technical identifiers, not display copy).
 
