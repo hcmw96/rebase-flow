@@ -1,31 +1,29 @@
 
 
-## Rename "Communal Members Suite" → "Communal Contrast" everywhere
+## Grey out unavailable days in booking calendars
 
-The category name "Communal Members Suite" (and variants like "Members Suite", "Member's Suite") appears across config, pages, and components. I'll do a global rename to "Communal Contrast".
+Right now the booking calendar in `BookingDrawer` lets you click any future date, and we only fetch availability after a date is picked. We'll prefetch a window of availability up front and use it to disable (grey out) days that have no bookable slots.
 
-### Files to update
+### Scope
+This applies to the **appointment** booking calendar (`BookingDrawer` → `BookingCalendar`). The class flow (`ClassScheduleFlow`) doesn't use a calendar — it's a list — and fully-booked classes already show "0 spots", so that's out of scope unless you want them visually disabled in the list too.
 
-1. **`src/config/serviceConfig.ts`** — central source of truth
-   - `programNameOverrides`: map "Member's Suite" / "Members Suite" → `'Communal Contrast'`
-   - `categoryOverrides`: same mapping
-   - `categoryOrder`: replace `'Communal Members Suite'` with `'Communal Contrast'`
-   - `serviceImages`: rename `'Members Suite'` key (keep image path)
-   - `classDescriptionIdMap`, `priceOverrides`: keep `'Members Suite'` keys (these match raw Mindbody names) — no change
-   - Verify `serviceGroupMappings` regex still maps to a canonical name routed to "Communal Contrast"
+### Changes
 
-2. **`src/pages/Experiences.tsx`** — first experience card
-   - Rename `name: "Communal Members Suite"` → `"Communal Contrast"`
+**1. `src/components/booking/BookingDrawer.tsx`**
+- After a variant is chosen (or for single-variant services, on open), fetch availability for the next **30 days** in one call using `useMindbodyAvailability` with `startDate = today`, `endDate = today + 30`.
+- Derive `availableDates: Date[]` = unique dates from `availabilityData.availableItems` (i.e., days that returned at least one bookable slot — fully-booked days return zero slots from Mindbody and are naturally excluded).
+- Pass `availableDates` into `<BookingCalendar />`.
+- Keep the existing single-day fetch for the time-slot step (it's already filtered to the selected date).
 
-3. **`src/components/Footer.tsx`** — services list
-   - Replace `"Communal Members Suite"` → `"Communal Contrast"`
+**2. `src/components/booking/BookingCalendar.tsx`**
+- Already supports `availableDates` and disables days not in the list. Add a visual "greyed out" style (reduced opacity / muted text / `line-through` optional) for disabled-but-future days via `modifiers={{ unavailable: ... }}` so users can tell the difference between "past" and "no availability".
 
-4. **`src/components/Navigation.tsx`** — dropdown menu items
-   - Replace any `"Communal Members Suite"` / `"Members Suite"` label → `"Communal Contrast"`
+**3. `supabase/functions/mindbody-availability/index.ts`** — no change needed. It already accepts `startDate`/`endDate` and Mindbody returns all bookable windows in that range.
 
-5. **Any other references** — I'll grep for `Members Suite` / `Communal Members` / `Member's Suite` across `src/` and update display strings (keeping raw Mindbody-keyed lookups intact where required for API matching).
+### Performance note
+A 30-day availability query for one service is a single Mindbody call and is cached for 2 minutes by React Query (existing `useMindbodyAvailability` config). When the user lands on the date step, the calendar will briefly show all days enabled, then disable unavailable days once the fetch resolves — we'll show a subtle loading shimmer on the calendar header during this fetch.
 
 ### Out of scope
-- Mindbody-side program names remain as-is (we map them via overrides).
-- Image filenames (`rebase-members-suite.jpg`) stay — only the displayed label changes.
+- Class-list "fully booked" greying (separate UX).
+- Month-by-month lazy loading (30-day window is enough for the booking horizon).
 
