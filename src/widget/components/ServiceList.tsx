@@ -6,7 +6,7 @@ import {
   serviceGroupMappings,
   hiddenGroupNames,
   hiddenProgramIds,
-  hiddenServiceNames,
+  isHiddenServiceName,
   categoryOrder,
   categoryOverrides,
   programNameOverrides,
@@ -51,7 +51,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
 
     for (const service of services) {
       if (hiddenProgramIds.has(service.programId)) continue;
-      if (hiddenServiceNames.has(service.name.trim())) continue;
+      if (isHiddenServiceName(service.name)) continue;
 
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);

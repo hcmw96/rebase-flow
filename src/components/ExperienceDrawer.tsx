@@ -8,7 +8,7 @@ import { useHiddenServices } from '@/hooks/useHiddenServices';
 import BookingDrawer, { BookingServiceData } from '@/components/booking/BookingDrawer';
 import {
   hiddenProgramIds,
-  hiddenServiceNames,
+  isHiddenServiceName,
   hiddenGroupNames,
   categoryOverrides,
   serviceOrderWithinCategory,
@@ -52,7 +52,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
 
     for (const service of visibleServices) {
       if (hiddenProgramIds.has(service.programId)) continue;
-      if (hiddenServiceNames.has(service.name)) continue;
+      if (isHiddenServiceName(service.name)) continue;
 
       const { baseName, duration } = extractDurationFromName(service.name);
       const canonicalName = canonicalizeServiceName(baseName);

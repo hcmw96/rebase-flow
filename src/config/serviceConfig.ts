@@ -70,6 +70,17 @@ export const hiddenServiceNames = new Set([
   'Hyalouronic Acid - 3 Joints', 'Hyalouronic Acid - 4 Joints',
 ]);
 
+// Patterns matched against raw Mindbody service names; any match is hidden.
+export const hiddenServiceNamePatterns: RegExp[] = [
+  /\bcorporate\b/i,
+];
+
+export function isHiddenServiceName(name: string): boolean {
+  const trimmed = name.trim();
+  if (hiddenServiceNames.has(name) || hiddenServiceNames.has(trimmed)) return true;
+  return hiddenServiceNamePatterns.some((re) => re.test(trimmed));
+}
+
 // ── Category mapping ───────────────────────────────────────────────
 export const programNameOverrides: Record<string, string> = {
   "Member's Suite": 'Communal Contrast',
