@@ -157,7 +157,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                 </button>
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+              <div className="absolute inset-x-0 bottom-0 p-5 z-10">
                 <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide">
                   {experience.name}
                 </h2>
