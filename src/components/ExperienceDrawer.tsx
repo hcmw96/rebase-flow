@@ -140,7 +140,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
         <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-none border-none outline-none bg-[#1a1a1a]" hideHandle>
           <div className="flex flex-col h-full overflow-hidden">
             {/* Hero */}
-            <div className="relative shrink-0 h-[35vh]">
+            <div className="relative shrink-0 min-h-[35vh] pb-2">
               <img
                 src={experience.image}
                 alt={experience.name}
@@ -161,7 +161,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                 <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide">
                   {experience.name}
                 </h2>
-                <p className="text-[#F9ECD9]/50 text-sm font-light mt-2 leading-relaxed line-clamp-2">
+                <p className="text-[#F9ECD9]/50 text-sm font-light mt-2 leading-relaxed">
                   {experience.description}
                 </p>
               </div>
