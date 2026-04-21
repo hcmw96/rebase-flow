@@ -454,7 +454,12 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                     >
                       <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-3">Select Date</h3>
                       <div className="flex justify-center">
-                        <BookingCalendar selectedDate={selectedDate} onSelect={handleDateSelect} />
+                        <BookingCalendar
+                          selectedDate={selectedDate}
+                          onSelect={handleDateSelect}
+                          availableDates={availableDates}
+                          isLoading={isLoadingMonth}
+                        />
                       </div>
                     </motion.div>
                   )}
