@@ -140,7 +140,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
         <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-none border-none outline-none bg-[#1a1a1a]" hideHandle>
           <div className="flex flex-col h-full overflow-hidden">
             {/* Hero */}
-            <div className="relative shrink-0 h-[35vh]">
+            <div className="relative shrink-0 min-h-[35vh] flex flex-col">
               <img
                 src={experience.image}
                 alt={experience.name}
@@ -148,7 +148,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-transparent" />
 
-              <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
+              <div className="relative flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
                 <button
                   onClick={onClose}
                   className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
@@ -157,11 +157,11 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                 </button>
               </div>
 
-              <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+              <div className="relative mt-auto p-5 pb-6 z-10">
                 <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide">
                   {experience.name}
                 </h2>
-                <p className="text-[#F9ECD9]/50 text-sm font-light mt-2 leading-relaxed line-clamp-2">
+                <p className="text-[#F9ECD9]/50 text-sm font-light mt-2 leading-relaxed">
                   {experience.description}
                 </p>
               </div>
