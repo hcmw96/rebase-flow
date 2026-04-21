@@ -12,7 +12,7 @@ import {
   serviceGroupMappings,
   hiddenGroupNames,
   hiddenProgramIds,
-  hiddenServiceNames,
+  isHiddenServiceName,
   categoryOverrides,
   programNameOverrides,
   categoryOrder,
