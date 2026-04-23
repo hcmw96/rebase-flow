@@ -24,7 +24,7 @@ interface ClassScheduleFlowProps {
 }
 
 const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }: ClassScheduleFlowProps) => {
-  const { mbSession, isAuthenticated } = useAuth();
+  const { mbSession, isAuthenticated, login } = useAuth();
   const bookMutation = useBookService();
 
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
@@ -167,9 +167,13 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
         </div>
 
         {!isAuthenticated && (
-          <p className="text-sm text-muted-foreground text-center">
+          <button
+            type="button"
+            onClick={login}
+            className="w-full text-sm text-muted-foreground text-center underline underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+          >
             Please sign in to book this class.
-          </p>
+          </button>
         )}
 
         <div className="flex gap-3">
