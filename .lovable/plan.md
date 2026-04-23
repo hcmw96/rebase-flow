@@ -1,22 +1,38 @@
 
+## Make the class sign-in prompt clickable
 
-## Brand spelling rule: always "Rebase", never "ReBase"
+The “Please sign in to book this class.” message in the class confirmation step is currently plain text, while the disabled “Confirm Booking” button sits beneath it. I’ll make the sign-in prompt directly launch the existing Mindbody login flow.
 
-### Status of the codebase
-I searched the entire codebase for `ReBase`, `REBASE`, `reBase`, `Re-Base`, `Re-base`, `RE-BASE` — **no occurrences exist**. Every current reference uses the correct "Rebase" form.
+### Change
 
-### Action
-This is a brand/style rule with no code change required right now. I'll save it to project memory so every future edit (UI copy, meta tags, alt text, JSON-LD, etc.) automatically conforms.
+**`src/components/booking/ClassScheduleFlow.tsx`**
 
-The rule will be added to **Core memory** (applied to every action, every file, every session):
+Update the auth hook usage:
 
-> Brand name is always **"Rebase"** — never "ReBase", "REBASE", "Re-Base", "rebase" (in user-facing copy), or any other variant. Applies to UI text, meta tags, alt text, structured data, and component output. Lowercase `rebase-` prefixes in filenames and the `<rebase-services>` web component tag are unchanged (technical identifiers).
+```ts
+const { mbSession, isAuthenticated, login } = useAuth();
+```
 
-### Files touched
-- `mem://style/brand-name` — new memory file with the rule
-- `mem://index.md` — add a one-line Core entry referencing it
+Replace the non-clickable paragraph with a button-style text control:
 
-### Out of scope
-- No source files need editing — current spelling is already correct everywhere.
-- Asset filenames like `rebase-cryo.webp` and the `<rebase-services>` custom element name stay as-is (lowercase technical identifiers, not display copy).
+```tsx
+{!isAuthenticated && (
+  <button
+    type="button"
+    onClick={login}
+    className="w-full text-sm text-muted-foreground text-center underline underline-offset-4 hover:text-foreground transition-colors"
+  >
+    Please sign in to book this class.
+  </button>
+)}
+```
 
+### Result
+
+- Clicking “Please sign in to book this class.” opens the existing Mindbody sign-in flow.
+- The existing booking behavior stays safe: “Confirm Booking” remains disabled until the user is signed in.
+- This affects the class booking confirmation step shown in the screenshot, including Members Suite / Communal Contrast class-style bookings.
+
+### Optional polish included
+
+To make the action clearer, I’ll also add accessible button semantics and hover/focus styling so it behaves like a real clickable control without changing the visual layout.
