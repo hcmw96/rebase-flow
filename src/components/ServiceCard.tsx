@@ -11,6 +11,7 @@ export interface ServiceVariant {
   duration: number | null;
   price: number | null;
   name: string;
+  description?: string;
   contactOnly?: boolean;
 }
 
