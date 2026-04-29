@@ -84,9 +84,15 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
+      const variantDesc = resolveVariantDescription(
+        service.name,
+        canonicalName,
+        service.onlineDescription || service.description,
+      );
       groups.get(canonicalName)!.variants.push({
         id: service.id, duration: duration ?? service.defaultTimeLength,
         price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null), name: service.name,
+        description: variantDesc,
         contactOnly: isIvFirstConsult || isContactOnly,
       });
     }
