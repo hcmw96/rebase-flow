@@ -29,7 +29,10 @@ import {
   serviceImagePositions,
   GroupedService,
   packageGroups,
+  isPlaceholderDescription,
+  resolveGroupDescription,
 } from '@/config/serviceConfig';
+
 
 interface WebsiteServicesProps {
   onSelectService: (service: BookingServiceData) => void;
