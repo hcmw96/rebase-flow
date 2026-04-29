@@ -24,7 +24,10 @@ import {
   serviceImagePositions,
   GroupedService,
   packageGroups,
+  isPlaceholderDescription,
+  resolveGroupDescription,
 } from '@/config/serviceConfig';
+
 import { ServiceVariant } from '@/components/ServiceCard';
 
 interface ExperienceDrawerProps {
