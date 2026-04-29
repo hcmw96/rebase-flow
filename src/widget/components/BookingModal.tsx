@@ -160,8 +160,13 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   onClick={() => handleVariantSelect(variant)}
                   className="w-full flex items-center justify-between p-4 rounded-xl border-2 border-[hsl(25,10%,20%)] hover:border-[hsl(35,15%,75%)]/50 hover:bg-[hsl(25,10%,15%)] transition-all text-left"
                 >
-                  <div className="flex-1">
+                  <div className="flex-1 min-w-0 pr-3">
                     <div className="font-medium text-[hsl(35,15%,88%)]">{variant.name}</div>
+                    {variant.description && (
+                      <div className="text-xs text-[hsl(35,8%,55%)] mt-1 leading-relaxed line-clamp-2">
+                        {variant.description.replace(/<[^>]*>/g, '').trim()}
+                      </div>
+                    )}
                     <div className="text-sm text-[hsl(35,8%,55%)] flex items-center gap-3 mt-1">
                       {variant.duration && (
                         <span className="flex items-center gap-1">
