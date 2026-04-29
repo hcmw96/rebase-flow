@@ -69,9 +69,15 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       if (!groups.has(canonicalName)) {
         groups.set(canonicalName, {
           baseName: canonicalName,
-          description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
+          description: service.onlineDescription || service.description || '',
           category, image, variants: [], contactOnly: isContactOnly,
         });
+      } else {
+        const existing = groups.get(canonicalName)!;
+        const incoming = service.onlineDescription || service.description || '';
+        if (isPlaceholderDescription(existing.description) && !isPlaceholderDescription(incoming)) {
+          existing.description = incoming;
+        }
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
@@ -80,6 +86,10 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
         price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null), name: service.name,
         contactOnly: isIvFirstConsult || isContactOnly,
       });
+    }
+
+    for (const group of groups.values()) {
+      group.description = resolveGroupDescription(group.description, group.baseName);
     }
 
     for (const group of groups.values()) {
