@@ -17,6 +17,7 @@ import {
   extractDurationFromName,
   isPlaceholderDescription,
   resolveGroupDescription,
+  resolveVariantDescription,
 } from '../../config/serviceConfig';
 
 
@@ -91,11 +92,17 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
+      const variantDesc = resolveVariantDescription(
+        service.name,
+        canonicalName,
+        service.onlineDescription || service.description,
+      );
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: duration ?? service.defaultTimeLength,
         price: isIvFirstConsult ? 0 : service.price,
         name: service.name,
+        description: variantDesc,
         contactOnly: isIvFirstConsult || isContactOnly,
       });
     }

@@ -417,10 +417,15 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                               : 'border-border hover:border-primary/50'
                           )}
                         >
-                          <div>
+                          <div className="flex-1 min-w-0 pr-3">
                             <div className="font-medium text-foreground">{variant.name}</div>
+                            {variant.description && (
+                              <div className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">
+                                {variant.description.replace(/<[^>]*>/g, '').trim()}
+                              </div>
+                            )}
                             {variant.duration && (
-                              <div className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1">
+                              <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {variant.duration} min
                               </div>
