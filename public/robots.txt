@@ -1,4 +1,9 @@
 User-agent: *
 Allow: /
+Disallow: /account
+Disallow: /reception
+Disallow: /dashboard
+Disallow: /auth
+Disallow: /login
 
 Sitemap: https://rebase-flow.lovable.app/sitemap.xml

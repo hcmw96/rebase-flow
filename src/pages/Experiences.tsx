@@ -60,6 +60,24 @@ const experiences = [
   },
 ];
 
+const experiencesSchema = {
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  "name": "Rebase Recovery Experiences",
+  "url": `${SITE_URL}/experiences`,
+  "itemListElement": experiences.map((exp, i) => ({
+    "@type": "ListItem",
+    "position": i + 1,
+    "item": {
+      "@type": "Service",
+      "name": exp.name,
+      "description": exp.description,
+      "provider": { "@type": "LocalBusiness", "name": "Rebase Recovery" },
+      "areaServed": "London, UK"
+    }
+  }))
+};
+
 const Experiences = () => {
   const [selectedExperience, setSelectedExperience] = useState<typeof experiences[0] | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
@@ -88,6 +106,12 @@ const Experiences = () => {
         />
         <meta property="og:url" content={`${SITE_URL}/experiences`} />
         <meta property="og:type" content="website" />
+        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Experiences — Rebase Recovery London" />
+        <meta name="twitter:description" content="World-class recovery and wellness treatments in Marylebone, London." />
+        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
+        <script type="application/ld+json">{JSON.stringify(experiencesSchema)}</script>
       </Helmet>
       <Navigation />
 
