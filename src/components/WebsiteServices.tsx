@@ -253,7 +253,10 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                   {catServices.map((service) => {
                     const fromPrice = getFromPrice(service.variants, service.baseName);
                     const firstVariant = service.variants[0];
-                    const shortDesc = shortDescriptions[service.baseName] || 'Experience our premium wellness service.';
+                    const mindbodyDesc = stripHtml(service.description || '').trim();
+                    const shortDesc = !isPlaceholderDescription(mindbodyDesc) && mindbodyDesc
+                      ? mindbodyDesc
+                      : (shortDescriptions[service.baseName] || 'Experience our premium wellness service.');
 
                       return (
                         <motion.button
