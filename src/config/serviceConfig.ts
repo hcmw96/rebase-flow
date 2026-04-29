@@ -211,7 +211,43 @@ export const shortDescriptions: Record<string, string> = {
   'Brazilian Lymphatic': 'Specialised drainage massage to reduce fluid retention.',
   'Nutritional Therapy': 'Personalised nutrition guidance for optimal health.',
   'Myofascial Dry Needling': 'Precision needling to release deep muscular tension.',
+  'Sound Bath': 'Immersive sonic experience using crystal bowls and gongs to deeply relax the nervous system.',
+  'Vitamin Shots': 'Quick intramuscular vitamin boosters for targeted energy, immunity and recovery.',
+  'Blood Test': 'Comprehensive lab panels to inform your personalised wellness strategy.',
+  'Discovery Call': 'A complimentary 15-minute consultation to map your wellness goals.',
+  'Neuro Regulation': 'Targeted nervous-system therapy to restore balance and calm.',
+  'Assisted Stretching': 'Guided one-to-one stretching to improve mobility and release tension.',
+  'Indian Head Massage': 'Traditional scalp, neck and shoulder massage to ease stress and tension.',
+  'Reflexology': 'Pressure-point therapy on the feet, hands or face to restore energy flow.',
+  'Sports Massage': 'Performance-focused massage to relieve muscle tightness and aid recovery.',
+  'Deep Tissue Massage': 'Firm, focused pressure to release deep muscular tension.',
+  'Destress Head, Neck and Shoulder Massage': 'Targeted upper-body massage to dissolve stress and tension.',
+  'Four Hand Divine Healing': 'Synchronised four-hand massage for the ultimate sensory escape.',
+  'Hyaluronic Acid': 'Joint-support injections to ease stiffness and improve mobility.',
+  'PRP Therapy': 'Platelet-rich plasma therapy to stimulate natural tissue regeneration.',
+  'Members Suite': 'Communal contrast therapy in our shared wellness space.',
+  'Off Peak Access': 'Discounted off-peak entry to our communal wellness space.',
 };
+
+// Generic placeholder used only when no specific copy exists anywhere.
+export const GENERIC_SERVICE_DESCRIPTION = 'Experience our premium wellness service.';
+
+// Returns true when a description string is empty, whitespace-only, or our generic fallback.
+export const isPlaceholderDescription = (desc: string | null | undefined): boolean => {
+  if (!desc) return true;
+  const stripped = desc.replace(/<[^>]*>/g, '').trim();
+  return stripped.length === 0 || stripped === GENERIC_SERVICE_DESCRIPTION;
+};
+
+// Picks the best description for a group: real Mindbody copy first, then curated short copy, then generic.
+export const resolveGroupDescription = (
+  current: string | null | undefined,
+  baseName: string,
+): string => {
+  if (!isPlaceholderDescription(current)) return current as string;
+  return shortDescriptions[baseName] || GENERIC_SERVICE_DESCRIPTION;
+};
+
 
 // ── Class offerings (website) ──────────────────────────────────────
 export const classOfferings = [
