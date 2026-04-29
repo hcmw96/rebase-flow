@@ -15,7 +15,10 @@ import {
   serviceImages as sharedServiceImages,
   categoryImages as sharedCategoryImages,
   extractDurationFromName,
+  isPlaceholderDescription,
+  resolveGroupDescription,
 } from '../../config/serviceConfig';
+
 
 function canonicalizeServiceName(baseName: string): string {
   for (const { pattern, groupName } of serviceGroupMappings) {
