@@ -79,9 +79,15 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       if (!groups.has(canonicalName)) {
         groups.set(canonicalName, {
           baseName: canonicalName,
-          description: service.onlineDescription || service.description || 'Experience our premium wellness service.',
+          description: service.onlineDescription || service.description || '',
           category, image, variants: [],
         });
+      } else {
+        const existing = groups.get(canonicalName)!;
+        const incoming = service.onlineDescription || service.description || '';
+        if (isPlaceholderDescription(existing.description) && !isPlaceholderDescription(incoming)) {
+          existing.description = incoming;
+        }
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
@@ -95,6 +101,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
     }
 
     for (const group of groups.values()) {
+      group.description = resolveGroupDescription(group.description, group.baseName);
       group.variants.sort((a, b) => {
         const aI = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
         const bI = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
