@@ -17,6 +17,7 @@ import {
   extractDurationFromName,
   isPlaceholderDescription,
   resolveGroupDescription,
+  resolveVariantDescription,
 } from '../../config/serviceConfig';
 
 
