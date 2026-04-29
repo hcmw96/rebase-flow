@@ -248,6 +248,65 @@ export const resolveGroupDescription = (
   return shortDescriptions[baseName] || GENERIC_SERVICE_DESCRIPTION;
 };
 
+// ── Per-variant descriptions ───────────────────────────────────────
+// Used when a single Mindbody service in a multi-variant group has no
+// onlineDescription. Keys are the exact (or normalised) Mindbody service name.
+// Lookup is case-insensitive and trims surrounding whitespace.
+export const variantDescriptions: Record<string, string> = {
+  // IV Drips
+  'IV drip - Immunity': 'High-dose vitamin C and zinc blend to fortify immune defences.',
+  'IV drip - Immunity Plus': 'Enhanced immunity protocol with added antioxidants and glutathione.',
+  'IV drip - Glow': 'Glutathione-led infusion for radiant skin, hair and nails.',
+  'IV drip - Energy': 'B-complex and amino-acid blend to restore daily energy and focus.',
+  'IV drip - Anti-Inflammatory': 'Targeted infusion to calm inflammation and aid recovery.',
+  'IV drip - Recovery': 'Post-training rehydration with electrolytes and amino acids.',
+  'IV drip - Neuro-Regen': 'Cognitive-support blend featuring NAD+ precursors.',
+  'IV drip - Rest & Sleep': 'Magnesium-led infusion to support deep, restorative sleep.',
+  'IV drip - Focus': 'Nootropic-style blend for sharp mental performance.',
+  'IV drip - Revive': 'Hydrating, balanced infusion for an all-round reset.',
+  'Iv add on': 'Optional add-on boosters to customise your IV infusion.',
+  'IV Add On - Paracetamol': 'Paracetamol add-on for added comfort during your infusion.',
+  'First Consultation': 'Complimentary IV consultation with our medical team.',
+
+  // NAD+
+  'NAD+ (250MG)': 'Entry-level NAD+ infusion for cellular energy support.',
+  'NAD+ (500MG)': 'Standard NAD+ protocol for sustained mitochondrial repair.',
+  'NAD+ (750MG)': 'Advanced NAD+ infusion for deep cellular regeneration.',
+
+  // Other IV-related
+  'Vitamin Shots': 'Quick intramuscular vitamin boosters — energy, immunity, recovery.',
+  'Blood Test': 'Comprehensive lab panels to inform your personalised wellness strategy.',
+
+  // Classes
+  'All Classes': 'Drop-in access to any scheduled studio class.',
+  '45 Minute Classes': 'Single 45-minute class credit.',
+  ' 45 Minute Classes': 'Single 45-minute class credit.',
+  '30 Minute Classes': 'Single 30-minute express class credit.',
+  '1 Hour Classes': 'Single 60-minute class credit.',
+
+  // Members Suite
+  'Off Peak Access': 'Discounted off-peak entry to the communal wellness space.',
+  'members only': 'Communal contrast therapy in our shared wellness space.',
+};
+
+// Build a normalised lookup once for case-insensitive matching.
+const normalisedVariantDescriptions: Record<string, string> = Object.fromEntries(
+  Object.entries(variantDescriptions).map(([k, v]) => [k.trim().toLowerCase(), v])
+);
+
+// Picks the best description for a single variant within a group:
+// real Mindbody copy → exact-name variant copy → group short copy → generic.
+export const resolveVariantDescription = (
+  variantName: string,
+  groupName: string,
+  mindbodyDesc: string | null | undefined,
+): string => {
+  if (!isPlaceholderDescription(mindbodyDesc)) return mindbodyDesc as string;
+  const key = (variantName || '').trim().toLowerCase();
+  if (normalisedVariantDescriptions[key]) return normalisedVariantDescriptions[key];
+  return shortDescriptions[groupName] || GENERIC_SERVICE_DESCRIPTION;
+};
+
 
 // ── Class offerings (website) ──────────────────────────────────────
 export const classOfferings = [
