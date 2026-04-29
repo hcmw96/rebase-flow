@@ -29,6 +29,7 @@ import {
   GroupedService,
   isPlaceholderDescription,
   resolveGroupDescription,
+  resolveVariantDescription,
 } from '@/config/serviceConfig';
 
 
