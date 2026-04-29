@@ -6,8 +6,47 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Instagram } from "lucide-react";
+import { Helmet } from "react-helmet-async";
+
+const SITE_URL = "https://rebase-flow.lovable.app";
+
+const contactSchema = {
+  "@context": "https://schema.org",
+  "@type": "ContactPage",
+  "url": `${SITE_URL}/contact`,
+  "name": "Contact Rebase Recovery",
+  "description": "Get in touch with Rebase Recovery, London's premier wellness centre in Marylebone.",
+  "mainEntity": {
+    "@type": "LocalBusiness",
+    "name": "Rebase Recovery",
+    "email": "reception@rebaserecovery.com",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "London",
+      "addressCountry": "GB"
+    },
+    "sameAs": ["https://instagram.com/rebaserecovery"]
+  }
+};
 
 const Contact = () => {
+  const Helmeted = (
+    <Helmet>
+      <title>Contact Us — Rebase Recovery London</title>
+      <meta name="description" content="Contact Rebase Recovery in Marylebone for booking enquiries, membership questions and partnership opportunities. Email reception@rebaserecovery.com." />
+      <link rel="canonical" href={`${SITE_URL}/contact`} />
+      <meta property="og:title" content="Contact Us — Rebase Recovery London" />
+      <meta property="og:description" content="Get in touch with Rebase Recovery, London's premier wellness centre in Marylebone." />
+      <meta property="og:url" content={`${SITE_URL}/contact`} />
+      <meta property="og:type" content="website" />
+      <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content="Contact Us — Rebase Recovery London" />
+      <meta name="twitter:description" content="Get in touch with Rebase Recovery, London's premier wellness centre in Marylebone." />
+      <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
+      <script type="application/ld+json">{JSON.stringify(contactSchema)}</script>
+    </Helmet>
+  );
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission - integrate with backend service
