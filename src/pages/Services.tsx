@@ -27,7 +27,10 @@ import {
   resolveCategory,
   resolveImage,
   GroupedService,
+  isPlaceholderDescription,
+  resolveGroupDescription,
 } from '@/config/serviceConfig';
+
 
 interface ServicesProps {
   onSelectService?: (service: import('@/components/booking/BookingDrawer').BookingServiceData) => void;
