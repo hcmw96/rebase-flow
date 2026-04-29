@@ -31,6 +31,7 @@ import {
   packageGroups,
   isPlaceholderDescription,
   resolveGroupDescription,
+  resolveVariantDescription,
 } from '@/config/serviceConfig';
 
 
