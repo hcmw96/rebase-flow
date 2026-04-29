@@ -1,65 +1,76 @@
-## Expand SEO coverage: per-page Helmet, JSON-LD, and confirm sitemap/robots
+## Why service descriptions look identical
 
-### Current state (already in place)
+I pulled live data from Mindbody (`/mindbody-services`) and audited every service. The code is reading the right field (`onlineDescription`) and falling back correctly. The duplication happens because **55 of 169 Mindbody services have a completely empty `onlineDescription`**, and our group-level fallback in `serviceConfig.ts` (`shortDescriptions`) only has *one entry per group*.
 
-- `react-helmet-async` is installed; `<HelmetProvider>` wraps `App.tsx`.
-- `public/robots.txt` exists with sitemap reference.
-- `public/sitemap.xml` exists with `/website`, `/membership`, `/cookie-policy`.
-- `Helmet` already used on: `Index.tsx`, `Membership.tsx`, `Experiences.tsx`, `CookiePolicy.tsx`.
-- `Index.tsx` already includes a `LocalBusiness` JSON-LD schema with `OfferCatalog`.
+When a group like "IV Drip" contains 11 variants (Immunity, Glow, Energy, Recovery, Neuro-Regen, Rest & Sleep, Focus, Revive, Anti-Inflammatory, Immunity Plus, plus add-ons) and **none** of them have copy in Mindbody, every variant in the booking drawer / variant list shows the same generic line: *"Vitamin-rich IV infusions tailored to your wellness goals."*
 
-### What's missing
+Same problem for:
+- **NAD+** — 250mg, 500mg, 750mg all share one fallback line
+- **Vitamin Shots** — empty in Mindbody
+- **Blood Test** — empty in Mindbody
+- **Classes** (45 / 30 / 60 min, All Classes) — empty in Mindbody
+- **First Consultation (IV)** — empty in Mindbody
 
-1. **`Contact.tsx`** has no `<Helmet>` block — needs title/description/canonical/OG/Twitter tags.
-2. **`Membership.tsx`** and **`Experiences.tsx`** have basic Helmet but **no JSON-LD** schema.
-3. **`sitemap.xml`** is missing the `/contact` and `/experiences` routes (both are real, indexable pages in `App.tsx`).
-4. **`robots.txt`** can be tightened slightly to disallow internal-only routes (`/account`, `/reception`, `/dashboard`, `/auth`, `/login`) so they don't get indexed.
-5. The mobile-app shell route `/` (AppShell) is intentionally excluded from sitemap — correct, since it's an app, not a marketing page.
+Visible groups whose Mindbody copy is missing entirely (group-level card uses a generic line):
+`IV Drip variants`, `NAD+ variants`, `Vitamin Shots`, `Blood Test`, `Classes`, `Off Peak Access`, `Members Suite (Off Peak)`, `Iv add on`.
 
-### Changes
+The remaining ~40 empty entries are already hidden via `hiddenServiceNames` / `hiddenGroupNames` (Corporate, Mock Class, Buffers, Hyaluronic, Injectables, Aesthetics, Sound Bath, Discovery Call, etc.) so they don't surface.
 
-**1. `src/pages/Contact.tsx`** — Add `<Helmet>` with:
-- Title: "Contact Us — Rebase Recovery"
-- Description focused on Marylebone location, booking enquiries, email
-- Canonical: `https://rebase-flow.lovable.app/contact`
-- Full OG + Twitter tags
-- JSON-LD `ContactPage` + `LocalBusiness` reference
+## What to fix
 
-**2. `src/pages/Membership.tsx`** — Add JSON-LD inside existing `<Helmet>`:
-- Schema type: `Product` or `Service` describing the membership offering with `Offer` pricing tiers (using whatever tiers the page already shows).
+Two-layer fix in `src/config/serviceConfig.ts`:
 
-**3. `src/pages/Experiences.tsx`** — Add JSON-LD inside existing `<Helmet>`:
-- Schema type: `ItemList` of `Service` items derived from the experience categories (contrast therapy, cryotherapy, breathwork, HBOT, IV therapy, etc. — pulled from `serviceConfig.ts`).
+### 1. Per-variant description map (new)
+Add a `variantDescriptions` map keyed by exact Mindbody service name (or regex), so each IV / NAD+ / Class variant gets its own copy when Mindbody is empty. Example entries:
 
-**4. `public/sitemap.xml`** — Add entries:
-- `https://rebase-flow.lovable.app/contact` (priority 0.7, monthly)
-- `https://rebase-flow.lovable.app/experiences` (priority 0.9, weekly)
-- Update all `<lastmod>` dates to today.
-
-**5. `public/robots.txt`** — Add disallow rules for non-public routes:
+```ts
+export const variantDescriptions: Record<string, string> = {
+  'IV drip - Immunity': 'A high-dose vitamin C and zinc blend to fortify immune defences.',
+  'IV drip - Immunity Plus': 'An enhanced immunity protocol with added antioxidants and glutathione.',
+  'IV drip - Glow': 'Glutathione-led infusion for radiant skin, hair and nails.',
+  'IV drip - Energy': 'B-complex and amino-acid blend to restore daily energy and focus.',
+  'IV drip - Anti-Inflammatory': 'Targeted infusion to calm inflammation and aid recovery.',
+  'IV drip - Recovery': 'Post-training rehydration with electrolytes and aminos.',
+  'IV drip - Neuro-Regen': 'Cognitive-support blend featuring NAD+ precursors.',
+  'IV drip - Rest & Sleep': 'Magnesium-led infusion to support deep, restorative sleep.',
+  'IV drip - Focus': 'Nootropic-style blend for sharp mental performance.',
+  'IV drip - Revive': 'Hydrating, balanced infusion for an all-round reset.',
+  'NAD+ (250MG)': 'Entry-level NAD+ infusion for cellular energy support.',
+  'NAD+ (500MG)': 'Standard NAD+ protocol for sustained mitochondrial repair.',
+  'NAD+ (750MG)': 'Advanced NAD+ infusion for deep cellular regeneration.',
+  'Vitamin Shots': 'Quick intramuscular vitamin boosters — energy, immunity, recovery.',
+  'Blood Test': 'Comprehensive lab panels to inform your wellness strategy.',
+  'All Classes': 'Drop-in access to any scheduled studio class.',
+  '45 Minute Classes': 'Single 45-minute class credit.',
+  '30 Minute Classes': 'Single 30-minute express class credit.',
+  '1 Hour Classes': 'Single 60-minute class credit.',
+  'Off Peak Access': 'Discounted off-peak entry to the communal wellness space.',
+  'First Consultation': 'Complimentary IV consultation with our medical team.',
+};
 ```
-Disallow: /account
-Disallow: /reception
-Disallow: /dashboard
-Disallow: /auth
-Disallow: /login
-```
-Keep `/` allowed (mobile app shell — Google won't index meaningfully but no harm).
 
-### Brand rule
+### 2. Tighten `resolveGroupDescription`
+- Add a sibling `resolveVariantDescription(variantName, groupName, mindbodyDesc)` that prefers: real Mindbody copy → `variantDescriptions[exactName]` → group `shortDescriptions[group]` → generic.
+- Use it everywhere a single variant is rendered standalone (booking drawer variant cards, variant pickers).
 
-All new copy uses "Rebase" (never ReBase / REBASE), per Core memory.
+### 3. Render integration
+Update the four files that build the grouped variant lists so each variant carries its resolved description, not just the group's:
+- `src/components/WebsiteServices.tsx`
+- `src/pages/Services.tsx`
+- `src/components/ExperienceDrawer.tsx`
+- `src/widget/components/ServiceList.tsx`
 
-### Out of scope
+Specifically: when pushing into `variants`, also store `description: resolveVariantDescription(service.name, canonicalName, service.onlineDescription || service.description)` and surface it in any variant-level UI (booking drawer subtitle, variant picker rows). The group card itself keeps using the group description.
 
-- No changes to the mobile app shell (`AppShell` / `/` route) — it's a SPA-only experience without static SEO surface.
-- Internal admin/auth pages (`/reception`, `/account`, `/auth`, `/login`, `/dashboard`) — explicitly disallowed in robots, no Helmet needed.
-- No changes to existing JSON-LD on `Index.tsx` (already correct).
+### 4. No Mindbody changes required
+This is a pure frontend fallback layer. If the team later adds `onlineDescription` to a service in Mindbody, real copy automatically wins.
 
-### Files to edit
+## Files to change
+- `src/config/serviceConfig.ts` — add `variantDescriptions` + `resolveVariantDescription` helper.
+- `src/components/WebsiteServices.tsx` — store + render per-variant description.
+- `src/pages/Services.tsx` — same.
+- `src/components/ExperienceDrawer.tsx` — same.
+- `src/widget/components/ServiceList.tsx` — same.
 
-- `src/pages/Contact.tsx` (add Helmet + JSON-LD)
-- `src/pages/Membership.tsx` (add JSON-LD)
-- `src/pages/Experiences.tsx` (add JSON-LD)
-- `public/sitemap.xml` (add 2 URLs, update lastmod)
-- `public/robots.txt` (add disallow rules)
+## Outcome
+Each IV drip, NAD+ dose, vitamin shot, and class type will show its own description — no more identical placeholder repeated across siblings. Group cards remain unchanged where Mindbody copy already exists.
