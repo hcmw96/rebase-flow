@@ -81,7 +81,7 @@ const Contact = () => {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1a1a1a]">
       {Helmeted}
       <Navigation />
       
