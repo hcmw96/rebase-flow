@@ -166,29 +166,21 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
           </div>
         </div>
 
-        {!isAuthenticated && (
-          <button
-            type="button"
-            onClick={login}
-            className="w-full text-sm text-muted-foreground text-center underline underline-offset-4 transition-colors hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-          >
-            Please sign in to book this class.
-          </button>
-        )}
-
         <div className="flex gap-3">
           <Button variant="outline" onClick={() => setSelectedClass(null)} className="flex-1">
             Back
           </Button>
           <Button
-            onClick={handleBook}
-            disabled={bookMutation.isPending || !isAuthenticated}
+            onClick={isAuthenticated ? handleBook : login}
+            disabled={bookMutation.isPending}
             className="flex-1"
           >
             {bookMutation.isPending ? (
               <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
-            ) : (
+            ) : isAuthenticated ? (
               'Confirm Booking'
+            ) : (
+              'Sign In to Book'
             )}
           </Button>
         </div>
