@@ -377,6 +377,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                     currentServiceTitle={service?.title || ''}
                     onSelectUpsell={onSwitchService}
                     addedServices={addedUpsells}
+                    referenceEndDateTime={selectedSlot?.endDateTime ?? null}
                     successMode
                   />
                 ) : onSwitchService ? (
@@ -384,6 +385,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                     currentServiceTitle={service?.title || ''}
                     onSelectUpsell={handleToggleUpsell}
                     addedServices={addedUpsells}
+                    referenceEndDateTime={selectedSlot?.endDateTime ?? null}
                   />
                 ) : null}
               </motion.div>
@@ -575,6 +577,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         currentServiceTitle={service?.title || ''}
                         onSelectUpsell={handleToggleUpsell}
                         addedServices={addedUpsells}
+                        referenceEndDateTime={selectedSlot?.endDateTime ?? null}
                       />
                     </motion.div>
                   )}
