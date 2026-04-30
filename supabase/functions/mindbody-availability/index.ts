@@ -142,7 +142,27 @@ serve(async (req) => {
     }
 
     // Transform availability windows into individual bookable time slots
-    const availableItems = (data.Availabilities || []).flatMap(generateTimeSlots);
+    const rawSlots = (data.Availabilities || []).flatMap(generateTimeSlots);
+
+    // Deduplicate slots — Mindbody can return multiple overlapping Availability
+    // windows for the same staff member or resource (e.g. duplicated suite
+    // bookings), which would otherwise render as visually identical buttons.
+    // Composite key handles both staff-based and resource-based bookings.
+    const dedupMap = new Map<string, any>();
+    for (const slot of rawSlots) {
+      const key = `${slot.staffId ?? ''}|${slot.locationId ?? ''}|${slot.sessionTypeId ?? ''}|${slot.startDateTime}`;
+      if (!dedupMap.has(key)) dedupMap.set(key, slot);
+    }
+    const availableItems = Array.from(dedupMap.values()).sort(
+      (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
+    );
+
+    console.log("Availability dedup:", {
+      sessionTypeId,
+      rawCount: rawSlots.length,
+      dedupedCount: availableItems.length,
+      removed: rawSlots.length - availableItems.length,
+    });
 
     // Also fetch staff list for the session type
     const staffResponse = await fetch(
