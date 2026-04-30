@@ -577,6 +577,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         currentServiceTitle={service?.title || ''}
                         onSelectUpsell={handleToggleUpsell}
                         addedServices={addedUpsells}
+                        referenceEndDateTime={selectedSlot?.endDateTime ?? null}
                       />
                     </motion.div>
                   )}
