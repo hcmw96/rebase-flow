@@ -68,7 +68,7 @@ const AccountPage = () => {
       </motion.div>
 
       {/* Membership */}
-      {membershipData?.contracts && membershipData.contracts.length > 0 && (
+      {((membershipData?.memberships?.length ?? 0) > 0 || (membershipData?.contracts?.length ?? 0) > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -85,8 +85,29 @@ const AccountPage = () => {
               </div>
             </div>
 
-            {membershipData.contracts.map((contract: any) => (
-              <div key={contract.id} className="py-2 border-b border-black/[0.04] last:border-0">
+            {membershipData.memberships?.map((m: any) => (
+              <div key={`m-${m.id}`} className="py-2 border-b border-black/[0.04] last:border-0">
+                <p className="text-sm font-medium text-black/70">{m.name}</p>
+                <div className="flex items-center gap-2 text-xs text-black/40 mt-1 flex-wrap">
+                  {m.activeDate && (
+                    <span className="flex items-center gap-1">
+                      <Calendar className="h-3 w-3" />
+                      Since {format(new Date(m.activeDate), 'MMM d, yyyy')}
+                    </span>
+                  )}
+                  {m.autoRenewing && <span className="text-emerald-600">Auto-renew</span>}
+                  {m.paymentDate && (
+                    <span className="text-black/40">Renews {format(new Date(m.paymentDate), 'MMM d')}</span>
+                  )}
+                  {m.expirationDate && (
+                    <span className="text-black/40">Expires {format(new Date(m.expirationDate), 'MMM d, yyyy')}</span>
+                  )}
+                </div>
+              </div>
+            ))}
+
+            {membershipData.contracts?.map((contract: any) => (
+              <div key={`c-${contract.id}`} className="py-2 border-b border-black/[0.04] last:border-0">
                 <p className="text-sm font-medium text-black/70">{contract.name}</p>
                 <div className="flex items-center gap-2 text-xs text-black/40 mt-1">
                   <span className="flex items-center gap-1">
