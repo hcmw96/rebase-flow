@@ -56,6 +56,7 @@ serve(async (req) => {
             body: new URLSearchParams({
               grant_type: "refresh_token",
               refresh_token: session.refresh_token,
+              subscriber_id: siteId,
               client_id: oauthClientId,
               client_secret: oauthClientSecret,
             }).toString(),
