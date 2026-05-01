@@ -1,96 +1,122 @@
-# Pick up Mindbody Memberships properly
+# Members page — premium signed-in dashboard
 
-## Problem
+## Goal
 
-The Account page's "Membership" card only shows up when the current `mindbody-client-membership` edge function returns `contracts` (from `GET /client/clientcontracts`) or `clientServices` (from `GET /client/clientservices`).
+Replace the current `/account` link target behind the marketing site's "Members" button with a dedicated, richer **Members** experience at `/members`. It is signed-in only — if the user isn't logged in, it triggers the existing Mindbody OAuth flow. The mobile app `/account` route stays as-is.
 
-For the test client (`6487908fc81f08a9865ba30e`) — a real Rebase member — both arrays come back empty. That's because Mindbody splits "membership" into multiple concepts:
+## Prerequisite
 
-- **Contracts** — the autopay agreement document. Often only present for newly-signed contracts; legacy/manually-created memberships have no contract row.
-- **Client Services** — pre-paid packages and class credits. Not used for unlimited memberships.
-- **Memberships** — the actual recurring "Membership" entitlement attached to a client (gym/recovery memberships). Lives on `GET /client/activeclientmemberships` and on the `Client` object's `MembershipIcon` / `ActiveMemberships` fields. We currently never query these, so Rebase memberships are invisible.
+The data layer fix from the previous task (resolve numeric `mindbody_client_id` so contracts/memberships actually return) needs to land first — otherwise the dashboard will look empty for everyone. Plan covers the page; if memberships still come back empty, the page degrades gracefully with neutral copy.
 
-## Fix
+## Layout
 
-Extend the existing `mindbody-client-membership` edge function and surface the result on the Account page.
+Marylebone-style editorial layout, dark brown on warm cream, generous space, no glassmorphism, no emojis. Three columns desktop, single column mobile.
 
-### 1. Edge function (`supabase/functions/mindbody-client-membership/index.ts`)
-
-In addition to the existing two calls, also call:
-
-- `GET /client/activeclientmemberships?ClientId=<id>` — returns active Memberships (`ClientMemberships[]`) with `Name`, `MembershipId`, `PaymentDate`, `LastPaymentAmountPaid`, `Remaining`, `Count`, `ActiveDate`, `ExpirationDate`, `AutoRenewing`, `ProgramId`, `SiteId`.
-- `GET /client/clients?ClientIds=<id>&limit=1` — read the `Client` record to get `MembershipIcon` (a small int the Mindbody UI uses to flag tier/level) and any `ActiveClientMemberships` field present on the v6 Client payload.
-
-Filter active memberships server-side (`ExpirationDate` null or in future) and normalise into a new `memberships` array in the response:
-
-```ts
-type Membership = {
-  id: number;            // ClientMembershipId
-  membershipId: number;  // Mindbody MembershipId (catalog row)
-  name: string;          // brand-normalised (Rebase)
-  programId: number | null;
-  active: boolean;
-  autoRenewing: boolean;
-  activeDate: string | null;
-  expirationDate: string | null;
-  remaining: number | null;
-  paymentDate: string | null;
-};
+```text
+┌──────────────────────────────────────────────────────────────────┐
+│  Welcome back, {firstName}                                       │
+│  Your Rebase membership                            [tier badge]  │
+├──────────────────────────────────────────────────────────────────┤
+│  TIER CARD (full width, hero)                                    │
+│   Resident · since Jun 2024 · auto-renews 12 May                 │
+│   [Manage in Mindbody ↗]   [Upgrade →]                           │
+├──────────────────────┬───────────────────┬───────────────────────┤
+│  ALLOWANCES          │  NEXT SESSION     │  QUICK BOOK           │
+│  Cryotherapy 6/8     │  Tomorrow 09:30   │  Cryotherapy →        │
+│  HBOT       1/3      │  HBOT · Jamie     │  Communal Contrast →  │
+│  Classes    4/8      │  [Manage]         │  Classes →            │
+│  …progress bars      │                   │  PT Session →         │
+├──────────────────────┴───────────────────┴───────────────────────┤
+│  UPCOMING (next 5)                          [view all →]         │
+│   row · row · row                                                │
+├──────────────────────────────────────────────────────────────────┤
+│  MEMBER PERKS                                                    │
+│   10% off treatments · Guest passes · Early class booking · …    │
+├──────────────────────────────────────────────────────────────────┤
+│  RECENT SESSIONS (last 5)             [full history →]           │
+├──────────────────────────────────────────────────────────────────┤
+│  CONCIERGE              │  ACCOUNT                               │
+│   Message Rebase form   │  Email · Sign out                      │
+└──────────────────────────────────────────────────────────────────┘
 ```
 
-Apply the existing `normaliseBrand` regex (`/re[\s-]?base/gi → 'Rebase'`) to `name` so "REBASE Unlimited" displays as "Rebase Unlimited".
+## Sections
 
-Response shape becomes:
-```json
-{ "contracts": [...], "clientServices": [...], "memberships": [...], "membershipIcon": 0 }
-```
+### 1. Hero
+- "Welcome back, {firstName}"
+- Tier name (largest type), since date, renewal date, auto-renew badge
+- If no active membership: hero says "You don't have a Rebase membership yet" with **[Become a Member →]** to `/membership`
+- Right-aligned chip showing tier (Base / Resident / Ultimate) styled per tier
 
-Keep all existing fields so nothing else breaks. Each Mindbody fetch must be wrapped in its own try/catch so a 404 on one endpoint doesn't break the other two (current code already tolerates non-OK; keep that pattern and add it for the new calls).
+### 2. Allowances (credits + membership entitlements)
+- Compute used vs included from `clientServices` (`Remaining` + the tier's monthly inclusion from `tiers` in `Membership.tsx`)
+- Render as horizontal progress bars: label · "X of Y this month" · subtle progress
+- Falls back to "Unlimited" pill where the tier definition says so
+- If no allowances data, hide the section
 
-### 2. Hook (`src/hooks/useMindbodyMembership.ts`)
+### 3. Next session
+- Pulls from `useMyBookings`, picks the soonest future booking
+- Shows date relative ("Tomorrow", "Friday"), time, service, staff, location
+- Buttons: **Manage** (opens MyBookings), **Re-book similar**
 
-Add a `Membership` interface and `memberships: Membership[]` + `membershipIcon?: number` to `MembershipData`.
+### 4. Quick book
+- Top 4 most-booked services for this user (derived from past bookings) or fall back to: Cryotherapy, HBOT, Communal Contrast, Classes
+- Each tile is a `Link` to `/book/{serviceId}` (the existing booking flow)
 
-Also export a small derived helper:
+### 5. Upcoming (next 5)
+- List of next 5 bookings, compact row design
+- "View all" → opens existing MyBookings drawer/sheet pattern
 
-```ts
-export function useHasActiveMembership() {
-  const { data } = useClientMembership();
-  return Boolean(
-    (data?.memberships?.length ?? 0) > 0 ||
-    (data?.contracts?.length ?? 0) > 0
-  );
-}
-```
+### 6. Member perks
+- Static list pulled from a new `MEMBER_PERKS` constant in `src/config/serviceConfig.ts`:
+  - 10% off all treatments
+  - Guest passes (count varies by tier — read from `tiers`)
+  - Early class booking window
+  - Complimentary towels & robes
+  - Member-only events (chip: "Coming soon")
 
-This gives the rest of the app a clean "is this user a member?" boolean.
+### 7. Recent sessions
+- Last 5 past bookings (already in AccountPage). "Full history →" expands inline.
 
-### 3. Account page (`src/pages/AccountPage.tsx`)
+### 8. Concierge + Account
+- Two-column footer row:
+  - Concierge: textarea + send (mailto reception@rebaserecovery.com), reuses logic from AccountPage
+  - Account: email, "Sign out" button, "Edit profile in Mindbody ↗" external link
 
-Show the Membership card when **either** `memberships` **or** `contracts` is non-empty (today it only checks contracts). Render memberships above contracts:
+## Routing & nav
 
-- Headline: membership `name`
-- Subline: `Active since {ActiveDate}` · `Renews {PaymentDate}` (if `autoRenewing`)
-- Show "Auto-renew" badge when `autoRenewing` is true
-- If `expirationDate` is set and within 30 days, show a soft "Expires {date}" line in muted brown
+- New route `/members` → new `MembersPage` component
+- `Navigation.tsx`: change "Members" button `to="/account"` → `to="/members"` (both desktop and mobile menus)
+- `WebsiteAccount.tsx` (`/account`) keeps existing behaviour for backwards compat
+- Mobile app's bottom-tab `/account` remains untouched
+- If unauthenticated, `MembersPage` shows a centered "Sign in to Rebase" card with the existing OAuth login button — same pattern as `AccountPage`
 
-Keep existing "Credits" subsection (clientServices) unchanged.
+## Files
 
-### 4. Sanity check
+**New**
+- `src/pages/MembersPage.tsx` — page shell with sections above
+- `src/components/members/TierHero.tsx`
+- `src/components/members/AllowancesGrid.tsx`
+- `src/components/members/NextSessionCard.tsx`
+- `src/components/members/QuickBookGrid.tsx`
+- `src/components/members/UpcomingList.tsx`
+- `src/components/members/MemberPerks.tsx`
+- `src/components/members/ConciergeForm.tsx`
+- `src/lib/membershipTiers.ts` — small helper that maps a Mindbody membership name (case-insensitive contains "base"/"resident"/"ultimate") to the local tier config from `Membership.tsx` so we can compute allowances and perks
 
-After deploy, hit:
-```
-GET /functions/v1/mindbody-client-membership?sessionId=81dad74b-83f6-469d-81ba-13f07d28ad56
-```
-and confirm `memberships` is populated for the known test member. If still empty, fall back to inspecting the raw Mindbody response in edge logs to confirm which field name Mindbody is using on this site (some sites return `ClientMemberships`, others `ActiveClientMemberships`) and adjust the parser accordingly.
+**Edited**
+- `src/App.tsx` — register `/members` route
+- `src/components/Navigation.tsx` — point Members button at `/members` (desktop + mobile)
+- `src/config/serviceConfig.ts` — add `MEMBER_PERKS` (or move it next to tier config)
 
-## Files touched
-
-- `supabase/functions/mindbody-client-membership/index.ts` — add memberships + client lookup
-- `src/hooks/useMindbodyMembership.ts` — add types + `useHasActiveMembership`
-- `src/pages/AccountPage.tsx` — show card when memberships exist, render memberships list
+## Design tokens (use existing, no new colors)
+- Background `bg-[#F9ECD9]`, foreground `text-[#3B2712]`
+- Card surfaces `bg-white/40 border border-black/[0.06]` (matches AccountPage)
+- Tier badges: subtle differentiation only — `bg-[#3B2712]/5` with tier-name in text, no neon
+- Inter, tight letter spacing on headings (per typography memory)
 
 ## Out of scope
 
-- Gating bookings/pricing by membership tier (separate follow-up once the data is reliably visible).
-- Admin/reception views of other clients' memberships.
+- Editing membership / payment changes (deep-link to Mindbody instead)
+- Push notifications or in-app messaging
+- The data-layer fix to resolve numeric Mindbody ClientId (tracked separately; this page degrades gracefully without it)
