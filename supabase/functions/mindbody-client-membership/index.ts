@@ -91,25 +91,33 @@ serve(async (req) => {
     // the local Id we need for the other client/* endpoints.
     let clientId: string = publicClientId;
     let membershipIcon: number | null = null;
-    try {
-      const r = await fetch(
-        `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${publicClientId}&limit=1&CrossRegionalLookup=true`,
-        { method: "GET", headers: mbHeaders }
-      );
-      if (r.ok) {
+    // Try several lookup strategies — Mindbody's `Id` semantics vary by site.
+    const lookupUrls = [
+      `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${publicClientId}&limit=1&CrossRegionalLookup=true`,
+      `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${publicClientId}&limit=1&CrossRegionalLookup=true`,
+      `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${publicClientId}&limit=1`,
+    ];
+    for (const lookupUrl of lookupUrls) {
+      try {
+        const r = await fetch(lookupUrl, { method: "GET", headers: mbHeaders });
+        if (!r.ok) {
+          console.warn("clients lookup non-OK:", r.status, lookupUrl, await r.text());
+          continue;
+        }
         const data = await r.json();
         const client = (data.Clients || [])[0];
         if (client) {
           if (client.Id) clientId = String(client.Id);
           if (typeof client.MembershipIcon === "number") membershipIcon = client.MembershipIcon;
-        } else {
-          console.warn("clients lookup returned no clients for", publicClientId);
+          console.log("Resolved client", publicClientId, "->", clientId);
+          break;
         }
-      } else {
-        console.warn("clients non-OK:", r.status, await r.text());
+      } catch (e) {
+        console.error("clients lookup error:", e);
       }
-    } catch (e) {
-      console.error("clients error:", e);
+    }
+    if (clientId === publicClientId) {
+      console.warn("Could not resolve numeric ClientId for", publicClientId);
     }
 
     // 1. Contracts
