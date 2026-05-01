@@ -83,8 +83,34 @@ serve(async (req) => {
       "Authorization": `Bearer ${staffToken}`,
     };
 
-    const clientId = session.mindbody_client_id;
+    const publicClientId = session.mindbody_client_id;
     const now = new Date();
+
+    // Resolve the site-local numeric ClientId from the OAuth public id.
+    // Mindbody's /client/clients supports `ClientIds` (the public-id) and returns
+    // the local Id we need for the other client/* endpoints.
+    let clientId: string = publicClientId;
+    let membershipIcon: number | null = null;
+    try {
+      const r = await fetch(
+        `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${publicClientId}&limit=1&CrossRegionalLookup=true`,
+        { method: "GET", headers: mbHeaders }
+      );
+      if (r.ok) {
+        const data = await r.json();
+        const client = (data.Clients || [])[0];
+        if (client) {
+          if (client.Id) clientId = String(client.Id);
+          if (typeof client.MembershipIcon === "number") membershipIcon = client.MembershipIcon;
+        } else {
+          console.warn("clients lookup returned no clients for", publicClientId);
+        }
+      } else {
+        console.warn("clients non-OK:", r.status, await r.text());
+      }
+    } catch (e) {
+      console.error("clients error:", e);
+    }
 
     // 1. Contracts
     let contracts: any[] = [];
