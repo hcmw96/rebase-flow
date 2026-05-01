@@ -86,7 +86,7 @@ serve(async (req) => {
       "Content-Type": "application/json",
       "Api-Key": apiKey,
       "SiteId": siteId,
-      "Authorization": `Bearer ${session.access_token}`,
+      "Authorization": `Bearer ${accessToken}`,
     };
 
     const now = new Date();
