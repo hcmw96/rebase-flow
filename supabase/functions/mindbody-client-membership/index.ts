@@ -43,6 +43,45 @@ serve(async (req) => {
       throw new Error("Session not found. Please log in again.");
     }
 
+    // Refresh token if expired or expiring within 60s
+    let accessToken: string = session.access_token;
+    if (new Date(session.token_expires_at).getTime() - Date.now() < 60_000) {
+      const oauthClientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
+      const oauthClientSecret = Deno.env.get("MINDBODY_OAUTH_CLIENT_SECRET");
+      if (oauthClientId && oauthClientSecret && session.refresh_token) {
+        try {
+          const refreshRes = await fetch("https://signin.mindbodyonline.com/connect/token", {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: new URLSearchParams({
+              grant_type: "refresh_token",
+              refresh_token: session.refresh_token,
+              client_id: oauthClientId,
+              client_secret: oauthClientSecret,
+            }).toString(),
+          });
+          if (refreshRes.ok) {
+            const tokens = await refreshRes.json();
+            accessToken = tokens.access_token;
+            const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
+            await supabase
+              .from("mb_sessions")
+              .update({
+                access_token: tokens.access_token,
+                refresh_token: tokens.refresh_token,
+                token_expires_at: newExpiresAt.toISOString(),
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", sessionId);
+          } else {
+            console.warn("Refresh token failed:", refreshRes.status, await refreshRes.text());
+          }
+        } catch (e) {
+          console.error("Refresh token error:", e);
+        }
+      }
+    }
+
     const mbHeaders = {
       "Content-Type": "application/json",
       "Api-Key": apiKey,
