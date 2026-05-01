@@ -198,25 +198,6 @@ serve(async (req) => {
       console.error("activeclientmemberships error:", e);
     }
 
-    // 4. Client record for MembershipIcon
-    let membershipIcon: number | null = null;
-    try {
-      const r = await fetch(
-        `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${clientId}&limit=1`,
-        { method: "GET", headers: mbHeaders }
-      );
-      if (r.ok) {
-        const data = await r.json();
-        const client = (data.Clients || [])[0];
-        if (client && typeof client.MembershipIcon === "number") {
-          membershipIcon = client.MembershipIcon;
-        }
-      } else {
-        console.warn("clients non-OK:", r.status, await r.text());
-      }
-    } catch (e) {
-      console.error("clients error:", e);
-    }
 
     return new Response(
       JSON.stringify({ contracts, clientServices, memberships, membershipIcon }),
