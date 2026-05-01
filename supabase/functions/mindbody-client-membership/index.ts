@@ -9,6 +9,37 @@ const corsHeaders = {
 const normaliseBrand = (value: string | null | undefined): string =>
   (value ?? "").replace(/re[\s-]?base/gi, "Rebase");
 
+async function getStaffToken(): Promise<string> {
+  const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
+  const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
+  const username = Deno.env.get("MINDBODY_STAFF_USERNAME")?.trim();
+  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD")?.trim();
+  const sourceName = Deno.env.get("MINDBODY_SOURCE_NAME")?.trim();
+  const sourcePassword = Deno.env.get("MINDBODY_SOURCE_PASSWORD")?.trim();
+
+  if (!apiKey || !siteId || !username || !password) {
+    throw new Error("Missing Mindbody staff credentials");
+  }
+
+  const body: Record<string, string> = { Username: username, Password: password };
+  if (sourceName && sourcePassword) {
+    body.SourceName = sourceName;
+    body.SourcePassword = sourcePassword;
+  }
+
+  const res = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Api-Key": apiKey, "SiteId": siteId },
+    body: JSON.stringify(body),
+  });
+
+  if (!res.ok) {
+    throw new Error(`Mindbody staff auth failed (${res.status}): ${await res.text()}`);
+  }
+  const data = await res.json();
+  return data.AccessToken;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -35,7 +66,7 @@ serve(async (req) => {
 
     const { data: session, error: sessionError } = await supabase
       .from("mb_sessions")
-      .select("*")
+      .select("id, mindbody_client_id")
       .eq("id", sessionId)
       .single();
 
@@ -43,64 +74,27 @@ serve(async (req) => {
       throw new Error("Session not found. Please log in again.");
     }
 
-    // Refresh token if expired or expiring within 60s
-    let accessToken: string = session.access_token;
-    if (new Date(session.token_expires_at).getTime() - Date.now() < 60_000) {
-      const oauthClientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
-      const oauthClientSecret = Deno.env.get("MINDBODY_OAUTH_CLIENT_SECRET");
-      if (oauthClientId && oauthClientSecret && session.refresh_token) {
-        try {
-          const refreshRes = await fetch("https://signin.mindbodyonline.com/connect/token", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: new URLSearchParams({
-              grant_type: "refresh_token",
-              refresh_token: session.refresh_token,
-              subscriber_id: siteId,
-              client_id: oauthClientId,
-              client_secret: oauthClientSecret,
-            }).toString(),
-          });
-          if (refreshRes.ok) {
-            const tokens = await refreshRes.json();
-            accessToken = tokens.access_token;
-            const newExpiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-            await supabase
-              .from("mb_sessions")
-              .update({
-                access_token: tokens.access_token,
-                refresh_token: tokens.refresh_token,
-                token_expires_at: newExpiresAt.toISOString(),
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", sessionId);
-          } else {
-            console.warn("Refresh token failed:", refreshRes.status, await refreshRes.text());
-          }
-        } catch (e) {
-          console.error("Refresh token error:", e);
-        }
-      }
-    }
+    const staffToken = await getStaffToken();
 
     const mbHeaders = {
       "Content-Type": "application/json",
       "Api-Key": apiKey,
       "SiteId": siteId,
-      "Authorization": `Bearer ${accessToken}`,
+      "Authorization": `Bearer ${staffToken}`,
     };
 
+    const clientId = session.mindbody_client_id;
     const now = new Date();
 
     // 1. Contracts
     let contracts: any[] = [];
     try {
-      const contractsRes = await fetch(
-        `https://api.mindbodyonline.com/public/v6/client/clientcontracts?ClientId=${session.mindbody_client_id}`,
+      const r = await fetch(
+        `https://api.mindbodyonline.com/public/v6/client/clientcontracts?ClientId=${clientId}`,
         { method: "GET", headers: mbHeaders }
       );
-      if (contractsRes.ok) {
-        const data = await contractsRes.json();
+      if (r.ok) {
+        const data = await r.json();
         contracts = (data.Contracts || [])
           .filter((c: any) => !(c.EndDate && new Date(c.EndDate) < now))
           .map((c: any) => ({
@@ -112,7 +106,7 @@ serve(async (req) => {
             agreementDate: c.AgreementDate,
           }));
       } else {
-        console.warn("clientcontracts non-OK:", contractsRes.status, await contractsRes.text());
+        console.warn("clientcontracts non-OK:", r.status, await r.text());
       }
     } catch (e) {
       console.error("clientcontracts error:", e);
@@ -121,12 +115,12 @@ serve(async (req) => {
     // 2. Client services (credits / packages)
     let clientServices: any[] = [];
     try {
-      const servicesRes = await fetch(
-        `https://api.mindbodyonline.com/public/v6/client/clientservices?ClientId=${session.mindbody_client_id}`,
+      const r = await fetch(
+        `https://api.mindbodyonline.com/public/v6/client/clientservices?ClientId=${clientId}`,
         { method: "GET", headers: mbHeaders }
       );
-      if (servicesRes.ok) {
-        const data = await servicesRes.json();
+      if (r.ok) {
+        const data = await r.json();
         clientServices = (data.ClientServices || [])
           .filter((s: any) => {
             if (s.ExpirationDate && new Date(s.ExpirationDate) < now) return false;
@@ -141,27 +135,24 @@ serve(async (req) => {
             paymentDate: s.PaymentDate,
           }));
       } else {
-        console.warn("clientservices non-OK:", servicesRes.status, await servicesRes.text());
+        console.warn("clientservices non-OK:", r.status, await r.text());
       }
     } catch (e) {
       console.error("clientservices error:", e);
     }
 
-    // 3. Active client memberships (the actual recurring "Membership" feature)
+    // 3. Active client memberships
     let memberships: any[] = [];
     try {
-      const membershipsRes = await fetch(
-        `https://api.mindbodyonline.com/public/v6/client/activeclientmemberships?ClientId=${session.mindbody_client_id}`,
+      const r = await fetch(
+        `https://api.mindbodyonline.com/public/v6/client/activeclientmemberships?ClientId=${clientId}`,
         { method: "GET", headers: mbHeaders }
       );
-      if (membershipsRes.ok) {
-        const data = await membershipsRes.json();
+      if (r.ok) {
+        const data = await r.json();
         const raw = data.ClientMemberships || data.ActiveClientMemberships || [];
         memberships = raw
-          .filter((m: any) => {
-            if (m.ExpirationDate && new Date(m.ExpirationDate) < now) return false;
-            return true;
-          })
+          .filter((m: any) => !(m.ExpirationDate && new Date(m.ExpirationDate) < now))
           .map((m: any) => ({
             id: m.Id ?? m.ClientMembershipId ?? null,
             membershipId: m.MembershipId ?? null,
@@ -175,27 +166,27 @@ serve(async (req) => {
             paymentDate: m.PaymentDate ?? null,
           }));
       } else {
-        console.warn("activeclientmemberships non-OK:", membershipsRes.status, await membershipsRes.text());
+        console.warn("activeclientmemberships non-OK:", r.status, await r.text());
       }
     } catch (e) {
       console.error("activeclientmemberships error:", e);
     }
 
-    // 4. Client record for MembershipIcon (tier indicator)
+    // 4. Client record for MembershipIcon
     let membershipIcon: number | null = null;
     try {
-      const clientRes = await fetch(
-        `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${session.mindbody_client_id}&limit=1`,
+      const r = await fetch(
+        `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${clientId}&limit=1`,
         { method: "GET", headers: mbHeaders }
       );
-      if (clientRes.ok) {
-        const data = await clientRes.json();
+      if (r.ok) {
+        const data = await r.json();
         const client = (data.Clients || [])[0];
         if (client && typeof client.MembershipIcon === "number") {
           membershipIcon = client.MembershipIcon;
         }
       } else {
-        console.warn("clients non-OK:", clientRes.status, await clientRes.text());
+        console.warn("clients non-OK:", r.status, await r.text());
       }
     } catch (e) {
       console.error("clients error:", e);
