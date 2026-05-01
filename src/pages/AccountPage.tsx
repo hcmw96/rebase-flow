@@ -68,7 +68,7 @@ const AccountPage = () => {
       </motion.div>
 
       {/* Membership */}
-      {membershipData?.contracts && membershipData.contracts.length > 0 && (
+      {((membershipData?.memberships?.length ?? 0) > 0 || (membershipData?.contracts?.length ?? 0) > 0) && (
         <motion.div
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
