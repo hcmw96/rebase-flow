@@ -3,7 +3,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-interface Contract {
+export interface Contract {
   id: number;
   name: string;
   startDate: string;
@@ -12,7 +12,7 @@ interface Contract {
   agreementDate: string;
 }
 
-interface ClientService {
+export interface ClientService {
   id: number;
   name: string;
   remaining: number;
@@ -20,9 +20,24 @@ interface ClientService {
   paymentDate: string;
 }
 
-interface MembershipData {
+export interface Membership {
+  id: number | null;
+  membershipId: number | null;
+  name: string;
+  programId: number | null;
+  active: boolean;
+  autoRenewing: boolean;
+  activeDate: string | null;
+  expirationDate: string | null;
+  remaining: number | null;
+  paymentDate: string | null;
+}
+
+export interface MembershipData {
   contracts: Contract[];
   clientServices: ClientService[];
+  memberships: Membership[];
+  membershipIcon?: number | null;
 }
 
 export function useClientMembership() {
@@ -38,11 +53,25 @@ export function useClientMembership() {
         const err = await res.json();
         throw new Error(err.error || 'Failed to fetch membership');
       }
-      return res.json();
+      const data = await res.json();
+      return {
+        contracts: data.contracts ?? [],
+        clientServices: data.clientServices ?? [],
+        memberships: data.memberships ?? [],
+        membershipIcon: data.membershipIcon ?? null,
+      };
     },
     enabled: isAuthenticated && !!mbSession?.sessionId,
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
+}
+
+export function useHasActiveMembership(): boolean {
+  const { data } = useClientMembership();
+  return Boolean(
+    (data?.memberships?.length ?? 0) > 0 ||
+    (data?.contracts?.length ?? 0) > 0
+  );
 }
