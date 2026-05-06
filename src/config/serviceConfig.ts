@@ -378,3 +378,42 @@ export function resolveImage(canonicalName: string, programName?: string, catego
     categoryImages['default']
   );
 }
+
+// ── Static catalogue for /website ──────────────────────────────────
+// Lets the marketing page render instantly without waiting for the
+// Mindbody API. Live data hydrates prices/descriptions when it arrives.
+export interface StaticServiceEntry {
+  baseName: string;
+  category: string;
+  image: string;
+  shortDescription: string;
+  fromPrice: number | null;
+  contactOnly: boolean;
+  classDescriptionIds?: number[];
+}
+
+export const staticWebsiteCatalogue: StaticServiceEntry[] = [
+  { baseName: "Members Suite", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5] },
+  { baseName: "Infrared Suite", category: "Private Suites", image: "/images/rebase-infrared-suite.jpg", shortDescription: "Detoxifying infrared heat followed by an invigorating ice bath.", fromPrice: 190, contactOnly: false },
+  { baseName: "Midday Reset", category: "Private Suites", image: "/images/rebase-midday-reset.jpg", shortDescription: "A restorative midday escape in our private wellness suite.", fromPrice: 152, contactOnly: false },
+  { baseName: "Premium Suite", category: "Private Suites", image: "/images/rebase-private-suites.webp", shortDescription: "Private suite with Finnish sauna, ice baths and bucket shower.", fromPrice: 240, contactOnly: false },
+  { baseName: "Hyperbaric Oxygen", category: "Hyperbaric Oxygen", image: "/images/rebase-hbot-treatment.webp", shortDescription: "Pressurised oxygen therapy to accelerate healing and recovery.", fromPrice: 200, contactOnly: false },
+  { baseName: "Cryotherapy", category: "Cryotherapy", image: "/images/rebase-cryo.webp", shortDescription: "Whole-body cold therapy to reduce inflammation and boost recovery.", fromPrice: 50, contactOnly: false },
+  { baseName: "Massage", category: "Massage Therapy", image: "/images/rebase-massage.jpg", shortDescription: "Expert deep tissue and sports massage for total tension relief.", fromPrice: 165, contactOnly: false },
+  { baseName: "Assisted Stretching", category: "Massage Therapy", image: "/images/rebase-treatment-room.jpg", shortDescription: "Guided one-to-one stretching to improve mobility and release tension.", fromPrice: 110, contactOnly: false },
+  { baseName: "Brazilian Lymphatic", category: "Massage Therapy", image: "/images/rebase-brazilian-lymphatic.jpg", shortDescription: "Specialised drainage massage to reduce fluid retention.", fromPrice: 200, contactOnly: false },
+  { baseName: "Deo's Body Alignment Method", category: "Massage Therapy", image: "/images/rebase-deo-body-alignment.jpg", shortDescription: "Experience our premium wellness service.", fromPrice: 395, contactOnly: false },
+  { baseName: "Divine Facial Healing", category: "Massage Therapy", image: "/images/rebase-divine-facial.jpg", shortDescription: "A deeply relaxing, restorative facial ritual.", fromPrice: 245, contactOnly: false },
+  { baseName: "Four Hand", category: "Massage Therapy", image: "/images/rebase-four-hand.jpg", shortDescription: "Synchronised four-hand massage for the ultimate sensory escape.", fromPrice: 545, contactOnly: false },
+  { baseName: "Holistic Face Sculpting", category: "Massage Therapy", image: "/images/rebase-holistic-face-sculpting.jpg", shortDescription: "Natural face-lift technique using sculpting massage.", fromPrice: 200, contactOnly: false },
+  { baseName: "Nervous System Reset", category: "Massage Therapy", image: "/images/rebase-nervous-system-reset.jpg", shortDescription: "Targeted nervous-system therapy to restore balance and calm.", fromPrice: 195, contactOnly: false },
+  { baseName: "Reflexology", category: "Massage Therapy", image: "/images/rebase-reflexology.jpg", shortDescription: "Pressure-point therapy on the feet, hands or face to restore energy flow.", fromPrice: 195, contactOnly: false },
+  { baseName: "IV Drip", category: "IV Drips", image: "/images/rebase-iv-drip.jpg", shortDescription: "Vitamin-rich IV infusions tailored to your wellness goals.", fromPrice: 80, contactOnly: false },
+  { baseName: "Blood Test", category: "IV Drips", image: "/images/rebase-blood-test.jpg", shortDescription: "Comprehensive lab panels to inform your personalised wellness strategy.", fromPrice: 1000, contactOnly: false },
+  { baseName: "NAD+", category: "IV Drips", image: "/images/rebase-iv-drip.jpg", shortDescription: "Cellular regeneration therapy to restore energy and vitality.", fromPrice: 350, contactOnly: false },
+  { baseName: "Osteopathy", category: "Regen and Manual Therapies", image: "/images/rebase-osteopathy.jpg", shortDescription: "Manual therapy to restore movement and relieve pain.", fromPrice: 165, contactOnly: true },
+  { baseName: "Athletes Performance", category: "Regen and Manual Therapies", image: "/images/rebase-athletes-performance.jpg", shortDescription: "Elite recovery and performance protocol for serious athletes.", fromPrice: 3350, contactOnly: false },
+  { baseName: "Longevity", category: "Regen and Manual Therapies", image: "/images/rebase-longevity.jpg", shortDescription: "Comprehensive longevity protocol to optimise vitality and healthspan.", fromPrice: 1700, contactOnly: false },
+  { baseName: "High Performance Recovery", category: "Regen and Manual Therapies", image: "/images/rebase-high-performance-recovery.jpg", shortDescription: "Multi-modal recovery package for peak performance.", fromPrice: 2950, contactOnly: false },
+  { baseName: "Core Radiance", category: "Regen and Manual Therapies", image: "/images/rebase-core-radiance.jpg", shortDescription: "Women's health and radiance protocol.", fromPrice: 1950, contactOnly: false },
+];
