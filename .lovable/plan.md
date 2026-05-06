@@ -1,122 +1,58 @@
-# Members page — premium signed-in dashboard
+# Instant-render /website services
 
-## Goal
+## Problem
+On `/website`, the "Our Experiences" section currently shows skeleton placeholders until the `mindbody-services` API response arrives. Since the catalogue of services shown there is fixed (it's already enumerated in `src/config/serviceConfig.ts`), users shouldn't have to wait — only prices and any per-variant detail genuinely need the live API.
 
-Replace the current `/account` link target behind the marketing site's "Members" button with a dedicated, richer **Members** experience at `/members`. It is signed-in only — if the user isn't logged in, it triggers the existing Mindbody OAuth flow. The mobile app `/account` route stays as-is.
+## Approach
+Treat `serviceConfig.ts` as the source of truth for **what** appears on the marketing page, and Mindbody as the source of truth for **price/duration** that hydrate in the background.
 
-## Prerequisite
+### 1. Add a static catalogue in `serviceConfig.ts`
+Introduce a new export, e.g. `staticWebsiteCatalogue`, ordered by `categoryOrder` and `serviceOrderWithinCategory`. Each entry contains:
+- `baseName`, `category`
+- `image` (from `serviceImages` / `categoryImages`)
+- `shortDescription` (from `shortDescriptions`)
+- `fromPrice` fallback (from `priceOverrides`) — used until the live data lands
+- `contactOnly` flag
+- `classDescriptionIds` for Signature Classes (already available in `classOfferings`)
 
-The data layer fix from the previous task (resolve numeric `mindbody_client_id` so contracts/memberships actually return) needs to land first — otherwise the dashboard will look empty for everyone. Plan covers the page; if memberships still come back empty, the page degrades gracefully with neutral copy.
+This is derived from data that already exists in the file, so no new content authoring is needed.
 
-## Layout
+### 2. Update `src/components/WebsiteServices.tsx`
+- Render the accordion + cards from `staticWebsiteCatalogue` immediately, regardless of `isLoading`. Drop the full-section skeleton.
+- When `useMindbodyServices` resolves, build a lookup `Map<canonicalName, GroupedService>` from the live data and merge:
+  - Replace fallback `fromPrice` with the live minimum
+  - Replace fallback `shortDescription` with live `onlineDescription` when it's not a placeholder
+  - Pass live `variants` into `onSelectService` when the user clicks a card (so booking still uses real Mindbody session IDs)
+- While live data is still loading, clicking a card can either:
+  - open the booking drawer in a "loading variants" state, or
+  - briefly defer the click until variants arrive (preferred — short wait only if user clicks before fetch completes; with the existing 30-min cache + root-level prefetch this is rare).
 
-Marylebone-style editorial layout, dark brown on warm cream, generous space, no glassmorphism, no emojis. Three columns desktop, single column mobile.
+### 3. Keep the `/` mobile app behaviour unchanged
+`Services.tsx` and the widget continue to render purely from live data (they need real variant IDs to show options). Only the `/website` marketing surface uses the static-first approach.
 
-```text
-┌──────────────────────────────────────────────────────────────────┐
-│  Welcome back, {firstName}                                       │
-│  Your Rebase membership                            [tier badge]  │
-├──────────────────────────────────────────────────────────────────┤
-│  TIER CARD (full width, hero)                                    │
-│   Resident · since Jun 2024 · auto-renews 12 May                 │
-│   [Manage in Mindbody ↗]   [Upgrade →]                           │
-├──────────────────────┬───────────────────┬───────────────────────┤
-│  ALLOWANCES          │  NEXT SESSION     │  QUICK BOOK           │
-│  Cryotherapy 6/8     │  Tomorrow 09:30   │  Cryotherapy →        │
-│  HBOT       1/3      │  HBOT · Jamie     │  Communal Contrast →  │
-│  Classes    4/8      │  [Manage]         │  Classes →            │
-│  …progress bars      │                   │  PT Session →         │
-├──────────────────────┴───────────────────┴───────────────────────┤
-│  UPCOMING (next 5)                          [view all →]         │
-│   row · row · row                                                │
-├──────────────────────────────────────────────────────────────────┤
-│  MEMBER PERKS                                                    │
-│   10% off treatments · Guest passes · Early class booking · …    │
-├──────────────────────────────────────────────────────────────────┤
-│  RECENT SESSIONS (last 5)             [full history →]           │
-├──────────────────────────────────────────────────────────────────┤
-│  CONCIERGE              │  ACCOUNT                               │
-│   Message Rebase form   │  Email · Sign out                      │
-└──────────────────────────────────────────────────────────────────┘
+### 4. Signature Classes
+Already rendered from `classOfferings` (static) — no change needed; just make sure the Signature Classes accordion item renders without waiting on `isLoading`.
+
+## Technical notes
+- No backend / edge-function changes.
+- No changes to Mindbody data model or caching (root-level prefetch in `App.tsx` stays).
+- Image priority: consider adding `loading="eager"` + `fetchPriority="high"` to the first row of cards so the LCP improves too.
+- Type addition in `serviceConfig.ts`:
+
+```ts
+export interface StaticServiceEntry {
+  baseName: string;
+  category: string;
+  image: string;
+  shortDescription: string;
+  fromPrice: number | null;
+  contactOnly: boolean;
+  classDescriptionIds?: number[];
+}
+export const staticWebsiteCatalogue: StaticServiceEntry[] = [...];
 ```
 
-## Sections
-
-### 1. Hero
-- "Welcome back, {firstName}"
-- Tier name (largest type), since date, renewal date, auto-renew badge
-- If no active membership: hero says "You don't have a Rebase membership yet" with **[Become a Member →]** to `/membership`
-- Right-aligned chip showing tier (Base / Resident / Ultimate) styled per tier
-
-### 2. Allowances (credits + membership entitlements)
-- Compute used vs included from `clientServices` (`Remaining` + the tier's monthly inclusion from `tiers` in `Membership.tsx`)
-- Render as horizontal progress bars: label · "X of Y this month" · subtle progress
-- Falls back to "Unlimited" pill where the tier definition says so
-- If no allowances data, hide the section
-
-### 3. Next session
-- Pulls from `useMyBookings`, picks the soonest future booking
-- Shows date relative ("Tomorrow", "Friday"), time, service, staff, location
-- Buttons: **Manage** (opens MyBookings), **Re-book similar**
-
-### 4. Quick book
-- Top 4 most-booked services for this user (derived from past bookings) or fall back to: Cryotherapy, HBOT, Communal Contrast, Classes
-- Each tile is a `Link` to `/book/{serviceId}` (the existing booking flow)
-
-### 5. Upcoming (next 5)
-- List of next 5 bookings, compact row design
-- "View all" → opens existing MyBookings drawer/sheet pattern
-
-### 6. Member perks
-- Static list pulled from a new `MEMBER_PERKS` constant in `src/config/serviceConfig.ts`:
-  - 10% off all treatments
-  - Guest passes (count varies by tier — read from `tiers`)
-  - Early class booking window
-  - Complimentary towels & robes
-  - Member-only events (chip: "Coming soon")
-
-### 7. Recent sessions
-- Last 5 past bookings (already in AccountPage). "Full history →" expands inline.
-
-### 8. Concierge + Account
-- Two-column footer row:
-  - Concierge: textarea + send (mailto reception@rebaserecovery.com), reuses logic from AccountPage
-  - Account: email, "Sign out" button, "Edit profile in Mindbody ↗" external link
-
-## Routing & nav
-
-- New route `/members` → new `MembersPage` component
-- `Navigation.tsx`: change "Members" button `to="/account"` → `to="/members"` (both desktop and mobile menus)
-- `WebsiteAccount.tsx` (`/account`) keeps existing behaviour for backwards compat
-- Mobile app's bottom-tab `/account` remains untouched
-- If unauthenticated, `MembersPage` shows a centered "Sign in to Rebase" card with the existing OAuth login button — same pattern as `AccountPage`
-
-## Files
-
-**New**
-- `src/pages/MembersPage.tsx` — page shell with sections above
-- `src/components/members/TierHero.tsx`
-- `src/components/members/AllowancesGrid.tsx`
-- `src/components/members/NextSessionCard.tsx`
-- `src/components/members/QuickBookGrid.tsx`
-- `src/components/members/UpcomingList.tsx`
-- `src/components/members/MemberPerks.tsx`
-- `src/components/members/ConciergeForm.tsx`
-- `src/lib/membershipTiers.ts` — small helper that maps a Mindbody membership name (case-insensitive contains "base"/"resident"/"ultimate") to the local tier config from `Membership.tsx` so we can compute allowances and perks
-
-**Edited**
-- `src/App.tsx` — register `/members` route
-- `src/components/Navigation.tsx` — point Members button at `/members` (desktop + mobile)
-- `src/config/serviceConfig.ts` — add `MEMBER_PERKS` (or move it next to tier config)
-
-## Design tokens (use existing, no new colors)
-- Background `bg-[#F9ECD9]`, foreground `text-[#3B2712]`
-- Card surfaces `bg-white/40 border border-black/[0.06]` (matches AccountPage)
-- Tier badges: subtle differentiation only — `bg-[#3B2712]/5` with tier-name in text, no neon
-- Inter, tight letter spacing on headings (per typography memory)
-
 ## Out of scope
-
-- Editing membership / payment changes (deep-link to Mindbody instead)
-- Push notifications or in-app messaging
-- The data-layer fix to resolve numeric Mindbody ClientId (tracked separately; this page degrades gracefully without it)
+- Mobile app `/` Services tab (still needs live variants to function).
+- Booking drawer internals.
+- Any pricing changes — fallback prices come from existing `priceOverrides`.
