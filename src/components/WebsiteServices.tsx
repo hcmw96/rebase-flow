@@ -13,8 +13,6 @@ import {
   hiddenProgramIds,
   isHiddenServiceName,
   hiddenGroupNames,
-  categoryOverrides,
-  programNameOverrides,
   categoryOrder,
   serviceOrderWithinCategory,
   contactOnlyGroups,
@@ -32,6 +30,7 @@ import {
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 
@@ -45,15 +44,16 @@ const stripHtml = (html: string): string => {
 };
 
 const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
-  const { data: services, isLoading } = useMindbodyServices();
+  const { data: services } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
-  
+
   const hiddenServiceIds = useMemo(() => new Set(hiddenServices.map(h => h.service_id)), [hiddenServices]);
 
-  const groupedServices = useMemo(() => {
-    if (!services?.length) return [];
-    const visibleServices = services.filter(s => !hiddenServiceIds.has(s.id));
+  // Live grouped services (used to hydrate prices/descriptions and supply real variant IDs).
+  const liveGroups = useMemo(() => {
     const groups = new Map<string, GroupedService>();
+    if (!services?.length) return groups;
+    const visibleServices = services.filter(s => !hiddenServiceIds.has(s.id));
 
     for (const service of visibleServices) {
       if (hiddenProgramIds.has(service.programId)) continue;
@@ -100,9 +100,6 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
 
     for (const group of groups.values()) {
       group.description = resolveGroupDescription(group.description, group.baseName);
-    }
-
-    for (const group of groups.values()) {
       group.variants.sort((a, b) => {
         const aI = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
         const bI = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
@@ -114,19 +111,32 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       });
     }
 
-    return Array.from(groups.values());
+    return groups;
   }, [services, hiddenServiceIds]);
 
+  // Cards rendered on the page: derived from the static catalogue so they appear
+  // instantly, with live data merged in when it arrives.
   const servicesByCategory = useMemo(() => {
     const map = new Map<string, GroupedService[]>();
-    for (const service of groupedServices) {
-      if (!categoryOrder.includes(service.category)) continue;
-      if (!map.has(service.category)) map.set(service.category, []);
-      map.get(service.category)!.push(service);
+    for (const entry of staticWebsiteCatalogue) {
+      const live = liveGroups.get(entry.baseName);
+      const merged: GroupedService = {
+        baseName: entry.baseName,
+        category: entry.category,
+        image: entry.image,
+        description: live && !isPlaceholderDescription(live.description)
+          ? live.description
+          : entry.shortDescription,
+        variants: live?.variants ?? [],
+        contactOnly: entry.contactOnly,
+      };
+      if (!map.has(entry.category)) map.set(entry.category, []);
+      map.get(entry.category)!.push(merged);
     }
+
+    // Order categories per categoryOrder, always include Signature Classes.
     const sorted = new Map<string, GroupedService[]>();
     for (const cat of categoryOrder) {
-      // Always include Signature Classes so the classOfferings grid renders
       if (cat === 'Signature Classes') {
         sorted.set(cat, map.get(cat) ?? []);
         continue;
@@ -140,44 +150,33 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       sorted.set(cat, items);
     }
     return sorted;
-  }, [groupedServices]);
+  }, [liveGroups]);
 
   const handleClick = (service: GroupedService) => {
+    // Prefer the live group (with real Mindbody variant IDs) when available.
+    const live = liveGroups.get(service.baseName);
+    const target = live ?? service;
     onSelectService({
-      title: service.baseName,
-      description: service.description,
-      category: service.category,
-      image: service.image,
-      variants: service.variants,
-      contactOnly: service.contactOnly,
-      ...(classDescriptionIdMap[service.baseName] ? { classDescriptionIds: classDescriptionIdMap[service.baseName] } : {}),
+      title: target.baseName,
+      description: target.description || service.description,
+      category: target.category,
+      image: target.image || service.image,
+      variants: target.variants,
+      contactOnly: target.contactOnly,
+      ...(classDescriptionIdMap[target.baseName] ? { classDescriptionIds: classDescriptionIdMap[target.baseName] } : {}),
     });
   };
 
   const getFromPrice = (variants: ServiceVariant[], baseName?: string) => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
     if (prices.length) return Math.min(...prices);
-    if (baseName && priceOverrides[baseName] !== undefined) return priceOverrides[baseName];
+    if (baseName) {
+      const fallback = staticWebsiteCatalogue.find(e => e.baseName === baseName)?.fromPrice;
+      if (fallback != null) return fallback;
+      if (priceOverrides[baseName] !== undefined) return priceOverrides[baseName];
+    }
     return null;
   };
-
-  if (isLoading) {
-    return (
-      <section id="services" className="py-24 px-6 bg-[hsl(25,18%,10%)]">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <Skeleton className="h-10 w-64 mx-auto mb-4" />
-            <Skeleton className="h-5 w-96 mx-auto" />
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[...Array(6)].map((_, i) => (
-              <Skeleton key={i} className="h-80 rounded-lg" />
-            ))}
-          </div>
-        </div>
-      </section>
-    );
-  }
 
   return (
     <section id="services" className="pt-44 pb-24 px-6 scroll-mt-20" style={{ background: 'hsl(25, 18%, 10%)' }}>
