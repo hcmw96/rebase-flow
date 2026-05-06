@@ -13,8 +13,6 @@ import {
   hiddenProgramIds,
   isHiddenServiceName,
   hiddenGroupNames,
-  categoryOverrides,
-  programNameOverrides,
   categoryOrder,
   serviceOrderWithinCategory,
   contactOnlyGroups,
@@ -32,6 +30,7 @@ import {
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 
