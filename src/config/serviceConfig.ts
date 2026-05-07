@@ -30,7 +30,7 @@ export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }>
   { pattern: /minute\s*classes$/i, groupName: 'Classes' },
   { pattern: /^all\s*classes$/i, groupName: 'Classes' },
   { pattern: /^brazil+ian\s*lymphatic/i, groupName: 'Brazilian Lymphatic' },
-  { pattern: /^(the\s+)?midday\s*resets?/i, groupName: 'Midday Reset' },
+  
   { pattern: /^nutritional\s*therap/i, groupName: 'Nutritional Therapy' },
   { pattern: /^myofascial\s*dry\s*needl/i, groupName: 'Myofascial Dry Needling' },
   { pattern: /^assisted\s*stretching/i, groupName: 'Assisted Stretching' },
@@ -55,6 +55,7 @@ export const hiddenGroupNames = new Set([
   'Structural Fascia Therapy', 'Ozone Therapy', 'Skin Rejuvenation',
   'Skin Peel', 'BioStimulation', 'Myofascial Dry Needling',
   'Hyaluronic', 'Injectables', 'Neuro Regulation',
+  'Midday Reset', 'The Midday Reset',
 ]);
 
 export const hiddenProgramIds = new Set([12]);
@@ -93,7 +94,7 @@ export const categoryOverrides: Record<string, string> = {
   'Classes': 'Signature Classes',
   'Infrared Suite': 'Private Suites',
   'Premium Suite': 'Private Suites',
-  'Midday Reset': 'Private Suites',
+  
   'Hyperbaric Oxygen': 'Hyperbaric Oxygen',
   'Cryotherapy': 'Cryotherapy',
   'Massage': 'Massage Therapy',
@@ -146,7 +147,7 @@ export const serviceImages: Record<string, string> = {
   'Blood Test': '/images/rebase-blood-test.jpg',
   'Osteopathy': '/images/rebase-osteopathy.jpg',
   'Structural Fascia Therapy': '/images/rebase-structural-fascia.jpg',
-  'Midday Reset': '/images/rebase-midday-reset.jpg',
+  
   'Four Hand': '/images/rebase-four-hand.jpg',
   'Reflexology': '/images/rebase-reflexology.jpg',
   'Nervous System Reset': '/images/rebase-nervous-system-reset.jpg',
@@ -194,7 +195,7 @@ export const priceOverrides: Record<string, number> = {
 export const shortDescriptions: Record<string, string> = {
   'Infrared Suite': 'Detoxifying infrared heat followed by an invigorating ice bath.',
   'Premium Suite': 'Private suite with Finnish sauna, ice baths and bucket shower.',
-  'Midday Reset': 'A restorative midday escape in our private wellness suite.',
+  
   'Cryotherapy': 'Whole-body cold therapy to reduce inflammation and boost recovery.',
   'Hyperbaric Oxygen': 'Pressurised oxygen therapy to accelerate healing and recovery.',
   'IV Drip': 'Vitamin-rich IV infusions tailored to your wellness goals.',
@@ -395,7 +396,7 @@ export interface StaticServiceEntry {
 export const staticWebsiteCatalogue: StaticServiceEntry[] = [
   { baseName: "Members Suite", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5] },
   { baseName: "Infrared Suite", category: "Private Suites", image: "/images/rebase-infrared-suite.jpg", shortDescription: "Detoxifying infrared heat followed by an invigorating ice bath.", fromPrice: 190, contactOnly: false },
-  { baseName: "Midday Reset", category: "Private Suites", image: "/images/rebase-midday-reset.jpg", shortDescription: "A restorative midday escape in our private wellness suite.", fromPrice: 152, contactOnly: false },
+  
   { baseName: "Premium Suite", category: "Private Suites", image: "/images/rebase-private-suites.webp", shortDescription: "Private suite with Finnish sauna, ice baths and bucket shower.", fromPrice: 240, contactOnly: false },
   { baseName: "Hyperbaric Oxygen", category: "Hyperbaric Oxygen", image: "/images/rebase-hbot-treatment.webp", shortDescription: "Pressurised oxygen therapy to accelerate healing and recovery.", fromPrice: 200, contactOnly: false },
   { baseName: "Cryotherapy", category: "Cryotherapy", image: "/images/rebase-cryo.webp", shortDescription: "Whole-body cold therapy to reduce inflammation and boost recovery.", fromPrice: 50, contactOnly: false },

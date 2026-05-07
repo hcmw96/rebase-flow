@@ -20,7 +20,7 @@ const upsellMap: Record<string, string[]> = {
   'Cryotherapy': ['Infrared Sauna & Ice Bath', 'Massage', 'IV Drip'],
   'Infrared Sauna & Ice Bath': ['Cryotherapy', 'Massage', 'Premium Suite'],
   'Premium Suite': ['Massage', 'Cryotherapy', 'IV Drip'],
-  'Midday Reset': ['Massage', 'Cryotherapy', 'IV Drip'],
+  
   'Massage': ['Cryotherapy', 'Infrared Sauna & Ice Bath', 'IV Drip'],
   'IV Drip': ['NAD+', 'Hyperbaric Oxygen', 'Cryotherapy'],
   'NAD+': ['IV Drip', 'Hyperbaric Oxygen', 'Cryotherapy'],

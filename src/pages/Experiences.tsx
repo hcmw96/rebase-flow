@@ -26,7 +26,7 @@ const experiences = [
     name: "Private Suites",
     image: "/images/rebase-infrared-suite.jpg",
     description:
-      "Choose from our Infrared Suite with detoxifying heat and ice bath, our Premium Suite with Finnish sauna and cold plunge, or our Midday Reset — a restorative midday escape in complete privacy.",
+      "Choose from our Infrared Suite with detoxifying heat and ice bath, or our Premium Suite with Finnish sauna and cold plunge — a restorative escape in complete privacy.",
   },
   {
     name: "Hyperbaric Oxygen",
