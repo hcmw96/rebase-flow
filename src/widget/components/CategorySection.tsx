@@ -11,9 +11,7 @@ interface CategorySectionProps {
 
 const techTherapies = new Set([
   'Infrared Sauna & Ice Bath',
-  'The Midday Reset - Infrared Suite',
   'Premium Suite',
-  'The Midday Reset - Premium Suite',
   'Cryotherapy',
   'Hyperbaric Oxygen',
 ]);
