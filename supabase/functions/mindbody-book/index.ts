@@ -141,9 +141,11 @@ serve(async (req) => {
       );
 
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        console.error("Appointment booking error:", errorData);
-        throw new Error(errorData.Error?.Message || "Failed to book appointment");
+        const rawText = await response.text();
+        console.error("Appointment booking error raw:", response.status, rawText);
+        let errorData: any = {};
+        try { errorData = JSON.parse(rawText); } catch {}
+        throw new Error(errorData.Error?.Message || rawText || "Failed to book appointment");
       }
 
       bookingResult = await response.json();
