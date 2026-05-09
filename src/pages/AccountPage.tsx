@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
+import { DebugMindbodySession } from '@/components/debug/DebugMindbodySession';
 
 const AccountPage = () => {
   const { mbSession, isAuthenticated, logout, login } = useAuth();
@@ -265,6 +266,13 @@ const AccountPage = () => {
           </Button>
         </div>
       </motion.div>
+
+      {/* Debug: verify Mindbody session (visible only with ?debug=1) */}
+      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
+          <DebugMindbodySession sessionId={mbSession?.sessionId} />
+        </motion.div>
+      )}
 
       {/* Logout */}
       <motion.div
