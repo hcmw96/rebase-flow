@@ -30,7 +30,7 @@ interface ClassScheduleFlowProps {
 }
 
 const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }: ClassScheduleFlowProps) => {
-  const { mbSession, isAuthenticated, login } = useAuth();
+  const { mbSession, isAuthenticated, login, logout } = useAuth();
   const bookMutation = useBookService();
 
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
@@ -90,7 +90,14 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
       setBookingComplete(true);
       toast.success('Class booked successfully!');
     } catch (error: any) {
-      toast.error(error.message || 'Failed to book class. Please try again.');
+      const msg = (error?.message || '').toLowerCase();
+      if (msg.includes('site id does not match') || msg.includes('session not found') || msg.includes('session expired') || msg.includes('please log in')) {
+        toast.error('Your sign-in expired. Please sign in again.');
+        logout();
+        setTimeout(() => login(), 300);
+      } else {
+        toast.error(error?.message || 'Failed to book class. Please try again.');
+      }
     }
   };
 

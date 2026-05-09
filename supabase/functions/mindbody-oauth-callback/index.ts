@@ -48,10 +48,11 @@ function parseState(stateStr: string): StatePayload {
 async function exchangeAndSaveSession(code: string, redirectUri: string) {
   const clientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
   const clientSecret = Deno.env.get("MINDBODY_OAUTH_CLIENT_SECRET");
+  const siteId = Deno.env.get("MINDBODY_SITE_ID");
   const supabaseUrl = Deno.env.get("SUPABASE_URL");
   const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-  if (!clientId || !clientSecret || !supabaseUrl || !supabaseServiceKey) {
+  if (!clientId || !clientSecret || !siteId || !supabaseUrl || !supabaseServiceKey) {
     throw new Error("Missing required configuration");
   }
 
@@ -64,6 +65,7 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
       redirect_uri: redirectUri,
       client_id: clientId,
       client_secret: clientSecret,
+      subscriber_id: siteId,
     }).toString(),
   });
 
