@@ -235,8 +235,15 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
       if (navigator.userAgent.includes('despia')) {
         despia('successhaptic://');
       }
-    } catch (error) {
-      toast.error('Failed to complete booking. Please try again.');
+    } catch (error: any) {
+      const msg = (error?.message || '').toLowerCase();
+      if (msg.includes('site id does not match') || msg.includes('session not found') || msg.includes('session expired') || msg.includes('please log in')) {
+        toast.error('Your sign-in expired. Please sign in again.');
+        logout();
+        setTimeout(() => login(), 300);
+      } else {
+        toast.error(error?.message || 'Failed to complete booking. Please try again.');
+      }
       if (navigator.userAgent.includes('despia')) {
         despia('errorhaptic://');
       }
