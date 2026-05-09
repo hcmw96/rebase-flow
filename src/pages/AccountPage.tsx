@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
+import { DebugMindbodySession } from '@/components/debug/DebugMindbodySession';
 
 const AccountPage = () => {
   const { mbSession, isAuthenticated, logout, login } = useAuth();
