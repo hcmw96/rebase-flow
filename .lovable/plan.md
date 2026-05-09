@@ -1,37 +1,39 @@
-## Diagnosis
+## Goal
 
-Mindbody's error `User token site id does not match requested site` means the OAuth access token's `site_ids` claim doesn't include `57361889` (the SiteId we send on the booking call).
+Confirm the OAuth `subscriber_id` fix actually binds your token to site `57361889` — without you having to complete (and pay for) a real booking.
 
-`MINDBODY_SITE_ID` and the OAuth client are both unchanged since September, so the env values are correct. The most likely culprit is in **`mindbody-oauth-callback`**: the `/connect/token` exchange does **not** pass `subscriber_id`. With Mindbody's consumer OAuth, the authorize step accepts `subscriber_id` as a *hint*, but the issued token's site claim is determined at token exchange. Without `subscriber_id` on `/connect/token`, the token gets bound to the OAuth app's default site — not necessarily 57361889 — which is exactly what produces this error.
+## Approach
 
-A second contributing factor: the existing `mb_sessions` row for your account still holds that old, wrongly-scoped access token, so even after a fresh "login" the upserted refresh token may have been carrying the wrong site since day one.
+We don't need to call Mindbody's `AddClientToClass` / `BookAppointment` endpoints to know whether the token is now scoped to the right site. The site mismatch is visible directly in the JWT we get back from the `/connect/token` exchange. We add a verification path that decodes the token and reports back, and we exercise it via a dry-run.
 
-## Plan
+## Steps
 
-### 1. Fix the OAuth token exchange
-In `supabase/functions/mindbody-oauth-callback/index.ts`, add `subscriber_id` (= `MINDBODY_SITE_ID`) to the body of the `POST https://signin.mindbodyonline.com/connect/token` request, alongside the existing `grant_type`, `code`, `redirect_uri`, `client_id`, `client_secret`. This binds the issued access + refresh tokens to site `57361889`.
+1. **Add a `verify-mindbody-session` edge function** (read-only).
+   - Loads the current user's row from `mb_sessions`.
+   - Decodes the `access_token` JWT payload.
+   - Returns `{ site_ids, siteid, subscriberId, aud, exp, matches_expected_site }` where `matches_expected_site` compares against `MINDBODY_SITE_ID` (57361889).
+   - Does NOT call any Mindbody booking endpoint, so zero risk of charges.
 
-### 2. Add diagnostic logging to confirm the fix
-In `supabase/functions/mindbody-book/index.ts`, before the Mindbody fetch:
-- Decode the JWT payload of `session.access_token` and `console.log` the `site_ids` (or equivalent) claim alongside the env `siteId`.
-- On a non-OK response, log the raw response body, not just `Error.Message`.
+2. **Add a tiny "Check Mindbody session" debug button** (only visible to you, e.g. behind a `?debug=1` query flag on the account page).
+   - Calls the verify function and shows the JSON result inline.
+   - Pure diagnostic — no booking, no payment.
 
-This gives us a single edge-log line that proves the token now carries `57361889`.
+3. **Dry-run the booking call without confirming payment.**
+   - In `mindbody-book`, add a `dryRun: true` request flag that performs the `GET /sale/contracts` style pre-check or calls `BookingWindow`/availability validation only — i.e. exercises the same auth path (which is what 401s today) but stops before any `Add*` mutation. If Mindbody's auth accepts the token for site 57361889, we know the fix worked.
+   - Wire a hidden "Test booking auth (no charge)" action in the booking drawer that sends `dryRun: true`.
 
-### 3. Force a clean session
-The currently saved row in `mb_sessions` still has the bad token. Two options, both small:
-- Delete your `mb_sessions` row (one-line SQL) so the next login creates a brand-new session bound to the correct site, **or**
-- Clear all rows in `mb_sessions` since this bug would have affected every user.
+4. **You log in fresh, then click the two debug buttons.**
+   - Button 1 confirms the token's `site_ids` claim is `57361889`.
+   - Button 2 confirms Mindbody accepts the token on the booking endpoint without a "site id does not match" error — and without booking anything.
 
-Recommended: clear all rows — every existing session is poisoned by the same root cause.
-
-### 4. UX safety net
-In `BookingDrawer` and `ClassScheduleFlow`, when the booking error message contains `"site id does not match"` or `"Session not found"`, automatically call `logout()` and re-prompt sign-in instead of leaving the toast alone. Prevents future "stuck" states if a token ever drifts.
-
-### 5. Deploy and re-test
-After step 1, redeploy `mindbody-oauth-callback` and `mindbody-book`. You log in again, then try booking the Members Suite. Diagnostic logs from step 2 will confirm the token's `site_ids` is `57361889` and the booking should succeed.
+5. **Remove the debug buttons** once verified, keep `verify-mindbody-session` around as an internal diagnostic.
 
 ## Out of scope
-- No schema changes to `mb_sessions`.
-- No changes to OAuth init (`subscriber_id` is already passed correctly there).
-- No changes to pricing, services config, or unrelated flows.
+
+- No real bookings, no payments, no schema changes.
+- No further changes to OAuth flow beyond what's already deployed.
+
+## Technical notes
+
+- JWT decode is just `JSON.parse(atob(token.split('.')[1]))` in the edge function — no extra deps.
+- The `dryRun` path in `mindbody-book` should branch BEFORE any `POST` to `AddClientToClass` / `AddAppointment`. Safest probe is `GET /staff/staff` or `GET /client/clients?ClientIds=<self>` with the user token + `SiteId: 57361889` header — if that returns 200, the token is correctly scoped; if it returns the same "site id does not match" error, we know the fix didn't take.
