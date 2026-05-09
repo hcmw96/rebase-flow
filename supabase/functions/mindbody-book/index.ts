@@ -55,6 +55,24 @@ serve(async (req) => {
       throw new Error("Session expired. Please log in again.");
     }
 
+    // Diagnostic: decode token site claim
+    try {
+      const parts = (session.access_token as string).split(".");
+      if (parts.length === 3) {
+        const padded = parts[1] + "=".repeat((4 - (parts[1].length % 4)) % 4);
+        const claims = JSON.parse(atob(padded.replace(/-/g, "+").replace(/_/g, "/")));
+        console.log("Token claims (site):", JSON.stringify({
+          site_ids: claims.site_ids,
+          siteid: claims.siteid,
+          site_id: claims.site_id,
+          subscriberId: claims.subscriberId,
+          aud: claims.aud,
+        }), "Env siteId:", siteId);
+      }
+    } catch (e) {
+      console.log("Could not decode access_token claims:", e);
+    }
+
     let bookingResult;
     let mindbodyId;
 
