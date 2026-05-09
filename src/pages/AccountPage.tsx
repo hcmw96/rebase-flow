@@ -266,6 +266,13 @@ const AccountPage = () => {
         </div>
       </motion.div>
 
+      {/* Debug: verify Mindbody session (visible only with ?debug=1) */}
+      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') === '1' && (
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.32 }}>
+          <DebugMindbodySession sessionId={mbSession?.sessionId} />
+        </motion.div>
+      )}
+
       {/* Logout */}
       <motion.div
         initial={{ opacity: 0, y: 10 }}
