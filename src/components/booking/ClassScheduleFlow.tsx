@@ -30,7 +30,7 @@ interface ClassScheduleFlowProps {
 }
 
 const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }: ClassScheduleFlowProps) => {
-  const { mbSession, isAuthenticated, login } = useAuth();
+  const { mbSession, isAuthenticated, login, logout } = useAuth();
   const bookMutation = useBookService();
 
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
