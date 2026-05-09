@@ -66,7 +66,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 );
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
-  const { mbSession, isAuthenticated } = useAuth();
+  const { mbSession, isAuthenticated, logout, login } = useAuth();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
