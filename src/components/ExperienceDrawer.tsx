@@ -27,6 +27,7 @@ import {
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 import { ServiceVariant } from '@/components/ServiceCard';
@@ -117,6 +118,26 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
     }
     return items;
   }, [services, hiddenServiceIds, experience]);
+
+  // Fallback: when live Mindbody data isn't available for this category,
+  // surface the static catalogue so users always see real options.
+  const fallbackServices = useMemo<GroupedService[]>(() => {
+    if (!experience) return [];
+    return staticWebsiteCatalogue
+      .filter((s) => s.category === experience.name)
+      .map((s) => ({
+        baseName: s.baseName,
+        description: s.shortDescription,
+        category: s.category,
+        image: s.image,
+        contactOnly: s.contactOnly,
+        variants: s.fromPrice !== null
+          ? [{ id: `static-${s.baseName}`, duration: null, price: s.fromPrice, name: s.baseName, description: s.shortDescription, contactOnly: s.contactOnly }]
+          : [],
+      }));
+  }, [experience]);
+
+  const displayServices = categoryServices.length > 0 ? categoryServices : fallbackServices;
 
   const getFromPrice = (variants: ServiceVariant[], baseName?: string) => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
@@ -220,14 +241,14 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                     </motion.button>
                   ))}
                 </div>
-              ) : categoryServices.length === 0 ? (
+              ) : displayServices.length === 0 ? (
                 <div className="text-center py-12">
                   <p className="text-[#F9ECD9]/40 text-sm font-light">
                     Services temporarily unavailable. Please try again later.
                   </p>
                 </div>
               ) : (
-                categoryServices.map((service) => {
+                displayServices.map((service) => {
                   const fromPrice = getFromPrice(service.variants, service.baseName);
                   const firstVariant = service.variants[0];
                   const shortDesc = shortDescriptions[service.baseName] || 'Experience our premium wellness service.';
