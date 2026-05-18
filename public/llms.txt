@@ -1,0 +1,17 @@
+# Rebase Recovery
+
+> London's premier wellness centre in Marylebone offering luxury recovery experiences: contrast therapy, cryotherapy, hyperbaric oxygen, IV drips, massage, classes and more.
+
+Rebase Recovery is a members-friendly wellness destination focused on recovery, longevity and performance. Treatments and classes are booked through the website or in-app.
+
+## Pages
+
+- [Home](/website): Overview of Rebase Recovery, signature experiences and locations.
+- [Experiences](/experiences): Browse every service — communal contrast, private suites, hyperbaric oxygen, cryotherapy, massage therapy, IV drips and regen & manual therapies.
+- [Membership](/membership): Membership tiers and benefits.
+- [Members Sign In](/members): Sign in for members to manage bookings.
+- [Contact](/contact): Contact details and enquiries.
+
+## Optional
+
+- [Cookie Policy](/cookie-policy): How the site uses cookies.
