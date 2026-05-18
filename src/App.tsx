@@ -5,7 +5,8 @@ import { HelmetProvider } from "react-helmet-async";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./contexts/AuthContext";
+import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import AuthRedirectOverlay from "./components/AuthRedirectOverlay";
 import ScrollToTop from "./components/ScrollToTop";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
@@ -30,6 +31,11 @@ queryClient.prefetchQuery({
   staleTime: 30 * 60 * 1000, // 30 minutes
 });
 
+const AuthOverlayMount = () => {
+  const { isRedirecting } = useAuth();
+  return isRedirecting ? <AuthRedirectOverlay /> : null;
+};
+
 const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
@@ -52,6 +58,7 @@ const App = () => (
             <Route path="/" element={<AppShell />} />
             <Route path="*" element={<AppShell />} />
           </Routes>
+          <AuthOverlayMount />
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>
