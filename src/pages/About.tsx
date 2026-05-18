@@ -149,7 +149,7 @@ const About = () => {
               Join our community and experience the Rebase difference today.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link to="/book">
+              <Link to="/experiences">
                 <Button size="lg" className="btn-luxury">
                   Book Your First Session
                 </Button>

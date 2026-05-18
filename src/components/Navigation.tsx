@@ -196,7 +196,7 @@ const Navigation = () => {
                     : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                 )}
               >
-                Members
+                Sign in
               </Button>
             </Link>
           </div>
@@ -294,7 +294,7 @@ const Navigation = () => {
                 </Button>
                 <Link to="/members" className="flex-1" onClick={() => setIsOpen(false)}>
                   <Button className={cn("w-full rounded-none tracking-wider text-sm", scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]")}>
-                    Members
+                    Sign in
                   </Button>
                 </Link>
               </div>

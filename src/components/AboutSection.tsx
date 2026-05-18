@@ -41,7 +41,7 @@ const services = [
     subtitle: "Pressurised O₂ Therapy",
     description: "Accelerate healing and enhance cognitive performance with medical-grade hyperbaric oxygen therapy.",
     image: "/images/rebase-hbot-treatment.webp",
-    link: "/book/101264",
+    link: "/experiences",
   },
   {
     id: "cryo",
