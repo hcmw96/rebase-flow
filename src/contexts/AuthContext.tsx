@@ -12,6 +12,7 @@ interface AuthContextType {
   mbSession: MindbodySession | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isRedirecting: boolean;
   login: () => void;
   logout: () => void;
 }
@@ -24,6 +25,7 @@ const MB_STORAGE_KEY = 'mb_session';
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [mbSession, setMbSession] = useState<MindbodySession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
   // Check URL hash for native OAuth redirect session on mount
   useEffect(() => {
@@ -65,6 +67,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async () => {
+    setIsRedirecting(true);
     try {
       const isNative = navigator.userAgent.includes('despia');
 
@@ -134,6 +137,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         mbSession,
         isAuthenticated: !!mbSession,
         isLoading,
+        isRedirecting,
         login,
         logout,
       }}
