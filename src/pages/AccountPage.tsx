@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History, CreditCard, Sparkles } from 'lucide-react';
+import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History, CreditCard, Sparkles, Shield, FileText } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -224,6 +225,28 @@ const AccountPage = () => {
           <span className="text-sm text-black/70">Visit Rebase Website</span>
           <ExternalLink className="h-4 w-4 text-black/30" />
         </a>
+
+        <Link
+          to="/privacy-policy"
+          className="flex items-center justify-between p-4 rounded-lg border border-black/[0.06] bg-white/40 hover:bg-white/60 transition-colors"
+        >
+          <span className="text-sm text-black/70 flex items-center gap-2">
+            <Shield className="h-4 w-4 text-black/30" />
+            Privacy Policy
+          </span>
+          <ExternalLink className="h-4 w-4 text-black/30" />
+        </Link>
+
+        <Link
+          to="/terms"
+          className="flex items-center justify-between p-4 rounded-lg border border-black/[0.06] bg-white/40 hover:bg-white/60 transition-colors"
+        >
+          <span className="text-sm text-black/70 flex items-center gap-2">
+            <FileText className="h-4 w-4 text-black/30" />
+            Terms & Conditions
+          </span>
+          <ExternalLink className="h-4 w-4 text-black/30" />
+        </Link>
       </motion.div>
 
       {/* Contact Form */}

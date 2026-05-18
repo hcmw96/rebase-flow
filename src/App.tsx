@@ -17,6 +17,8 @@ import WebsiteAccount from "./pages/WebsiteAccount";
 import MembersPage from "./pages/MembersPage";
 import Contact from "./pages/Contact";
 import Experiences from "./pages/Experiences";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import Terms from "./pages/Terms";
 import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
             <Route path="/members" element={<MembersPage />} />
             <Route path="/experiences" element={<Experiences />} />
             <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms" element={<Terms />} />
             <Route path="/" element={<AppShell />} />
             <Route path="*" element={<AppShell />} />
           </Routes>
