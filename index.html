@@ -33,9 +33,35 @@
     <meta name="twitter:title" content="Rebase Recovery — London's Premier Wellness Centre" />
     <meta name="twitter:description" content="Experience luxury wellness at Rebase Recovery. Book contrast therapy, breathwork, cryotherapy, and more." />
     <meta name="twitter:image" content="https://rebase-flow.lovable.app/og-image.jpg" />
+    <style>
+      #boot-loader {
+        position: fixed; inset: 0; z-index: 2147483647;
+        background: #0a0a0a; display: none;
+        align-items: center; justify-content: center; min-height: 100vh;
+      }
+      #boot-loader.show { display: flex; }
+      #boot-loader .spinner {
+        width: 40px; height: 40px;
+        border: 3px solid #333; border-top-color: #4ECDC4;
+        border-radius: 50%; animation: boot-spin 1s linear infinite;
+      }
+      @keyframes boot-spin { to { transform: rotate(360deg); } }
+    </style>
   </head>
 
   <body>
+    <div id="boot-loader">
+      <div class="spinner"></div>
+    </div>
+    <script>
+      (function () {
+        var h = window.location.hash || '';
+        if (h.indexOf('#auth-session=') !== -1 || h.indexOf('#auth-error=') !== -1) {
+          var el = document.getElementById('boot-loader');
+          if (el) el.classList.add('show');
+        }
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
