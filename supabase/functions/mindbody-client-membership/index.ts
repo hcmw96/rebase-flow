@@ -71,7 +71,19 @@ serve(async (req) => {
       .single();
 
     if (sessionError || !session) {
-      throw new Error("Session not found. Please log in again.");
+      return new Response(
+        JSON.stringify({
+          contracts: [],
+          clientServices: [],
+          memberships: [],
+          membershipIcon: null,
+          requiresLogin: true,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
     }
 
     const staffToken = await getStaffToken();

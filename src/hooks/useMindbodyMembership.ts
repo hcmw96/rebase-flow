@@ -41,7 +41,7 @@ export interface MembershipData {
 }
 
 export function useClientMembership() {
-  const { mbSession, isAuthenticated } = useAuth();
+  const { mbSession, isAuthenticated, logout } = useAuth();
 
   return useQuery<MembershipData>({
     queryKey: ['client-membership', mbSession?.sessionId],
@@ -51,9 +51,17 @@ export function useClientMembership() {
       );
       if (!res.ok) {
         const err = await res.json();
+        if (err.error === 'Session not found. Please log in again.') {
+          logout();
+          return { contracts: [], clientServices: [], memberships: [], membershipIcon: null };
+        }
         throw new Error(err.error || 'Failed to fetch membership');
       }
       const data = await res.json();
+      if (data.requiresLogin) {
+        logout();
+        return { contracts: [], clientServices: [], memberships: [], membershipIcon: null };
+      }
       return {
         contracts: data.contracts ?? [],
         clientServices: data.clientServices ?? [],
@@ -65,6 +73,7 @@ export function useClientMembership() {
     staleTime: 5 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: false,
+    retry: false,
   });
 }
 
