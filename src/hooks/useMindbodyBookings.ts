@@ -60,7 +60,14 @@ export function useMyBookings() {
         throw new Error(error.error || 'Failed to fetch bookings');
       }
       
-      return response.json();
+      const data = await response.json();
+      if (data.requiresLogin) {
+        queryClient.removeQueries({ queryKey: ['my-bookings'] });
+        queryClient.removeQueries({ queryKey: ['client-membership'] });
+        logout();
+        return { bookings: [], localBookings: [], user: null };
+      }
+      return data;
     },
     enabled: isAuthenticated && !!mbSession?.sessionId,
     staleTime: 30 * 1000,
