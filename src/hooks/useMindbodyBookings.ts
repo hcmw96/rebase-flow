@@ -34,7 +34,8 @@ interface CancelParams {
 }
 
 export function useMyBookings() {
-  const { mbSession, isAuthenticated } = useAuth();
+  const { mbSession, isAuthenticated, logout } = useAuth();
+  const queryClient = useQueryClient();
 
   return useQuery({
     queryKey: ['my-bookings', mbSession?.sessionId],
@@ -49,6 +50,13 @@ export function useMyBookings() {
       
       if (!response.ok) {
         const error = await response.json();
+        if (error.error === 'Session not found. Please log in again.') {
+          localStorage.removeItem('mb_session');
+          queryClient.removeQueries({ queryKey: ['my-bookings'] });
+          queryClient.removeQueries({ queryKey: ['client-membership'] });
+          logout();
+          return { bookings: [], localBookings: [], user: null };
+        }
         throw new Error(error.error || 'Failed to fetch bookings');
       }
       
@@ -56,6 +64,7 @@ export function useMyBookings() {
     },
     enabled: isAuthenticated && !!mbSession?.sessionId,
     staleTime: 30 * 1000,
+    retry: false,
   });
 }
 
