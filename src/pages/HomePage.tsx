@@ -231,9 +231,9 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                   </div>
                 </button>
               </motion.div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
+
       </motion.div>
     </div>
   );
