@@ -8,12 +8,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
-import { Skeleton } from '@/components/ui/skeleton';
 import Logo from '@/components/Logo';
 import { BookingServiceData } from '@/components/booking/BookingDrawer';
 import {
   serviceImages,
   categoryImages,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 interface HomePageProps {
@@ -68,27 +68,35 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     return upcoming[0] || null;
   }, [bookingsData]);
 
-  // Popular services: group services by pattern, collect all variants per group
+  // Popular services: seed from the static catalogue so cards render instantly,
+  // then merge live Mindbody variants/prices/descriptions when they arrive.
   const popularServices = useMemo(() => {
-    if (!services) return [];
     const result: { groupName: string; name: string; image: string; price: number | null; duration: number | null; category: string; description: string; variants: { id: string; name: string; duration: number | null; price: number | null }[] }[] = [];
-    
+
     for (const groupName of POPULAR_GROUPS) {
       const pattern = groupingPatterns.find(p => p.groupName === groupName);
       if (!pattern) continue;
-      const matches = services.filter(s => !hiddenIds.has(s.id) && pattern.pattern.test(s.name));
-      if (matches.length === 0) continue;
+
+      const staticEntry = staticWebsiteCatalogue.find(e => e.baseName === groupName);
+      const matches = services
+        ? services.filter(s => !hiddenIds.has(s.id) && pattern.pattern.test(s.name))
+        : [];
+
       const first = matches[0];
-      const cat = first.programName || first.category || 'Wellness';
+      const cat = first?.programName || first?.category || staticEntry?.category || 'Wellness';
+      const variants = matches.map(m => ({ id: m.id, name: m.name, duration: m.defaultTimeLength, price: m.price }));
+      const livePrices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
+      const fromPrice = livePrices.length ? Math.min(...livePrices) : staticEntry?.fromPrice ?? null;
+
       result.push({
         groupName,
         name: groupName,
-        image: serviceImages[groupName] || serviceImages[first.name] || categoryImages[cat] || categoryImages['default'],
-        price: first.price,
-        duration: first.defaultTimeLength,
+        image: serviceImages[groupName] || (first ? serviceImages[first.name] : undefined) || staticEntry?.image || categoryImages[cat] || categoryImages['default'],
+        price: fromPrice,
+        duration: first?.defaultTimeLength ?? null,
         category: cat,
-        description: first.onlineDescription || first.description || '',
-        variants: matches.map(m => ({ id: m.id, name: m.name, duration: m.defaultTimeLength, price: m.price })),
+        description: first?.onlineDescription || first?.description || staticEntry?.shortDescription || '',
+        variants,
       });
     }
     return result;
@@ -195,15 +203,8 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           </button>
         </div>
 
-        {popularServices.length === 0 ? (
-          <div className="space-y-3">
-            <Skeleton className="h-[28vh] w-full rounded-xl" />
-            <Skeleton className="h-[28vh] w-full rounded-xl" />
-            <Skeleton className="h-[28vh] w-full rounded-xl" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {popularServices.map((service, index) => (
+        <div className="space-y-3">
+          {popularServices.map((service, index) => (
               <motion.div
                 key={service.groupName}
                 initial={{ opacity: 0, y: 10 }}
@@ -230,9 +231,9 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                   </div>
                 </button>
               </motion.div>
-            ))}
-          </div>
-        )}
+          ))}
+        </div>
+
       </motion.div>
     </div>
   );
