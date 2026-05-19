@@ -20,10 +20,13 @@ interface BookingParams {
   classId?: string;
   sessionTypeId?: string;
   staffId?: string;
+  staffName?: string | null;
   locationId?: number;
+  locationName?: string | null;
   startDateTime?: string;
   endDateTime?: string;
   serviceName?: string;
+  idempotencyKey?: string;
 }
 
 interface CancelParams {

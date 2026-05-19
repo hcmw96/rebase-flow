@@ -27,14 +27,46 @@ serve(async (req) => {
       classId,
       sessionTypeId,
       staffId,
+      staffName,
       locationId,
+      locationName,
       startDateTime,
       endDateTime,
       serviceName,
+      idempotencyKey,
     } = await req.json();
 
     if (!sessionId) {
       throw new Error("User session is required. Please log in first.");
+    }
+
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Idempotency short-circuit: if this key already produced a confirmed booking,
+    // return it without calling Mindbody again. Prevents double-booking on retry.
+    if (idempotencyKey) {
+      const { data: existing } = await supabaseAdmin
+        .from("bookings")
+        .select("*")
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+
+      if (existing && existing.status === "confirmed") {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            idempotent: true,
+            booking: {
+              id: existing.id,
+              mindbodyId: existing.mindbody_appointment_id || existing.mindbody_class_id,
+              serviceName: existing.service_name,
+              startTime: existing.start_time,
+              status: existing.status,
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
+      }
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
