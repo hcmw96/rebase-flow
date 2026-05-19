@@ -1,4 +1,5 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
@@ -12,14 +13,17 @@ import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
-import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail, CreditCard } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
+import { useClientMembership } from '@/hooks/useMindbodyMembership';
+import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides } from '@/config/serviceConfig';
+import { classifyBookingError } from '@/lib/bookingErrors';
 
 export interface BookingServiceData {
   title: string;
@@ -68,13 +72,15 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
   const { mbSession, isAuthenticated, logout, login } = useAuth();
   const bookServiceMutation = useBookService();
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
-  const [addedUpsells, setAddedUpsells] = useState<string[]>([]);
+  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
 
   // Reset state when drawer opens with new service
   const handleOpenChange = (isOpen: boolean) => {
@@ -86,7 +92,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         setSelectedSlot(null);
         setSelectedVariant(null);
         setBookingComplete(false);
-        setAddedUpsells([]);
+        setIdempotencyKey(null);
       }, 300);
     }
   };
