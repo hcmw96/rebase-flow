@@ -59,7 +59,9 @@ const AppShell = () => {
     );
   }
 
-  if (!isAuthenticated) {
+  // Auth is no longer required to browse — sign-in is triggered only when
+  // the user attempts to book (handled inside BookingDrawer) or opens a personal tab.
+  if (!isAuthenticated && (activeTab === 'account' || activeTab === 'bookings')) {
     return <AuthPage />;
   }
 
