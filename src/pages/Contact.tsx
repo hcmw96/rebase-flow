@@ -88,12 +88,18 @@ const Contact = () => {
       
       <div className="pt-20">
         {/* Hero Section */}
-        <section className="py-20 px-4 sm:px-6 lg:px-8">
-          <div className="max-w-4xl mx-auto text-center">
+        <section className="relative py-32 sm:py-40 px-4 sm:px-6 lg:px-8 overflow-hidden">
+          <div
+            className="absolute inset-0 bg-cover bg-center"
+            style={{ backgroundImage: `url(${contactBg})` }}
+            aria-hidden="true"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/50 to-[#1a1a1a]" aria-hidden="true" />
+          <div className="relative max-w-4xl mx-auto text-center">
             <h1 className="text-4xl sm:text-6xl font-serif font-light text-foreground mb-6">
               Get In <span className="text-primary text-glow">Touch</span>
             </h1>
-            <p className="text-xl text-foreground/70 leading-relaxed">
+            <p className="text-xl text-foreground/80 leading-relaxed">
               Have questions about our services or ready to book your wellness experience? 
               We'd love to hear from you.
             </p>
