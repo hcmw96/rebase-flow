@@ -203,15 +203,8 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           </button>
         </div>
 
-        {popularServices.length === 0 ? (
-          <div className="space-y-3">
-            <Skeleton className="h-[28vh] w-full rounded-xl" />
-            <Skeleton className="h-[28vh] w-full rounded-xl" />
-            <Skeleton className="h-[28vh] w-full rounded-xl" />
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {popularServices.map((service, index) => (
+        <div className="space-y-3">
+          {popularServices.map((service, index) => (
               <motion.div
                 key={service.groupName}
                 initial={{ opacity: 0, y: 10 }}
