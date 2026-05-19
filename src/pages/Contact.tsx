@@ -58,14 +58,14 @@ const Contact = () => {
     {
       icon: MapPin,
       title: "Location",
-      content: "Central London\nUnited Kingdom",
-      href: "https://maps.google.com"
+      content: "1a St Vincent St\nLondon W1U 4DA, UK",
+      href: "https://maps.google.com/?q=1a+St+Vincent+St,+London+W1U+4DA"
     },
     {
       icon: Phone,
       title: "Phone",
-      content: "+44 (0) 20 XXXX XXXX",
-      href: "tel:+44..."
+      content: "+44 20 4553 5701",
+      href: "tel:+442045535701"
     },
     {
       icon: Mail,
