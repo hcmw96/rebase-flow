@@ -20,6 +20,7 @@ import Contact from "./pages/Contact";
 import Experiences from "./pages/Experiences";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
+import FAQ from "./pages/FAQ";
 import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
