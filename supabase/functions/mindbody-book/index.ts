@@ -68,11 +68,8 @@ serve(async (req) => {
         );
       }
     }
-
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
     // Get user session with access token
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await supabaseAdmin
       .from("mb_sessions")
       .select("*")
       .eq("id", sessionId)
@@ -184,8 +181,15 @@ serve(async (req) => {
       mindbodyId = bookingResult.Appointment?.Id?.toString();
     }
 
+    // Build metadata with fallbacks to client-provided values so the row is never sparse.
+    const resolvedStaffName = bookingResult.Appointment?.Staff?.FirstName
+      ? `${bookingResult.Appointment.Staff.FirstName} ${bookingResult.Appointment.Staff.LastName || ""}`.trim()
+      : (staffName || null);
+    const resolvedLocationName =
+      bookingResult.Appointment?.Location?.Name || locationName || null;
+
     // Save booking to local database
-    const { data: booking, error: bookingError } = await supabase
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .insert({
         session_id: sessionId,
@@ -193,14 +197,13 @@ serve(async (req) => {
         mindbody_class_id: bookingType === "class" ? mindbodyId : null,
         service_name: serviceName || "Booking",
         service_id: sessionTypeId || classId,
-        staff_name: bookingResult.Appointment?.Staff?.FirstName
-          ? `${bookingResult.Appointment.Staff.FirstName} ${bookingResult.Appointment.Staff.LastName}`
-          : null,
-        location_name: bookingResult.Appointment?.Location?.Name || null,
+        staff_name: resolvedStaffName,
+        location_name: resolvedLocationName,
         start_time: startDateTime || bookingResult.Class?.StartDateTime,
         end_time: endDateTime || bookingResult.Class?.EndDateTime,
         status: "confirmed",
         booking_type: bookingType,
+        idempotency_key: idempotencyKey || null,
       })
       .select()
       .single();
