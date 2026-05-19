@@ -58,6 +58,10 @@ export function useClientMembership() {
         throw new Error(err.error || 'Failed to fetch membership');
       }
       const data = await res.json();
+      if (data.requiresLogin) {
+        logout();
+        return { contracts: [], clientServices: [], memberships: [], membershipIcon: null };
+      }
       return {
         contracts: data.contracts ?? [],
         clientServices: data.clientServices ?? [],
