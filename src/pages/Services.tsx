@@ -3,22 +3,16 @@ import ServiceChip from '@/components/ServiceChip';
 import CategorySection from '@/components/CategorySection';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ClassSchedule from '@/components/ClassSchedule';
 import {
-  serviceGroupMappings,
   hiddenGroupNames,
   hiddenProgramIds,
   isHiddenServiceName,
-  categoryOverrides,
-  programNameOverrides,
   categoryOrder,
   serviceOrderWithinCategory,
-  serviceImages,
-  categoryImages,
   contactOnlyGroups,
   priceOverrides,
   classDescriptionIdMap,
@@ -30,6 +24,7 @@ import {
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 
@@ -40,7 +35,7 @@ interface ServicesProps {
 const Services = ({ onSelectService }: ServicesProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('services');
-  const { data: services, isLoading, error } = useMindbodyServices();
+  const { data: services, error } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
 
   const hiddenServiceIds = useMemo(() => new Set(hiddenServices.map(h => h.service_id)), [hiddenServices]);
