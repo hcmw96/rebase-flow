@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, Phone, Mail, Instagram } from "lucide-react";
 import { Helmet } from "react-helmet-async";
+import contactBg from "@/assets/contact-bg.jpg";
 
 const SITE_URL = "https://rebase-flow.lovable.app";
 
