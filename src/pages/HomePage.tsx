@@ -8,12 +8,12 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
-import { Skeleton } from '@/components/ui/skeleton';
 import Logo from '@/components/Logo';
 import { BookingServiceData } from '@/components/booking/BookingDrawer';
 import {
   serviceImages,
   categoryImages,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 interface HomePageProps {
