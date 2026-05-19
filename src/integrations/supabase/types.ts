@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           end_time: string | null
           id: string
+          idempotency_key: string | null
           location_name: string | null
           mindbody_appointment_id: string | null
           mindbody_class_id: string | null
@@ -35,6 +36,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
+          idempotency_key?: string | null
           location_name?: string | null
           mindbody_appointment_id?: string | null
           mindbody_class_id?: string | null
@@ -50,6 +52,7 @@ export type Database = {
           created_at?: string
           end_time?: string | null
           id?: string
+          idempotency_key?: string | null
           location_name?: string | null
           mindbody_appointment_id?: string | null
           mindbody_class_id?: string | null

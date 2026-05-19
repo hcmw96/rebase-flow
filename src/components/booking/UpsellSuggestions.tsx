@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
-import { Plus, Check } from 'lucide-react';
+
 import { cn } from '@/lib/utils';
 import {
   useMindbodyServices,
@@ -59,30 +59,22 @@ const UPSELL_WINDOW_MINUTES = 60;
 interface UpsellSuggestionsProps {
   currentServiceTitle: string;
   onSelectUpsell: (serviceName: string) => void;
-  addedServices?: string[];
-  /** When true, shows "Book Next" buttons for added services (success screen mode) */
-  successMode?: boolean;
   /** ISO end time of the user's currently selected booking. Required to surface upsells. */
   referenceEndDateTime: string | null;
+  /** Kept for backwards-compat; ignored. */
+  addedServices?: string[];
+  /** Kept for backwards-compat; ignored. */
+  successMode?: boolean;
 }
 
 interface UpsellCardProps {
   name: string;
   serviceId: string | null;
   referenceEnd: Date;
-  isAdded: boolean;
-  successMode: boolean;
   onSelect: (name: string) => void;
 }
 
-const UpsellCard = ({
-  name,
-  serviceId,
-  referenceEnd,
-  isAdded,
-  successMode,
-  onSelect,
-}: UpsellCardProps) => {
+const UpsellCard = ({ name, serviceId, referenceEnd, onSelect }: UpsellCardProps) => {
   const dateKey = format(referenceEnd, 'yyyy-MM-dd');
 
   const { data, isLoading } = useMindbodyAvailability({
@@ -102,9 +94,7 @@ const UpsellCard = ({
     return candidates[0] ?? null;
   }, [data, referenceEnd]);
 
-  // While loading we don't know yet — render nothing to avoid flicker / fake info.
   if (isLoading) return null;
-  // No real bookable slot in the window → hide entirely.
   if (!nextSlot) return null;
 
   const info = serviceInfo[name];
@@ -115,9 +105,7 @@ const UpsellCard = ({
       onClick={() => onSelect(name)}
       className={cn(
         'w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left group',
-        isAdded && !successMode
-          ? 'border-primary bg-primary/5'
-          : 'border-border hover:border-primary/40 hover:bg-primary/5'
+        'border-border hover:border-primary/40 hover:bg-primary/5',
       )}
     >
       <div className="w-12 h-12 rounded-lg overflow-hidden shrink-0">
@@ -129,24 +117,9 @@ const UpsellCard = ({
           Right after your session — {format(nextSlot.start, 'h:mm a')}
         </div>
       </div>
-      {successMode ? (
-        <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
-          Book
-        </div>
-      ) : (
-        <div
-          className={cn(
-            'shrink-0 w-7 h-7 rounded-full flex items-center justify-center transition-colors',
-            isAdded ? 'bg-primary' : 'bg-secondary group-hover:bg-primary/10'
-          )}
-        >
-          {isAdded ? (
-            <Check className="h-3.5 w-3.5 text-primary-foreground" />
-          ) : (
-            <Plus className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors" />
-          )}
-        </div>
-      )}
+      <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
+        Book next
+      </div>
     </button>
   );
 };
@@ -174,8 +147,6 @@ function resolveServiceId(
 const UpsellSuggestions = ({
   currentServiceTitle,
   onSelectUpsell,
-  addedServices = [],
-  successMode = false,
   referenceEndDateTime,
 }: UpsellSuggestionsProps) => {
   const { data: services } = useMindbodyServices();
@@ -192,14 +163,7 @@ const UpsellSuggestions = ({
       .filter((c) => c.serviceId !== null);
   }, [currentServiceTitle, services]);
 
-  // Need a reference end time and at least one resolvable candidate.
   if (!referenceEnd || candidates.length === 0) return null;
-
-  // In success mode, only surface upsells the user already added.
-  const visible = successMode
-    ? candidates.filter((c) => addedServices.includes(c.name))
-    : candidates;
-  if (visible.length === 0) return null;
 
   return (
     <motion.div
@@ -209,17 +173,15 @@ const UpsellSuggestions = ({
       className="space-y-2.5"
     >
       <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-        {successMode ? 'Continue booking' : 'Stay & enhance your visit'}
+        Stay & enhance your visit
       </p>
       <div className="space-y-2">
-        {visible.map(({ name, serviceId }) => (
+        {candidates.map(({ name, serviceId }) => (
           <UpsellCard
             key={name}
             name={name}
             serviceId={serviceId}
             referenceEnd={referenceEnd}
-            isAdded={addedServices.includes(name)}
-            successMode={successMode}
             onSelect={onSelectUpsell}
           />
         ))}

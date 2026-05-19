@@ -27,20 +27,49 @@ serve(async (req) => {
       classId,
       sessionTypeId,
       staffId,
+      staffName,
       locationId,
+      locationName,
       startDateTime,
       endDateTime,
       serviceName,
+      idempotencyKey,
     } = await req.json();
 
     if (!sessionId) {
       throw new Error("User session is required. Please log in first.");
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Idempotency short-circuit: if this key already produced a confirmed booking,
+    // return it without calling Mindbody again. Prevents double-booking on retry.
+    if (idempotencyKey) {
+      const { data: existing } = await supabaseAdmin
+        .from("bookings")
+        .select("*")
+        .eq("idempotency_key", idempotencyKey)
+        .maybeSingle();
+
+      if (existing && existing.status === "confirmed") {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            idempotent: true,
+            booking: {
+              id: existing.id,
+              mindbodyId: existing.mindbody_appointment_id || existing.mindbody_class_id,
+              serviceName: existing.service_name,
+              startTime: existing.start_time,
+              status: existing.status,
+            },
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
+      }
+    }
     // Get user session with access token
-    const { data: session, error: sessionError } = await supabase
+    const { data: session, error: sessionError } = await supabaseAdmin
       .from("mb_sessions")
       .select("*")
       .eq("id", sessionId)
@@ -152,8 +181,15 @@ serve(async (req) => {
       mindbodyId = bookingResult.Appointment?.Id?.toString();
     }
 
+    // Build metadata with fallbacks to client-provided values so the row is never sparse.
+    const resolvedStaffName = bookingResult.Appointment?.Staff?.FirstName
+      ? `${bookingResult.Appointment.Staff.FirstName} ${bookingResult.Appointment.Staff.LastName || ""}`.trim()
+      : (staffName || null);
+    const resolvedLocationName =
+      bookingResult.Appointment?.Location?.Name || locationName || null;
+
     // Save booking to local database
-    const { data: booking, error: bookingError } = await supabase
+    const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
       .insert({
         session_id: sessionId,
@@ -161,14 +197,13 @@ serve(async (req) => {
         mindbody_class_id: bookingType === "class" ? mindbodyId : null,
         service_name: serviceName || "Booking",
         service_id: sessionTypeId || classId,
-        staff_name: bookingResult.Appointment?.Staff?.FirstName
-          ? `${bookingResult.Appointment.Staff.FirstName} ${bookingResult.Appointment.Staff.LastName}`
-          : null,
-        location_name: bookingResult.Appointment?.Location?.Name || null,
+        staff_name: resolvedStaffName,
+        location_name: resolvedLocationName,
         start_time: startDateTime || bookingResult.Class?.StartDateTime,
         end_time: endDateTime || bookingResult.Class?.EndDateTime,
         status: "confirmed",
         booking_type: bookingType,
+        idempotency_key: idempotencyKey || null,
       })
       .select()
       .single();
