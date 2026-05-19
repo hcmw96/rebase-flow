@@ -184,12 +184,20 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
     });
   }, [monthAvailabilityData]);
 
-  const handleToggleUpsell = (serviceName: string) => {
-    setAddedUpsells(prev =>
-      prev.includes(serviceName)
-        ? prev.filter(s => s !== serviceName)
-        : [...prev, serviceName]
+  // Membership / pricing-option pre-check. Only run when authenticated & at confirm step.
+  const { data: membershipData } = useClientMembership();
+  const hasUsablePass = useMemo(() => {
+    if (!membershipData) return false;
+    const hasMembership = (membershipData.memberships?.length ?? 0) > 0;
+    const hasContract = (membershipData.contracts?.length ?? 0) > 0;
+    const hasService = (membershipData.clientServices || []).some(
+      (s) => (s.remaining ?? 0) > 0,
     );
+    return hasMembership || hasContract || hasService;
+  }, [membershipData]);
+
+  const handleUpsellSelect = (serviceName: string) => {
+    if (onSwitchService) onSwitchService(serviceName);
   };
 
   const handleVariantSelect = (variant: ServiceVariant) => {
@@ -209,6 +217,20 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
     setSelectedSlot(slot);
     setCurrentStep(confirmStep);
   };
+
+  // Generate a fresh idempotency key whenever the user reaches the confirm step for a new slot
+  useEffect(() => {
+    if (currentStep === confirmStep && selectedSlot && !idempotencyKey) {
+      setIdempotencyKey(
+        (crypto as any)?.randomUUID?.() ||
+          `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      );
+    }
+    // Reset key when leaving confirm step so the next attempt gets a fresh key
+    if (currentStep !== confirmStep && idempotencyKey) {
+      setIdempotencyKey(null);
+    }
+  }, [currentStep, confirmStep, selectedSlot, idempotencyKey]);
 
   const handleBack = () => {
     // If variant is contact-only, go back to variant selection
@@ -232,9 +254,13 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         bookingType: 'appointment',
         sessionTypeId: selectedSlot.sessionTypeId.toString(),
         staffId: selectedSlot.staffId.toString(),
+        staffName: selectedSlot.staffName,
         locationId: selectedSlot.locationId,
+        locationName: selectedSlot.locationName,
         startDateTime: selectedSlot.startDateTime,
+        endDateTime: selectedSlot.endDateTime,
         serviceName: activeVariant?.name || service?.title,
+        idempotencyKey: idempotencyKey || undefined,
       });
       setBookingComplete(true);
       toast.success('Booking confirmed!');
@@ -242,19 +268,40 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         despia('successhaptic://');
       }
     } catch (error: any) {
-      const msg = (error?.message || '').toLowerCase();
-      if (msg.includes('site id does not match') || msg.includes('session not found') || msg.includes('session expired') || msg.includes('please log in')) {
-        toast.error('Your sign-in expired. Please sign in again.');
+      const classified = classifyBookingError(error?.message);
+
+      if (classified.kind === 'session_expired') {
+        toast.error(classified.message);
         logout();
         setTimeout(() => login(), 300);
+      } else if (classified.kind === 'payment_required') {
+        toast.error(classified.message, {
+          action: {
+            label: 'Memberships',
+            onClick: () => {
+              onClose();
+              navigate('/membership');
+            },
+          },
+        });
+      } else if (classified.kind === 'slot_taken') {
+        toast.error(classified.message);
+        // Invalidate availability + bounce back to time picker for a fresh choice
+        queryClient.invalidateQueries({ queryKey: ['mindbody-availability'] });
+        setSelectedSlot(null);
+        setCurrentStep(timeStep);
+      } else if (classified.kind === 'duplicate') {
+        toast.error(classified.message);
       } else {
-        toast.error(error?.message || 'Failed to complete booking. Please try again.');
+        toast.error(classified.message);
       }
+
       if (navigator.userAgent.includes('despia')) {
         despia('errorhaptic://');
       }
     }
   };
+
 
   const isBooking = bookServiceMutation.isPending;
 
