@@ -594,42 +594,59 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       </div>
 
-                      {addedUpsells.length > 0 && (
-                        <div className="bg-secondary/50 rounded-lg p-4 space-y-2">
-                          <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">Your add-ons</p>
-                          {addedUpsells.map(name => (
-                            <div key={name} className="flex items-center justify-between text-sm">
-                              <span className="text-foreground">{name}</span>
-                              <button
-                                onClick={() => handleToggleUpsell(name)}
-                                className="text-xs text-muted-foreground hover:text-destructive transition-colors"
-                              >
-                                Remove
-                              </button>
+                      {isAuthenticated && membershipData && !hasUsablePass ? (
+                        <div className="bg-accent/30 border border-accent/40 rounded-lg p-4 space-y-3">
+                          <div className="flex items-start gap-3">
+                            <div className="w-8 h-8 rounded-full bg-accent/40 flex items-center justify-center shrink-0">
+                              <CreditCard className="h-4 w-4 text-foreground/80" />
                             </div>
-                          ))}
+                            <div className="space-y-1">
+                              <p className="text-sm font-semibold text-foreground">You'll need a pass to book this</p>
+                              <p className="text-xs text-muted-foreground leading-relaxed">
+                                Pick up a single-use pass or a membership — both unlock instant booking.
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={() => {
+                                onClose();
+                                navigate('/membership');
+                              }}
+                              className="flex-1"
+                            >
+                              View memberships
+                            </Button>
+                            <Button asChild variant="outline" className="flex-1">
+                              <a href="mailto:reception@rebaserecovery.com">
+                                <Mail className="h-4 w-4 mr-2" />
+                                Reception
+                              </a>
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex gap-3">
+                          <Button variant="outline" onClick={() => setCurrentStep(timeStep)} className="flex-1">
+                            Change Time
+                          </Button>
+                          <Button onClick={handleConfirmBooking} disabled={isBooking} className="flex-1">
+                            {isBooking ? (
+                              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
+                            ) : (
+                              'Confirm Booking'
+                            )}
+                          </Button>
                         </div>
                       )}
 
-                      <div className="flex gap-3">
-                        <Button variant="outline" onClick={() => setCurrentStep(timeStep)} className="flex-1">
-                          Change Time
-                        </Button>
-                        <Button onClick={handleConfirmBooking} disabled={isBooking} className="flex-1">
-                          {isBooking ? (
-                            <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
-                          ) : (
-                            'Confirm Booking'
-                          )}
-                        </Button>
-                      </div>
-
-                      <UpsellSuggestions
-                        currentServiceTitle={service?.title || ''}
-                        onSelectUpsell={handleToggleUpsell}
-                        addedServices={addedUpsells}
-                        referenceEndDateTime={selectedSlot?.endDateTime ?? null}
-                      />
+                      {onSwitchService && (
+                        <UpsellSuggestions
+                          currentServiceTitle={service?.title || ''}
+                          onSelectUpsell={handleUpsellSelect}
+                          referenceEndDateTime={selectedSlot?.endDateTime ?? null}
+                        />
+                      )}
                     </motion.div>
                   )}
                 </AnimatePresence>
