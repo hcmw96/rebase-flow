@@ -38,7 +38,18 @@ serve(async (req) => {
       .single();
 
     if (sessionError || !session) {
-      throw new Error("Session not found. Please log in again.");
+      return new Response(
+        JSON.stringify({
+          bookings: [],
+          localBookings: [],
+          user: null,
+          requiresLogin: true,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        }
+      );
     }
 
     // Fetch from Mindbody API - client visits
