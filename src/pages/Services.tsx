@@ -3,22 +3,16 @@ import ServiceChip from '@/components/ServiceChip';
 import CategorySection from '@/components/CategorySection';
 import { useMindbodyServices } from '@/hooks/useMindbodyServices';
 import { useHiddenServices } from '@/hooks/useHiddenServices';
-import { Skeleton } from '@/components/ui/skeleton';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ClassSchedule from '@/components/ClassSchedule';
 import {
-  serviceGroupMappings,
   hiddenGroupNames,
   hiddenProgramIds,
   isHiddenServiceName,
-  categoryOverrides,
-  programNameOverrides,
   categoryOrder,
   serviceOrderWithinCategory,
-  serviceImages,
-  categoryImages,
   contactOnlyGroups,
   priceOverrides,
   classDescriptionIdMap,
@@ -30,6 +24,7 @@ import {
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
+  staticWebsiteCatalogue,
 } from '@/config/serviceConfig';
 
 
@@ -40,16 +35,17 @@ interface ServicesProps {
 const Services = ({ onSelectService }: ServicesProps) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('services');
-  const { data: services, isLoading, error } = useMindbodyServices();
+  const { data: services, error } = useMindbodyServices();
   const { data: hiddenServices = [] } = useHiddenServices();
 
   const hiddenServiceIds = useMemo(() => new Set(hiddenServices.map(h => h.service_id)), [hiddenServices]);
 
-  const { groupedServices } = useMemo(() => {
-    if (!services || services.length === 0) return { groupedServices: [] };
+  // Live groups built from Mindbody data (empty until the API responds).
+  const liveGroups = useMemo(() => {
+    const groups = new Map<string, GroupedService>();
+    if (!services?.length) return groups;
 
     const visibleServices = services.filter(s => !hiddenServiceIds.has(s.id));
-    const groups = new Map<string, GroupedService>();
 
     for (const service of visibleServices) {
       if (hiddenProgramIds.has(service.programId)) continue;
@@ -109,27 +105,34 @@ const Services = ({ onSelectService }: ServicesProps) => {
       });
     }
 
-    const grouped = Array.from(groups.values());
-
-    // Sort by category order, then within-category order
-    grouped.sort((a, b) => {
-      const catA = categoryOrder.indexOf(a.category);
-      const catB = categoryOrder.indexOf(b.category);
-      const orderA = catA >= 0 ? catA : 999;
-      const orderB = catB >= 0 ? catB : 999;
-      if (orderA !== orderB) return orderA - orderB;
-      // Within same category
-      const withinOrder = serviceOrderWithinCategory[a.category];
-      if (withinOrder) {
-        const wA = withinOrder[a.baseName] ?? 99;
-        const wB = withinOrder[b.baseName] ?? 99;
-        if (wA !== wB) return wA - wB;
-      }
-      return a.baseName.localeCompare(b.baseName);
-    });
-
-    return { groupedServices: grouped };
+    return groups;
   }, [services, hiddenServiceIds]);
+
+  // Seed from the static catalogue so cards render instantly; hydrate with live data when it arrives.
+  const groupedServices = useMemo(() => {
+    const merged = new Map<string, GroupedService>();
+
+    for (const entry of staticWebsiteCatalogue) {
+      const live = liveGroups.get(entry.baseName);
+      merged.set(entry.baseName, {
+        baseName: entry.baseName,
+        category: entry.category,
+        image: entry.image,
+        description: live && !isPlaceholderDescription(live.description)
+          ? live.description
+          : entry.shortDescription,
+        variants: live?.variants ?? [],
+        contactOnly: entry.contactOnly,
+      });
+    }
+
+    // Include any live groups not represented in the static catalogue.
+    for (const [name, live] of liveGroups.entries()) {
+      if (!merged.has(name)) merged.set(name, live);
+    }
+
+    return Array.from(merged.values());
+  }, [liveGroups]);
 
   const servicesByCategory = useMemo(() => {
     const categoryMap = new Map<string, GroupedService[]>();
@@ -147,13 +150,20 @@ const Services = ({ onSelectService }: ServicesProps) => {
       if (!categoryMap.has(cat)) categoryMap.set(cat, []);
       categoryMap.get(cat)!.push(service);
     }
-    // Return in category order
+    // Sort within category, then arrange categories in canonical order.
     const sorted = new Map<string, GroupedService[]>();
     for (const cat of categoryOrder) {
-      if (categoryMap.has(cat)) sorted.set(cat, categoryMap.get(cat)!);
+      if (!categoryMap.has(cat)) continue;
+      const items = categoryMap.get(cat)!;
+      const orderMap = serviceOrderWithinCategory[cat];
+      if (orderMap) {
+        items.sort((a, b) => (orderMap[a.baseName] ?? 99) - (orderMap[b.baseName] ?? 99));
+      }
+      sorted.set(cat, items);
     }
     return sorted;
   }, [groupedServices, searchQuery]);
+
 
   const handleSelectService = (service: any) => {
     onSelectService?.({
@@ -189,20 +199,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
       <div className="px-4 py-4 max-w-lg mx-auto">
         {activeTab === 'services' ? (
           <>
-            {isLoading ? (
-              <div className="space-y-4">
-                {[...Array(4)].map((_, i) => (
-                  <div key={i} className="space-y-3">
-                    <Skeleton className="h-6 w-24" />
-                    <div className="flex gap-3">
-                      <Skeleton className="h-[100px] w-[100px] rounded-xl" />
-                      <Skeleton className="h-[100px] w-[100px] rounded-xl" />
-                      <Skeleton className="h-[100px] w-[100px] rounded-xl" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            ) : error ? (
+            {error && servicesByCategory.size === 0 ? (
               <div className="text-center py-12">
                 <p className="text-muted-foreground">Unable to load services.</p>
               </div>

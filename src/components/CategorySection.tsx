@@ -82,7 +82,7 @@ const CategorySection = ({
                 {services.map((service) => (
                   <ServiceChip
                     key={service.baseName}
-                    id={service.variants[0].id}
+                    id={service.variants[0]?.id ?? service.baseName}
                     title={service.baseName}
                     description={service.description}
                     category={service.category}
@@ -101,7 +101,7 @@ const CategorySection = ({
                 {services.map((service) => (
                   <ServiceChip
                     key={service.baseName}
-                    id={service.variants[0].id}
+                    id={service.variants[0]?.id ?? service.baseName}
                     title={service.baseName}
                     description={service.description}
                     category={service.category}
@@ -119,7 +119,7 @@ const CategorySection = ({
                   {services.map((service) => (
                     <ServiceChip
                       key={service.baseName}
-                      id={service.variants[0].id}
+                      id={service.variants[0]?.id ?? service.baseName}
                       title={service.baseName}
                       description={service.description}
                       category={service.category}
