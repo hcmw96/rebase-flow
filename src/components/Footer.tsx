@@ -95,13 +95,21 @@ const Footer = () => {
           </div>
         </div>
 
-        <div className="border-t border-[#F9ECD9]/10 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center gap-2">
+        <div className="border-t border-foreground/10 mt-8 pt-8 flex flex-col sm:flex-row justify-between items-center gap-3">
           <p className="text-foreground/60 text-sm">
             © {new Date().getFullYear()} Rebase Recovery. All rights reserved.
           </p>
-          <Link to="/cookie-policy" className="text-foreground/60 hover:text-foreground transition-colors text-sm">
-            Cookie Policy
-          </Link>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+            <Link to="/privacy-policy" className="text-foreground/60 hover:text-foreground transition-colors">
+              Privacy Policy
+            </Link>
+            <Link to="/terms" className="text-foreground/60 hover:text-foreground transition-colors">
+              Terms & Conditions
+            </Link>
+            <Link to="/cookie-policy" className="text-foreground/60 hover:text-foreground transition-colors">
+              Cookie Policy
+            </Link>
+          </div>
         </div>
       </div>
     </footer>
