@@ -5,16 +5,21 @@ export default function ScrollToTop() {
   const { pathname } = useLocation();
 
   useEffect(() => {
-    // Immediate scroll with instant behavior to override smooth scroll
-    window.scrollTo({ top: 0, behavior: 'instant' });
-    
-    // Backup scroll after a short delay to handle late-loading content
-    const timeoutId = setTimeout(() => {
-      window.scrollTo({ top: 0, behavior: 'instant' });
-    }, 100);
-    
+    const reset = () => {
+      window.scrollTo({ top: 0, behavior: "instant" as ScrollBehavior });
+      // Reset any in-page fixed scroll containers used by informational pages
+      document
+        .querySelectorAll<HTMLElement>('[style*="position: fixed"][style*="overflowY"]')
+        .forEach((el) => {
+          el.scrollTop = 0;
+        });
+    };
+
+    reset();
+    const timeoutId = setTimeout(reset, 100);
     return () => clearTimeout(timeoutId);
   }, [pathname]);
 
   return null;
 }
+
