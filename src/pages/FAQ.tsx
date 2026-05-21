@@ -77,7 +77,7 @@ const faqSchema = {
 
 const FAQ = () => {
   return (
-    <div className="min-h-screen bg-background">
+    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-background">
       <Helmet>
         <title>FAQ — Rebase Recovery London</title>
         <meta
