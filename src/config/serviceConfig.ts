@@ -74,6 +74,8 @@ export const hiddenServiceNames = new Set([
 // Patterns matched against raw Mindbody service names; any match is hidden.
 export const hiddenServiceNamePatterns: RegExp[] = [
   /\bcorporate\b/i,
+  /indian\s*head/i,
+  /destress.*(head|neck|shoulder)/i,
 ];
 
 export function isHiddenServiceName(name: string): boolean {
