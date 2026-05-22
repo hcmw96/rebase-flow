@@ -45,13 +45,11 @@ serve(async (req) => {
     authUrl.searchParams.set("response_type", "code id_token");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
-    // Mindbody binds the issued token to a site via the `site.<siteId>` scope entry on the
-    // authorize endpoint. The separate `subscriberId` param belongs on /connect/token, not here —
-    // including it on authorize can cause Mindbody to return a blank/error page.
     authUrl.searchParams.set(
       "scope",
-      `openid email profile offline_access Mindbody.Api.Public.v6 site.${siteId}`
+      "openid email profile offline_access Mindbody.Api.Public.v6"
     );
+    authUrl.searchParams.set("subscriberId", siteId);
     authUrl.searchParams.set("state", state);
     authUrl.searchParams.set("nonce", crypto.randomUUID());
     authUrl.searchParams.set("response_mode", "form_post");

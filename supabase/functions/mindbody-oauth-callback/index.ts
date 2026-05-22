@@ -65,7 +65,7 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
       redirect_uri: redirectUri,
       client_id: clientId,
       client_secret: clientSecret,
-      scope: `openid email profile offline_access Mindbody.Api.Public.v6 site.${siteId}`,
+      scope: "openid email profile offline_access Mindbody.Api.Public.v6",
       subscriberId: siteId,
     }).toString(),
   });

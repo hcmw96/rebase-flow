@@ -52,7 +52,7 @@ serve(async (req) => {
         refresh_token: session.refresh_token,
         client_id: clientId,
         client_secret: clientSecret,
-        scope: `openid email profile offline_access Mindbody.Api.Public.v6 site.${siteId}`,
+        scope: "openid email profile offline_access Mindbody.Api.Public.v6",
         subscriberId: siteId,
       }).toString(),
     });
