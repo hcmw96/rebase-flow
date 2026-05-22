@@ -65,7 +65,10 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
       redirect_uri: redirectUri,
       client_id: clientId,
       client_secret: clientSecret,
-      subscriber_id: siteId,
+      scope: "openid email profile offline_access Mindbody.Api.Public.v6",
+      // Mindbody documents this param as camelCase `subscriberId` — snake_case is ignored
+      // and produces a token without site binding, breaking Public API calls.
+      subscriberId: siteId,
     }).toString(),
   });
 

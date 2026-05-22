@@ -14,10 +14,11 @@ serve(async (req) => {
   try {
     const clientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
     const clientSecret = Deno.env.get("MINDBODY_OAUTH_CLIENT_SECRET");
+    const siteId = Deno.env.get("MINDBODY_SITE_ID");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!clientId || !clientSecret || !supabaseUrl || !supabaseServiceKey) {
+    if (!clientId || !clientSecret || !siteId || !supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing required configuration");
     }
 
@@ -51,6 +52,8 @@ serve(async (req) => {
         refresh_token: session.refresh_token,
         client_id: clientId,
         client_secret: clientSecret,
+        scope: "openid email profile offline_access Mindbody.Api.Public.v6",
+        subscriberId: siteId,
       }).toString(),
     });
 
