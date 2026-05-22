@@ -46,7 +46,10 @@ serve(async (req) => {
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("scope", "openid email profile offline_access Mindbody.Api.Public.v6");
-    authUrl.searchParams.set("subscriber_id", siteId);
+    // Mindbody requires the camelCase `subscriberId` parameter to bind the issued token to a site.
+    // Using snake_case (`subscriber_id`) is silently ignored and produces a token with no site claim,
+    // which then fails Mindbody Public API calls with "User token site id does not match requested site".
+    authUrl.searchParams.set("subscriberId", siteId);
     authUrl.searchParams.set("state", state);
     authUrl.searchParams.set("nonce", crypto.randomUUID());
     authUrl.searchParams.set("response_mode", "form_post");
