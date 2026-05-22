@@ -103,11 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         `width=${width},height=${height},left=${left},top=${top},popup=yes`
       );
 
+      // Hide redirect overlay once the popup is open — overlay was only needed for native full-page redirects.
+      setIsRedirecting(false);
+
       const handleMessage = (event: MessageEvent) => {
         if (event.data?.type === 'rebase-oauth-callback' && event.data.session) {
           const session = event.data.session as MindbodySession;
           localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(session));
           setMbSession(session);
+          setIsRedirecting(false);
           popup?.close();
           window.removeEventListener('message', handleMessage);
         }
@@ -118,11 +122,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const check = setInterval(() => {
         if (popup?.closed) {
           clearInterval(check);
+          setIsRedirecting(false);
           window.removeEventListener('message', handleMessage);
         }
       }, 500);
     } catch (error) {
       console.error('Login error:', error);
+      setIsRedirecting(false);
     }
   }, []);
 
