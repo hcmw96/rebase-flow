@@ -1,1 +1,18 @@
 project_id = "ipmrdxtgrxvwzbrbiuvz"
+
+# Mindbody redirects here via form_post without a Supabase JWT
+[functions.mindbody-oauth-init]
+verify_jwt = false
+
+[functions.mindbody-oauth-callback]
+verify_jwt = false
+
+# Public catalog / availability (no Supabase user JWT on request)
+[functions.mindbody-services]
+verify_jwt = false
+
+[functions.mindbody-classes]
+verify_jwt = false
+
+[functions.mindbody-availability]
+verify_jwt = false

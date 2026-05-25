@@ -1,12 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { format, addDays } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
+import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
@@ -36,8 +37,7 @@ interface StoredService {
 const BookService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
-  const { isAuthenticated } = useAuth();
-  const { mbSession } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const bookServiceMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -102,7 +102,6 @@ const BookService = () => {
     if (!selectedDate) return null;
     return {
       startDate: format(selectedDate, 'yyyy-MM-dd'),
-      endDate: format(addDays(selectedDate, 1), 'yyyy-MM-dd'),
     };
   }, [selectedDate]);
 
@@ -114,7 +113,11 @@ const BookService = () => {
     enabled: !!activeServiceId && !!selectedDate,
   });
 
-  const availableSlots = availabilityData?.availableItems || [];
+  const availableSlots = useMemo(() => {
+    const items = availabilityData?.availableItems || [];
+    if (!selectedDate) return items;
+    return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
+  }, [availabilityData, selectedDate]);
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
@@ -153,7 +156,11 @@ const BookService = () => {
   };
 
   const handleConfirmBooking = async () => {
-    if (!selectedSlot || !mbSession) return;
+    if (!selectedSlot) return;
+    if (!isAuthenticated) {
+      login();
+      return;
+    }
 
     try {
       await bookServiceMutation.mutateAsync({
@@ -507,40 +514,13 @@ const BookService = () => {
                         </div>
                       </div>
 
-                      {/* Login Notice */}
-                      {!isAuthenticated && (
-                        <div className="bg-accent/50 rounded-lg p-4 text-sm">
-                          <p className="text-muted-foreground">
-                            You'll need to log in with your Mindbody account to complete this booking.
-                          </p>
-                        </div>
-                      )}
-
-                      {/* Action Buttons */}
-                      <div className="flex flex-col sm:flex-row gap-3 pt-4">
-                        <Button
-                          variant="outline"
-                          onClick={() => setCurrentStep(timeStep)}
-                          className="sm:flex-1"
-                        >
-                          Change Time
-                        </Button>
-                        <Button
-                          onClick={handleConfirmBooking}
-                          disabled={isBooking}
-                          className="sm:flex-1"
-                        >
-                          {isBooking ? (
-                            <>
-                              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                              Booking...
-                            </>
-                          ) : isAuthenticated ? (
-                            'Confirm Booking'
-                          ) : (
-                            'Login & Confirm'
-                          )}
-                        </Button>
+                      <div className="pt-4">
+                        <BookingConfirmActions
+                          onChangeTime={() => setCurrentStep(timeStep)}
+                          onConfirm={handleConfirmBooking}
+                          isAuthenticated={isAuthenticated}
+                          isPending={isBooking}
+                        />
                       </div>
                     </CardContent>
                   </Card>

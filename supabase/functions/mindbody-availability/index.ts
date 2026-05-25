@@ -5,6 +5,9 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const PAGE_SIZE = 200;
+const MAX_AVAILABILITY_WINDOWS = 2000;
+
 async function getStaffToken(): Promise<string> {
   const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
   const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
@@ -49,6 +52,74 @@ async function getStaffToken(): Promise<string> {
   return data.AccessToken;
 }
 
+/** Mindbody expects DateTime strings; use site-local day boundaries (London). */
+function dateOnly(value: string): string {
+  return value.slice(0, 10);
+}
+
+/** Legacy clients sent endDate = startDate + 1 day for a single-day picker — treat as one day. */
+function isExclusiveNextDay(start: string, end: string): boolean {
+  const s = dateOnly(start);
+  const e = dateOnly(end);
+  if (s === e) return false;
+  const next = new Date(`${s}T12:00:00`);
+  next.setDate(next.getDate() + 1);
+  const expected = next.toISOString().slice(0, 10);
+  return e === expected;
+}
+
+function toMindbodyStart(dateStr: string): string {
+  const day = dateOnly(dateStr);
+  return day.includes("T") ? dateStr : `${day}T00:00:00`;
+}
+
+function toMindbodyEnd(dateStr: string): string {
+  const day = dateOnly(dateStr);
+  return day.includes("T") ? dateStr : `${day}T23:59:59`;
+}
+
+function resolveDateRange(startDate: string, endDate?: string | null): { start: string; end: string } {
+  const start = toMindbodyStart(startDate);
+  if (!endDate) {
+    return { start, end: toMindbodyEnd(startDate) };
+  }
+  if (isExclusiveNextDay(startDate, endDate)) {
+    return { start, end: toMindbodyEnd(startDate) };
+  }
+  return { start, end: toMindbodyEnd(endDate) };
+}
+
+function generateTimeSlots(availability: any): any[] {
+  const slots: any[] = [];
+  const sessionLength = availability.SessionType?.DefaultTimeLength || 60;
+  const startTime = new Date(availability.StartDateTime);
+  const bookableEndTime = new Date(
+    availability.BookableEndDateTime || availability.EndDateTime,
+  );
+
+  let slotStart = new Date(startTime);
+  while (slotStart < bookableEndTime) {
+    const slotEnd = new Date(slotStart.getTime() + sessionLength * 60 * 1000);
+    if (slotEnd <= bookableEndTime) {
+      slots.push({
+        id: `${availability.Id}-${slotStart.toISOString()}`,
+        staffId: availability.Staff?.Id,
+        staffName: availability.Staff
+          ? `${availability.Staff.FirstName} ${availability.Staff.LastName}`.trim()
+          : null,
+        locationId: availability.Location?.Id,
+        locationName: availability.Location?.Name,
+        sessionTypeId: availability.SessionType?.Id,
+        sessionTypeName: availability.SessionType?.Name,
+        startDateTime: slotStart.toISOString(),
+        endDateTime: slotEnd.toISOString(),
+      });
+    }
+    slotStart = slotEnd;
+  }
+  return slots;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -65,96 +136,87 @@ serve(async (req) => {
     const url = new URL(req.url);
     const sessionTypeId = url.searchParams.get("sessionTypeId");
     const staffId = url.searchParams.get("staffId");
-    const startDate = url.searchParams.get("startDate") || new Date().toISOString().split("T")[0];
+    const startDate =
+      url.searchParams.get("startDate") || new Date().toISOString().split("T")[0];
     const endDate = url.searchParams.get("endDate");
 
     if (!sessionTypeId) {
       throw new Error("sessionTypeId is required");
     }
 
+    const { start: mindbodyStart, end: mindbodyEnd } = resolveDateRange(startDate, endDate);
     const staffToken = await getStaffToken();
 
-    // Build query params for bookable items
-    const params = new URLSearchParams();
-    params.set("SessionTypeIds", sessionTypeId);
-    params.set("StartDate", startDate);
-    if (endDate) params.set("EndDate", endDate);
-    if (staffId) params.set("StaffIds", staffId);
+    const allAvailabilities: any[] = [];
+    let offset = 0;
 
-    const response = await fetch(
-      `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?${params.toString()}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Key": apiKey,
-          "SiteId": siteId,
-          "Authorization": `Bearer ${staffToken}`,
+    while (offset < MAX_AVAILABILITY_WINDOWS) {
+      const params = new URLSearchParams();
+      params.set("SessionTypeIds", sessionTypeId);
+      params.set("StartDate", mindbodyStart);
+      params.set("EndDate", mindbodyEnd);
+      params.set("IgnoreDefaultSessionLength", "true");
+      params.set("Limit", String(PAGE_SIZE));
+      params.set("Offset", String(offset));
+      if (staffId) params.set("StaffIds", staffId);
+
+      const response = await fetch(
+        `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "SiteId": siteId,
+            "Authorization": `Bearer ${staffToken}`,
+          },
         },
-      }
-    );
+      );
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error("Availability fetch error:", errorText);
-      throw new Error("Failed to fetch availability");
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Availability fetch error:", errorText);
+        throw new Error("Failed to fetch availability");
+      }
+
+      const data = await response.json();
+      const batch = data.Availabilities || [];
+      allAvailabilities.push(...batch);
+
+      const total = data.PaginationResponse?.TotalResults;
+      console.log("Mindbody bookableitems page:", {
+        sessionTypeId,
+        offset,
+        batchSize: batch.length,
+        total,
+      });
+
+      if (batch.length === 0) break;
+      if (typeof total === "number" && allAvailabilities.length >= total) break;
+      if (batch.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
     }
 
-    const data = await response.json();
-    
-    // Enhanced logging for debugging availability issues
-    console.log("Mindbody bookableitems response:", JSON.stringify({
+    console.log("Mindbody bookableitems summary:", JSON.stringify({
       sessionTypeId,
       staffId,
-      startDate,
-      endDate,
-      availabilitiesCount: data.Availabilities?.length || 0,
+      mindbodyStart,
+      mindbodyEnd,
+      availabilitiesCount: allAvailabilities.length,
     }));
 
-    // Generate individual time slots from availability windows
-    function generateTimeSlots(availability: any): any[] {
-      const slots: any[] = [];
-      const sessionLength = availability.SessionType?.DefaultTimeLength || 60;
-      const startTime = new Date(availability.StartDateTime);
-      const bookableEndTime = new Date(availability.BookableEndDateTime || availability.EndDateTime);
-      
-      let slotStart = new Date(startTime);
-      while (slotStart < bookableEndTime) {
-        const slotEnd = new Date(slotStart.getTime() + sessionLength * 60 * 1000);
-        // Only add slot if it ends before or at the bookable end time
-        if (slotEnd <= new Date(availability.EndDateTime)) {
-          slots.push({
-            id: `${availability.Id}-${slotStart.toISOString()}`,
-            staffId: availability.Staff?.Id,
-            staffName: availability.Staff ? 
-              `${availability.Staff.FirstName} ${availability.Staff.LastName}`.trim() : null,
-            locationId: availability.Location?.Id,
-            locationName: availability.Location?.Name,
-            sessionTypeId: availability.SessionType?.Id,
-            sessionTypeName: availability.SessionType?.Name,
-            startDateTime: slotStart.toISOString(),
-            endDateTime: slotEnd.toISOString(),
-          });
-        }
-        slotStart = slotEnd;
-      }
-      return slots;
-    }
+    const now = Date.now();
+    const rawSlots = allAvailabilities
+      .flatMap(generateTimeSlots)
+      .filter((slot) => new Date(slot.startDateTime).getTime() > now);
 
-    // Transform availability windows into individual bookable time slots
-    const rawSlots = (data.Availabilities || []).flatMap(generateTimeSlots);
-
-    // Deduplicate slots — Mindbody can return multiple overlapping Availability
-    // windows for the same staff member or resource (e.g. duplicated suite
-    // bookings), which would otherwise render as visually identical buttons.
-    // Composite key handles both staff-based and resource-based bookings.
     const dedupMap = new Map<string, any>();
     for (const slot of rawSlots) {
-      const key = `${slot.staffId ?? ''}|${slot.locationId ?? ''}|${slot.sessionTypeId ?? ''}|${slot.startDateTime}`;
+      const key = `${slot.staffId ?? ""}|${slot.locationId ?? ""}|${slot.sessionTypeId ?? ""}|${slot.startDateTime}`;
       if (!dedupMap.has(key)) dedupMap.set(key, slot);
     }
     const availableItems = Array.from(dedupMap.values()).sort(
-      (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime()
+      (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime(),
     );
 
     console.log("Availability dedup:", {
@@ -164,7 +226,6 @@ serve(async (req) => {
       removed: rawSlots.length - availableItems.length,
     });
 
-    // Also fetch staff list for the session type
     const staffResponse = await fetch(
       `https://api.mindbodyonline.com/public/v6/appointment/schedulableitems?SessionTypeIds=${sessionTypeId}`,
       {
@@ -175,7 +236,7 @@ serve(async (req) => {
           "SiteId": siteId,
           "Authorization": `Bearer ${staffToken}`,
         },
-      }
+      },
     );
 
     let availableStaff = [];
@@ -197,7 +258,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
-      }
+      },
     );
   } catch (error) {
     console.error("Availability fetch error:", error);
@@ -206,7 +267,7 @@ serve(async (req) => {
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,
-      }
+      },
     );
   }
 });

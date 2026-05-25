@@ -13,9 +13,10 @@ const services = [
 ];
 
 const quickLinks = [
-  { href: "/", label: "Home" },
+  { href: "/website", label: "Home" },
   { href: "/experiences", label: "Services" },
   { href: "/experiences", label: "Book Now" },
+  { href: "/membership", label: "Membership" },
   { href: "/about", label: "About Us" },
   { href: "/faq", label: "FAQ" },
   { href: "/contact", label: "Contact" },
@@ -28,11 +29,13 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <img
-              src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png"
-              alt="Rebase Recovery"
-              className="h-12 w-auto"
-            />
+            <Link to="/website" className="inline-block">
+              <img
+                src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png"
+                alt="Rebase Recovery"
+                className="h-12 w-auto"
+              />
+            </Link>
             <p className="text-foreground/70 text-sm leading-relaxed">
               London's premier wellness centre offering luxury recovery and rejuvenation experiences.
             </p>
@@ -43,7 +46,7 @@ const Footer = () => {
             <h3 className="text-lg font-medium text-foreground">Quick Links</h3>
             <ul className="space-y-2">
               {quickLinks.map((link) => (
-                <li key={link.label}>
+                <li key={`${link.href}-${link.label}`}>
                   <Link
                     to={link.href}
                     className="text-foreground/70 hover:text-primary transition-colors text-sm"

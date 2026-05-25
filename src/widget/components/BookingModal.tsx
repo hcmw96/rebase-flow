@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, addDays } from 'date-fns';
+import { format } from 'date-fns';
 import { useWidget, GroupedService, ServiceVariant } from '../context/WidgetContext';
 import { createApiClient, AvailableItem } from '../api/client';
 import { BookingCalendar } from './BookingCalendar';
@@ -39,7 +39,6 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
     client.getAvailability({
       sessionTypeId: selectedVariant.id,
       startDate: format(selectedDate, 'yyyy-MM-dd'),
-      endDate: format(addDays(selectedDate, 1), 'yyyy-MM-dd'),
     })
       .then(data => {
         setAvailableSlots(data.availableItems || []);
@@ -277,13 +276,30 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                 </div>
               )}
 
-              <button
-                onClick={handleConfirmBooking}
-                disabled={isBooking}
-                className="w-full py-4 bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)] font-semibold rounded-xl hover:bg-[hsl(35,15%,80%)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isBooking ? 'Booking...' : isAuthenticated ? 'Confirm Booking' : 'Sign In to Book'}
-              </button>
+              {!isAuthenticated && (
+                <p className="text-sm text-[hsl(35,8%,55%)]">
+                  Sign in with your Mindbody account to complete this booking.
+                </p>
+              )}
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => setStep('time')}
+                  disabled={isBooking}
+                  className="flex-1 py-3 border border-[hsl(25,10%,25%)] text-[hsl(35,15%,88%)] font-medium rounded-xl hover:bg-[hsl(25,12%,18%)] transition-colors disabled:opacity-50"
+                >
+                  Change Time
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmBooking}
+                  disabled={isBooking}
+                  className="flex-1 py-3 bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)] font-semibold rounded-xl hover:bg-[hsl(35,15%,80%)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isBooking ? 'Booking...' : isAuthenticated ? 'Confirm Booking' : 'Sign In to Book'}
+                </button>
+              </div>
             </div>
           )}
 

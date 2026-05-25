@@ -45,6 +45,16 @@ function parseState(stateStr: string): StatePayload {
   }
 }
 
+/** Redirect browser (popup or full page) back to the app with session or error in the URL hash. */
+function redirectToApp(origin: string, payload: { session?: Record<string, unknown>; error?: string }) {
+  const hashKey = payload.error ? "auth-error" : "auth-session";
+  const hashValue = encodeURIComponent(btoa(JSON.stringify(payload.error ? { error: payload.error } : payload.session)));
+  return new Response(null, {
+    status: 302,
+    headers: { Location: `${origin}/#${hashKey}=${hashValue}` },
+  });
+}
+
 async function exchangeAndSaveSession(code: string, redirectUri: string) {
   const clientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
   const clientSecret = Deno.env.get("MINDBODY_OAUTH_CLIENT_SECRET");
@@ -126,6 +136,7 @@ serve(async (req) => {
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const redirectUri = `${supabaseUrl}/functions/v1/mindbody-oauth-callback`;
+  let formPostOrigin: string | undefined;
 
   try {
     // Handle form_post from Mindbody OAuth (POST with form data)
@@ -139,24 +150,17 @@ serve(async (req) => {
         const error = formData.get("error") as string;
         const stateStr = (formData.get("state") as string) || "";
         const statePayload = parseState(stateStr);
+        formPostOrigin = statePayload.origin;
 
         if (error) {
           console.error("OAuth error from Mindbody:", error);
 
-          // Native redirect flow
-          if (statePayload.native && statePayload.origin) {
-            const errorData = btoa(JSON.stringify({ error }));
-            return new Response(null, {
-              status: 302,
-              headers: { Location: `${statePayload.origin}/#auth-error=${errorData}` },
-            });
+          if (statePayload.origin) {
+            return redirectToApp(statePayload.origin, { error: String(error) });
           }
 
           return new Response(
-            `<html><body><script>
-              window.opener.postMessage({ type: 'rebase-oauth-callback', error: '${error}' }, '*');
-              window.close();
-            </script><p>Authentication failed. This window will close.</p></body></html>`,
+            `<html><body><p>Authentication failed: ${error}</p></body></html>`,
             { headers: { "Content-Type": "text/html" }, status: 200 }
           );
         }
@@ -167,24 +171,15 @@ serve(async (req) => {
 
         const sessionData = await exchangeAndSaveSession(code, redirectUri);
 
-        // Native redirect flow — redirect back to app with session in hash
-        if (statePayload.native && statePayload.origin) {
-          const sessionB64 = btoa(JSON.stringify(sessionData));
-          return new Response(null, {
-            status: 302,
-            headers: { Location: `${statePayload.origin}/#auth-session=${sessionB64}` },
-          });
+        // Redirect to app origin (popup or full-page). AuthContext reads #auth-session and
+        // forwards to window.opener when present — postMessage from supabase.co is unreliable
+        // after Mindbody's cross-origin form_post chain.
+        if (statePayload.origin) {
+          return redirectToApp(statePayload.origin, { session: sessionData });
         }
 
-        // Web popup flow — postMessage back to opener
         return new Response(
-          `<html><body><script>
-            window.opener.postMessage({
-              type: 'rebase-oauth-callback',
-              session: ${JSON.stringify(sessionData)}
-            }, '*');
-            window.close();
-          </script><p>Authentication successful! This window will close.</p></body></html>`,
+          `<html><body><p>Authentication successful but no return URL was configured.</p></body></html>`,
           { headers: { "Content-Type": "text/html" }, status: 200 }
         );
       }
@@ -202,8 +197,14 @@ serve(async (req) => {
     return new Response("Method not allowed", { status: 405, headers: corsHeaders });
   } catch (error) {
     console.error("OAuth callback error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+
+    if (formPostOrigin) {
+      return redirectToApp(formPostOrigin, { error: message });
+    }
+
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
     );
   }

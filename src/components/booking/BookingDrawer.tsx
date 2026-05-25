@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { format, addDays } from 'date-fns';
+import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import TimeSlotPicker from '@/components/booking/TimeSlotPicker';
 import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
+import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail, CreditCard } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
@@ -142,7 +143,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
     if (!selectedDate) return null;
     return {
       startDate: format(selectedDate, 'yyyy-MM-dd'),
-      endDate: format(addDays(selectedDate, 1), 'yyyy-MM-dd'),
     };
   }, [selectedDate]);
 
@@ -153,7 +153,11 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
     enabled: !!activeServiceId && !!selectedDate && !showContactMessage,
   });
 
-  const availableSlots = availabilityData?.availableItems || [];
+  const availableSlots = useMemo(() => {
+    const items = availabilityData?.availableItems || [];
+    if (!selectedDate) return items;
+    return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
+  }, [availabilityData, selectedDate]);
 
   // Prefetch a 30-day availability window so the calendar can grey out
   // days with no bookable slots (no availability OR fully booked).
@@ -247,7 +251,11 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   };
 
   const handleConfirmBooking = async () => {
-    if (!selectedSlot || !mbSession) return;
+    if (!selectedSlot) return;
+    if (!isAuthenticated) {
+      login();
+      return;
+    }
 
     try {
       await bookServiceMutation.mutateAsync({
@@ -626,18 +634,12 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                           </div>
                         </div>
                       ) : (
-                        <div className="flex gap-3">
-                          <Button variant="outline" onClick={() => setCurrentStep(timeStep)} className="flex-1">
-                            Change Time
-                          </Button>
-                          <Button onClick={handleConfirmBooking} disabled={isBooking} className="flex-1">
-                            {isBooking ? (
-                              <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Booking...</>
-                            ) : (
-                              'Confirm Booking'
-                            )}
-                          </Button>
-                        </div>
+                        <BookingConfirmActions
+                          onChangeTime={() => setCurrentStep(timeStep)}
+                          onConfirm={handleConfirmBooking}
+                          isAuthenticated={isAuthenticated}
+                          isPending={isBooking}
+                        />
                       )}
 
                       {onSwitchService && (

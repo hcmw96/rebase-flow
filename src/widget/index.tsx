@@ -6,8 +6,7 @@ import { WidgetConfig } from './context/WidgetContext';
 // Import styles as string (will be inlined by build)
 import widgetStyles from './styles.css?inline';
 
-// Default production API URL
-const DEFAULT_API_URL = 'https://ipmrdxtgrxvwzbrbiuvz.supabase.co';
+const DEFAULT_API_URL = import.meta.env.VITE_SUPABASE_URL;
 
 class RebaseServicesWidget extends HTMLElement {
   private shadow: ShadowRoot;
