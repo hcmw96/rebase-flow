@@ -282,7 +282,7 @@ const AccountPage = () => {
               const email = mbSession?.email || '';
               const subject = encodeURIComponent(`Message from ${name}`);
               const body = encodeURIComponent(`${message}\n\nFrom: ${name} (${email})`);
-              window.open(`mailto:reception@rebaserecovery.com?subject=${subject}&body=${body}`, '_self');
+              window.open(`mailto:support@rebaserecovery.com?subject=${subject}&body=${body}`, '_self');
               toast.success('Opening your email client...');
               setMessage('');
             }}

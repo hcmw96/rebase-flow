@@ -407,7 +407,7 @@ const ConciergeAndAccount = ({
     const subject = encodeURIComponent(`Message from ${fullName || 'Rebase Member'}`);
     const body = encodeURIComponent(`${message}\n\nFrom: ${fullName} (${email || ''})`);
     window.open(
-      `mailto:reception@rebaserecovery.com?subject=${subject}&body=${body}`,
+      `mailto:support@rebaserecovery.com?subject=${subject}&body=${body}`,
       '_self'
     );
     toast.success('Opening your email client...');

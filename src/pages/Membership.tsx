@@ -1,8 +1,9 @@
+import { useState } from "react";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import MembershipEnquiryDialog from "@/components/MembershipEnquiryDialog";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
-import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet-async";
 
@@ -75,6 +76,8 @@ const membershipSchema = {
 };
 
 const Membership = () => {
+  const [enquiryTier, setEnquiryTier] = useState<string | null>(null);
+
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1a1a1a]">
       <Helmet>
@@ -178,18 +181,26 @@ const Membership = () => {
                 </ul>
               </div>
 
-              <Link to="/contact">
-                <Button
-                  className="w-full rounded-none uppercase tracking-[0.2em] text-sm font-light h-12 bg-transparent border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/10 hover:border-[#F9ECD9]/40 transition-all duration-300"
-                  variant="outline"
-                >
-                  Enquire
-                </Button>
-              </Link>
+              <Button
+                type="button"
+                onClick={() => setEnquiryTier(tier.name)}
+                className="w-full rounded-none uppercase tracking-[0.2em] text-sm font-light h-12 bg-transparent border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/10 hover:border-[#F9ECD9]/40 transition-all duration-300"
+                variant="outline"
+              >
+                Enquire
+              </Button>
             </motion.div>
           ))}
         </div>
       </section>
+
+      <MembershipEnquiryDialog
+        open={enquiryTier !== null}
+        onOpenChange={(open) => {
+          if (!open) setEnquiryTier(null);
+        }}
+        tierName={enquiryTier ?? ""}
+      />
 
       <Footer />
     </div>

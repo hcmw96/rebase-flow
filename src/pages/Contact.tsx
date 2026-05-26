@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -48,10 +49,20 @@ const Contact = () => {
       <script type="application/ld+json">{JSON.stringify(contactSchema)}</script>
     </Helmet>
   );
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    // Handle form submission - integrate with backend service
-    console.log("Form submitted");
+    const form = e.currentTarget;
+    const firstName = (form.elements.namedItem("firstName") as HTMLInputElement).value;
+    const lastName = (form.elements.namedItem("lastName") as HTMLInputElement).value;
+    const email = (form.elements.namedItem("email") as HTMLInputElement).value;
+    const phone = (form.elements.namedItem("phone") as HTMLInputElement).value;
+    const subjectField = (form.elements.namedItem("subject") as HTMLInputElement).value;
+    const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value;
+    const subject = encodeURIComponent(subjectField || "Website enquiry");
+    const body = encodeURIComponent(
+      `${message}\n\n---\nFrom: ${firstName} ${lastName}\nEmail: ${email}${phone ? `\nPhone: ${phone}` : ""}`
+    );
+    window.location.href = `mailto:support@rebaserecovery.com?subject=${subject}&body=${body}`;
   };
 
   const contactInfo = [
@@ -239,14 +250,6 @@ const Contact = () => {
                       question: "Are there any health restrictions?",
                       answer: "Some treatments may have restrictions. We'll discuss your health history during booking to ensure the safest and most effective experience."
                     },
-                    {
-                      question: "Can I cancel or reschedule my appointment?",
-                      answer: "Yes, you can cancel or reschedule up to 24 hours before your appointment through your account or by contacting us directly."
-                    },
-                    {
-                      question: "Do you offer membership packages?",
-                      answer: "Yes, we offer Base, Resident, and Ultimate membership tiers with different benefits and pricing. Contact us to find the best option for you."
-                    }
                   ].map((faq, index) => (
                     <Card key={index} className="card-luxury">
                       <CardContent className="p-6">
@@ -259,6 +262,11 @@ const Contact = () => {
                       </CardContent>
                     </Card>
                   ))}
+                  <Link to="/faq">
+                    <Button variant="outline" className="w-full btn-luxury">
+                      More →
+                    </Button>
+                  </Link>
                 </div>
               </div>
             </div>
