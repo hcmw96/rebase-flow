@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
+import { filterUpcomingSessions } from '@/lib/sessionTimes';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -55,7 +56,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
   });
 
   const filteredClasses = useMemo(() => {
-    return classes
+    return filterUpcomingSessions(classes)
       .filter((c) => classDescriptionIds.includes(c.classDescriptionId) && !c.isCanceled)
       .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
   }, [classes, classDescriptionIds]);
@@ -101,6 +102,10 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
         bookingType: 'class',
         classId: selectedClass.id,
         serviceName: selectedClass.name,
+        startDateTime: selectedClass.startDateTime,
+        endDateTime: selectedClass.endDateTime,
+        locationName: selectedClass.locationName,
+        staffName: selectedClass.staffName,
       });
       setBookingComplete(true);
       toast.success('Class booked successfully!');

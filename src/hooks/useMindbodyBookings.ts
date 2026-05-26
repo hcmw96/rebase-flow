@@ -3,6 +3,22 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
+async function parseFunctionError(
+  response: Response,
+  fallback: string,
+): Promise<string> {
+  try {
+    const body = await response.json();
+    if (typeof body?.error === 'string' && body.error) return body.error;
+    if (typeof body?.message === 'string' && body.message) return body.message;
+  } catch {
+    /* non-JSON body */
+  }
+  return response.status === 401
+    ? 'Booking request was rejected. Please sign in and try again.'
+    : `${fallback} (${response.status})`;
+}
+
 export interface Booking {
   id: string;
   type: 'appointment' | 'class';
@@ -98,8 +114,8 @@ export function useBookService() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to book');
+        const message = await parseFunctionError(response, 'Failed to book');
+        throw new Error(message);
       }
 
       return response.json();
@@ -130,8 +146,8 @@ export function useCancelBooking() {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to cancel');
+        const message = await parseFunctionError(response, 'Failed to cancel');
+        throw new Error(message);
       }
 
       return response.json();

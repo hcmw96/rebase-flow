@@ -120,8 +120,12 @@ serve(async (req) => {
       offset += page.length;
     }
 
-    // Transform classes data
-    const classes = allClasses.map((c: any) => ({
+    const now = Date.now();
+
+    // Transform classes data (exclude sessions that have already started)
+    const classes = allClasses
+      .filter((c: any) => new Date(c.StartDateTime).getTime() > now)
+      .map((c: any) => ({
       id: c.Id.toString(),
       classDescriptionId: c.ClassDescription?.Id,
       name: c.ClassDescription?.Name || "Class",

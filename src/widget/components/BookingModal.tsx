@@ -1,7 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { useWidget, GroupedService, ServiceVariant } from '../context/WidgetContext';
 import { createApiClient, AvailableItem } from '../api/client';
+import { filterUpcomingSessions } from '../../lib/sessionTimes';
 import { BookingCalendar } from './BookingCalendar';
 import { TimeSlotPicker } from './TimeSlotPicker';
 
@@ -41,7 +42,11 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       startDate: format(selectedDate, 'yyyy-MM-dd'),
     })
       .then(data => {
-        setAvailableSlots(data.availableItems || []);
+        const items = filterUpcomingSessions(data.availableItems || []);
+        const forDay = items.filter((slot) =>
+          selectedDate ? isSameDay(new Date(slot.startDateTime), selectedDate) : true,
+        );
+        setAvailableSlots(forDay);
         setIsLoadingSlots(false);
       })
       .catch(() => {

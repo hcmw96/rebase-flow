@@ -14,6 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { filterUpcomingSessions } from '@/lib/sessionTimes';
 
 interface ServiceVariant {
   id: string;
@@ -114,7 +115,7 @@ const BookService = () => {
   });
 
   const availableSlots = useMemo(() => {
-    const items = availabilityData?.availableItems || [];
+    const items = filterUpcomingSessions(availabilityData?.availableItems || []);
     if (!selectedDate) return items;
     return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
   }, [availabilityData, selectedDate]);

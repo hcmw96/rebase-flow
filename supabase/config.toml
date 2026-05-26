@@ -16,3 +16,22 @@ verify_jwt = false
 
 [functions.mindbody-availability]
 verify_jwt = false
+
+# Authenticated via mb_sessions.sessionId in the body, not Supabase JWT
+[functions.mindbody-book]
+verify_jwt = false
+
+[functions.mindbody-cancel]
+verify_jwt = false
+
+[functions.mindbody-my-bookings]
+verify_jwt = false
+
+[functions.mindbody-client-membership]
+verify_jwt = false
+
+[functions.mindbody-refresh-token]
+verify_jwt = false
+
+[functions.verify-mindbody-session]
+verify_jwt = false

@@ -22,6 +22,7 @@ import { useClientMembership } from '@/hooks/useMindbodyMembership';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
@@ -154,7 +155,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   });
 
   const availableSlots = useMemo(() => {
-    const items = availabilityData?.availableItems || [];
+    const items = filterUpcomingSessions(availabilityData?.availableItems || []);
     if (!selectedDate) return items;
     return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
   }, [availabilityData, selectedDate]);
@@ -177,7 +178,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   });
 
   const availableDates = useMemo(() => {
-    const items = monthAvailabilityData?.availableItems || [];
+    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
     const dayKeys = new Set<string>();
     for (const it of items) {
       dayKeys.add(format(new Date(it.startDateTime), 'yyyy-MM-dd'));

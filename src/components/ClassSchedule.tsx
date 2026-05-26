@@ -4,6 +4,7 @@ import { useMindbodyClasses } from '@/hooks/useMindbodyServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { filterUpcomingSessions } from '@/lib/sessionTimes';
 
 const classOfferings = [
   { name: 'Urban Oasis', image: '/images/rebase-class-urban-oasis.jpg', description: 'Breathwork & meditation in candlelit surroundings.' },
@@ -26,7 +27,7 @@ const ClassSchedule = () => {
   const classesByDay = useMemo(() => {
     if (!classes || classes.length === 0) return new Map<string, typeof classes>();
 
-    const filtered = classes.filter(c => !c.isCanceled);
+    const filtered = filterUpcomingSessions(classes).filter(c => !c.isCanceled);
     filtered.sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
 
     const grouped = new Map<string, typeof classes>();
