@@ -2,7 +2,7 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Helmet } from "react-helmet-async";
 
-const SITE_URL = "https://rebase-flow.lovable.app";
+const SITE_URL = "https://rebaserecovery.com";
 
 const PrivacyPolicy = () => {
   return (

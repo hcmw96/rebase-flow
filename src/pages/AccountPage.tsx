@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import despia from 'despia-native';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
 import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History, CreditCard, Sparkles, Shield, FileText } from 'lucide-react';
@@ -276,6 +277,7 @@ const AccountPage = () => {
             className="w-full bg-black/80 hover:bg-black text-white"
             disabled={!message.trim()}
             onClick={() => {
+              if (navigator.userAgent.includes('despia')) despia('lighthaptic://');
               const name = `${mbSession?.firstName || ''} ${mbSession?.lastName || ''}`.trim();
               const email = mbSession?.email || '';
               const subject = encodeURIComponent(`Message from ${name}`);
@@ -306,7 +308,10 @@ const AccountPage = () => {
         <Button
           variant="outline"
           className="w-full border-black/10 text-red-600 hover:text-red-700 hover:bg-red-50/50"
-          onClick={logout}
+          onClick={() => {
+            if (navigator.userAgent.includes('despia')) despia('lighthaptic://');
+            logout();
+          }}
         >
           <LogOut className="h-4 w-4 mr-2" />
           Sign Out

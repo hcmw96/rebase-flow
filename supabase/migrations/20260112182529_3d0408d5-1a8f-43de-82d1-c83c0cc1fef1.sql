@@ -1,5 +1,20 @@
--- Create mb_sessions table for Mindbody OAuth tokens
-CREATE TABLE public.mb_sessions (
+-- Mindbody OAuth sessions + booking records (separate from legacy CRM bookings table)
+
+-- Rename legacy CRM bookings if present so we can use `bookings` for Mindbody records
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.columns
+    WHERE table_schema = 'public'
+      AND table_name = 'bookings'
+      AND column_name = 'client_id'
+  ) THEN
+    ALTER TABLE public.bookings RENAME TO spa_bookings;
+  END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS public.mb_sessions (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     mindbody_client_id TEXT NOT NULL,
     email TEXT,
@@ -13,8 +28,7 @@ CREATE TABLE public.mb_sessions (
     UNIQUE(mindbody_client_id)
 );
 
--- Create bookings table for local booking records
-CREATE TABLE public.bookings (
+CREATE TABLE IF NOT EXISTS public.bookings (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     session_id UUID REFERENCES public.mb_sessions(id) ON DELETE CASCADE NOT NULL,
     mindbody_appointment_id TEXT,
@@ -32,33 +46,27 @@ CREATE TABLE public.bookings (
     CONSTRAINT valid_booking_type CHECK (booking_type IN ('appointment', 'class'))
 );
 
--- Enable RLS on both tables
 ALTER TABLE public.mb_sessions ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.bookings ENABLE ROW LEVEL SECURITY;
 
--- Create index for faster lookups
-CREATE INDEX idx_mb_sessions_mindbody_client_id ON public.mb_sessions(mindbody_client_id);
-CREATE INDEX idx_bookings_session_id ON public.bookings(session_id);
-CREATE INDEX idx_bookings_start_time ON public.bookings(start_time);
+CREATE INDEX IF NOT EXISTS idx_mb_sessions_mindbody_client_id ON public.mb_sessions(mindbody_client_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_session_id ON public.bookings(session_id);
+CREATE INDEX IF NOT EXISTS idx_bookings_start_time ON public.bookings(start_time);
 
--- RLS Policies for mb_sessions
--- Sessions are managed by edge functions, so we allow service role full access
--- Regular users cannot directly access this table (they go through edge functions)
+DROP POLICY IF EXISTS "Service role can manage mb_sessions" ON public.mb_sessions;
 CREATE POLICY "Service role can manage mb_sessions"
 ON public.mb_sessions
 FOR ALL
 USING (true)
 WITH CHECK (true);
 
--- RLS Policies for bookings
--- Bookings are also managed via edge functions
+DROP POLICY IF EXISTS "Service role can manage bookings" ON public.bookings;
 CREATE POLICY "Service role can manage bookings"
 ON public.bookings
 FOR ALL
 USING (true)
 WITH CHECK (true);
 
--- Create function to update timestamps
 CREATE OR REPLACE FUNCTION public.update_mb_sessions_updated_at()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -67,7 +75,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
--- Create trigger for automatic timestamp updates
+DROP TRIGGER IF EXISTS update_mb_sessions_updated_at ON public.mb_sessions;
 CREATE TRIGGER update_mb_sessions_updated_at
 BEFORE UPDATE ON public.mb_sessions
 FOR EACH ROW

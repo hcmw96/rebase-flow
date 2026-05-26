@@ -1,4 +1,6 @@
 -- First clear existing services and add the actual services from the /services page
+DELETE FROM public.client_packages;
+DELETE FROM public.packages;
 DELETE FROM public.services;
 
 -- Insert the actual services from the Services page

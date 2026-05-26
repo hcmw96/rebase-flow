@@ -45,7 +45,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <CookieConsent />
+          {!navigator.userAgent.includes('despia') && <CookieConsent />}
           <ScrollToTop />
           <Routes>
             <Route path="/website" element={<Index />} />

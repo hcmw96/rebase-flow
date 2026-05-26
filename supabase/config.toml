@@ -1,4 +1,4 @@
-project_id = "ipmrdxtgrxvwzbrbiuvz"
+project_id = "yzlhwvwdkardcuipwwtq"
 
 # Mindbody redirects here via form_post without a Supabase JWT
 [functions.mindbody-oauth-init]

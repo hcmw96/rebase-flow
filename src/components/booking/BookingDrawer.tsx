@@ -349,7 +349,10 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                   <ChevronLeft className="h-5 w-5 text-white" />
                 </button>
                 <button
-                  onClick={onClose}
+                  onClick={() => {
+                    if (navigator.userAgent.includes('despia')) despia('lighthaptic://');
+                    onClose();
+                  }}
                   className="p-2 rounded-full bg-black/40 backdrop-blur-sm hover:bg-black/60 transition-colors"
                 >
                   <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

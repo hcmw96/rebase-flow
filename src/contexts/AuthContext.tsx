@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import despia from 'despia-native';
 
 interface MindbodySession {
   sessionId: string;
@@ -36,6 +37,17 @@ function parseHashPayload<T>(hash: string, key: string): T | null {
 
 function persistSession(session: MindbodySession) {
   localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(session));
+}
+
+function registerNativePush(session: MindbodySession) {
+  const isNative = navigator.userAgent.includes('despia');
+  if (isNative) {
+    despia('registerpush://');
+    if (session.email) {
+      const userId = btoa(session.email).replace(/[^a-zA-Z0-9]/g, '').substring(0, 32);
+      despia(`setonesignalplayerid://?user_id=${userId}`);
+    }
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -84,6 +96,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       persistSession(session);
       setMbSession(session);
+      registerNativePush(session);
       window.history.replaceState(null, '', window.location.pathname + window.location.search);
       setIsLoading(false);
       return;
@@ -95,6 +108,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(stored) as MindbodySession;
         setMbSession(parsed);
+        registerNativePush(parsed);
       } catch {
         localStorage.removeItem(MB_STORAGE_KEY);
       }
