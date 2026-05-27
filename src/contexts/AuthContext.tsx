@@ -169,58 +169,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Failed to get login URL');
       }
 
-      // Native: redirect the full page instead of popup
-      if (isNative) {
-        window.location.href = data.authUrl;
-        return;
-      }
-
-      // Web: open popup
-      const width = 500;
-      const height = 600;
-      const left = window.screenX + (window.outerWidth - width) / 2;
-      const top = window.screenY + (window.outerHeight - height) / 2;
-
-      const popup = window.open(
-        data.authUrl,
-        'rebase-mb-login',
-        `width=${width},height=${height},left=${left},top=${top},popup=yes`
-      );
-
-      // Hide redirect overlay once the popup is open — overlay was only needed for native full-page redirects.
-      setIsRedirecting(false);
-
-      const handleMessage = (event: MessageEvent) => {
-        if (event.origin !== window.location.origin) return;
-        if (event.data?.type !== 'rebase-oauth-callback') return;
-
-        if (event.data.error) {
-          console.error('Mindbody sign-in failed:', event.data.error);
-          setIsRedirecting(false);
-          popup?.close();
-          window.removeEventListener('message', handleMessage);
-          return;
-        }
-
-        if (event.data.session) {
-          const session = event.data.session as MindbodySession;
-          persistSession(session);
-          setMbSession(session);
-          setIsRedirecting(false);
-          popup?.close();
-          window.removeEventListener('message', handleMessage);
-        }
-      };
-
-      window.addEventListener('message', handleMessage);
-
-      const check = setInterval(() => {
-        if (popup?.closed) {
-          clearInterval(check);
-          setIsRedirecting(false);
-          window.removeEventListener('message', handleMessage);
-        }
-      }, 500);
+      // Use full-page redirect for both native and web.
+      // Popup OAuth can be blocked/blanked by browser cross-origin restrictions.
+      window.location.href = data.authUrl;
+      return;
     } catch (error) {
       console.error('Login error:', error);
       setIsRedirecting(false);
