@@ -25,6 +25,7 @@ interface StatePayload {
   csrf?: string;
   native?: boolean;
   origin?: string;
+  returnTo?: string;
 }
 
 function decodeJwtPayload(token: string): IdTokenPayload {
@@ -64,7 +65,11 @@ function htmlEscape(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function renderPopupBridgeHtml(payload: { session?: Record<string, unknown>; error?: string }, origin?: string) {
+function renderPopupBridgeHtml(
+  payload: { session?: Record<string, unknown>; error?: string },
+  origin?: string,
+  returnTo?: string,
+) {
   const callbackPayload = payload.error
     ? { type: "rebase-oauth-callback", error: payload.error }
     : { type: "rebase-oauth-callback", session: payload.session };
@@ -73,7 +78,8 @@ function renderPopupBridgeHtml(payload: { session?: Record<string, unknown>; err
   const fallbackHashValue = encodeURIComponent(
     btoa(JSON.stringify(payload.error ? { error: payload.error } : payload.session)),
   );
-  const fallbackLocation = origin ? `${origin}/#${fallbackHashKey}=${fallbackHashValue}` : "";
+  const safeReturnTo = returnTo && returnTo.startsWith("/") ? returnTo : "/";
+  const fallbackLocation = origin ? `${origin}${safeReturnTo}#${fallbackHashKey}=${fallbackHashValue}` : "";
   const successText = payload.error ? "Authentication failed" : "Authentication successful";
 
   return `<!doctype html>
@@ -200,7 +206,7 @@ serve(async (req) => {
         if (error) {
           console.error("OAuth error from Mindbody:", error);
           return new Response(
-            renderPopupBridgeHtml({ error: String(error) }, statePayload.origin),
+            renderPopupBridgeHtml({ error: String(error) }, statePayload.origin, statePayload.returnTo),
             { headers: { "Content-Type": "text/html" }, status: 200 }
           );
         }
@@ -212,7 +218,7 @@ serve(async (req) => {
         const sessionData = await exchangeAndSaveSession(code, redirectUri);
 
         return new Response(
-          renderPopupBridgeHtml({ session: sessionData }, statePayload.origin),
+          renderPopupBridgeHtml({ session: sessionData }, statePayload.origin, statePayload.returnTo),
           { headers: { "Content-Type": "text/html" }, status: 200 }
         );
       }

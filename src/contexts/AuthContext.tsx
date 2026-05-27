@@ -161,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify({
           native: isNative,
           origin: window.location.origin,
+          returnTo: `${window.location.pathname}${window.location.search}`,
         }),
       });
 

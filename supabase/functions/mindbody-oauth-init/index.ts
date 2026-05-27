@@ -19,13 +19,15 @@ serve(async (req) => {
       throw new Error("Missing Mindbody OAuth configuration");
     }
 
-    // Parse request body for optional native flag and origin
+    // Parse request body for optional native flag, origin, and return path
     let native = false;
     let origin = "";
+    let returnTo = "/";
     try {
       const body = await req.json();
       native = !!body.native;
       origin = body.origin || "";
+      returnTo = body.returnTo || "/";
     } catch {
       // empty body is fine
     }
@@ -38,6 +40,7 @@ serve(async (req) => {
       csrf: crypto.randomUUID(),
       native,
       origin,
+      returnTo,
     });
     const state = btoa(statePayload);
 
