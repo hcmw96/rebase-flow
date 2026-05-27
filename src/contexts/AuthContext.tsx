@@ -116,6 +116,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(false);
   }, []);
 
+  // Main window: receive session from OAuth popup via postMessage
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
+      if (event.data?.type !== 'rebase-oauth-callback') return;
+
+      if (event.data.session) {
+        const session = event.data.session as MindbodySession;
+        persistSession(session);
+        setMbSession(session);
+        setIsRedirecting(false);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+    return () => window.removeEventListener('message', handleMessage);
+  }, []);
+
   const login = useCallback(async () => {
     setIsRedirecting(true);
     try {
