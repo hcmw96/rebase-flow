@@ -39,6 +39,23 @@ function persistSession(session: MindbodySession) {
   localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(session));
 }
 
+function isValidMindbodySession(value: unknown): value is MindbodySession {
+  if (!value || typeof value !== 'object') return false;
+  const session = value as Record<string, unknown>;
+  const optionalStringOrNull = (field: unknown) =>
+    field === null || typeof field === 'string' || typeof field === 'undefined';
+
+  return (
+    typeof session.sessionId === 'string' &&
+    session.sessionId.length > 0 &&
+    typeof session.expiresAt === 'string' &&
+    session.expiresAt.length > 0 &&
+    optionalStringOrNull(session.email) &&
+    optionalStringOrNull(session.firstName) &&
+    optionalStringOrNull(session.lastName)
+  );
+}
+
 function registerNativePush(session: MindbodySession) {
   const isNative = navigator.userAgent.includes('despia');
   if (isNative) {
@@ -119,11 +136,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Main window: receive session from OAuth popup via postMessage
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return;
       if (event.data?.type !== 'rebase-oauth-callback') return;
 
-      if (event.data.session) {
-        const session = event.data.session as MindbodySession;
+      if (isValidMindbodySession(event.data.session)) {
+        const session = event.data.session;
         persistSession(session);
         setMbSession(session);
         setIsRedirecting(false);

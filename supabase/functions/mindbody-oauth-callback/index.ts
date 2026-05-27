@@ -45,7 +45,7 @@ function parseState(stateStr: string): StatePayload {
   }
 }
 
-/** Redirect browser (popup or full page) back to the app with session or error in the URL hash. */
+/** Redirect browser (full page fallback) back to the app with session or error in the URL hash. */
 function redirectToApp(origin: string, payload: { session?: Record<string, unknown>; error?: string }) {
   const hashKey = payload.error ? "auth-error" : "auth-session";
   const hashValue = encodeURIComponent(btoa(JSON.stringify(payload.error ? { error: payload.error } : payload.session)));
@@ -53,6 +53,51 @@ function redirectToApp(origin: string, payload: { session?: Record<string, unkno
     status: 302,
     headers: { Location: `${origin}/#${hashKey}=${hashValue}` },
   });
+}
+
+function htmlEscape(value: string): string {
+  return value
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+function renderPopupBridgeHtml(payload: { session?: Record<string, unknown>; error?: string }, origin?: string) {
+  const callbackPayload = payload.error
+    ? { type: "rebase-oauth-callback", error: payload.error }
+    : { type: "rebase-oauth-callback", session: payload.session };
+  const serializedPayload = JSON.stringify(callbackPayload);
+  const fallbackHashKey = payload.error ? "auth-error" : "auth-session";
+  const fallbackHashValue = encodeURIComponent(
+    btoa(JSON.stringify(payload.error ? { error: payload.error } : payload.session)),
+  );
+  const fallbackLocation = origin ? `${origin}/#${fallbackHashKey}=${fallbackHashValue}` : "";
+  const successText = payload.error ? "Authentication failed" : "Authentication successful";
+
+  return `<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>${htmlEscape(successText)}</title>
+  </head>
+  <body>
+    <p>${htmlEscape(successText)}. You can close this window.</p>
+    <script>
+      (function () {
+        const payload = ${serializedPayload};
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(payload, '*');
+          window.close();
+          return;
+        }
+        const fallback = ${JSON.stringify(fallbackLocation)};
+        if (fallback) window.location.replace(fallback);
+      })();
+    </script>
+  </body>
+</html>`;
 }
 
 async function exchangeAndSaveSession(code: string, redirectUri: string) {
@@ -154,13 +199,8 @@ serve(async (req) => {
 
         if (error) {
           console.error("OAuth error from Mindbody:", error);
-
-          if (statePayload.origin) {
-            return redirectToApp(statePayload.origin, { error: String(error) });
-          }
-
           return new Response(
-            `<html><body><p>Authentication failed: ${error}</p></body></html>`,
+            renderPopupBridgeHtml({ error: String(error) }, statePayload.origin),
             { headers: { "Content-Type": "text/html" }, status: 200 }
           );
         }
@@ -171,15 +211,8 @@ serve(async (req) => {
 
         const sessionData = await exchangeAndSaveSession(code, redirectUri);
 
-        // Redirect to app origin (popup or full-page). AuthContext reads #auth-session and
-        // forwards to window.opener when present — postMessage from supabase.co is unreliable
-        // after Mindbody's cross-origin form_post chain.
-        if (statePayload.origin) {
-          return redirectToApp(statePayload.origin, { session: sessionData });
-        }
-
         return new Response(
-          `<html><body><p>Authentication successful but no return URL was configured.</p></body></html>`,
+          renderPopupBridgeHtml({ session: sessionData }, statePayload.origin),
           { headers: { "Content-Type": "text/html" }, status: 200 }
         );
       }
@@ -200,7 +233,10 @@ serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error);
 
     if (formPostOrigin) {
-      return redirectToApp(formPostOrigin, { error: message });
+      return new Response(
+        renderPopupBridgeHtml({ error: message }, formPostOrigin),
+        { headers: { "Content-Type": "text/html" }, status: 200 }
+      );
     }
 
     return new Response(
