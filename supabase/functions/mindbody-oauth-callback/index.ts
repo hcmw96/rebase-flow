@@ -143,6 +143,23 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
   let userInfo: IdTokenPayload = { sub: "" };
   if (tokens.id_token) {
     userInfo = decodeJwtPayload(tokens.id_token);
+  } else {
+    const userInfoResponse = await fetch("https://signin.mindbodyonline.com/connect/userinfo", {
+      method: "GET",
+      headers: {
+        "Authorization": `Bearer ${tokens.access_token}`,
+      },
+    });
+    if (!userInfoResponse.ok) {
+      const infoError = await userInfoResponse.text();
+      console.error("Userinfo fetch failed:", infoError);
+      throw new Error("Failed to load user profile from Mindbody");
+    }
+    userInfo = await userInfoResponse.json();
+  }
+
+  if (!userInfo.sub) {
+    throw new Error("Mindbody user profile missing subject ID");
   }
 
   const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);

@@ -45,7 +45,7 @@ serve(async (req) => {
     const state = btoa(statePayload);
 
     const authUrl = new URL("https://signin.mindbodyonline.com/connect/authorize");
-    authUrl.searchParams.set("response_type", "code id_token");
+    authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set(
