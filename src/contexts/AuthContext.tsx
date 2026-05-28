@@ -1,13 +1,13 @@
 import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import despia from 'despia-native';
+import { toast } from 'sonner';
+import {
+  type MindbodySession,
+  readOAuthReturnFromUrl,
+  clearOAuthParamsFromUrl,
+} from '@/lib/oauthReturn';
 
-interface MindbodySession {
-  sessionId: string;
-  email: string | null;
-  firstName: string | null;
-  lastName: string | null;
-  expiresAt: string;
-}
+export type { MindbodySession };
 
 interface AuthContextType {
   mbSession: MindbodySession | null;
@@ -66,30 +66,6 @@ function getOAuthReturnTo(): string {
   return '/website';
 }
 
-function decodeHashPayload<T>(encoded: string): T | null {
-  try {
-    const binary = atob(decodeURIComponent(encoded));
-    const bytes = new Uint8Array(binary.length);
-    for (let i = 0; i < binary.length; i++) {
-      bytes[i] = binary.charCodeAt(i);
-    }
-    return JSON.parse(new TextDecoder().decode(bytes)) as T;
-  } catch {
-    return null;
-  }
-}
-
-function parseHashPayload<T>(hash: string, key: string): T | null {
-  const marker = `#${key}=`;
-  if (!hash.includes(marker)) return null;
-  const encoded = hash.split(marker)[1]?.split('&')[0] ?? '';
-  const decoded = decodeHashPayload<T>(encoded);
-  if (!decoded) {
-    console.error(`Failed to parse ${key} from URL hash`);
-  }
-  return decoded;
-}
-
 function persistSession(session: MindbodySession) {
   localStorage.setItem(MB_STORAGE_KEY, JSON.stringify(session));
 }
@@ -133,37 +109,29 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // OAuth return: #auth-session= or #auth-error= in hash (native full-page or web popup)
+  // OAuth return: ?auth-session= or #auth-session= (query survives form_post redirects better)
   useEffect(() => {
-    const hash = window.location.hash;
     const appOrigin = window.location.origin;
+    const oauthReturn = readOAuthReturnFromUrl();
 
-    const authErrorPayload = parseHashPayload<{ error?: string }>(hash, 'auth-error');
-    if (authErrorPayload?.error) {
-      setAuthError(authErrorPayload.error);
+    if (oauthReturn?.kind === 'error') {
+      setAuthError(oauthReturn.error);
+      toast.error('Mindbody sign-in failed', { description: oauthReturn.error });
       if (window.opener && !window.opener.closed) {
         window.opener.postMessage(
-          { type: 'rebase-oauth-callback', error: authErrorPayload.error },
-          appOrigin
+          { type: 'rebase-oauth-callback', error: oauthReturn.error },
+          appOrigin,
         );
         window.close();
       }
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      clearOAuthParamsFromUrl();
       setIsLoading(false);
       return;
     }
 
-    const decoded = parseHashPayload<MindbodySession>(hash, 'auth-session');
-    if (decoded?.sessionId) {
-      const session: MindbodySession = {
-        sessionId: decoded.sessionId,
-        email: decoded.email ?? null,
-        firstName: decoded.firstName ?? null,
-        lastName: decoded.lastName ?? null,
-        expiresAt: decoded.expiresAt,
-      };
+    if (oauthReturn?.kind === 'session') {
+      const session = oauthReturn.session;
 
-      // Web popup: opener receives session via postMessage (same-origin, reliable)
       if (window.opener && !window.opener.closed) {
         window.opener.postMessage({ type: 'rebase-oauth-callback', session }, appOrigin);
         window.close();
@@ -175,7 +143,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       persistSession(session);
       setMbSession(session);
       registerNativePush(session);
-      window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      clearOAuthParamsFromUrl();
       setIsLoading(false);
       return;
     }

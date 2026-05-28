@@ -55,10 +55,49 @@
     </div>
     <script>
       (function () {
-        var h = window.location.hash || '';
-        if (h.indexOf('#auth-session=') !== -1 || h.indexOf('#auth-error=') !== -1) {
+        function readOAuthParam(key) {
+          var params = new URLSearchParams(window.location.search);
+          var fromQuery = params.get(key);
+          if (fromQuery) return fromQuery;
+          var h = window.location.hash || '';
+          var marker = '#' + key + '=';
+          if (h.indexOf(marker) === -1) return null;
+          return h.split(marker)[1].split('&')[0];
+        }
+        function decodePayload(encoded) {
+          try {
+            var binary = atob(decodeURIComponent(encoded));
+            var bytes = new Uint8Array(binary.length);
+            for (var i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            return JSON.parse(new TextDecoder().decode(bytes));
+          } catch (e1) {
+            try {
+              return JSON.parse(atob(decodeURIComponent(encoded)));
+            } catch (e2) {
+              return null;
+            }
+          }
+        }
+        var hasOAuth =
+          window.location.search.indexOf('auth-session=') !== -1 ||
+          window.location.search.indexOf('auth-error=') !== -1 ||
+          (window.location.hash || '').indexOf('#auth-session=') !== -1 ||
+          (window.location.hash || '').indexOf('#auth-error=') !== -1;
+        if (hasOAuth) {
           var el = document.getElementById('boot-loader');
           if (el) el.classList.add('show');
+        }
+        var raw = readOAuthParam('auth-session');
+        if (!raw) return;
+        var data = decodePayload(raw);
+        if (data && data.sessionId && data.expiresAt) {
+          localStorage.setItem('mb_session', JSON.stringify({
+            sessionId: data.sessionId,
+            email: data.email != null ? data.email : null,
+            firstName: data.firstName != null ? data.firstName : null,
+            lastName: data.lastName != null ? data.lastName : null,
+            expiresAt: data.expiresAt
+          }));
         }
       })();
     </script>

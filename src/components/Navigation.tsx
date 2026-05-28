@@ -3,6 +3,7 @@ import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, ChevronDown, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/contexts/AuthContext";
 import wordmark from "@/assets/rebase-wordmark.png";
 
 const locations = [
@@ -19,6 +20,7 @@ const Navigation = () => {
   const locationRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
+  const { isAuthenticated, mbSession, isLoading: authLoading } = useAuth();
 
   const handleBookNow = () => {
     setIsOpen(false);
@@ -196,7 +198,13 @@ const Navigation = () => {
                     : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                 )}
               >
-                Sign in
+                {authLoading
+                  ? "…"
+                  : isAuthenticated
+                    ? mbSession?.firstName
+                      ? `Hi, ${mbSession.firstName}`
+                      : "Members"
+                    : "Sign in"}
               </Button>
             </Link>
           </div>
@@ -294,7 +302,11 @@ const Navigation = () => {
                 </Button>
                 <Link to="/members" className="flex-1" onClick={() => setIsOpen(false)}>
                   <Button className={cn("w-full rounded-none tracking-wider text-sm", scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]")}>
-                    Sign in
+                    {isAuthenticated
+                      ? mbSession?.firstName
+                        ? `Hi, ${mbSession.firstName}`
+                        : "Members"
+                      : "Sign in"}
                   </Button>
                 </Link>
               </div>

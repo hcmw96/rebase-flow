@@ -62,12 +62,13 @@ function redirectToApp(
   payload: { session?: Record<string, unknown>; error?: string },
   returnTo?: string,
 ) {
-  const hashKey = payload.error ? "auth-error" : "auth-session";
-  const hashData = payload.error ? { error: payload.error } : payload.session;
-  const hashValue = encodeHashPayload(hashData);
+  const paramKey = payload.error ? "auth-error" : "auth-session";
+  const paramData = payload.error ? { error: payload.error } : payload.session;
+  const paramValue = encodeHashPayload(paramData);
   const safeReturnTo = returnTo?.startsWith("/") ? returnTo : "/";
   const url = new URL(safeReturnTo, origin);
-  url.hash = `${hashKey}=${hashValue}`;
+  // Query params survive Mindbody form_post → 302 better than URL fragments.
+  url.searchParams.set(paramKey, paramValue);
   return new Response(null, {
     status: 302,
     headers: { Location: url.toString() },
