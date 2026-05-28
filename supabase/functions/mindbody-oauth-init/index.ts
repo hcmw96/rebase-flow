@@ -44,21 +44,23 @@ serve(async (req) => {
     });
     const state = btoa(statePayload);
 
+    const scope = "openid email profile offline_access Mindbody.Api.Public.v6";
     const authUrl = new URL("https://signin.mindbodyonline.com/connect/authorize");
     authUrl.searchParams.set("response_type", "code");
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
-    authUrl.searchParams.set(
-      "scope",
-      "openid email profile offline_access Mindbody.Api.Public.v6"
-    );
+    authUrl.searchParams.set("scope", scope);
     authUrl.searchParams.set("subscriberId", siteId);
     authUrl.searchParams.set("state", state);
     authUrl.searchParams.set("nonce", crypto.randomUUID());
     authUrl.searchParams.set("response_mode", "form_post");
+    const authUrlString = authUrl.toString().replace(
+      /scope=[^&]*/,
+      `scope=${encodeURIComponent(scope)}`
+    );
 
     return new Response(
-      JSON.stringify({ authUrl: authUrl.toString(), state }),
+      JSON.stringify({ authUrl: authUrlString, state }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
