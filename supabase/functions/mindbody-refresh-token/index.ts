@@ -41,6 +41,19 @@ serve(async (req) => {
       throw new Error("Session not found");
     }
 
+    if (!session.refresh_token) {
+      return new Response(
+        JSON.stringify({
+          error: "Session expired, please log in again",
+          requiresLogin: true,
+        }),
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 401,
+        },
+      );
+    }
+
     // Refresh the token
     const tokenResponse = await fetch("https://signin.mindbodyonline.com/connect/token", {
       method: "POST",
@@ -81,7 +94,7 @@ serve(async (req) => {
       .from("mb_sessions")
       .update({
         access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        refresh_token: tokens.refresh_token || session.refresh_token,
         token_expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
       })

@@ -6,17 +6,33 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 async function parseFunctionError(
   response: Response,
   fallback: string,
-): Promise<string> {
+): Promise<{ message: string; requiresLogin?: boolean }> {
   try {
     const body = await response.json();
-    if (typeof body?.error === 'string' && body.error) return body.error;
-    if (typeof body?.message === 'string' && body.message) return body.message;
+    if (body?.requiresLogin) {
+      return {
+        message:
+          (typeof body.error === 'string' && body.error) ||
+          'Session expired. Please log in again.',
+        requiresLogin: true,
+      };
+    }
+    if (typeof body?.error === 'string' && body.error) {
+      return { message: body.error };
+    }
+    if (typeof body?.message === 'string' && body.message) {
+      return { message: body.message };
+    }
   } catch {
     /* non-JSON body */
   }
-  return response.status === 401
-    ? 'Booking request was rejected. Please sign in and try again.'
-    : `${fallback} (${response.status})`;
+  if (response.status === 401) {
+    return {
+      message: 'Session expired. Please log in again.',
+      requiresLogin: true,
+    };
+  }
+  return { message: `${fallback} (${response.status})` };
 }
 
 export interface Booking {
@@ -95,7 +111,7 @@ export function useMyBookings() {
 }
 
 export function useBookService() {
-  const { mbSession } = useAuth();
+  const { mbSession, logout } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -114,8 +130,12 @@ export function useBookService() {
       });
 
       if (!response.ok) {
-        const message = await parseFunctionError(response, 'Failed to book');
-        throw new Error(message);
+        const parsed = await parseFunctionError(response, 'Failed to book');
+        if (parsed.requiresLogin) {
+          localStorage.removeItem('mb_session');
+          logout();
+        }
+        throw new Error(parsed.message);
       }
 
       return response.json();
@@ -146,8 +166,8 @@ export function useCancelBooking() {
       });
 
       if (!response.ok) {
-        const message = await parseFunctionError(response, 'Failed to cancel');
-        throw new Error(message);
+        const parsed = await parseFunctionError(response, 'Failed to cancel');
+        throw new Error(parsed.message);
       }
 
       return response.json();

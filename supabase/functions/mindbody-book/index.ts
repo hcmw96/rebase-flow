@@ -76,12 +76,25 @@ serve(async (req) => {
       .single();
 
     if (sessionError || !session) {
-      throw new Error("Session not found. Please log in again.");
+      return new Response(
+        JSON.stringify({
+          error: "Session not found. Please log in again.",
+          requiresLogin: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+      );
     }
 
-    // Check if token needs refresh
-    if (new Date(session.token_expires_at) <= new Date()) {
-      throw new Error("Session expired. Please log in again.");
+    const tokenExpiresMs = new Date(session.token_expires_at).getTime();
+    const expiryBufferMs = 2 * 60 * 1000;
+    if (Number.isNaN(tokenExpiresMs) || tokenExpiresMs - expiryBufferMs <= Date.now()) {
+      return new Response(
+        JSON.stringify({
+          error: "Session expired. Please log in again.",
+          requiresLogin: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+      );
     }
 
     // Diagnostic: decode token site claim
@@ -135,8 +148,15 @@ serve(async (req) => {
         const rawText = await response.text();
         console.error("Class booking error raw:", response.status, rawText);
         let errorData: any = {};
-        try { errorData = JSON.parse(rawText); } catch {}
-        throw new Error(errorData.Error?.Message || rawText || "Failed to book class");
+        try { errorData = JSON.parse(rawText); } catch { /* non-JSON */ }
+        const mbMessage = errorData.Error?.Message || rawText || "Failed to book class";
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({ error: mbMessage, requiresLogin: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+          );
+        }
+        throw new Error(mbMessage);
       }
 
       bookingResult = await response.json();
@@ -173,8 +193,15 @@ serve(async (req) => {
         const rawText = await response.text();
         console.error("Appointment booking error raw:", response.status, rawText);
         let errorData: any = {};
-        try { errorData = JSON.parse(rawText); } catch {}
-        throw new Error(errorData.Error?.Message || rawText || "Failed to book appointment");
+        try { errorData = JSON.parse(rawText); } catch { /* non-JSON */ }
+        const mbMessage = errorData.Error?.Message || rawText || "Failed to book appointment";
+        if (response.status === 401) {
+          return new Response(
+            JSON.stringify({ error: mbMessage, requiresLogin: true }),
+            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+          );
+        }
+        throw new Error(mbMessage);
       }
 
       bookingResult = await response.json();

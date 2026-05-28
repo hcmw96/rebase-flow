@@ -72,7 +72,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 );
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
-  const { mbSession, isAuthenticated, logout, login } = useAuth();
+  const { mbSession, isAuthenticated, login } = useAuth();
   const bookServiceMutation = useBookService();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -280,9 +280,9 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
       const classified = classifyBookingError(error?.message);
 
       if (classified.kind === 'session_expired') {
-        toast.error(classified.message);
-        logout();
-        setTimeout(() => login(), 300);
+        toast.error(classified.message, {
+          action: { label: 'Sign in', onClick: () => login() },
+        });
       } else if (classified.kind === 'payment_required') {
         toast.error(classified.message, {
           action: {

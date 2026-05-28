@@ -20,7 +20,7 @@ const Navigation = () => {
   const locationRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, mbSession, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, mbSession, isLoading: authLoading, login, isRedirecting } = useAuth();
 
   const handleBookNow = () => {
     setIsOpen(false);
@@ -189,8 +189,24 @@ const Navigation = () => {
               Book Now
               <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
-            <Link to="/members">
+            {isAuthenticated ? (
+              <Link to="/account">
+                <Button
+                  className={cn(
+                    "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
+                    scrolled
+                      ? "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
+                      : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
+                  )}
+                >
+                  {mbSession?.firstName ? `Hi, ${mbSession.firstName}` : "My account"}
+                </Button>
+              </Link>
+            ) : (
               <Button
+                type="button"
+                onClick={() => login()}
+                disabled={authLoading || isRedirecting}
                 className={cn(
                   "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
                   scrolled
@@ -198,15 +214,9 @@ const Navigation = () => {
                     : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
                 )}
               >
-                {authLoading
-                  ? "…"
-                  : isAuthenticated
-                    ? mbSession?.firstName
-                      ? `Hi, ${mbSession.firstName}`
-                      : "Members"
-                    : "Sign in"}
+                {authLoading || isRedirecting ? "…" : "Sign in"}
               </Button>
-            </Link>
+            )}
           </div>
 
           {/* Mobile: Book Now + Hamburger */}
@@ -300,15 +310,33 @@ const Navigation = () => {
                 <Button variant="outline" onClick={handleBookNow} className={cn("flex-1 rounded-none tracking-wider text-sm", borderColor, textColor)}>
                   Book Now <ChevronRight className="ml-1 h-3.5 w-3.5" />
                 </Button>
-                <Link to="/members" className="flex-1" onClick={() => setIsOpen(false)}>
-                  <Button className={cn("w-full rounded-none tracking-wider text-sm", scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]")}>
-                    {isAuthenticated
-                      ? mbSession?.firstName
-                        ? `Hi, ${mbSession.firstName}`
-                        : "Members"
-                      : "Sign in"}
+                {isAuthenticated ? (
+                  <Link to="/account" className="flex-1" onClick={() => setIsOpen(false)}>
+                    <Button
+                      className={cn(
+                        "w-full rounded-none tracking-wider text-sm",
+                        scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]"
+                      )}
+                    >
+                      {mbSession?.firstName ? `Hi, ${mbSession.firstName}` : "My account"}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button
+                    type="button"
+                    className={cn(
+                      "flex-1 rounded-none tracking-wider text-sm",
+                      scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]"
+                    )}
+                    disabled={authLoading || isRedirecting}
+                    onClick={() => {
+                      setIsOpen(false);
+                      login();
+                    }}
+                  >
+                    Sign in
                   </Button>
-                </Link>
+                )}
               </div>
             </div>
           </div>

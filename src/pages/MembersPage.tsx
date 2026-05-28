@@ -65,21 +65,21 @@ const formatRelativeDay = (date: Date) => {
   return format(date, 'EEE d MMM');
 };
 
-const SignedOutView = ({ onLogin }: { onLogin: () => void }) => (
+const MembersPortalNotice = () => (
   <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center max-w-md mx-auto">
     <div className="w-16 h-16 rounded-full bg-[#3B2712]/[0.06] flex items-center justify-center mb-6">
       <Crown className="h-7 w-7 text-[#3B2712]/60" strokeWidth={1.25} />
     </div>
-    <h1 className="text-3xl font-light text-[#3B2712] tracking-tight mb-3">Members</h1>
+    <h1 className="text-3xl font-light text-[#3B2712] tracking-tight mb-3">Member portal</h1>
     <p className="text-sm text-[#3B2712]/60 mb-8 leading-relaxed">
-      Sign in with your Rebase account to view your membership, allowances and bookings.
+      This area is for Rebase membership holders — allowances, perks and member-only tools. To book a
+      session with your Mindbody account, sign in from the main site.
     </p>
-    <Button
-      onClick={onLogin}
-      className="rounded-none px-8 h-11 bg-[#3B2712] text-[#F9ECD9] hover:bg-[#3B2712]/90 tracking-[0.08em] text-[13px]"
-    >
-      Sign In <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
-    </Button>
+    <Link to="/account">
+      <Button className="rounded-none px-8 h-11 w-full bg-[#3B2712] text-[#F9ECD9] hover:bg-[#3B2712]/90 tracking-[0.08em] text-[13px]">
+        Sign in to book <ChevronRight className="ml-1.5 h-3.5 w-3.5" />
+      </Button>
+    </Link>
     <Link
       to="/membership"
       className="mt-5 text-[12px] uppercase tracking-[0.18em] text-[#3B2712]/50 hover:text-[#3B2712] transition-colors"
@@ -471,7 +471,7 @@ const ConciergeAndAccount = ({
 };
 
 const MembersPage = () => {
-  const { mbSession, isAuthenticated, isLoading: authLoading, login, logout } = useAuth();
+  const { mbSession, isAuthenticated, isLoading: authLoading, logout } = useAuth();
   const { data: bookingsData, isLoading: bookingsLoading } = useMyBookings();
   const { data: membershipData, isLoading: membershipLoading } = useClientMembership();
 
@@ -520,7 +520,7 @@ const MembersPage = () => {
             <Loader2 className="h-7 w-7 animate-spin text-[#3B2712]/40" />
           </div>
         ) : !isAuthenticated ? (
-          <SignedOutView onLogin={login} />
+          <MembersPortalNotice />
         ) : isLoading ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
             <Loader2 className="h-7 w-7 animate-spin text-[#3B2712]/40" />

@@ -27,7 +27,9 @@ const AccountPage = () => {
     return (
       <div className="px-4 pt-6 pb-4 max-w-lg mx-auto flex flex-col items-center justify-center min-h-[60vh] space-y-4">
         <User className="h-12 w-12 text-muted-foreground" />
-        <p className="text-sm text-muted-foreground">Sign in to view your account</p>
+        <p className="text-sm text-muted-foreground">
+          Sign in with your Mindbody account to view bookings and manage your visits.
+        </p>
         <Button onClick={login} className="w-full">Sign in with Mindbody</Button>
       </div>
     );

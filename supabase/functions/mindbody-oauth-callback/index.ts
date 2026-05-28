@@ -139,8 +139,11 @@ async function exchangeAndSaveSession(
     throw new Error("Mindbody user profile missing subject ID");
   }
 
-  const expiresAt = new Date(Date.now() + tokens.expires_in * 1000);
-  const supabase = createClient(supabaseUrl, supabaseServiceKey);
+  const expiresInSec = Number(tokens.expires_in) > 0 ? Number(tokens.expires_in) : 3600;
+  const expiresAt = new Date(Date.now() + expiresInSec * 1000);
+  const supabase = createClient(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 
   const { data: session, error: sessionError } = await supabase
     .from("mb_sessions")
@@ -151,7 +154,8 @@ async function exchangeAndSaveSession(
         first_name: userInfo.given_name,
         last_name: userInfo.family_name,
         access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token ?? null,
+        // Mindbody omits refresh_token without offline_access; column may still be NOT NULL on older DBs.
+        refresh_token: tokens.refresh_token || "",
         token_expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
       },
@@ -161,8 +165,8 @@ async function exchangeAndSaveSession(
     .single();
 
   if (sessionError) {
-    console.error("Session upsert error:", sessionError);
-    throw new Error("Failed to save session");
+    console.error("Session upsert error:", sessionError.message, sessionError.details, sessionError.hint);
+    throw new Error(`Failed to save session: ${sessionError.message}`);
   }
 
   return {

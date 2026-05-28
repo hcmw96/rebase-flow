@@ -37,7 +37,7 @@ interface ClassScheduleFlowProps {
 }
 
 const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, login } = useAuth();
   const bookMutation = useBookService();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -117,9 +117,9 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
         msg.includes('session expired') ||
         msg.includes('please log in')
       ) {
-        toast.error('Your sign-in expired. Please sign in again.');
-        logout();
-        setTimeout(() => login(), 300);
+        toast.error('Your sign-in expired. Please sign in again.', {
+          action: { label: 'Sign in', onClick: () => login() },
+        });
       } else {
         toast.error(error?.message || 'Failed to book class. Please try again.');
       }

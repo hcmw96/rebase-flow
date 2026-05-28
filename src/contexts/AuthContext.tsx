@@ -28,8 +28,8 @@ const MB_STORAGE_KEY = 'mb_session';
 const WEBSITE_PATH_PREFIXES = [
   '/website',
   '/account',
+  '/sign-in',
   '/membership',
-  '/members',
   '/contact',
   '/experiences',
   '/faq',
@@ -98,9 +98,28 @@ function registerNativePush(session: MindbodySession) {
   }
 }
 
+/** Match server-side booking buffer so we do not show signed-in with a dead token. */
+const SESSION_EXPIRY_BUFFER_MS = 2 * 60 * 1000;
+
 function isSessionExpired(expiresAt: string): boolean {
   const expires = Date.parse(expiresAt);
-  return Number.isNaN(expires) || expires <= Date.now();
+  return Number.isNaN(expires) || expires - SESSION_EXPIRY_BUFFER_MS <= Date.now();
+}
+
+async function fetchServerSession(sessionId: string): Promise<MindbodySession | null> {
+  const res = await fetch(
+    `${SUPABASE_URL}/functions/v1/mindbody-session-status?sessionId=${encodeURIComponent(sessionId)}`,
+  );
+  if (!res.ok) return null;
+  const data = await res.json();
+  if (!data.valid || !data.session?.sessionId) return null;
+  return {
+    sessionId: data.session.sessionId,
+    email: data.session.email ?? null,
+    firstName: data.session.firstName ?? null,
+    lastName: data.session.lastName ?? null,
+    expiresAt: data.session.expiresAt,
+  };
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -109,61 +128,96 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // OAuth return: ?auth-session= or #auth-session= (query survives form_post redirects better)
+  // OAuth return + restore session from storage (validated against server when online)
   useEffect(() => {
-    const appOrigin = window.location.origin;
-    const oauthReturn = readOAuthReturnFromUrl();
+    let cancelled = false;
 
-    if (oauthReturn?.kind === 'error') {
-      setAuthError(oauthReturn.error);
-      toast.error('Mindbody sign-in failed', { description: oauthReturn.error });
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage(
-          { type: 'rebase-oauth-callback', error: oauthReturn.error },
-          appOrigin,
-        );
-        window.close();
-      }
-      clearOAuthParamsFromUrl();
-      setIsLoading(false);
-      return;
-    }
+    const finish = () => {
+      if (!cancelled) setIsLoading(false);
+    };
 
-    if (oauthReturn?.kind === 'session') {
-      const session = oauthReturn.session;
+    (async () => {
+      const appOrigin = window.location.origin;
+      const oauthReturn = readOAuthReturnFromUrl();
 
-      if (window.opener && !window.opener.closed) {
-        window.opener.postMessage({ type: 'rebase-oauth-callback', session }, appOrigin);
-        window.close();
-        setIsLoading(false);
+      if (oauthReturn?.kind === 'error') {
+        setAuthError(oauthReturn.error);
+        toast.error('Mindbody sign-in failed', { description: oauthReturn.error });
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage(
+            { type: 'rebase-oauth-callback', error: oauthReturn.error },
+            appOrigin,
+          );
+          window.close();
+        }
+        clearOAuthParamsFromUrl();
+        finish();
         return;
       }
 
-      setAuthError(null);
-      persistSession(session);
-      setMbSession(session);
-      registerNativePush(session);
-      clearOAuthParamsFromUrl();
-      setIsLoading(false);
-      return;
-    }
+      if (oauthReturn?.kind === 'session') {
+        const session = oauthReturn.session;
 
-    // Load session from localStorage
-    const stored = localStorage.getItem(MB_STORAGE_KEY);
-    if (stored) {
+        if (window.opener && !window.opener.closed) {
+          window.opener.postMessage({ type: 'rebase-oauth-callback', session }, appOrigin);
+          window.close();
+          finish();
+          return;
+        }
+
+        setAuthError(null);
+        persistSession(session);
+        setMbSession(session);
+        registerNativePush(session);
+        clearOAuthParamsFromUrl();
+        finish();
+        return;
+      }
+
+      const stored = localStorage.getItem(MB_STORAGE_KEY);
+      if (!stored) {
+        finish();
+        return;
+      }
+
       try {
         const parsed = JSON.parse(stored) as MindbodySession;
         if (isSessionExpired(parsed.expiresAt)) {
           localStorage.removeItem(MB_STORAGE_KEY);
+          finish();
+          return;
+        }
+
+        const serverSession = await fetchServerSession(parsed.sessionId);
+        if (cancelled) return;
+
+        if (serverSession) {
+          persistSession(serverSession);
+          setMbSession(serverSession);
+          registerNativePush(serverSession);
         } else {
-          setMbSession(parsed);
-          registerNativePush(parsed);
+          localStorage.removeItem(MB_STORAGE_KEY);
         }
       } catch {
-        localStorage.removeItem(MB_STORAGE_KEY);
+        try {
+          const parsed = JSON.parse(stored) as MindbodySession;
+          if (!isSessionExpired(parsed.expiresAt)) {
+            setMbSession(parsed);
+            registerNativePush(parsed);
+          } else {
+            localStorage.removeItem(MB_STORAGE_KEY);
+          }
+        } catch {
+          localStorage.removeItem(MB_STORAGE_KEY);
+        }
       }
-    }
-    setIsLoading(false);
+
+      finish();
+    })();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Main window: receive session from OAuth popup via postMessage

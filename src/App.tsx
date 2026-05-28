@@ -51,6 +51,7 @@ const App = () => (
             <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/membership" element={<Membership />} />
             <Route path="/account" element={<WebsiteAccount />} />
+            <Route path="/sign-in" element={<WebsiteAccount />} />
             <Route path="/members" element={<MembersPage />} />
             <Route path="/experiences" element={<Experiences />} />
             <Route path="/contact" element={<Contact />} />
