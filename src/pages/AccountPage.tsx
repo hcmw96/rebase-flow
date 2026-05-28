@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import despia from 'despia-native';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
@@ -12,16 +12,49 @@ import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
 import { DebugMindbodySession } from '@/components/debug/DebugMindbodySession';
 
+const bookingStart = (b: { startTime?: string; startDateTime?: string }) =>
+  new Date(b.startTime || b.startDateTime || 0);
+
 const AccountPage = () => {
-  const { mbSession, isAuthenticated, logout, login } = useAuth();
-  const { data: bookingsData } = useMyBookings();
+  const { mbSession, isAuthenticated, logout, login, refreshMbSession } = useAuth();
+  const { data: bookingsData, isLoading: bookingsLoading } = useMyBookings();
   const { data: membershipData } = useClientMembership();
   const [message, setMessage] = useState('');
   const [showAllHistory, setShowAllHistory] = useState(false);
 
-  const pastBookings = (bookingsData?.bookings || [])
-    .filter((b: any) => new Date(b.startDateTime) < new Date())
-    .sort((a: any, b: any) => new Date(b.startDateTime).getTime() - new Date(a.startDateTime).getTime());
+  useEffect(() => {
+    if (isAuthenticated) {
+      refreshMbSession();
+    }
+  }, [isAuthenticated, refreshMbSession]);
+
+  const profileUser = bookingsData?.user;
+  const displayName = useMemo(() => {
+    const fromSession = `${mbSession?.firstName || ''} ${mbSession?.lastName || ''}`.trim();
+    if (fromSession) return fromSession;
+    const fromBookings = `${profileUser?.firstName || ''} ${profileUser?.lastName || ''}`.trim();
+    if (fromBookings) return fromBookings;
+    return null;
+  }, [mbSession, profileUser]);
+
+  const displayEmail = mbSession?.email || profileUser?.email || null;
+
+  const now = new Date();
+  const allBookings = bookingsData?.bookings || [];
+  const upcomingBookings = useMemo(
+    () =>
+      [...allBookings]
+        .filter((b) => bookingStart(b) >= now)
+        .sort((a, b) => bookingStart(a).getTime() - bookingStart(b).getTime()),
+    [allBookings, now],
+  );
+  const pastBookings = useMemo(
+    () =>
+      [...allBookings]
+        .filter((b) => bookingStart(b) < now)
+        .sort((a, b) => bookingStart(b).getTime() - bookingStart(a).getTime()),
+    [allBookings, now],
+  );
 
   if (!isAuthenticated) {
     return (
@@ -59,16 +92,79 @@ const AccountPage = () => {
             </div>
             <div>
               <h2 className="font-semibold text-black/80">
-                {mbSession?.firstName} {mbSession?.lastName}
+                {displayName || 'Your Mindbody account'}
               </h2>
-              {mbSession?.email && (
+              {displayEmail ? (
                 <p className="text-sm text-black/40 flex items-center gap-1">
                   <Mail className="h-3 w-3" />
-                  {mbSession.email}
+                  {displayEmail}
                 </p>
+              ) : (
+                <p className="text-sm text-black/40">Signed in — ready to book</p>
               )}
             </div>
           </div>
+        </div>
+      </motion.div>
+
+      {/* Upcoming bookings */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.12 }}
+      >
+        <div className="rounded-lg border border-black/[0.06] bg-white/40 p-5 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-full bg-black/[0.04] flex items-center justify-center">
+              <Calendar className="h-4 w-4 text-black/40" />
+            </div>
+            <div>
+              <p className="text-sm font-medium text-black/80">Upcoming sessions</p>
+              <p className="text-xs text-black/40">
+                {bookingsLoading
+                  ? 'Loading…'
+                  : upcomingBookings.length === 0
+                    ? 'Nothing booked yet'
+                    : `${upcomingBookings.length} scheduled`}
+              </p>
+            </div>
+          </div>
+
+          {bookingsLoading ? (
+            <p className="text-sm text-black/40">Loading your bookings…</p>
+          ) : upcomingBookings.length > 0 ? (
+            <div className="space-y-2">
+              {upcomingBookings.map((booking) => (
+                <div
+                  key={booking.id}
+                  className="flex items-center justify-between py-2 border-b border-black/[0.04] last:border-0"
+                >
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium text-black/70 truncate">{booking.serviceName}</p>
+                    <div className="flex items-center gap-2 text-xs text-black/40">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="h-3 w-3" />
+                        {format(bookingStart(booking), 'MMM d, yyyy')}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {format(bookingStart(booking), 'h:mm a')}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <p className="text-sm text-black/50">
+                Book a class or treatment to see it here.
+              </p>
+              <Button asChild variant="outline" className="w-full border-black/10">
+                <Link to="/experiences">Browse experiences</Link>
+              </Button>
+            </div>
+          )}
         </div>
       </motion.div>
 
@@ -183,11 +279,11 @@ const AccountPage = () => {
                     <div className="flex items-center gap-2 text-xs text-black/40">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(new Date(booking.startDateTime), 'MMM d, yyyy')}
+                        {format(bookingStart(booking), 'MMM d, yyyy')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {format(new Date(booking.startDateTime), 'h:mm a')}
+                        {format(bookingStart(booking), 'h:mm a')}
                       </span>
                     </div>
                   </div>

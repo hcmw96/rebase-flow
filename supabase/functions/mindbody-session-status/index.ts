@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { fetchMindbodyClientProfile } from "../_shared/mindbodyClientProfile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -17,6 +18,8 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const apiKey = Deno.env.get("MINDBODY_API_KEY");
+    const siteId = Deno.env.get("MINDBODY_SITE_ID");
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Missing Supabase configuration");
     }
@@ -31,9 +34,9 @@ serve(async (req) => {
       auth: { persistSession: false, autoRefreshToken: false },
     });
 
-    const { data: session, error } = await supabase
+    let { data: session, error } = await supabase
       .from("mb_sessions")
-      .select("id, email, first_name, last_name, token_expires_at, access_token")
+      .select("id, mindbody_client_id, email, first_name, last_name, token_expires_at, access_token")
       .eq("id", sessionId)
       .maybeSingle();
 
@@ -57,6 +60,29 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
       });
+    }
+
+    if (apiKey && siteId && session.mindbody_client_id && (!session.email || !session.first_name)) {
+      const clientProfile = await fetchMindbodyClientProfile(
+        session.mindbody_client_id,
+        session.access_token,
+        apiKey,
+        siteId,
+      );
+      if (clientProfile && (clientProfile.email || clientProfile.firstName)) {
+        const { data: updated } = await supabase
+          .from("mb_sessions")
+          .update({
+            email: clientProfile.email ?? session.email,
+            first_name: clientProfile.firstName ?? session.first_name,
+            last_name: clientProfile.lastName ?? session.last_name,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("id", sessionId)
+          .select("id, mindbody_client_id, email, first_name, last_name, token_expires_at")
+          .single();
+        if (updated) session = { ...session, ...updated };
+      }
     }
 
     return new Response(

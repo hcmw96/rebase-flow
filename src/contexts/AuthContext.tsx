@@ -17,6 +17,7 @@ interface AuthContextType {
   authError: string | null;
   login: () => void;
   logout: () => void;
+  refreshMbSession: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -285,6 +286,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMbSession(null);
   }, []);
 
+  const refreshMbSession = useCallback(async () => {
+    const stored = localStorage.getItem(MB_STORAGE_KEY);
+    if (!stored) return;
+    try {
+      const parsed = JSON.parse(stored) as MindbodySession;
+      const serverSession = await fetchServerSession(parsed.sessionId);
+      if (serverSession) {
+        persistSession(serverSession);
+        setMbSession(serverSession);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
   return (
     <AuthContext.Provider
       value={{
@@ -295,6 +311,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authError,
         login,
         logout,
+        refreshMbSession,
       }}
     >
       {children}

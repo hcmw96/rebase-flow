@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  fetchMindbodyClientProfile,
+  fetchOidcUserInfo,
+  mergeProfiles,
+  normalizeIdTokenPayload,
+  type NormalizedProfile,
+} from "../_shared/mindbodyClientProfile.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,13 +21,6 @@ interface TokenResponse {
   id_token?: string;
 }
 
-interface IdTokenPayload {
-  sub: string;
-  email?: string;
-  given_name?: string;
-  family_name?: string;
-}
-
 interface StatePayload {
   csrf?: string;
   native?: boolean;
@@ -28,12 +28,12 @@ interface StatePayload {
   returnTo?: string;
 }
 
-function decodeJwtPayload(token: string): IdTokenPayload {
+function decodeJwtPayload(token: string): NormalizedProfile {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid JWT format");
   const payload = parts[1];
   const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-  return JSON.parse(decoded);
+  return normalizeIdTokenPayload(JSON.parse(decoded));
 }
 
 function parseState(stateStr: string): StatePayload {
@@ -115,24 +115,25 @@ async function exchangeAndSaveSession(
   const tokens: TokenResponse = await tokenResponse.json();
   console.log("Token exchange successful");
 
-  let userInfo: IdTokenPayload = { sub: "" };
+  let userInfo: NormalizedProfile = { sub: "" };
   if (tokens.id_token) {
     userInfo = decodeJwtPayload(tokens.id_token);
   } else if (idTokenHint) {
     userInfo = decodeJwtPayload(idTokenHint);
-  } else {
-    const userInfoResponse = await fetch("https://signin.mindbodyonline.com/connect/userinfo", {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${tokens.access_token}`,
-      },
-    });
-    if (!userInfoResponse.ok) {
-      const infoError = await userInfoResponse.text();
-      console.error("Userinfo fetch failed:", infoError);
-      throw new Error("Failed to load user profile from Mindbody");
-    }
-    userInfo = await userInfoResponse.json();
+  }
+
+  const oidcInfo = await fetchOidcUserInfo(tokens.access_token);
+  userInfo = mergeProfiles(userInfo, oidcInfo);
+
+  const apiKey = Deno.env.get("MINDBODY_API_KEY");
+  if (userInfo.sub && apiKey && (!userInfo.email || !userInfo.given_name)) {
+    const clientProfile = await fetchMindbodyClientProfile(
+      userInfo.sub,
+      tokens.access_token,
+      apiKey,
+      siteId,
+    );
+    userInfo = mergeProfiles(userInfo, clientProfile);
   }
 
   if (!userInfo.sub) {
