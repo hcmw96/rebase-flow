@@ -44,20 +44,23 @@ serve(async (req) => {
     });
     const state = btoa(statePayload);
 
-    const scope = "openid email profile offline_access Mindbody.Api.Public.v6";
+    const scope = "openid email profile Mindbody.Api.Public.v6";
+    const responseType = "code id_token";
+    const nonce = crypto.randomUUID();
     const authUrl = new URL("https://signin.mindbodyonline.com/connect/authorize");
-    authUrl.searchParams.set("response_type", "code");
+    authUrl.searchParams.set("response_type", responseType);
     authUrl.searchParams.set("client_id", clientId);
     authUrl.searchParams.set("redirect_uri", redirectUri);
     authUrl.searchParams.set("scope", scope);
     authUrl.searchParams.set("subscriberId", siteId);
     authUrl.searchParams.set("state", state);
-    authUrl.searchParams.set("nonce", crypto.randomUUID());
+    authUrl.searchParams.set("nonce", nonce);
     authUrl.searchParams.set("response_mode", "form_post");
-    const authUrlString = authUrl.toString().replace(
-      /scope=[^&]*/,
-      `scope=${encodeURIComponent(scope)}`
-    );
+    // Mindbody expects %20 separators (not +) for response_type and scope.
+    const authUrlString = authUrl
+      .toString()
+      .replace(/response_type=[^&]*/, `response_type=${encodeURIComponent(responseType)}`)
+      .replace(/scope=[^&]*/, `scope=${encodeURIComponent(scope)}`);
 
     return new Response(
       JSON.stringify({ authUrl: authUrlString, state }),

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, addDays } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -97,6 +97,33 @@ const BookService = () => {
 
   // Use selected variant ID for availability
   const activeServiceId = selectedVariant?.id || serviceId || '';
+
+  const monthRange = useMemo(() => {
+    const start = new Date();
+    return {
+      startDate: format(start, 'yyyy-MM-dd'),
+      endDate: format(addDays(start, 30), 'yyyy-MM-dd'),
+    };
+  }, []);
+
+  const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
+    sessionTypeId: activeServiceId,
+    startDate: monthRange.startDate,
+    endDate: monthRange.endDate,
+    enabled: !!activeServiceId,
+  });
+
+  const availableDates = useMemo(() => {
+    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
+    const dayKeys = new Set<string>();
+    for (const it of items) {
+      dayKeys.add(format(new Date(it.startDateTime), 'yyyy-MM-dd'));
+    }
+    return Array.from(dayKeys).map((k) => {
+      const [y, m, d] = k.split('-').map(Number);
+      return new Date(y, m - 1, d);
+    });
+  }, [monthAvailabilityData]);
 
   // Date range for availability query
   const dateRange = useMemo(() => {
@@ -399,6 +426,8 @@ const BookService = () => {
                         <BookingCalendar
                           selectedDate={selectedDate}
                           onSelect={handleDateSelect}
+                          availableDates={availableDates}
+                          isLoading={isLoadingMonth}
                         />
                       </div>
                     </CardContent>

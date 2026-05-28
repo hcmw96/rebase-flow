@@ -21,14 +21,12 @@ const BookingCalendar = ({
   const today = new Date();
   today.setHours(0, 0, 0, 0);
 
-  const hasAvailabilityData = !!availableDates && availableDates.length > 0;
+  const availabilityLoaded = !isLoading;
 
-  // Check if a date is available (only enforced when we have data)
   const isDateAvailable = (date: Date) => {
-    if (!hasAvailabilityData) return true;
-    return availableDates!.some(
-      (d) => d.toDateString() === date.toDateString()
-    );
+    if (!availabilityLoaded) return true;
+    if (!availableDates?.length) return false;
+    return availableDates.some((d) => d.toDateString() === date.toDateString());
   };
 
   return (
@@ -44,16 +42,14 @@ const BookingCalendar = ({
         onSelect={onSelect}
         disabled={(date) => {
           const isPast = date < today;
-          // While loading initial availability, only disable past dates
-          if (isLoading && !hasAvailabilityData) return isPast;
-          const isNotAvailable = hasAvailabilityData && !isDateAvailable(date);
-          return isPast || isNotAvailable;
+          if (!availabilityLoaded) return isPast;
+          return isPast || !isDateAvailable(date);
         }}
         className={cn("p-3 pointer-events-auto")}
         modifiers={{
           available: (date) => date >= today && isDateAvailable(date),
           unavailable: (date) =>
-            hasAvailabilityData && date >= today && !isDateAvailable(date),
+            availabilityLoaded && date >= today && !isDateAvailable(date),
         }}
         modifiersClassNames={{
           available: 'font-semibold',

@@ -32,7 +32,11 @@ const TimeSlotPicker = ({
     );
   }
 
-  if (slots.length === 0) {
+  const upcomingSlots = slots.filter(
+    (slot) => new Date(slot.startDateTime).getTime() > Date.now(),
+  );
+
+  if (upcomingSlots.length === 0) {
     return (
       <div className={cn("text-center py-8 space-y-3", className)}>
         <p className="text-muted-foreground">
@@ -52,7 +56,7 @@ const TimeSlotPicker = ({
   }
 
   // Group slots by time
-  const groupedSlots = slots.reduce((acc, slot) => {
+  const groupedSlots = upcomingSlots.reduce((acc, slot) => {
     const time = format(new Date(slot.startDateTime), 'HH:mm');
     if (!acc[time]) {
       acc[time] = [];
