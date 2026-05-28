@@ -8,7 +8,7 @@ const corsHeaders = {
 
 interface TokenResponse {
   access_token: string;
-  refresh_token: string;
+  refresh_token?: string;
   expires_in: number;
   token_type: string;
   id_token?: string;
@@ -41,72 +41,44 @@ function parseState(stateStr: string): StatePayload {
     const decoded = atob(stateStr);
     return JSON.parse(decoded);
   } catch {
-    // Legacy state format (plain UUID)
     return { csrf: stateStr, native: false, origin: "" };
   }
 }
 
-/** Redirect browser (full page fallback) back to the app with session or error in the URL hash. */
-function redirectToApp(origin: string, payload: { session?: Record<string, unknown>; error?: string }) {
+/** UTF-8 safe base64 for URL hash payloads (names/emails may include non-Latin1 chars). */
+function encodeHashPayload(data: unknown): string {
+  const json = JSON.stringify(data);
+  const bytes = new TextEncoder().encode(json);
+  let binary = "";
+  for (const byte of bytes) {
+    binary += String.fromCharCode(byte);
+  }
+  return encodeURIComponent(btoa(binary));
+}
+
+/** 302 back to the app with session or error in the URL hash (reliable after Mindbody form_post). */
+function redirectToApp(
+  origin: string,
+  payload: { session?: Record<string, unknown>; error?: string },
+  returnTo?: string,
+) {
   const hashKey = payload.error ? "auth-error" : "auth-session";
-  const hashValue = encodeURIComponent(btoa(JSON.stringify(payload.error ? { error: payload.error } : payload.session)));
+  const hashData = payload.error ? { error: payload.error } : payload.session;
+  const hashValue = encodeHashPayload(hashData);
+  const safeReturnTo = returnTo?.startsWith("/") ? returnTo : "/";
+  const url = new URL(safeReturnTo, origin);
+  url.hash = `${hashKey}=${hashValue}`;
   return new Response(null, {
     status: 302,
-    headers: { Location: `${origin}/#${hashKey}=${hashValue}` },
+    headers: { Location: url.toString() },
   });
 }
 
-function htmlEscape(value: string): string {
-  return value
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
-}
-
-function renderPopupBridgeHtml(
-  payload: { session?: Record<string, unknown>; error?: string },
-  origin?: string,
-  returnTo?: string,
+async function exchangeAndSaveSession(
+  code: string,
+  redirectUri: string,
+  idTokenHint?: string,
 ) {
-  const callbackPayload = payload.error
-    ? { type: "rebase-oauth-callback", error: payload.error }
-    : { type: "rebase-oauth-callback", session: payload.session };
-  const serializedPayload = JSON.stringify(callbackPayload);
-  const fallbackHashKey = payload.error ? "auth-error" : "auth-session";
-  const fallbackHashValue = encodeURIComponent(
-    btoa(JSON.stringify(payload.error ? { error: payload.error } : payload.session)),
-  );
-  const safeReturnTo = returnTo && returnTo.startsWith("/") ? returnTo : "/";
-  const fallbackLocation = origin ? `${origin}${safeReturnTo}#${fallbackHashKey}=${fallbackHashValue}` : "";
-  const successText = payload.error ? "Authentication failed" : "Authentication successful";
-
-  return `<!doctype html>
-<html>
-  <head>
-    <meta charset="utf-8" />
-    <title>${htmlEscape(successText)}</title>
-  </head>
-  <body>
-    <p>${htmlEscape(successText)}. You can close this window.</p>
-    <script>
-      (function () {
-        const payload = ${serializedPayload};
-        if (window.opener && !window.opener.closed) {
-          window.opener.postMessage(payload, '*');
-          window.close();
-          return;
-        }
-        const fallback = ${JSON.stringify(fallbackLocation)};
-        if (fallback) window.location.replace(fallback);
-      })();
-    </script>
-  </body>
-</html>`;
-}
-
-async function exchangeAndSaveSession(code: string, redirectUri: string) {
   const clientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
   const clientSecret = Deno.env.get("MINDBODY_OAUTH_CLIENT_SECRET");
   const siteId = Deno.env.get("MINDBODY_SITE_ID");
@@ -117,18 +89,20 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
     throw new Error("Missing required configuration");
   }
 
+  const tokenParams: Record<string, string> = {
+    grant_type: "authorization_code",
+    code,
+    redirect_uri: redirectUri,
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "openid email profile Mindbody.Api.Public.v6",
+    subscriberId: siteId,
+  };
+
   const tokenResponse = await fetch("https://signin.mindbodyonline.com/connect/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "authorization_code",
-      code,
-      redirect_uri: redirectUri,
-      client_id: clientId,
-      client_secret: clientSecret,
-      scope: "openid email profile Mindbody.Api.Public.v6",
-      subscriberId: siteId,
-    }).toString(),
+    body: new URLSearchParams(tokenParams).toString(),
   });
 
   if (!tokenResponse.ok) {
@@ -143,11 +117,13 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
   let userInfo: IdTokenPayload = { sub: "" };
   if (tokens.id_token) {
     userInfo = decodeJwtPayload(tokens.id_token);
+  } else if (idTokenHint) {
+    userInfo = decodeJwtPayload(idTokenHint);
   } else {
     const userInfoResponse = await fetch("https://signin.mindbodyonline.com/connect/userinfo", {
       method: "GET",
       headers: {
-        "Authorization": `Bearer ${tokens.access_token}`,
+        Authorization: `Bearer ${tokens.access_token}`,
       },
     });
     if (!userInfoResponse.ok) {
@@ -174,11 +150,11 @@ async function exchangeAndSaveSession(code: string, redirectUri: string) {
         first_name: userInfo.given_name,
         last_name: userInfo.family_name,
         access_token: tokens.access_token,
-        refresh_token: tokens.refresh_token,
+        refresh_token: tokens.refresh_token ?? null,
         token_expires_at: expiresAt.toISOString(),
         updated_at: new Date().toISOString(),
       },
-      { onConflict: "mindbody_client_id" }
+      { onConflict: "mindbody_client_id" },
     )
     .select()
     .single();
@@ -205,42 +181,43 @@ serve(async (req) => {
   const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
   const redirectUri = `${supabaseUrl}/functions/v1/mindbody-oauth-callback`;
   let formPostOrigin: string | undefined;
+  let formPostReturnTo: string | undefined;
 
   try {
-    // Handle form_post from Mindbody OAuth (POST with form data)
     if (req.method === "POST") {
       const contentType = req.headers.get("content-type") || "";
 
       if (contentType.includes("application/x-www-form-urlencoded")) {
-        // This is the Mindbody form_post callback
         const formData = await req.formData();
-        const code = formData.get("code") as string;
-        const error = formData.get("error") as string;
+        const formKeys = [...formData.keys()];
+        console.log("Mindbody OAuth form_post fields:", formKeys.join(", "));
+
+        const code = formData.get("code")?.toString() || "";
+        const idTokenFromForm = formData.get("id_token")?.toString() || "";
+        const error = formData.get("error")?.toString() || "";
         const stateStr = (formData.get("state") as string) || "";
         const statePayload = parseState(stateStr);
         formPostOrigin = statePayload.origin;
+        formPostReturnTo = statePayload.returnTo;
+
+        if (!formPostOrigin) {
+          throw new Error("OAuth state missing app origin — sign in again from the app");
+        }
 
         if (error) {
-          console.error("OAuth error from Mindbody:", error);
-          return new Response(
-            renderPopupBridgeHtml({ error: String(error) }, statePayload.origin, statePayload.returnTo),
-            { headers: { "Content-Type": "text/html" }, status: 200 }
-          );
+          console.error("OAuth error from Mindbody:", error, formData.get("error_description"));
+          return redirectToApp(formPostOrigin, { error: String(error) }, formPostReturnTo);
         }
 
         if (!code) {
-          throw new Error("No authorization code received");
+          console.error("No code in form_post; id_token present:", !!idTokenFromForm);
+          throw new Error("No authorization code received from Mindbody");
         }
 
-        const sessionData = await exchangeAndSaveSession(code, redirectUri);
-
-        return new Response(
-          renderPopupBridgeHtml({ session: sessionData }, statePayload.origin, statePayload.returnTo),
-          { headers: { "Content-Type": "text/html" }, status: 200 }
-        );
+        const sessionData = await exchangeAndSaveSession(code, redirectUri, idTokenFromForm || undefined);
+        return redirectToApp(formPostOrigin, { session: sessionData }, formPostReturnTo);
       }
 
-      // JSON POST (legacy client-side flow)
       const { code } = await req.json();
       if (!code) throw new Error("Missing code");
       const sessionData = await exchangeAndSaveSession(code, redirectUri);
@@ -256,15 +233,12 @@ serve(async (req) => {
     const message = error instanceof Error ? error.message : String(error);
 
     if (formPostOrigin) {
-      return new Response(
-        renderPopupBridgeHtml({ error: message }, formPostOrigin),
-        { headers: { "Content-Type": "text/html" }, status: 200 }
-      );
+      return redirectToApp(formPostOrigin, { error: message }, formPostReturnTo);
     }
 
     return new Response(
       JSON.stringify({ error: message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
     );
   }
 });

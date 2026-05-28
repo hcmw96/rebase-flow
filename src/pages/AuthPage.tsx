@@ -6,7 +6,7 @@ import Logo from '@/components/Logo';
 const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/newbase.mp4`;
 
 const AuthPage = () => {
-  const { login } = useAuth();
+  const { login, authError, isRedirecting } = useAuth();
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -48,11 +48,18 @@ const AuthPage = () => {
             <p className="text-sm text-white/50">Sign in to book and manage your sessions</p>
           </div>
 
+          {authError && (
+            <p className="text-sm text-red-300/90 bg-red-950/40 border border-red-400/20 rounded-lg px-3 py-2">
+              Sign-in failed: {authError}
+            </p>
+          )}
+
           <Button
             onClick={login}
+            disabled={isRedirecting}
             className="w-full bg-white/15 hover:bg-white/25 text-white border border-white/20 backdrop-blur-sm"
           >
-            Sign in with Mindbody
+            {isRedirecting ? 'Redirecting…' : 'Sign in with Mindbody'}
           </Button>
         </motion.div>
       </div>
