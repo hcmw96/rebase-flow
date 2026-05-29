@@ -1,21 +1,31 @@
-import { Link } from "react-router-dom";
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
+import FaqAnswer from "@/components/FaqAnswer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { MapPin, Phone, Mail, Instagram } from "lucide-react";
 import SeoHead from "@/components/seo/SeoHead";
 import {
   breadcrumbSchema,
   BUSINESS,
+  faqPageSchema,
   localBusinessSchema,
   postalAddressSchema,
   seoTitle,
   truncateDescription,
 } from "@/lib/seo";
+import { FAQ_ITEMS, FEATURED_FAQ_COUNT, faqItemsForSchema } from "@/content/faqs";
 import contactBg from "@/assets/contact-bg.jpg";
 
 const CONTACT_DESCRIPTION =
@@ -34,7 +44,22 @@ const contactSchema = {
   },
 };
 
+const featuredFaqs = FAQ_ITEMS.slice(0, FEATURED_FAQ_COUNT);
+const moreFaqs = FAQ_ITEMS.slice(FEATURED_FAQ_COUNT);
+
 const Contact = () => {
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.hash !== "#faqs") return;
+    const el = document.getElementById("faqs");
+    if (!el) return;
+    const t = window.setTimeout(() => {
+      el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 100);
+    return () => window.clearTimeout(t);
+  }, [location.hash]);
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const form = e.currentTarget;
@@ -90,6 +115,7 @@ const Contact = () => {
             { name: "Contact", path: "/contact" },
           ]),
           contactSchema,
+          faqPageSchema(faqItemsForSchema()),
         ]}
       />
       <Navigation />
@@ -249,44 +275,53 @@ const Contact = () => {
                 </Card>
               </div>
 
-              {/* FAQ preview */}
-              <div>
+              {/* FAQs */}
+              <div id="faqs" className="scroll-mt-28">
                 <h2 className="text-3xl font-serif font-light text-foreground mb-8">
                   Frequently Asked <span className="text-primary">Questions</span>
                 </h2>
-                
-                <div className="space-y-6">
-                  {[
-                    {
-                      question: "Do I need to book in advance?",
-                      answer: "Yes, we recommend booking in advance to secure your preferred time slot. You can book online through our website or call us directly."
-                    },
-                    {
-                      question: "What should I bring for my first visit?",
-                      answer: "We provide towels, robes, and all necessary equipment. Just bring comfortable clothes and an open mind for your wellness journey."
-                    },
-                    {
-                      question: "Are there any health restrictions?",
-                      answer: "Some treatments may have restrictions. We'll discuss your health history during booking to ensure the safest and most effective experience."
-                    },
-                  ].map((faq) => (
-                    <Card key={faq.question} className="card-luxury">
+
+                <div className="space-y-4 mb-6">
+                  {featuredFaqs.map((faq) => (
+                    <Card key={faq.q} className="card-luxury">
                       <CardContent className="p-6">
-                        <h3 className="text-lg font-medium text-foreground mb-3">
-                          {faq.question}
-                        </h3>
-                        <p className="text-foreground/70 leading-relaxed">
-                          {faq.answer}
-                        </p>
+                        <h3 className="text-lg font-medium text-foreground mb-3">{faq.q}</h3>
+                        <FaqAnswer faq={faq} />
                       </CardContent>
                     </Card>
                   ))}
-                  <Link to="/faq" aria-label="View all frequently asked questions">
-                    <Button variant="outline" className="w-full btn-luxury">
-                      More →
-                    </Button>
-                  </Link>
                 </div>
+
+                {moreFaqs.length > 0 && (
+                  <Accordion type="single" collapsible className="w-full">
+                    <AccordionItem
+                      value="more-faqs"
+                      className="border border-foreground/10 rounded-lg px-5 bg-card/50"
+                    >
+                      <AccordionTrigger className="text-left text-base font-medium text-foreground hover:no-underline py-5">
+                        More frequently asked questions ({moreFaqs.length})
+                      </AccordionTrigger>
+                      <AccordionContent className="pb-2">
+                        <Accordion type="single" collapsible className="w-full space-y-2">
+                          {moreFaqs.map((faq, i) => (
+                            <AccordionItem
+                              key={faq.q}
+                              value={`more-${i}`}
+                              className="border border-foreground/10 rounded-lg px-4 bg-card/30"
+                            >
+                              <AccordionTrigger className="text-left text-sm sm:text-base font-medium text-foreground hover:no-underline py-4">
+                                {faq.q}
+                              </AccordionTrigger>
+                              <AccordionContent className="pb-4">
+                                <FaqAnswer faq={faq} className="text-foreground/75 text-sm leading-relaxed" />
+                              </AccordionContent>
+                            </AccordionItem>
+                          ))}
+                        </Accordion>
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
+                )}
               </div>
             </div>
           </div>

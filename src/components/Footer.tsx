@@ -17,7 +17,7 @@ const quickLinks = [
   { href: "/experiences", label: "Services" },
   { href: "/experiences", label: "Book Now" },
   { href: "/membership", label: "Membership" },
-  { href: "/faq", label: "FAQ" },
+  { href: "/contact#faqs", label: "FAQ" },
   { href: "/contact", label: "Contact" },
 ];
 

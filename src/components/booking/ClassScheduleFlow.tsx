@@ -238,14 +238,19 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
             <p className="text-sm text-muted-foreground py-6 text-center">No sessions on this day.</p>
           ) : (
             <div className="space-y-2">
-              {sessionsForSelectedDay.map((cls) => (
+              {sessionsForSelectedDay.map((cls) => {
+                const isFull = cls.availableSpots <= 0;
+                return (
                 <button
                   key={cls.id}
                   type="button"
-                  onClick={() => handleClassSelect(cls)}
+                  disabled={isFull}
+                  onClick={() => !isFull && handleClassSelect(cls)}
                   className={cn(
                     'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
-                    'border-border hover:border-primary/50',
+                    isFull
+                      ? 'border-border/40 opacity-60 cursor-not-allowed'
+                      : 'border-border hover:border-primary/50',
                   )}
                 >
                   <div className="space-y-1">
@@ -267,12 +272,20 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
                       </span>
                     </div>
                   </div>
-                  <div className="text-xs text-muted-foreground flex items-center gap-1 shrink-0 whitespace-nowrap">
+                  <div
+                    className={cn(
+                      'text-xs flex items-center gap-1 shrink-0 whitespace-nowrap',
+                      isFull ? 'text-destructive' : 'text-muted-foreground',
+                    )}
+                  >
                     <Users className="h-3 w-3 shrink-0" />
-                    {cls.availableSpots} spots
+                    {isFull
+                      ? 'Fully booked'
+                      : `${cls.availableSpots} spot${cls.availableSpots !== 1 ? 's' : ''}`}
                   </div>
                 </button>
-              ))}
+              );
+              })}
             </div>
           )}
         </div>
@@ -312,7 +325,11 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
               </div>
               <div className="flex items-center gap-3">
                 <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>{selectedClass.availableSpots} spots remaining</span>
+                <span>
+                  {selectedClass.availableSpots <= 0
+                    ? 'Fully booked'
+                    : `${selectedClass.availableSpots} spot${selectedClass.availableSpots !== 1 ? 's' : ''} remaining`}
+                </span>
               </div>
             </div>
           </div>

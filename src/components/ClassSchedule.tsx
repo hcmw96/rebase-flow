@@ -132,7 +132,7 @@ const ClassSchedule = () => {
                           isFull ? 'text-destructive' : spotsLeft <= 3 ? 'text-accent-foreground' : 'text-muted-foreground'
                         )}>
                           <Users className="h-3 w-3" />
-                          {isFull ? 'Full' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''}`}
+                          {isFull ? 'Fully booked' : `${spotsLeft} spot${spotsLeft !== 1 ? 's' : ''}`}
                         </div>
                       </div>
                     </div>

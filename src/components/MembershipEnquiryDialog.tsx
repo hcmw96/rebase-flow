@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { BUSINESS } from "@/lib/seo";
 
-const MEMBERSHIP_EMAIL = "membership@rebaserecovery.com";
+const MEMBERSHIP_EMAIL = BUSINESS.membershipEmail;
 
 interface MembershipEnquiryDialogProps {
   open: boolean;
@@ -47,7 +48,13 @@ const MembershipEnquiryDialog = ({
         .join("\n")
     );
 
-    window.location.href = `mailto:${MEMBERSHIP_EMAIL}?subject=${subject}&body=${body}`;
+    const mailto = `mailto:${MEMBERSHIP_EMAIL}?subject=${subject}&body=${body}`;
+    const link = document.createElement("a");
+    link.href = mailto;
+    link.rel = "noopener noreferrer";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
     onOpenChange(false);
   };
 
@@ -59,7 +66,14 @@ const MembershipEnquiryDialog = ({
             Enquire about {tierName}
           </DialogTitle>
           <DialogDescription className="text-[#F9ECD9]/50 font-light">
-            Share your details and we&apos;ll get back to you at {MEMBERSHIP_EMAIL}.
+            Share your details and we&apos;ll get back to you at{" "}
+            <a
+              href={`mailto:${MEMBERSHIP_EMAIL}`}
+              className="text-[#F9ECD9]/80 underline underline-offset-2 hover:text-[#F9ECD9]"
+            >
+              {MEMBERSHIP_EMAIL}
+            </a>
+            .
           </DialogDescription>
         </DialogHeader>
 

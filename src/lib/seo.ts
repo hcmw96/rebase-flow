@@ -12,6 +12,7 @@ export const BUSINESS = {
   description:
     "Premium wellness and recovery studio in Marylebone, London — infrared sauna, cryotherapy, hyperbaric oxygen, ice bath, contrast therapy and massage.",
   email: "reception@rebaserecovery.com",
+  membershipEmail: "membership@rebaserecovery.com",
   phone: "+442045535701",
   phoneDisplay: "+44 20 4553 5701",
   streetAddress: "1a St Vincent Street",
