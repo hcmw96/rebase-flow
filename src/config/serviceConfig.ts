@@ -290,6 +290,10 @@ export const variantDescriptions: Record<string, string> = {
   // Communal Contrast
   'Off Peak Access': 'Discounted off-peak entry to the communal wellness space.',
   'members only': 'Communal contrast therapy in our shared wellness space.',
+
+  // Cryotherapy packs
+  'Cryotherapy - 10 pack': 'Ten whole-body cryotherapy sessions — save vs single visits.',
+  'Cryotherapy - 10 pack ': 'Ten whole-body cryotherapy sessions — save vs single visits.',
 };
 
 // Build a normalised lookup once for case-insensitive matching.

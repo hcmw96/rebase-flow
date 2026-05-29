@@ -6,9 +6,11 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { Helmet } from "react-helmet-async";
+import SeoHead from "@/components/seo/SeoHead";
+import { breadcrumbSchema, faqPageSchema, seoTitle, truncateDescription } from "@/lib/seo";
 
-const SITE_URL = "https://rebase-flow.lovable.app";
+const FAQ_DESCRIPTION =
+  "FAQs about Rebase Recovery Marylebone: memberships, bookings, hours, cryotherapy, HBOT, cancellation policy and what to bring.";
 
 const faqs: { q: string; a: string; email?: string }[] = [
   {
@@ -70,41 +72,30 @@ const faqs: { q: string; a: string; email?: string }[] = [
   },
 ];
 
-const faqSchema = {
-  "@context": "https://schema.org",
-  "@type": "FAQPage",
-  mainEntity: faqs.map((f) => ({
-    "@type": "Question",
-    name: f.q,
-    acceptedAnswer: { "@type": "Answer", text: f.a },
-  })),
-};
+const faqSchemaItems = faqs.map((f) => ({
+  question: f.q,
+  answer: f.email ? `${f.a} ${f.email}.` : f.a,
+}));
 
 const FAQ = () => {
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-background">
-      <Helmet>
-        <title>FAQ — Rebase Recovery London</title>
-        <meta
-          name="description"
-          content="Frequently asked questions about Rebase Recovery — memberships, bookings, hours, services, cancellation policy and more."
-        />
-        <link rel="canonical" href={`${SITE_URL}/faq`} />
-        <meta property="og:title" content="FAQ — Rebase Recovery London" />
-        <meta
-          property="og:description"
-          content="Answers to common questions about Rebase Recovery's wellness services, memberships and bookings."
-        />
-        <meta property="og:url" content={`${SITE_URL}/faq`} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <script type="application/ld+json">{JSON.stringify(faqSchema)}</script>
-      </Helmet>
+      <SeoHead
+        title={seoTitle("FAQ")}
+        description={truncateDescription(FAQ_DESCRIPTION)}
+        path="/faq"
+        jsonLd={[
+          breadcrumbSchema([
+            { name: "Home", path: "/website" },
+            { name: "FAQ", path: "/faq" },
+          ]),
+          faqPageSchema(faqSchemaItems),
+        ]}
+      />
 
       <Navigation />
 
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
+      <main id="main-content" className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-24">
         <header className="text-center mb-12 sm:mb-16">
           <h1 className="text-4xl sm:text-5xl font-light text-foreground tracking-tight mb-4">
             Frequently Asked Questions
@@ -121,7 +112,7 @@ const FAQ = () => {
         <Accordion type="single" collapsible className="w-full space-y-3">
           {faqs.map((f, i) => (
             <AccordionItem
-              key={i}
+              key={f.q}
               value={`item-${i}`}
               className="border border-foreground/10 rounded-lg px-5 bg-card/50"
             >

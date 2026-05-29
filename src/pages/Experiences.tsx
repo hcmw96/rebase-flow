@@ -3,11 +3,16 @@ import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
-import { Helmet } from "react-helmet-async";
 import { ChevronRight } from "lucide-react";
 import ExperienceDrawer from "@/components/ExperienceDrawer";
-
-const SITE_URL = "https://rebase-flow.lovable.app";
+import SeoHead from "@/components/seo/SeoHead";
+import {
+  absoluteUrl,
+  breadcrumbSchema,
+  itemListServicesSchema,
+  seoTitle,
+  truncateDescription,
+} from "@/lib/seo";
 
 const experiences = [
   {
@@ -60,23 +65,8 @@ const experiences = [
   },
 ];
 
-const experiencesSchema = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  "name": "Rebase Recovery Experiences",
-  "url": `${SITE_URL}/experiences`,
-  "itemListElement": experiences.map((exp, i) => ({
-    "@type": "ListItem",
-    "position": i + 1,
-    "item": {
-      "@type": "Service",
-      "name": exp.name,
-      "description": exp.description,
-      "provider": { "@type": "LocalBusiness", "name": "Rebase Recovery" },
-      "areaServed": "London, UK"
-    }
-  }))
-};
+const EXPERIENCES_DESCRIPTION =
+  "Book cryotherapy, hyperbaric oxygen, infrared suites, ice bath, massage and IV drips at Rebase Recovery — premium wellness in Marylebone, London.";
 
 const Experiences = () => {
   const [selectedExperience, setSelectedExperience] = useState<typeof experiences[0] | null>(null);
@@ -92,31 +82,32 @@ const Experiences = () => {
       style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }}
       className="bg-[#1a1a1a]"
     >
-      <Helmet>
-        <title>Experiences — Rebase Recovery London</title>
-        <meta
-          name="description"
-          content="Explore cryotherapy, hyperbaric oxygen, private suites, massage therapy, IV drips, signature classes and more at Rebase Recovery, Marylebone, London."
-        />
-        <link rel="canonical" href={`${SITE_URL}/experiences`} />
-        <meta property="og:title" content="Experiences — Rebase Recovery London" />
-        <meta
-          property="og:description"
-          content="World-class recovery and wellness treatments in Marylebone, London."
-        />
-        <meta property="og:url" content={`${SITE_URL}/experiences`} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Experiences — Rebase Recovery London" />
-        <meta name="twitter:description" content="World-class recovery and wellness treatments in Marylebone, London." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
-        <script type="application/ld+json">{JSON.stringify(experiencesSchema)}</script>
-      </Helmet>
+      <SeoHead
+        title={seoTitle("Wellness Treatments & Experiences")}
+        description={truncateDescription(EXPERIENCES_DESCRIPTION)}
+        path="/experiences"
+        ogImage={absoluteUrl("/images/rebase-cryo.webp")}
+        jsonLd={[
+          breadcrumbSchema([
+            { name: "Home", path: "/website" },
+            { name: "Experiences", path: "/experiences" },
+          ]),
+          itemListServicesSchema(
+            "/experiences",
+            "Rebase Recovery Experiences",
+            experiences.map((exp) => ({
+              name: exp.name,
+              description: exp.description,
+              image: absoluteUrl(exp.image),
+            })),
+          ),
+        ]}
+      />
       <Navigation />
+      <main id="main-content">
 
       {/* Hero */}
-      <section className="pt-32 pb-16 px-5 sm:px-8">
+      <section className="pt-32 pb-16 px-5 sm:px-8" aria-labelledby="experiences-heading">
         <div className="max-w-[1200px] mx-auto text-center">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -127,6 +118,7 @@ const Experiences = () => {
             Experiences
           </motion.p>
           <motion.h1
+            id="experiences-heading"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -147,7 +139,7 @@ const Experiences = () => {
       </section>
 
       {/* Cards */}
-      <section className="pb-24 px-5 sm:px-8">
+      <section className="pb-24 px-5 sm:px-8" aria-label="Treatment categories">
         <div className="max-w-[1200px] mx-auto grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
           {experiences.map((exp, idx) => (
             <motion.div
@@ -175,6 +167,7 @@ const Experiences = () => {
                 </p>
                 <Button
                   onClick={() => handleExplore(exp)}
+                  aria-label={`Explore ${exp.name}`}
                   className="w-full rounded-none uppercase tracking-[0.2em] text-sm font-light h-12 bg-transparent border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/10 hover:border-[#F9ECD9]/40 transition-all duration-300"
                   variant="outline"
                 >
@@ -187,6 +180,7 @@ const Experiences = () => {
         </div>
       </section>
 
+      </main>
       <Footer />
 
       <ExperienceDrawer

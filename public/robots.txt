@@ -1,9 +1,21 @@
 User-agent: *
 Allow: /
+Allow: /website
+Allow: /experiences
+Allow: /membership
+Allow: /contact
+Allow: /faq
+Allow: /privacy-policy
+Allow: /terms
+Allow: /cookie-policy
+
 Disallow: /account
+Disallow: /sign-in
+Disallow: /members
 Disallow: /reception
 Disallow: /dashboard
 Disallow: /auth
 Disallow: /login
+Disallow: /book/
 
-Sitemap: https://rebase-flow.lovable.app/sitemap.xml
+Sitemap: https://rebase.echo.london/sitemap.xml

@@ -9,6 +9,9 @@ export interface MindbodyService {
   numDeducted: number;
   onlineDescription: string;
   price: number | null;
+  isPack?: boolean;
+  packSessionCount?: number | null;
+  linkedSessionTypeId?: number | null;
 }
 
 export interface AvailableItem {

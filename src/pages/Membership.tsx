@@ -5,9 +5,13 @@ import MembershipEnquiryDialog from "@/components/MembershipEnquiryDialog";
 import { Button } from "@/components/ui/button";
 import { Check } from "lucide-react";
 import { motion } from "framer-motion";
-import { Helmet } from "react-helmet-async";
-
-const SITE_URL = "https://rebase-flow.lovable.app";
+import SeoHead from "@/components/seo/SeoHead";
+import {
+  breadcrumbSchema,
+  itemListServicesSchema,
+  seoTitle,
+  truncateDescription,
+} from "@/lib/seo";
 
 const tiers = [
   {
@@ -57,48 +61,38 @@ const tiers = [
   },
 ];
 
-const membershipSchema = {
-  "@context": "https://schema.org",
-  "@type": "ItemList",
-  "name": "Rebase Recovery Membership Plans",
-  "url": `${SITE_URL}/membership`,
-  "itemListElement": tiers.map((t, i) => ({
-    "@type": "ListItem",
-    "position": i + 1,
-    "item": {
-      "@type": "Service",
-      "name": `${t.name} Membership`,
-      "description": t.overview,
-      "provider": { "@type": "LocalBusiness", "name": "Rebase Recovery" },
-      "areaServed": "London, UK"
-    }
-  }))
-};
+const MEMBERSHIP_DESCRIPTION =
+  "Rebase Recovery membership in Marylebone: cryotherapy, HBOT, private suites, classes and contrast therapy. Base, Resident and Ultimate tiers.";
 
 const Membership = () => {
   const [enquiryTier, setEnquiryTier] = useState<string | null>(null);
 
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1a1a1a]">
-      <Helmet>
-        <title>Membership Plans — Rebase Recovery London</title>
-        <meta name="description" content="Choose from Base, Resident or Ultimate membership tiers at Rebase Recovery. Unlock cryotherapy, HBOT, private suites, classes and more in Marylebone, London." />
-        <link rel="canonical" href={`${SITE_URL}/membership`} />
-        <meta property="og:title" content="Membership Plans — Rebase Recovery London" />
-        <meta property="og:description" content="Elevate your recovery with Rebase membership. Unlimited cryotherapy, classes, private suites & more." />
-        <meta property="og:url" content={`${SITE_URL}/membership`} />
-        <meta property="og:type" content="website" />
-        <meta property="og:image" content={`${SITE_URL}/og-image.jpg`} />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Membership Plans — Rebase Recovery London" />
-        <meta name="twitter:description" content="Elevate your recovery with Rebase membership. Unlimited cryotherapy, classes, private suites & more." />
-        <meta name="twitter:image" content={`${SITE_URL}/og-image.jpg`} />
-        <script type="application/ld+json">{JSON.stringify(membershipSchema)}</script>
-      </Helmet>
+      <SeoHead
+        title={seoTitle("Membership Plans")}
+        description={truncateDescription(MEMBERSHIP_DESCRIPTION)}
+        path="/membership"
+        jsonLd={[
+          breadcrumbSchema([
+            { name: "Home", path: "/website" },
+            { name: "Membership", path: "/membership" },
+          ]),
+          itemListServicesSchema(
+            "/membership",
+            "Rebase Recovery Membership Plans",
+            tiers.map((t) => ({
+              name: `${t.name} Membership`,
+              description: t.overview,
+            })),
+          ),
+        ]}
+      />
       <Navigation />
+      <main id="main-content">
 
       {/* Hero */}
-      <section className="pt-32 pb-16 px-5 sm:px-8">
+      <section className="pt-32 pb-16 px-5 sm:px-8" aria-labelledby="membership-heading">
         <div className="max-w-[1200px] mx-auto text-center">
           <motion.p
             initial={{ opacity: 0, y: 10 }}
@@ -109,6 +103,7 @@ const Membership = () => {
             Membership
           </motion.p>
           <motion.h1
+            id="membership-heading"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
@@ -152,13 +147,18 @@ const Membership = () => {
 
               {tier.image && (
                 <div className="-mx-8 sm:-mx-10 -mt-8 sm:-mt-10 mb-6 overflow-hidden rounded-t-sm">
-                  <img src={tier.image} alt={tier.name} className="w-full h-48 object-cover" />
+                  <img
+                    src={tier.image}
+                    alt={`${tier.name} membership at Rebase Recovery, London`}
+                    className="w-full h-48 object-cover"
+                    loading="lazy"
+                  />
                 </div>
               )}
 
-              <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide uppercase mb-4">
+              <h3 className="text-2xl font-light text-[#F9ECD9] tracking-wide uppercase mb-4">
                 {tier.name}
-              </h2>
+              </h3>
 
               <p className="text-[#F9ECD9]/40 text-sm font-light leading-relaxed mb-8">
                 {tier.overview}
@@ -214,6 +214,7 @@ const Membership = () => {
           .
         </p>
       </section>
+      </main>
 
       <Footer />
     </div>

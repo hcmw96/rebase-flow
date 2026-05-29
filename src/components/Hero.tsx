@@ -5,15 +5,19 @@ const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public
 
 const Hero = () => {
   return (
-    <section className="relative h-screen flex items-center justify-center overflow-hidden">
+    <section
+      className="relative h-screen flex items-center justify-center overflow-hidden"
+      aria-labelledby="hero-heading"
+    >
       {/* Background Video */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0" aria-hidden="true">
         <video
           autoPlay
           muted
           loop
           playsInline
           className="w-full h-full object-cover"
+          aria-hidden="true"
           ref={(el) => {
             if (el) {
               el.setAttribute("playsinline", "");
@@ -28,12 +32,16 @@ const Hero = () => {
 
       {/* Center content */}
       <div className="relative z-10 text-center px-6">
-        <h1 className="font-serif text-4xl sm:text-5xl lg:text-7xl font-light text-[#F9ECD9] tracking-tight leading-tight">
+        <h1
+          id="hero-heading"
+          className="font-serif text-4xl sm:text-5xl lg:text-7xl font-light text-[#F9ECD9] tracking-tight leading-tight"
+        >
           Elevate your wellness
         </h1>
         <div className="mt-10">
           <Button
             className="bg-[#F9ECD9]/10 backdrop-blur-md border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/20 text-sm uppercase tracking-[0.1em] px-8 h-12 rounded-none"
+            aria-label="Book a wellness treatment — scroll to services"
             onClick={() => {
               document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
             }}

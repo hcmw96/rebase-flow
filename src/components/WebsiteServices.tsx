@@ -86,16 +86,21 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
+      const isPack = service.isPack === true;
       const variantDesc = resolveVariantDescription(
         service.name,
         canonicalName,
         service.onlineDescription || service.description,
       );
       groups.get(canonicalName)!.variants.push({
-        id: service.id, duration: duration ?? service.defaultTimeLength,
-        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null), name: service.name,
+        id: service.id,
+        duration: isPack ? null : (duration ?? service.defaultTimeLength),
+        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
+        name: service.name,
         description: variantDesc,
-        contactOnly: isIvFirstConsult || isContactOnly,
+        contactOnly: isIvFirstConsult || isContactOnly || isPack,
+        isPack,
+        packSessionCount: service.packSessionCount ?? null,
       });
     }
 
@@ -108,6 +113,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
         const aF = /follow\s*up/i.test(a.name) ? 1 : 0;
         const bF = /follow\s*up/i.test(b.name) ? 1 : 0;
         if (aF !== bF) return aF - bF;
+        if (a.isPack !== b.isPack) return a.isPack ? 1 : -1;
         return (a.duration ?? 0) - (b.duration ?? 0);
       });
     }
@@ -181,7 +187,12 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   };
 
   return (
-    <section id="services" className="pt-44 pb-24 px-6 scroll-mt-20" style={{ background: 'hsl(25, 18%, 10%)' }}>
+    <section
+      id="services"
+      className="pt-44 pb-24 px-6 scroll-mt-20"
+      style={{ background: 'hsl(25, 18%, 10%)' }}
+      aria-labelledby="services-heading"
+    >
       <div className="max-w-6xl mx-auto">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -190,7 +201,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
           transition={{ duration: 0.6 }}
           className="text-center mb-16"
         >
-          <h2 className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#F9ECD9] tracking-tight">
+          <h2 id="services-heading" className="font-serif text-3xl sm:text-4xl lg:text-5xl font-light text-[#F9ECD9] tracking-tight">
             Our Experiences
           </h2>
           <p className="mt-4 text-[#F9ECD9]/60 text-base sm:text-lg max-w-2xl mx-auto font-light">
@@ -228,20 +239,21 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                         whileHover={{ y: -4 }}
                         transition={{ duration: 0.2 }}
                         className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors cursor-pointer"
+                        aria-label={`Book ${cls.name}`}
                       >
                         <div className="relative h-48 overflow-hidden">
                           <img
                             src={cls.image}
-                            alt={cls.name}
+                            alt={`${cls.name} at Rebase Recovery, London`}
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                             loading="lazy"
                           />
                           <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
                         </div>
                         <div className="p-5 space-y-2">
-                          <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
-                            {cls.name}
-                          </h4>
+                            <h3 className="font-serif text-xl text-[#F9ECD9] font-light">
+                              {cls.name}
+                            </h3>
                           <p className="text-[#F9ECD9]/50 text-xs font-light leading-relaxed">
                             {cls.description}
                           </p>
@@ -266,11 +278,12 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                           whileHover={{ y: -4 }}
                           transition={{ duration: 0.2 }}
                           className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors relative"
+                          aria-label={`Book ${service.baseName}${fromPrice !== null ? ` from £${fromPrice}` : ""}`}
                         >
                           <div className="relative h-48 overflow-hidden">
                             <img
                               src={service.image}
-                              alt={service.baseName}
+                              alt={`${service.baseName} wellness treatment at Rebase Recovery, Marylebone London`}
                               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                               style={{ objectPosition: serviceImagePositions[service.baseName] || 'center' }}
                               loading="lazy"
@@ -278,9 +291,9 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                             <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
                           </div>
                           <div className="p-5 space-y-3">
-                            <h4 className="font-serif text-xl text-[#F9ECD9] font-light">
+                            <h3 className="font-serif text-xl text-[#F9ECD9] font-light">
                               {service.baseName}{packageGroups.has(service.baseName) ? ' Package' : ''}
-                            </h4>
+                            </h3>
                             <div className="flex items-center justify-between">
                               <div className="flex items-center gap-3">
                                 <span className="text-[#F9ECD9]/90 font-medium">
@@ -288,12 +301,12 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                                 </span>
                                 {!packageGroups.has(service.baseName) && firstVariant?.duration && (
                                   <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
-                                    <Clock className="h-3 w-3" />
+                                    <Clock className="h-3 w-3" aria-hidden="true" />
                                     {firstVariant.duration} min
                                   </span>
                                 )}
                               </div>
-                              <ChevronRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" />
+                              <ChevronRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" aria-hidden="true" />
                             </div>
                           </div>
 
@@ -301,10 +314,11 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                           <div
                             className="absolute inset-0 backdrop-blur-sm flex-col justify-end p-5 translate-y-full transition-transform duration-300 ease-out hidden sm:flex sm:group-hover:translate-y-0"
                             style={{ backgroundColor: 'hsla(25, 15%, 12%, 0.95)' }}
+                            aria-hidden="true"
                           >
-                            <h4 className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
+                            <p className="font-serif text-xl text-[#F9ECD9] font-light mb-2">
                               {service.baseName}{packageGroups.has(service.baseName) ? ' Package' : ''}
-                            </h4>
+                            </p>
                             <p className="text-[#F9ECD9]/60 text-xs line-clamp-2 font-light leading-relaxed mb-3">
                               {shortDesc}
                             </p>
@@ -367,7 +381,10 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                       key={`${setIdx}-${i}`}
                       src={logo}
                       alt=""
+                      role="presentation"
+                      aria-hidden="true"
                       className="h-8 w-auto opacity-40 brightness-0 invert"
+                      loading="lazy"
                     />
                   ))}
                 </div>

@@ -13,6 +13,10 @@ export interface MindbodyService {
   numDeducted: number;
   onlineDescription: string;
   price: number | null;
+  /** Retail multi-session product from Mindbody pricing options (not a session type). */
+  isPack?: boolean;
+  packSessionCount?: number | null;
+  linkedSessionTypeId?: number | null;
 }
 
 export interface MindbodyClass {

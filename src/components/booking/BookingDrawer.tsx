@@ -491,12 +491,16 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                                 {variant.description.replace(/<[^>]*>/g, '').trim()}
                               </div>
                             )}
-                            {variant.duration && (
+                            {variant.isPack && variant.packSessionCount ? (
+                              <div className="text-xs text-muted-foreground mt-1">
+                                {variant.packSessionCount} sessions
+                              </div>
+                            ) : variant.duration ? (
                               <div className="text-xs text-muted-foreground mt-1 flex items-center gap-1">
                                 <Clock className="h-3 w-3" />
                                 {variant.duration} min
                               </div>
-                            )}
+                            ) : null}
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="font-semibold text-foreground">

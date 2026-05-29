@@ -28,11 +28,14 @@ const Footer = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Brand */}
           <div className="space-y-4">
-            <Link to="/website" className="inline-block">
+            <Link to="/website" className="inline-block" aria-label="Rebase Recovery home">
               <img
                 src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png"
-                alt="Rebase Recovery"
+                alt="Rebase Recovery — premium wellness studio London"
                 className="h-12 w-auto"
+                loading="lazy"
+                width={120}
+                height={48}
               />
             </Link>
             <p className="text-foreground/70 text-sm leading-relaxed">
@@ -81,7 +84,7 @@ const Footer = () => {
               <div className="flex items-center space-x-3">
                 <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
                 <span className="text-foreground/70 text-sm">
-                  London, United Kingdom
+                  1a St Vincent St, London W1U 4DA
                 </span>
               </div>
               <div className="flex items-center space-x-3">

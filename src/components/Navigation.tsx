@@ -82,10 +82,10 @@ const Navigation = () => {
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <div className={cn("flex justify-between items-center transition-all duration-300", scrolled ? "h-14" : "h-20")}>
           {/* Logo */}
-          <Link to="/website" className="flex-shrink-0">
+          <Link to="/website" className="flex-shrink-0" aria-label="Rebase Recovery home">
             <img
               src={wordmark}
-              alt="Rebase"
+              alt="Rebase Recovery logo"
               className={cn(
                 "w-auto transition-all duration-300",
                 "h-12 brightness-0 invert"
@@ -181,6 +181,7 @@ const Navigation = () => {
             <Button
               variant="outline"
               onClick={handleBookNow}
+              aria-label="Book a wellness experience"
               className={cn(
                 "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md rounded-none transition-all duration-300",
                 "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
@@ -230,7 +231,14 @@ const Navigation = () => {
               Book Now
               <ChevronRight className="ml-1 h-3 w-3" />
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => setIsOpen(!isOpen)} className={textColor}>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsOpen(!isOpen)}
+              className={textColor}
+              aria-label={isOpen ? "Close menu" : "Open menu"}
+              aria-expanded={isOpen}
+            >
               {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
             </Button>
           </div>

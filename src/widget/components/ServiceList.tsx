@@ -92,6 +92,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
+      const isPack = service.isPack === true;
       const variantDesc = resolveVariantDescription(
         service.name,
         canonicalName,
@@ -99,11 +100,13 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       );
       groups.get(canonicalName)!.variants.push({
         id: service.id,
-        duration: duration ?? service.defaultTimeLength,
+        duration: isPack ? null : (duration ?? service.defaultTimeLength),
         price: isIvFirstConsult ? 0 : service.price,
         name: service.name,
         description: variantDesc,
-        contactOnly: isIvFirstConsult || isContactOnly,
+        contactOnly: isIvFirstConsult || isContactOnly || isPack,
+        isPack,
+        packSessionCount: service.packSessionCount ?? null,
       });
     }
 
@@ -116,6 +119,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
         const aF = /follow\s*up/i.test(a.name) ? 1 : 0;
         const bF = /follow\s*up/i.test(b.name) ? 1 : 0;
         if (aF !== bF) return aF - bF;
+        if (a.isPack !== b.isPack) return a.isPack ? 1 : -1;
         return (a.duration ?? 0) - (b.duration ?? 0);
       });
     }

@@ -134,6 +134,46 @@ serve(async (req) => {
     
     console.log(`Fetching prices for ${sessionTypes.length} session types`);
 
+    // Full sale catalog (used for duration-aware matching and fallback)
+    const allSaleServices: any[] = [];
+    let saleOffset = 0;
+    const saleLimit = 100;
+    while (true) {
+      const catalogResponse = await fetch(
+        `https://api.mindbodyonline.com/public/v6/sale/services?Limit=${saleLimit}&Offset=${saleOffset}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "SiteId": siteId,
+            "Authorization": `Bearer ${staffToken}`,
+          },
+        }
+      );
+      if (!catalogResponse.ok) break;
+      const catalogData = await catalogResponse.json();
+      const batch = catalogData.Services || [];
+      allSaleServices.push(...batch);
+      if (batch.length < saleLimit) break;
+      saleOffset += saleLimit;
+    }
+    console.log(`Loaded ${allSaleServices.length} sale/pricing options`);
+
+    type SaleCatalogEntry = { name: string; normalized: string; minutes: number | null; price: number };
+    const saleCatalog: SaleCatalogEntry[] = [];
+    for (const service of allSaleServices) {
+      const price = service.OnlinePrice ?? service.Price ?? null;
+      if (price === null || price === 0) continue;
+      const name = service.Name || "";
+      saleCatalog.push({
+        name,
+        normalized: normalizeServiceName(name),
+        minutes: extractMinutes(name),
+        price,
+      });
+    }
+
     // Map to store prices by session type ID
     const priceBySessionTypeId = new Map<number, number | null>();
     
@@ -172,7 +212,8 @@ serve(async (req) => {
           for (const service of services) {
             const price = service.OnlinePrice ?? service.Price ?? null;
             if (price === null || price === 0) continue;
-            
+            if (isSessionPack(service.Name || "")) continue;
+
             // Check if service has SessionTypeIds array
             if (service.SessionTypeIds && Array.isArray(service.SessionTypeIds)) {
               for (const stId of service.SessionTypeIds) {
@@ -198,12 +239,11 @@ serve(async (req) => {
               if (serviceName === sessionName || 
                   serviceName.includes(sessionName) || 
                   sessionName.includes(serviceName)) {
-                // Additional check: if both have durations, they must match
                 const serviceMinutes = extractMinutes(service.Name);
                 const sessionMinutes = extractMinutes(st.Name);
-                
-                if (serviceMinutes && sessionMinutes && serviceMinutes !== sessionMinutes) {
-                  continue; // Durations don't match, skip
+                const normalizedBase = normalizeServiceName(st.Name || "");
+                if (!durationsCompatible(serviceMinutes, sessionMinutes, normalizedBase, saleCatalog)) {
+                  continue;
                 }
                 
                 priceBySessionTypeId.set(stId, price);
@@ -230,56 +270,21 @@ serve(async (req) => {
     if (unpricedIds.length > 0) {
       console.log(`${unpricedIds.length} session types still unpriced, trying fallback name matching...`);
       
-      const allSaleServices: any[] = [];
-      let offset = 0;
-      const limit = 100;
-      
-      while (true) {
-        const servicesResponse = await fetch(
-          `https://api.mindbodyonline.com/public/v6/sale/services?Limit=${limit}&Offset=${offset}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "Api-Key": apiKey,
-              "SiteId": siteId,
-              "Authorization": `Bearer ${staffToken}`,
-            },
-          }
-        );
-
-        if (!servicesResponse.ok) break;
-        
-        const servicesData = await servicesResponse.json();
-        const services = servicesData.Services || [];
-        allSaleServices.push(...services);
-        
-        if (services.length < limit) break;
-        offset += limit;
-      }
-      
       // Build lookup maps including duration info - using normalized names
       const priceByNormalizedWithDuration = new Map<string, number>();
       const priceByNormalizedOnly = new Map<string, number>();
-      const allServiceEntries: Array<{name: string, normalized: string, minutes: number | null, price: number}> = [];
+      const allServiceEntries = saleCatalog;
       
-      for (const service of allSaleServices) {
-        const price = service.OnlinePrice ?? service.Price ?? null;
-        if (price === null || price === 0) continue;
-        
-        const name = service.Name || '';
-        const normalized = normalizeServiceName(name);
-        const minutes = extractMinutes(name);
-        
-        allServiceEntries.push({ name, normalized, minutes, price });
-        
-        // Store with duration key if present
-        if (minutes) {
-          priceByNormalizedWithDuration.set(`${normalized}_${minutes}`, price);
+      for (const entry of allServiceEntries) {
+        if (isSessionPack(entry.name)) continue;
+
+        // Store with duration key if present (single-session retail only)
+        if (entry.minutes) {
+          priceByNormalizedWithDuration.set(`${entry.normalized}_${entry.minutes}`, entry.price);
         }
         // Store without duration for fallback
-        if (!priceByNormalizedOnly.has(normalized)) {
-          priceByNormalizedOnly.set(normalized, price);
+        if (!priceByNormalizedOnly.has(entry.normalized)) {
+          priceByNormalizedOnly.set(entry.normalized, entry.price);
         }
       }
       
@@ -295,14 +300,15 @@ serve(async (req) => {
         
         const sessionName = st.Name || '';
         const normalizedSession = normalizeServiceName(sessionName);
-        const sessionMinutes = extractMinutes(sessionName) || st.DefaultTimeLength;
+        const sessionMinutesInName = extractMinutes(sessionName);
+        const sessionMinutesForLookup = sessionMinutesInName || st.DefaultTimeLength;
         
         // Strategy 1: Exact normalized name + duration match
-        if (sessionMinutes) {
-          const keyWithDuration = `${normalizedSession}_${sessionMinutes}`;
+        if (sessionMinutesForLookup) {
+          const keyWithDuration = `${normalizedSession}_${sessionMinutesForLookup}`;
           if (priceByNormalizedWithDuration.has(keyWithDuration)) {
             priceBySessionTypeId.set(stId, priceByNormalizedWithDuration.get(keyWithDuration)!);
-            console.log(`Strategy 1: ${st.Name} (${sessionMinutes}min) -> £${priceBySessionTypeId.get(stId)}`);
+            console.log(`Strategy 1: ${st.Name} (${sessionMinutesForLookup}min) -> £${priceBySessionTypeId.get(stId)}`);
             continue;
           }
         }
@@ -310,16 +316,17 @@ serve(async (req) => {
         // Strategy 2: Fuzzy name match with duration
         let bestMatch: { price: number; score: number; name: string } | null = null;
         for (const entry of allServiceEntries) {
+          if (isSessionPack(entry.name)) continue;
+
           const score = fuzzyNameMatch(sessionName, entry.name);
           
           // Require high similarity (70%+)
           if (score < 0.7) continue;
           
-          // If both have durations, they must match
-          if (sessionMinutes && entry.minutes && sessionMinutes !== entry.minutes) continue;
+          if (!durationsCompatible(entry.minutes, sessionMinutesInName, normalizedSession, saleCatalog)) continue;
           
           // Prefer matches with matching duration
-          const adjustedScore = (sessionMinutes && entry.minutes === sessionMinutes) ? score + 0.2 : score;
+          const adjustedScore = (sessionMinutesInName && entry.minutes === sessionMinutesInName) ? score + 0.2 : score;
           
           if (!bestMatch || adjustedScore > bestMatch.score) {
             bestMatch = { price: entry.price, score: adjustedScore, name: entry.name };
@@ -332,8 +339,8 @@ serve(async (req) => {
           continue;
         }
         
-        // Strategy 3: Normalized name only (no duration requirement)
-        if (priceByNormalizedOnly.has(normalizedSession)) {
+        // Strategy 3: Normalized name only — only when session type has no duration in its name
+        if (!sessionMinutesInName && priceByNormalizedOnly.has(normalizedSession)) {
           priceBySessionTypeId.set(stId, priceByNormalizedOnly.get(normalizedSession)!);
           console.log(`Strategy 3: ${st.Name} -> £${priceBySessionTypeId.get(stId)} (normalized name only)`);
           continue;
@@ -355,8 +362,7 @@ serve(async (req) => {
             // Find a matching service
             for (const entry of allServiceEntries) {
               if (entry.normalized.includes(target)) {
-                // Check duration compatibility
-                if (sessionMinutes && entry.minutes && sessionMinutes !== entry.minutes) continue;
+                if (!durationsCompatible(entry.minutes, sessionMinutesInName, normalizedSession, saleCatalog)) continue;
                 
                 priceBySessionTypeId.set(stId, entry.price);
                 console.log(`Strategy 4: ${st.Name} -> £${entry.price} (pattern "${pattern}" -> "${entry.name}")`);
@@ -400,6 +406,42 @@ serve(async (req) => {
       console.log(`${unmatchedServices.length} session types without price:`, unmatchedServices.slice(0, 20));
     }
 
+    // Retail packs (pricing options) that are not session types — e.g. Cryo 10-pack
+    const sessionTypeNames = new Set(
+      sessionTypes.map((st: any) => (st.Name || "").toLowerCase().trim()),
+    );
+    for (const saleService of allSaleServices) {
+      const name = saleService.Name || "";
+      if (!isSessionPack(name)) continue;
+      if (sessionTypeNames.has(name.toLowerCase().trim())) continue;
+
+      const price = saleService.OnlinePrice ?? saleService.Price ?? null;
+      if (price === null || price === 0) continue;
+      if (saleService.SellOnline === false) continue;
+
+      const linkedIds: number[] = saleService.SessionTypeIds || [];
+      const linkedSt = sessionTypes.find((st: any) => linkedIds.includes(st.Id));
+      const programId = linkedSt?.ProgramId ?? saleService.ProgramId ?? null;
+      const program = programs.find((p: any) => p.Id === programId);
+
+      services.push({
+        id: `pack-${saleService.Id}`,
+        name,
+        description: saleService.Description || "",
+        defaultTimeLength: linkedSt?.DefaultTimeLength ?? 0,
+        programId: programId ?? 0,
+        programName: program?.Name || "General",
+        category: mapProgramToCategory(program?.Name),
+        numDeducted: saleService.Count ?? 1,
+        onlineDescription: saleService.Description || "",
+        price,
+        isPack: true,
+        packSessionCount: saleService.Count ?? null,
+        linkedSessionTypeId: linkedSt?.Id ?? linkedIds[0] ?? null,
+      });
+      console.log(`Added retail pack: ${name} -> £${price}`);
+    }
+
     return new Response(
       JSON.stringify({ services }),
       {
@@ -424,6 +466,41 @@ function extractMinutes(name: string | undefined): number | null {
   if (!name) return null;
   const match = name.match(/(\d+)\s*(?:mins?|minutes?|min|minute)/i);
   return match ? parseInt(match[1], 10) : null;
+}
+
+function isSessionPack(name: string): boolean {
+  return /\bpack\b/i.test(name) || /\d+\s*[-–]?\s*session\s*pack/i.test(name);
+}
+
+function hasSpecificDurationPricing(
+  catalog: Array<{ normalized: string; minutes: number | null; name: string }>,
+  normalizedBase: string,
+  minutes: number,
+): boolean {
+  return catalog.some(
+    (e) =>
+      !isSessionPack(e.name) &&
+      e.normalized === normalizedBase &&
+      e.minutes === minutes,
+  );
+}
+
+// Prevent e.g. sale "Hyperbaric Oxygen" (£200) matching "Hyperbaric Oxygen (90 mins)"
+// when "Hyperbaric Oxygen - 90 minutes" (£300) exists in the catalog.
+function durationsCompatible(
+  serviceMinutes: number | null,
+  sessionMinutes: number | null,
+  normalizedBase: string,
+  catalog: Array<{ normalized: string; minutes: number | null; name: string }>,
+): boolean {
+  if (serviceMinutes != null && sessionMinutes != null) {
+    return serviceMinutes === sessionMinutes;
+  }
+  if (serviceMinutes != null && sessionMinutes == null) return false;
+  if (sessionMinutes != null && serviceMinutes == null) {
+    return !hasSpecificDurationPricing(catalog, normalizedBase, sessionMinutes);
+  }
+  return true;
 }
 
 // Strip duration from name for matching: "Premium Suite (45 mins)" -> "premium suite"

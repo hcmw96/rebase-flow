@@ -1,19 +1,24 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Helmet } from "react-helmet-async";
-
-const SITE_URL = "https://rebaserecovery.com";
+import SeoHead from "@/components/seo/SeoHead";
+import { breadcrumbSchema, seoTitle, truncateDescription } from "@/lib/seo";
 
 const PrivacyPolicy = () => {
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1A1A1A] text-[#F9ECD9]">
-      <Helmet>
-        <title>Privacy Policy — Rebase Recovery</title>
-        <meta name="description" content="How Kula Recovery Limited (trading as Rebase) collects, uses, and protects your personal data." />
-        <link rel="canonical" href={`${SITE_URL}/privacy-policy`} />
-      </Helmet>
+      <SeoHead
+        title={seoTitle("Privacy Policy")}
+        description={truncateDescription(
+          "Privacy policy for Rebase Recovery (Kula Recovery Limited): how we collect, use and protect your personal data at our London wellness studio.",
+        )}
+        path="/privacy-policy"
+        jsonLd={breadcrumbSchema([
+          { name: "Home", path: "/website" },
+          { name: "Privacy Policy", path: "/privacy-policy" },
+        ])}
+      />
       <Navigation />
-      <main className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
+      <main id="main-content" className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
         <h1 className="text-3xl sm:text-4xl font-light tracking-wide mb-4">Privacy Policy</h1>
         <p className="text-[#F9ECD9]/50 text-sm mb-12">Last updated: May 2026</p>
 

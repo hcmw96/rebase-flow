@@ -172,7 +172,9 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                       </div>
                     )}
                     <div className="text-sm text-[hsl(35,8%,55%)] flex items-center gap-3 mt-1">
-                      {variant.duration && (
+                      {variant.isPack && variant.packSessionCount ? (
+                        <span>{variant.packSessionCount} sessions</span>
+                      ) : variant.duration ? (
                         <span className="flex items-center gap-1">
                           <svg className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                             <circle cx="12" cy="12" r="10" />
@@ -180,7 +182,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                           </svg>
                           {variant.duration} min
                         </span>
-                      )}
+                      ) : null}
                     </div>
                   </div>
                   <span className="font-semibold text-[hsl(35,15%,88%)]">

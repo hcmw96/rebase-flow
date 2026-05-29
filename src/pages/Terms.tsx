@@ -1,19 +1,24 @@
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
-import { Helmet } from "react-helmet-async";
-
-const SITE_URL = "https://rebase-flow.lovable.app";
+import SeoHead from "@/components/seo/SeoHead";
+import { breadcrumbSchema, seoTitle, truncateDescription } from "@/lib/seo";
 
 const Terms = () => {
   return (
     <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1A1A1A] text-[#F9ECD9]">
-      <Helmet>
-        <title>Terms and Conditions — Rebase Recovery</title>
-        <meta name="description" content="The terms and conditions for using the Rebase Recovery website, operated by Kula Recovery Limited." />
-        <link rel="canonical" href={`${SITE_URL}/terms`} />
-      </Helmet>
+      <SeoHead
+        title={seoTitle("Terms and Conditions")}
+        description={truncateDescription(
+          "Terms and conditions for using the Rebase Recovery website and booking wellness services in London, operated by Kula Recovery Limited.",
+        )}
+        path="/terms"
+        jsonLd={breadcrumbSchema([
+          { name: "Home", path: "/website" },
+          { name: "Terms", path: "/terms" },
+        ])}
+      />
       <Navigation />
-      <main className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
+      <main id="main-content" className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
         <h1 className="text-3xl sm:text-4xl font-light tracking-wide mb-4">Terms and Conditions</h1>
         <p className="text-[#F9ECD9]/50 text-sm mb-12">Please read these terms and conditions carefully before using this website.</p>
 

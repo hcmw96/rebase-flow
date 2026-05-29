@@ -21,6 +21,9 @@ interface ServiceVariant {
   name: string;
   duration: number | null;
   price: number | null;
+  isPack?: boolean;
+  packSessionCount?: number | null;
+  contactOnly?: boolean;
 }
 
 interface StoredService {
@@ -378,12 +381,14 @@ const BookService = () => {
                                 {variant.name}
                               </div>
                               <div className="text-sm text-muted-foreground flex items-center gap-3 mt-1">
-                                {variant.duration && (
+                                {variant.isPack && variant.packSessionCount ? (
+                                  <span>{variant.packSessionCount} sessions</span>
+                                ) : variant.duration ? (
                                   <span className="flex items-center gap-1">
                                     <Clock className="h-3 w-3" />
                                     {variant.duration} min
                                   </span>
-                                )}
+                                ) : null}
                               </div>
                             </div>
                             <div className="flex items-center gap-3">

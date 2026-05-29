@@ -13,6 +13,8 @@ export interface ServiceVariant {
   name: string;
   description?: string;
   contactOnly?: boolean;
+  isPack?: boolean;
+  packSessionCount?: number | null;
 }
 
 interface ServiceCardProps {

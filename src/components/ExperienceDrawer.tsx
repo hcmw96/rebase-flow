@@ -86,16 +86,21 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
       }
 
       const isIvFirstConsult = canonicalName === 'IV Drip' && /first\s*consult|initial/i.test(service.name);
+      const isPack = service.isPack === true;
       const variantDesc = resolveVariantDescription(
         service.name,
         canonicalName,
         service.onlineDescription || service.description,
       );
       groups.get(canonicalName)!.variants.push({
-        id: service.id, duration: duration ?? service.defaultTimeLength,
-        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null), name: service.name,
+        id: service.id,
+        duration: isPack ? null : (duration ?? service.defaultTimeLength),
+        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
+        name: service.name,
         description: variantDesc,
-        contactOnly: isIvFirstConsult || isContactOnly,
+        contactOnly: isIvFirstConsult || isContactOnly || isPack,
+        isPack,
+        packSessionCount: service.packSessionCount ?? null,
       });
     }
 
@@ -108,6 +113,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
         const aI = /initial|first\s*consult/i.test(a.name) ? 0 : 1;
         const bI = /initial|first\s*consult/i.test(b.name) ? 0 : 1;
         if (aI !== bI) return aI - bI;
+        if (a.isPack !== b.isPack) return a.isPack ? 1 : -1;
         return (a.duration ?? 0) - (b.duration ?? 0);
       });
     }

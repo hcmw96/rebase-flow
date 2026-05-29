@@ -14,6 +14,8 @@ export interface ServiceVariant {
   price: number | null;
   description?: string;
   contactOnly?: boolean;
+  isPack?: boolean;
+  packSessionCount?: number | null;
 }
 
 export interface GroupedService {
