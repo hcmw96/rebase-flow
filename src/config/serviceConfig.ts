@@ -186,7 +186,8 @@ export const packageGroups = new Set([
 
 // ── Class-based services (shown in Services grid but booked via class schedule) ──
 export const classDescriptionIdMap: Record<string, number[]> = {
-  'Communal Contrast': [5],
+  // Mindbody uses multiple description IDs for the same communal contrast schedule.
+  'Communal Contrast': [5, 47, 49],
 };
 
 // ── Price overrides (when Mindbody API returns null) ──────────────
@@ -334,7 +335,7 @@ export const classOfferings = [
   {
     name: 'Yoga',
     image: '/images/rebase-class-yoga.jpg',
-    description: 'Prana Flow and Dynamic Flow sessions to build strength and flexibility.',
+    description: 'Vinyasa Flow and Dynamic Flow sessions to build strength and flexibility.',
     classDescriptionIds: [1, 10],
   },
   {
@@ -422,7 +423,7 @@ export interface StaticServiceEntry {
 }
 
 export const staticWebsiteCatalogue: StaticServiceEntry[] = [
-  { baseName: "Communal Contrast", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5] },
+  { baseName: "Communal Contrast", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5, 47, 49] },
   { baseName: "Infrared Suite", category: "Private Suites", image: "/images/rebase-infrared-suite.jpg", shortDescription: "Detoxifying infrared heat followed by an invigorating ice bath.", fromPrice: 190, contactOnly: false },
   
   { baseName: "Premium Suite", category: "Private Suites", image: "/images/rebase-private-suites.webp", shortDescription: "Private suite with Finnish sauna, ice baths and bucket shower.", fromPrice: 240, contactOnly: false },

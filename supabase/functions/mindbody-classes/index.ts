@@ -67,6 +67,56 @@ async function getStaffToken(): Promise<string> {
   return data.AccessToken;
 }
 
+const PAGE_SIZE = 100;
+const HARD_CAP = 2000;
+
+async function fetchMindbodyClassPages(
+  apiKey: string,
+  siteId: string,
+  staffToken: string,
+  baseParams: URLSearchParams,
+): Promise<any[]> {
+  const allClasses: any[] = [];
+  let offset = 0;
+
+  while (offset < HARD_CAP) {
+    const params = new URLSearchParams(baseParams);
+    params.set("Limit", String(PAGE_SIZE));
+    params.set("Offset", String(offset));
+
+    const classesResponse = await fetch(
+      `https://api.mindbodyonline.com/public/v6/class/classes?${params.toString()}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Api-Key": apiKey,
+          "SiteId": siteId,
+          "Authorization": `Bearer ${staffToken}`,
+        },
+      },
+    );
+
+    if (!classesResponse.ok) {
+      const errorText = await classesResponse.text();
+      console.error("Classes fetch error:", errorText);
+      throw new Error("Failed to fetch classes");
+    }
+
+    const classesData = await classesResponse.json();
+    const page = classesData.Classes || [];
+    allClasses.push(...page);
+
+    const total = classesData.PaginationResponse?.TotalResults;
+    if (page.length === 0) break;
+    if (typeof total === "number" && allClasses.length >= total) break;
+    if (page.length < PAGE_SIZE) break;
+    offset += page.length;
+  }
+
+  return allClasses;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -88,54 +138,43 @@ serve(async (req) => {
 
     const staffToken = await getStaffToken();
 
-    // Build base query params
-    const baseParams = new URLSearchParams();
-    baseParams.set("StartDateTime", startDate);
-    if (endDate) baseParams.set("EndDateTime", endDate);
-    if (classDescriptionId) baseParams.set("ClassDescriptionIds", classDescriptionId);
-    if (programId) baseParams.set("ProgramIds", programId);
-    baseParams.set("HideCanceledClasses", "true");
+    const descriptionIds = classDescriptionId
+      ? classDescriptionId.split(",").map((id) => id.trim()).filter(Boolean)
+      : [];
 
-    // Mindbody caps each page at 100; paginate so high-volume schedules
-    // (e.g. Communal Contrast / legacy Member's Suite) don't bury other classes like Yoga/Pilates.
-    const PAGE_SIZE = 100;
-    const HARD_CAP = 2000;
-    const allClasses: any[] = [];
-    let offset = 0;
+    // Mindbody returns empty results when multiple ClassDescriptionIds are comma-separated;
+    // fetch each ID separately and merge.
+    let allClasses: any[] = [];
 
-    while (offset < HARD_CAP) {
-      const params = new URLSearchParams(baseParams);
-      params.set("Limit", String(PAGE_SIZE));
-      params.set("Offset", String(offset));
+    if (descriptionIds.length > 1) {
+      const seen = new Set<number>();
+      for (const id of descriptionIds) {
+        const baseParams = new URLSearchParams();
+        baseParams.set("StartDateTime", startDate);
+        if (endDate) baseParams.set("EndDateTime", endDate);
+        baseParams.set("ClassDescriptionIds", id);
+        if (programId) baseParams.set("ProgramIds", programId);
+        baseParams.set("HideCanceledClasses", "true");
 
-      const classesResponse = await fetch(
-        `https://api.mindbodyonline.com/public/v6/class/classes?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Api-Key": apiKey,
-            "SiteId": siteId,
-            "Authorization": `Bearer ${staffToken}`,
-          },
+        const pages = await fetchMindbodyClassPages(apiKey, siteId, staffToken, baseParams);
+        for (const cls of pages) {
+          if (!seen.has(cls.Id)) {
+            seen.add(cls.Id);
+            allClasses.push(cls);
+          }
         }
-      );
-
-      if (!classesResponse.ok) {
-        const errorText = await classesResponse.text();
-        console.error("Classes fetch error:", errorText);
-        throw new Error("Failed to fetch classes");
       }
+    } else {
+      const baseParams = new URLSearchParams();
+      baseParams.set("StartDateTime", startDate);
+      if (endDate) baseParams.set("EndDateTime", endDate);
+      if (descriptionIds.length === 1) {
+        baseParams.set("ClassDescriptionIds", descriptionIds[0]);
+      }
+      if (programId) baseParams.set("ProgramIds", programId);
+      baseParams.set("HideCanceledClasses", "true");
 
-      const classesData = await classesResponse.json();
-      const page = classesData.Classes || [];
-      allClasses.push(...page);
-
-      const total = classesData.PaginationResponse?.TotalResults;
-      if (page.length === 0) break;
-      if (typeof total === "number" && allClasses.length >= total) break;
-      if (page.length < PAGE_SIZE) break;
-      offset += page.length;
+      allClasses = await fetchMindbodyClassPages(apiKey, siteId, staffToken, baseParams);
     }
 
     const now = Date.now();

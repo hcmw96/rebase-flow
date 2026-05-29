@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navigation from "@/components/Navigation";
+import { experienceSlug } from "@/lib/experienceSlugs";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
 import { motion } from "framer-motion";
@@ -69,6 +71,7 @@ const EXPERIENCES_DESCRIPTION =
   "Book cryotherapy, hyperbaric oxygen, infrared suites, ice bath, massage and IV drips at Rebase Recovery — premium wellness in Marylebone, London.";
 
 const Experiences = () => {
+  const location = useLocation();
   const [selectedExperience, setSelectedExperience] = useState<typeof experiences[0] | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -76,6 +79,16 @@ const Experiences = () => {
     setSelectedExperience(exp);
     setDrawerOpen(true);
   };
+
+  useEffect(() => {
+    const hash = decodeURIComponent(location.hash.replace(/^#/, ""));
+    if (!hash) return;
+    const match = experiences.find((exp) => experienceSlug(exp.name) === hash);
+    if (match) {
+      setSelectedExperience(match);
+      setDrawerOpen(true);
+    }
+  }, [location.hash]);
 
   return (
     <div

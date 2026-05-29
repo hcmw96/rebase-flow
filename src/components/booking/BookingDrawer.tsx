@@ -401,6 +401,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
             {/* Class booking flow */}
             {isClassBooking ? (
               <ClassScheduleFlow
+                key={service.classDescriptionIds!.join('-')}
                 classDescriptionIds={service.classDescriptionIds!}
                 className={serviceDisplayName}
                 onClose={onClose}

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo } from 'react';
 import { format, addDays, startOfDay, isSameDay } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2 } from 'lucide-react';
@@ -56,11 +56,19 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
     enabled: classDescriptionIds.length > 0,
   });
 
+  const allowedDescriptionIds = useMemo(
+    () => new Set(classDescriptionIds.map((id) => Number(id))),
+    [classDescriptionIds],
+  );
+
   const filteredClasses = useMemo(() => {
     return filterUpcomingSessions(classes)
-      .filter((c) => classDescriptionIds.includes(c.classDescriptionId) && !c.isCanceled)
+      .filter(
+        (c) =>
+          allowedDescriptionIds.has(Number(c.classDescriptionId)) && !c.isCanceled,
+      )
       .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
-  }, [classes, classDescriptionIds]);
+  }, [classes, allowedDescriptionIds]);
 
   const availableDates = useMemo(() => {
     const seen = new Map<string, Date>();
@@ -71,13 +79,6 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
     }
     return Array.from(seen.values());
   }, [filteredClasses]);
-
-  useEffect(() => {
-    if (!selectedDate && availableDates.length > 0) {
-      setSelectedDate(availableDates[0]);
-      setCurrentStep(2);
-    }
-  }, [availableDates, selectedDate]);
 
   const sessionsForSelectedDay = useMemo(() => {
     if (!selectedDate) return [];
@@ -223,14 +224,28 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
 
       {currentStep === 2 && (
         <div className="space-y-2">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Select Time
-            {selectedDate && (
-              <span className="text-foreground ml-2 normal-case font-normal">
-                — {format(selectedDate, 'EEE, MMM d')}
-              </span>
-            )}
-          </h3>
+          <div className="flex items-center justify-between gap-2">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Select Time
+              {selectedDate && (
+                <span className="text-foreground ml-2 normal-case font-normal">
+                  — {format(selectedDate, 'EEE, MMM d')}
+                </span>
+              )}
+            </h3>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="shrink-0 text-xs h-8"
+              onClick={() => {
+                setSelectedClass(null);
+                setCurrentStep(1);
+              }}
+            >
+              Change date
+            </Button>
+          </div>
 
           {!selectedDate ? (
             <p className="text-sm text-muted-foreground py-6 text-center">Choose a date first.</p>
