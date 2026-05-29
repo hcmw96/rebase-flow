@@ -348,12 +348,12 @@ const ClassScheduleFlow = ({
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="flex flex-col flex-1 min-h-0 h-full"
+      className="space-y-5 pb-4"
     >
-      <BookingSteps steps={STEPS} currentStep={currentStep} className="mb-3 shrink-0" />
+      <BookingSteps steps={STEPS} currentStep={currentStep} className="mb-1" />
 
       {currentStep === 1 && (
-        <div className="flex flex-col flex-1 min-h-0 space-y-4">
+        <div className="space-y-4">
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Pick a date
@@ -385,7 +385,7 @@ const ClassScheduleFlow = ({
               )}
             </div>
 
-            <div className="space-y-6 flex-1 min-h-0 overflow-y-auto pr-1 -mr-1 overscroll-contain">
+            <div className="space-y-6">
               {scheduleByWeek.map((week) => (
                 <section key={format(week.weekStart, 'yyyy-MM-dd')} className="space-y-4">
                   <h4 className="text-xs font-semibold text-foreground/80 uppercase tracking-wider sticky top-0 bg-background/95 backdrop-blur-sm py-1 z-[1]">
@@ -432,8 +432,8 @@ const ClassScheduleFlow = ({
       )}
 
       {currentStep === 2 && selectedClass && (
-        <div className="flex flex-col flex-1 min-h-0">
-          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-4 pb-3">
+        <div className="space-y-4">
+          <div className="space-y-4">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Confirm Booking
             </h3>
@@ -482,9 +482,7 @@ const ClassScheduleFlow = ({
             </div>
           </div>
 
-          <div
-            className="shrink-0 border-t border-border/60 bg-background pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
-          >
+          <div className="sticky bottom-0 z-10 border-t border-border/60 bg-background pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <BookingConfirmActions
               onChangeTime={() => {
                 setSessionExpiredMessage(null);

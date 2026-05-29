@@ -27,6 +27,7 @@ import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
 import { stashPendingBooking } from '@/lib/bookingResume';
+import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 
 export interface BookingServiceData {
   title: string;
@@ -339,9 +340,9 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
   const showHeroImage = !bookingComplete && !showContactMessage;
 
   return (
-    <Drawer open={open} onOpenChange={handleOpenChange}>
+    <Drawer open={open} onOpenChange={handleOpenChange} handleOnly>
       <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-none border-none outline-none" hideHandle>
-        <div className="flex flex-col h-full overflow-hidden">
+        <div className="flex flex-col h-full min-h-0">
           {/* Hero Image Section */}
           {showHeroImage && (
             <div className={cn(
@@ -353,8 +354,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
                 alt={serviceDisplayName}
                 className="absolute inset-0 w-full h-full object-cover"
               />
-              {/* Gradient overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent" />
+              <ImageTextScrim tone="app" />
 
               {/* Back & Close buttons overlaid on image */}
               <div className="absolute top-0 left-0 right-0 flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
@@ -379,19 +379,19 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
               </div>
 
               {/* Service info overlaid at bottom of image */}
-              <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
+              <ImageHeroCaption tone="app" className="absolute bottom-0 left-0 right-0 px-4 pb-4">
                 <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-tight">
                   {hasVariants ? serviceDisplayName : `Book ${serviceDisplayName}`}
                 </h2>
                 {activeVariant && !hasVariants && !isClassBooking && (
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <p className="text-sm text-foreground/80 mt-0.5">
                     {[displayDuration, activeVariant.price ? `£${activeVariant.price}` : null].filter(Boolean).join(' · ')}
                   </p>
                 )}
                 {isClassBooking && displayPrice && (
-                  <p className="text-sm text-muted-foreground mt-0.5">{displayPrice}</p>
+                  <p className="text-sm text-foreground/80 mt-0.5">{displayPrice}</p>
                 )}
-              </div>
+              </ImageHeroCaption>
             </div>
           )}
 
@@ -412,12 +412,11 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
             </div>
           )}
 
-          {/* Body */}
+          {/* Body — single scroll container (nested overflow breaks iOS Safari) */}
           <div
-            className={cn(
-              'flex-1 flex flex-col min-h-0',
-              isClassBooking ? 'overflow-hidden px-4 py-3' : 'overflow-y-auto px-4 py-4',
-            )}
+            data-vaul-no-drag
+            className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y px-4 py-3 sm:py-4"
+            style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {/* Class booking flow */}
             {isClassBooking ? (

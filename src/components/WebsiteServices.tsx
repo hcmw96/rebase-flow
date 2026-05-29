@@ -33,7 +33,7 @@ import {
   staticWebsiteCatalogue,
   resolveDisplayName,
 } from '@/config/serviceConfig';
-
+import { ImageCardScrim } from '@/components/ImageTextScrim';
 
 interface WebsiteServicesProps {
   onSelectService: (service: BookingServiceData) => void;
@@ -248,7 +248,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                             loading="lazy"
                           />
-                          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
+                          <ImageCardScrim />
                         </div>
                         <div className="p-5 space-y-2">
                             <h3 className="font-serif text-xl text-[#F9ECD9] font-light">
@@ -280,33 +280,37 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                           className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors relative"
                           aria-label={`Book ${service.baseName}${fromPrice !== null ? ` from £${fromPrice}` : ""}`}
                         >
-                          <div className="relative h-48 overflow-hidden">
+                          <div className="relative min-h-[14rem] sm:min-h-[12rem] overflow-hidden">
                             <img
                               src={service.image}
                               alt={`${service.baseName} wellness treatment at Rebase Recovery, Marylebone London`}
-                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                              className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                               style={{ objectPosition: serviceImagePositions[service.baseName] || 'center' }}
                               loading="lazy"
                             />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[hsl(25,15%,14%)] via-transparent to-transparent" />
-                          </div>
-                          <div className="p-5 space-y-3">
-                            <h3 className="font-serif text-xl text-[#F9ECD9] font-light">
-                              {service.baseName}{packageGroups.has(service.baseName) ? ' Package' : ''}
-                            </h3>
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <span className="text-[#F9ECD9]/90 font-medium">
-                                  {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
-                                </span>
-                                {!packageGroups.has(service.baseName) && firstVariant?.duration && (
-                                  <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/40">
-                                    <Clock className="h-3 w-3" aria-hidden="true" />
-                                    {firstVariant.duration} min
+                            <ImageCardScrim />
+                            <div className="absolute inset-x-0 bottom-0 z-10 p-5 pt-14 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/95 to-transparent">
+                              <h3 className="font-serif text-xl text-[#F9ECD9] font-light leading-snug">
+                                {service.baseName}
+                                {packageGroups.has(service.baseName) ? ' Package' : ''}
+                              </h3>
+                              <p className="text-[#F9ECD9]/85 text-xs sm:text-sm font-light leading-relaxed mt-2 line-clamp-3">
+                                {shortDesc}
+                              </p>
+                              <div className="flex items-center justify-between mt-3 gap-3">
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <span className="text-[#F9ECD9]/90 font-medium text-sm shrink-0">
+                                    {fromPrice !== null ? `From £${fromPrice}` : 'Contact for pricing'}
                                   </span>
-                                )}
+                                  {!packageGroups.has(service.baseName) && firstVariant?.duration && (
+                                    <span className="flex items-center gap-1 text-xs text-[#F9ECD9]/50">
+                                      <Clock className="h-3 w-3 shrink-0" aria-hidden="true" />
+                                      {firstVariant.duration} min
+                                    </span>
+                                  )}
+                                </div>
+                                <ChevronRight className="h-4 w-4 text-[#F9ECD9]/40 group-hover:text-[#F9ECD9]/80 transition-colors shrink-0" aria-hidden="true" />
                               </div>
-                              <ChevronRight className="h-4 w-4 text-[#F9ECD9]/30 group-hover:text-[#F9ECD9]/70 transition-colors" aria-hidden="true" />
                             </div>
                           </div>
 

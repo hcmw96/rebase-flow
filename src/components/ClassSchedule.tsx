@@ -6,6 +6,7 @@ import { Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { classOfferings, resolveDisplayName } from '@/config/serviceConfig';
+import { ImageCardScrim } from '@/components/ImageTextScrim';
 
 const ClassSchedule = () => {
   const today = useMemo(() => new Date(), []);
@@ -71,8 +72,10 @@ const ClassSchedule = () => {
           <div key={cls.name} className="rounded-xl overflow-hidden border border-border/30 bg-black/[0.03]">
             <div className="relative h-24 overflow-hidden">
               <img src={cls.image} alt={cls.name} className="w-full h-full object-cover" loading="lazy" />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <h4 className="absolute bottom-2 left-3 text-white text-xs font-medium">{resolveDisplayName(cls.name)}</h4>
+              <ImageCardScrim />
+              <h4 className="absolute bottom-2 left-3 right-3 z-10 text-[#F9ECD9] text-xs font-medium drop-shadow-sm">
+                {resolveDisplayName(cls.name)}
+              </h4>
             </div>
           </div>
         ))}

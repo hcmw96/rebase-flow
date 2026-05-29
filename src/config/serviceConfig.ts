@@ -231,7 +231,8 @@ export const shortDescriptions: Record<string, string> = {
   'Four Hand Divine Healing': 'Synchronised four-hand massage for the ultimate sensory escape.',
   'Hyaluronic Acid': 'Joint-support injections to ease stiffness and improve mobility.',
   'PRP Therapy': 'Platelet-rich plasma therapy to stimulate natural tissue regeneration.',
-  'Communal Contrast': 'Communal contrast therapy in our shared wellness space.',
+  'Communal Contrast':
+    'Our communal wellness space featuring contrast therapy pools, relaxation areas and a curated recovery environment. Perfect for unwinding after a treatment or enjoying a social wellness session with friends.',
   'Off Peak Access': 'Discounted off-peak entry to our communal wellness space.',
 };
 
@@ -433,7 +434,16 @@ export interface StaticServiceEntry {
 }
 
 export const staticWebsiteCatalogue: StaticServiceEntry[] = [
-  { baseName: "Communal Contrast", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5, 47, 49] },
+  {
+    baseName: "Communal Contrast",
+    category: "Communal Contrast",
+    image: "/images/rebase-members-suite.jpg",
+    shortDescription:
+      "Our communal wellness space featuring contrast therapy pools, relaxation areas and a curated recovery environment. Perfect for unwinding after a treatment or enjoying a social wellness session with friends.",
+    fromPrice: 65,
+    contactOnly: false,
+    classDescriptionIds: [5, 47, 49],
+  },
   { baseName: "Infrared Suite", category: "Private Suites", image: "/images/rebase-infrared-suite.jpg", shortDescription: "Detoxifying infrared heat followed by an invigorating ice bath.", fromPrice: 190, contactOnly: false },
   
   { baseName: "Premium Suite", category: "Private Suites", image: "/images/rebase-private-suites.webp", shortDescription: "Private suite with Finnish sauna, ice baths and bucket shower.", fromPrice: 240, contactOnly: false },

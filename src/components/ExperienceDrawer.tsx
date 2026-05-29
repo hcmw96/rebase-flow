@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
 import type { PendingBooking } from '@/lib/bookingResume';
+import { ImageCardScrim, ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
@@ -196,9 +197,9 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
 
   return (
     <>
-      <Drawer open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }}>
+      <Drawer open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose(); }} handleOnly>
         <DrawerContent className="h-[100dvh] max-h-[100dvh] rounded-none border-none outline-none bg-[#1a1a1a]" hideHandle>
-          <div className="flex flex-col h-full overflow-hidden">
+          <div className="flex flex-col h-full min-h-0">
             {/* Hero */}
             <div className="relative shrink-0 min-h-[35vh] flex flex-col">
               <img
@@ -206,7 +207,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                 alt={experience.name}
                 className="absolute inset-0 w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-[#1a1a1a]/40 to-transparent" />
+              <ImageTextScrim tone="marketing" />
 
               <div className="relative flex items-center justify-between p-4 z-10" style={{ paddingTop: 'max(1rem, var(--safe-area-top, env(safe-area-inset-top, 0px)))' }}>
                 <button
@@ -217,18 +218,22 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                 </button>
               </div>
 
-              <div className="relative mt-auto p-5 pb-6 z-10">
+              <ImageHeroCaption tone="marketing" className="relative mt-auto px-5 pb-6">
                 <h2 className="text-2xl font-light text-[#F9ECD9] tracking-wide">
                   {experience.name}
                 </h2>
-                <p className="text-[#F9ECD9]/50 text-sm font-light mt-2 leading-relaxed">
+                <p className="text-[#F9ECD9]/90 text-sm font-light mt-2 leading-relaxed">
                   {experience.description}
                 </p>
-              </div>
+              </ImageHeroCaption>
             </div>
 
             {/* Services list */}
-            <div className="flex-1 overflow-y-auto px-5 py-6 space-y-4">
+            <div
+              data-vaul-no-drag
+              className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden overscroll-y-contain touch-pan-y px-5 py-6 space-y-4"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+            >
               {isLoading ? (
                 <div className="space-y-4">
                   {[...Array(3)].map((_, i) => (
@@ -251,11 +256,11 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
                           loading="lazy"
                         />
-                        <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
+                        <ImageCardScrim />
                       </div>
                       <div className="p-4 space-y-1.5 pr-20">
                         <h4 className="text-base text-[#F9ECD9] font-light">{resolveDisplayName(cls.name)}</h4>
-                        <p className="text-[#F9ECD9]/40 text-xs font-light leading-relaxed">{cls.description}</p>
+                        <p className="text-[#F9ECD9]/70 text-xs font-light leading-relaxed">{cls.description}</p>
                       </div>
                     </motion.button>
                   ))}

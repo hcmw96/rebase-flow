@@ -221,10 +221,10 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                       alt={service.name}
                       className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     />
-                    <div className="absolute inset-0 bg-gradient-to-t from-background/70 via-transparent to-transparent" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-transparent" />
                     {/* Title only – lower left */}
-                    <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
-                      <h3 className="font-medium text-foreground text-base">
+                    <div className="absolute bottom-0 left-0 right-0 px-4 pb-4 pt-8 bg-gradient-to-t from-black/80 via-black/40 to-transparent">
+                      <h3 className="font-medium text-[#F9ECD9] text-base">
                         {service.name}
                       </h3>
                     </div>

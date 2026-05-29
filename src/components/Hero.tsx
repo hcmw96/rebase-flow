@@ -10,6 +10,14 @@ const Hero = () => {
       aria-labelledby="hero-heading"
     >
       <BackgroundVideo />
+      <div
+        className="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/75 via-black/35 to-black/10"
+        aria-hidden
+      />
+      <div
+        className="absolute inset-x-0 top-0 h-1/3 pointer-events-none bg-gradient-to-b from-black/45 to-transparent"
+        aria-hidden
+      />
 
       {/* Center content */}
       <div className="relative z-10 text-center px-6">
@@ -33,8 +41,8 @@ const Hero = () => {
       </div>
 
       {/* Bottom-left subtitle */}
-      <div className="absolute bottom-12 left-6 sm:left-10 z-10 max-w-md">
-        <p className="text-[#F9ECD9]/70 text-sm sm:text-base font-light leading-relaxed">
+      <div className="absolute bottom-0 left-0 right-0 z-10 px-6 sm:px-10 pb-12 pt-16 bg-gradient-to-t from-black/80 via-black/50 to-transparent max-w-2xl">
+        <p className="text-[#F9ECD9]/90 text-sm sm:text-base font-light leading-relaxed">
           Experience a novel approach to lasting wellbeing at Rebase, London&apos;s Home of Social Wellness.
         </p>
       </div>
