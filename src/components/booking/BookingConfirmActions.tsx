@@ -7,6 +7,7 @@ interface BookingConfirmActionsProps {
   isAuthenticated: boolean;
   isPending: boolean;
   changeTimeLabel?: string;
+  sessionExpiredMessage?: string | null;
 }
 
 /**
@@ -18,18 +19,29 @@ const BookingConfirmActions = ({
   isAuthenticated,
   isPending,
   changeTimeLabel = 'Change Time',
+  sessionExpiredMessage,
 }: BookingConfirmActionsProps) => (
   <div className="space-y-3">
-    {!isAuthenticated && (
-      <p className="text-sm text-muted-foreground">
+    {sessionExpiredMessage && (
+      <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
+        {sessionExpiredMessage}
+      </p>
+    )}
+    {!isAuthenticated && !sessionExpiredMessage && (
+      <p className="text-sm text-muted-foreground leading-relaxed">
         Sign in with your Mindbody account to complete this booking.
       </p>
     )}
-    <div className="flex gap-3">
-      <Button variant="outline" onClick={onChangeTime} className="flex-1" disabled={isPending}>
+    <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
+      <Button
+        variant="outline"
+        onClick={onChangeTime}
+        className="w-full sm:flex-1 min-h-11"
+        disabled={isPending}
+      >
         {changeTimeLabel}
       </Button>
-      <Button onClick={onConfirm} disabled={isPending} className="flex-1">
+      <Button onClick={onConfirm} disabled={isPending} className="w-full sm:flex-1 min-h-11">
         {isPending ? (
           <>
             <Loader2 className="h-4 w-4 mr-2 animate-spin" />

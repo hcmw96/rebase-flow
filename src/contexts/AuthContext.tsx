@@ -16,7 +16,8 @@ interface AuthContextType {
   isLoading: boolean;
   isRedirecting: boolean;
   authError: string | null;
-  login: () => void;
+  /** Full-page Mindbody OAuth. Pass `clearSession` when replacing an expired token. */
+  login: (options?: { clearSession?: boolean }) => void;
   logout: () => void;
   refreshMbSession: () => Promise<void>;
 }
@@ -254,8 +255,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => window.removeEventListener('message', handleMessage);
   }, []);
 
-  const login = useCallback(async () => {
+  const login = useCallback(async (options?: { clearSession?: boolean }) => {
     setAuthError(null);
+    if (options?.clearSession) {
+      localStorage.removeItem(MB_STORAGE_KEY);
+      setMbSession(null);
+    }
     setIsRedirecting(true);
     try {
       const isNative = navigator.userAgent.includes('despia');
@@ -277,10 +282,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       // Use full-page redirect for both native and web.
       // Popup OAuth can be blocked/blanked by browser cross-origin restrictions.
-      window.location.href = data.authUrl;
+      window.location.assign(data.authUrl);
       return;
     } catch (error) {
       console.error('Login error:', error);
+      const message = error instanceof Error ? error.message : 'Please try again.';
+      setAuthError(message);
+      toast.error('Could not start sign-in', { description: message });
       setIsRedirecting(false);
     }
   }, []);

@@ -10,6 +10,7 @@ import Services from '@/pages/Services';
 import MyBookings from '@/pages/MyBookings';
 import AccountPage from '@/pages/AccountPage';
 import BookingDrawer, { BookingServiceData } from '@/components/booking/BookingDrawer';
+import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
 
 type Tab = 'home' | 'services' | 'bookings' | 'account';
 
@@ -25,6 +26,15 @@ const AppShell = () => {
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+
+  useResumePendingBooking(
+    useCallback((pending) => {
+      setBookingService(pending.service);
+      setResumeClassId(pending.selectedClassId);
+      setDrawerOpen(true);
+    }, []),
+  );
 
   const handleSelectService = useCallback((service: BookingServiceData) => {
     setBookingService(service);
@@ -33,6 +43,7 @@ const AppShell = () => {
 
   const handleCloseDrawer = useCallback(() => {
     setDrawerOpen(false);
+    setResumeClassId(undefined);
   }, []);
 
   const renderContent = () => {
@@ -123,6 +134,7 @@ const AppShell = () => {
         open={drawerOpen}
         onClose={handleCloseDrawer}
         service={bookingService}
+        resumeClassId={resumeClassId}
         onSwitchService={(serviceName) => {
           setDrawerOpen(false);
           setTimeout(() => {

@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import BackgroundVideo from "@/components/BackgroundVideo";
@@ -20,14 +21,13 @@ const Hero = () => {
         </h1>
         <div className="mt-10">
           <Button
+            asChild
             className="bg-[#F9ECD9]/10 backdrop-blur-md border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/20 text-sm uppercase tracking-[0.1em] px-8 h-12 rounded-none"
-            aria-label="Book a wellness treatment — scroll to services"
-            onClick={() => {
-              document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
-            }}
           >
-            Book Now
-            <ChevronRight className="ml-2 h-4 w-4" />
+            <Link to="/experiences" aria-label="Book a wellness treatment — view our treatments">
+              Book Now
+              <ChevronRight className="ml-2 h-4 w-4" />
+            </Link>
           </Button>
         </div>
       </div>

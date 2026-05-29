@@ -1,4 +1,5 @@
 import { useState, useCallback } from "react";
+import { useResumePendingBooking } from "@/hooks/useResumePendingBooking";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
@@ -13,6 +14,15 @@ const HOME_DESCRIPTION =
 const Index = () => {
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+
+  useResumePendingBooking(
+    useCallback((pending) => {
+      setBookingService(pending.service);
+      setResumeClassId(pending.selectedClassId);
+      setDrawerOpen(true);
+    }, []),
+  );
 
   const handleSelectService = useCallback((service: BookingServiceData) => {
     setBookingService(service);
@@ -21,6 +31,7 @@ const Index = () => {
 
   const handleCloseDrawer = useCallback(() => {
     setDrawerOpen(false);
+    setResumeClassId(undefined);
   }, []);
 
   return (
@@ -41,6 +52,7 @@ const Index = () => {
         open={drawerOpen}
         onClose={handleCloseDrawer}
         service={bookingService}
+        resumeClassId={resumeClassId}
         onSwitchService={() => {
           setDrawerOpen(false);
           setTimeout(() => {

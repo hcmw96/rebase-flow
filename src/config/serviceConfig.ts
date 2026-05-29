@@ -380,6 +380,16 @@ export function resolveDisplayName(name: string): string {
   return canonicalizeServiceName(name);
 }
 
+/** Replace legacy Mindbody names inside longer descriptions. */
+export function resolveDisplayText(text: string): string {
+  let out = text;
+  for (const [legacy, display] of Object.entries(legacyServiceNameAliases)) {
+    const escaped = legacy.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    out = out.replace(new RegExp(escaped, 'gi'), display);
+  }
+  return out;
+}
+
 // ── Shared grouped service type ────────────────────────────────────
 export interface GroupedService {
   baseName: string;

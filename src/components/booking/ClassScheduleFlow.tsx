@@ -1,4 +1,4 @@
-import { useState, useMemo, useRef, useCallback } from 'react';
+import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   format,
   addDays,
@@ -18,8 +18,11 @@ import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
+import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
-import { resolveDisplayName } from '@/config/serviceConfig';
+import { resolveDisplayName, resolveDisplayText } from '@/config/serviceConfig';
+import { stashPendingBooking } from '@/lib/bookingResume';
+import { classifyBookingError } from '@/lib/bookingErrors';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -67,7 +70,7 @@ function ClassSlotButton({ cls, onSelect }: ClassSlotButtonProps) {
       disabled={isFull}
       onClick={() => !isFull && onSelect(cls)}
       className={cn(
-        'w-full flex items-center justify-between p-4 rounded-xl border-2 transition-all text-left',
+        'w-full flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3.5 sm:p-4 rounded-xl border-2 transition-all text-left',
         isFull
           ? 'border-border/40 opacity-60 cursor-not-allowed'
           : 'border-border hover:border-primary/50',
@@ -94,7 +97,7 @@ function ClassSlotButton({ cls, onSelect }: ClassSlotButtonProps) {
       </div>
       <div
         className={cn(
-          'text-xs flex items-center gap-1 shrink-0 whitespace-nowrap',
+          'text-xs flex items-center gap-1 sm:shrink-0',
           isFull ? 'text-destructive' : 'text-muted-foreground',
         )}
       >
@@ -111,10 +114,18 @@ interface ClassScheduleFlowProps {
   classDescriptionIds: number[];
   className: string;
   onClose: () => void;
+  resumeClassId?: string;
+  bookingService?: BookingServiceData;
 }
 
-const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login } = useAuth();
+const ClassScheduleFlow = ({
+  classDescriptionIds,
+  className: clsName,
+  onClose,
+  resumeClassId,
+  bookingService,
+}: ClassScheduleFlowProps) => {
+  const { isAuthenticated, login, logout } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -122,6 +133,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), SCHEDULE_WEEKS_AHEAD), 'yyyy-MM-dd');
@@ -206,8 +218,30 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
   };
 
   const handleClassSelect = (cls: MindbodyClass) => {
+    setSessionExpiredMessage(null);
     setSelectedClass(cls);
     setCurrentStep(2);
+  };
+
+  useEffect(() => {
+    if (!resumeClassId || filteredClasses.length === 0) return;
+    const match = filteredClasses.find((c) => c.id === resumeClassId);
+    if (match) {
+      setSelectedClass(match);
+      setCurrentStep(2);
+    }
+  }, [resumeClassId, filteredClasses]);
+
+  const startSignIn = (cls?: MindbodyClass | null) => {
+    const target = cls ?? selectedClass;
+    if (bookingService) {
+      stashPendingBooking(bookingService, {
+        selectedClassId: target?.id,
+      });
+    }
+    setSessionExpiredMessage(null);
+    logout();
+    login({ clearSession: true });
   };
 
   const handleBook = async () => {
@@ -226,18 +260,14 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
       setBookingComplete(true);
       toast.success('Class booked successfully!');
     } catch (error: unknown) {
-      const msg = (error instanceof Error ? error.message : '').toLowerCase();
-      if (
-        msg.includes('site id does not match') ||
-        msg.includes('session not found') ||
-        msg.includes('session expired') ||
-        msg.includes('please log in')
-      ) {
-        toast.error('Your sign-in expired. Please sign in again.', {
-          action: { label: 'Sign in', onClick: () => login() },
-        });
+      const classified = classifyBookingError(
+        error instanceof Error ? error.message : undefined,
+      );
+      if (classified.kind === 'session_expired') {
+        setSessionExpiredMessage(classified.message);
+        logout();
       } else {
-        toast.error(error instanceof Error ? error.message : 'Failed to book class. Please try again.');
+        toast.error(classified.message);
       }
     }
   };
@@ -245,7 +275,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
   const handleConfirm = () => {
     if (!selectedClass) return;
     if (!isAuthenticated) {
-      login();
+      startSignIn(selectedClass);
       return;
     }
     handleBook();
@@ -318,12 +348,12 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
     <motion.div
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
-      className="space-y-5"
+      className="flex flex-col flex-1 min-h-0 h-full"
     >
-      <BookingSteps steps={STEPS} currentStep={currentStep} className="mb-1" />
+      <BookingSteps steps={STEPS} currentStep={currentStep} className="mb-3 shrink-0" />
 
       {currentStep === 1 && (
-        <div className="space-y-4">
+        <div className="flex flex-col flex-1 min-h-0 space-y-4">
           <div className="space-y-2">
             <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
               Pick a date
@@ -355,7 +385,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
               )}
             </div>
 
-            <div className="space-y-6 max-h-[min(50vh,28rem)] overflow-y-auto pr-1 -mr-1">
+            <div className="space-y-6 flex-1 min-h-0 overflow-y-auto pr-1 -mr-1 overscroll-contain">
               {scheduleByWeek.map((week) => (
                 <section key={format(week.weekStart, 'yyyy-MM-dd')} className="space-y-4">
                   <h4 className="text-xs font-semibold text-foreground/80 uppercase tracking-wider sticky top-0 bg-background/95 backdrop-blur-sm py-1 z-[1]">
@@ -402,64 +432,76 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
       )}
 
       {currentStep === 2 && selectedClass && (
-        <div className="space-y-4">
-          <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-            Confirm Booking
-          </h3>
-          <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-sm">
-            <h4 className="font-semibold text-base text-foreground">
-              {resolveDisplayName(selectedClass.name)}
-            </h4>
-            {selectedClass.description && (
-              <p className="text-sm text-muted-foreground">
-                {stripHtml(selectedClass.description)}
-              </p>
-            )}
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>
-                  {format(new Date(selectedClass.startDateTime), 'EEEE, MMMM d, yyyy')}
-                </span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>
-                  {format(new Date(selectedClass.startDateTime), 'h:mm a')} –{' '}
-                  {format(new Date(selectedClass.endDateTime), 'h:mm a')}
-                </span>
-              </div>
-              {selectedClass.staffName && (
-                <div className="flex items-center gap-3">
-                  <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                  <span>{selectedClass.staffName}</span>
-                </div>
+        <div className="flex flex-col flex-1 min-h-0">
+          <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain space-y-4 pb-3">
+            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+              Confirm Booking
+            </h3>
+            <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-sm">
+              <h4 className="font-semibold text-base text-foreground">
+                {resolveDisplayName(selectedClass.name)}
+              </h4>
+              {selectedClass.description && (
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {resolveDisplayText(stripHtml(selectedClass.description))}
+                </p>
               )}
-              <div className="flex items-center gap-3">
-                <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>{normaliseBrand(selectedClass.locationName)}</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <Users className="h-4 w-4 text-muted-foreground shrink-0" />
-                <span>
-                  {selectedClass.availableSpots <= 0
-                    ? 'Fully booked'
-                    : `${selectedClass.availableSpots} spot${selectedClass.availableSpots !== 1 ? 's' : ''} remaining`}
-                </span>
+              <div className="space-y-2.5">
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <span className="leading-snug">
+                    {format(new Date(selectedClass.startDateTime), 'EEE, MMM d, yyyy')}
+                  </span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <span className="leading-snug">
+                    {format(new Date(selectedClass.startDateTime), 'h:mm a')} –{' '}
+                    {format(new Date(selectedClass.endDateTime), 'h:mm a')}
+                  </span>
+                </div>
+                {selectedClass.staffName && (
+                  <div className="flex items-start gap-3">
+                    <User className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                    <span className="leading-snug">{resolveDisplayName(selectedClass.staffName)}</span>
+                  </div>
+                )}
+                <div className="flex items-start gap-3">
+                  <MapPin className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <span className="leading-snug">{normaliseBrand(selectedClass.locationName)}</span>
+                </div>
+                <div className="flex items-start gap-3">
+                  <Users className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                  <span className="leading-snug">
+                    {selectedClass.availableSpots <= 0
+                      ? 'Fully booked'
+                      : `${selectedClass.availableSpots} spot${selectedClass.availableSpots !== 1 ? 's' : ''} remaining`}
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          <BookingConfirmActions
-            onChangeTime={() => {
-              setSelectedClass(null);
-              setCurrentStep(1);
-            }}
-            onConfirm={handleConfirm}
-            isAuthenticated={isAuthenticated}
-            isPending={bookMutation.isPending}
-            changeTimeLabel="Change session"
-          />
+          <div
+            className="shrink-0 border-t border-border/60 bg-background pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]"
+          >
+            <BookingConfirmActions
+              onChangeTime={() => {
+                setSessionExpiredMessage(null);
+                setSelectedClass(null);
+                setCurrentStep(1);
+              }}
+              onConfirm={
+                sessionExpiredMessage
+                  ? () => startSignIn(selectedClass)
+                  : handleConfirm
+              }
+              isAuthenticated={isAuthenticated && !sessionExpiredMessage}
+              isPending={bookMutation.isPending}
+              changeTimeLabel="Change session"
+              sessionExpiredMessage={sessionExpiredMessage}
+            />
+          </div>
         </div>
       )}
     </motion.div>

@@ -1,4 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useCallback } from 'react';
+import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
+import type { PendingBooking } from '@/lib/bookingResume';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { Drawer, DrawerContent } from '@/components/ui/drawer';
@@ -48,6 +50,15 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   const { data: hiddenServices = [] } = useHiddenServices();
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
+  const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+
+  const handleResumeBooking = useCallback((pending: PendingBooking) => {
+    setBookingService(pending.service);
+    setResumeClassId(pending.selectedClassId);
+    setBookingOpen(true);
+  }, []);
+
+  useResumePendingBooking(handleResumeBooking);
 
   const hiddenServiceIds = useMemo(() => new Set(hiddenServices.map(h => h.service_id)), [hiddenServices]);
 
@@ -306,8 +317,12 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
 
       <BookingDrawer
         open={bookingOpen}
-        onClose={() => setBookingOpen(false)}
+        onClose={() => {
+          setBookingOpen(false);
+          setResumeClassId(undefined);
+        }}
         service={bookingService}
+        resumeClassId={resumeClassId}
       />
     </>
   );

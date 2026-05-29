@@ -26,6 +26,7 @@ import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
+import { stashPendingBooking } from '@/lib/bookingResume';
 
 export interface BookingServiceData {
   title: string;
@@ -42,6 +43,7 @@ interface BookingDrawerProps {
   onClose: () => void;
   service: BookingServiceData | null;
   onSwitchService?: (serviceName: string) => void;
+  resumeClassId?: string;
 }
 
 const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
@@ -71,8 +73,9 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
   </motion.div>
 );
 
-const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawerProps) => {
-  const { mbSession, isAuthenticated, login } = useAuth();
+const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId }: BookingDrawerProps) => {
+  const { mbSession, isAuthenticated, login, logout } = useAuth();
+  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
   const bookServiceMutation = useBookService();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -95,8 +98,16 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         setSelectedVariant(null);
         setBookingComplete(false);
         setIdempotencyKey(null);
+        setSessionExpiredMessage(null);
       }, 300);
     }
+  };
+
+  const startSignInForBooking = () => {
+    if (service) stashPendingBooking(service);
+    setSessionExpiredMessage(null);
+    logout();
+    login({ clearSession: true });
   };
 
   // Check if this is a class booking
@@ -256,7 +267,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   const handleConfirmBooking = async () => {
     if (!selectedSlot) return;
     if (!isAuthenticated) {
-      login();
+      startSignInForBooking();
       return;
     }
 
@@ -282,9 +293,8 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
       const classified = classifyBookingError(error?.message);
 
       if (classified.kind === 'session_expired') {
-        toast.error(classified.message, {
-          action: { label: 'Sign in', onClick: () => login() },
-        });
+        setSessionExpiredMessage(classified.message);
+        logout();
       } else if (classified.kind === 'payment_required') {
         toast.error(classified.message, {
           action: {
@@ -334,7 +344,10 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
         <div className="flex flex-col h-full overflow-hidden">
           {/* Hero Image Section */}
           {showHeroImage && (
-            <div className="relative shrink-0 h-[35vh]">
+            <div className={cn(
+              'relative shrink-0',
+              isClassBooking ? 'h-[22vh] sm:h-[30vh]' : 'h-[28vh] sm:h-[35vh]',
+            )}>
               <img
                 src={service.image}
                 alt={serviceDisplayName}
@@ -367,13 +380,16 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
               {/* Service info overlaid at bottom of image */}
               <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
-                <h2 className="text-xl font-semibold text-foreground">
+                <h2 className="text-lg sm:text-xl font-semibold text-foreground leading-tight">
                   {hasVariants ? serviceDisplayName : `Book ${serviceDisplayName}`}
                 </h2>
-                {activeVariant && !hasVariants && (
+                {activeVariant && !hasVariants && !isClassBooking && (
                   <p className="text-sm text-muted-foreground mt-0.5">
                     {[displayDuration, activeVariant.price ? `£${activeVariant.price}` : null].filter(Boolean).join(' · ')}
                   </p>
+                )}
+                {isClassBooking && displayPrice && (
+                  <p className="text-sm text-muted-foreground mt-0.5">{displayPrice}</p>
                 )}
               </div>
             </div>
@@ -396,15 +412,22 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
             </div>
           )}
 
-          {/* Scrollable body */}
-          <div className="flex-1 overflow-y-auto px-4 py-4">
+          {/* Body */}
+          <div
+            className={cn(
+              'flex-1 flex flex-col min-h-0',
+              isClassBooking ? 'overflow-hidden px-4 py-3' : 'overflow-y-auto px-4 py-4',
+            )}
+          >
             {/* Class booking flow */}
             {isClassBooking ? (
               <ClassScheduleFlow
-                key={service.classDescriptionIds!.join('-')}
+                key={`${service.classDescriptionIds!.join('-')}-${resumeClassId ?? ''}`}
                 classDescriptionIds={service.classDescriptionIds!}
                 className={serviceDisplayName}
                 onClose={onClose}
+                resumeClassId={resumeClassId}
+                bookingService={service}
               />
             ) : isFullContactOnly && !hasVariants ? (
               <ContactReceptionMessage serviceName={serviceDisplayName} />
@@ -646,10 +669,18 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
                         </div>
                       ) : (
                         <BookingConfirmActions
-                          onChangeTime={() => setCurrentStep(timeStep)}
-                          onConfirm={handleConfirmBooking}
-                          isAuthenticated={isAuthenticated}
+                          onChangeTime={() => {
+                            setSessionExpiredMessage(null);
+                            setCurrentStep(timeStep);
+                          }}
+                          onConfirm={
+                            sessionExpiredMessage
+                              ? startSignInForBooking
+                              : handleConfirmBooking
+                          }
+                          isAuthenticated={isAuthenticated && !sessionExpiredMessage}
                           isPending={isBooking}
+                          sessionExpiredMessage={sessionExpiredMessage}
                         />
                       )}
 
