@@ -2,39 +2,14 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import Logo from '@/components/Logo';
-
-const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/newbase.mp4`;
+import BackgroundVideo from '@/components/BackgroundVideo';
 
 const AuthPage = () => {
   const { login, authError, isRedirecting } = useAuth();
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
-      {/* Background Video */}
-      <div className="absolute inset-0">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          controls={false}
-          webkit-playsinline="true"
-          x-webkit-airplay="deny"
-          disablePictureInPicture
-          className="w-full h-full object-cover"
-          style={{ pointerEvents: 'none' }}
-          ref={(el) => {
-            if (el) {
-              el.setAttribute('playsinline', '');
-              el.setAttribute('webkit-playsinline', '');
-              el.play().catch(() => {});
-            }
-          }}
-        >
-          <source src={VIDEO_URL} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-black/50" />
-      </div>
+      <BackgroundVideo overlayClassName="bg-black/50" />
 
       {/* Auth Form */}
       <div className="relative z-10 w-full px-6 max-w-sm mx-auto flex flex-col items-center justify-center min-h-[70vh]">

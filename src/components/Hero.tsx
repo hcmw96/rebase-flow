@@ -1,7 +1,6 @@
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
-
-const VIDEO_URL = `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/vids2/newbase.mp4`;
+import BackgroundVideo from "@/components/BackgroundVideo";
 
 const Hero = () => {
   return (
@@ -9,26 +8,7 @@ const Hero = () => {
       className="relative h-screen flex items-center justify-center overflow-hidden"
       aria-labelledby="hero-heading"
     >
-      {/* Background Video */}
-      <div className="absolute inset-0" aria-hidden="true">
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="w-full h-full object-cover"
-          aria-hidden="true"
-          ref={(el) => {
-            if (el) {
-              el.setAttribute("playsinline", "");
-              el.play().catch(() => {});
-            }
-          }}
-        >
-          <source src={VIDEO_URL} type="video/mp4" />
-        </video>
-        <div className="absolute inset-0 bg-black/45" />
-      </div>
+      <BackgroundVideo />
 
       {/* Center content */}
       <div className="relative z-10 text-center px-6">
@@ -55,7 +35,7 @@ const Hero = () => {
       {/* Bottom-left subtitle */}
       <div className="absolute bottom-12 left-6 sm:left-10 z-10 max-w-md">
         <p className="text-[#F9ECD9]/70 text-sm sm:text-base font-light leading-relaxed">
-          Experience a novel approach to lasting wellbeing at Rebase, London's Home of Social Wellness.
+          Experience a novel approach to lasting wellbeing at Rebase, London&apos;s Home of Social Wellness.
         </p>
       </div>
     </section>
