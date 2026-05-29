@@ -8,6 +8,8 @@ interface BookingCalendarProps {
   availableDates?: Date[];
   isLoading?: boolean;
   className?: string;
+  /** Last selectable day (inclusive). */
+  toDate?: Date;
 }
 
 const BookingCalendar = ({
@@ -16,6 +18,7 @@ const BookingCalendar = ({
   availableDates,
   isLoading,
   className,
+  toDate,
 }: BookingCalendarProps) => {
   // Disable dates in the past
   const today = new Date();
@@ -40,8 +43,12 @@ const BookingCalendar = ({
         mode="single"
         selected={selectedDate}
         onSelect={onSelect}
+        fromDate={today}
+        toDate={toDate}
         disabled={(date) => {
+          const isAfterRange = toDate ? date > toDate : false;
           const isPast = date < today;
+          if (isAfterRange) return true;
           if (!availabilityLoaded) return isPast;
           return isPast || !isDateAvailable(date);
         }}
