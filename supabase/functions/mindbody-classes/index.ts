@@ -79,7 +79,7 @@ serve(async (req) => {
     baseParams.set("HideCanceledClasses", "true");
 
     // Mindbody caps each page at 100; paginate so high-volume schedules
-    // (e.g. Member's Suite) don't bury other classes like Yoga/Pilates.
+    // (e.g. Communal Contrast / legacy Member's Suite) don't bury other classes like Yoga/Pilates.
     const PAGE_SIZE = 100;
     const HARD_CAP = 2000;
     const allClasses: any[] = [];

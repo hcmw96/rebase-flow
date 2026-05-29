@@ -5,13 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
-
-const classOfferings = [
-  { name: 'Urban Oasis', image: '/images/rebase-class-urban-oasis.jpg', description: 'Breathwork & meditation in candlelit surroundings.' },
-  { name: 'Contrast Immersion', image: '/images/rebase-class-contrast-immersion.jpg', description: 'Guided hot-cold contrast therapy.' },
-  { name: 'Yoga', image: '/images/rebase-class-yoga.jpg', description: 'Prana Flow & Dynamic Flow sessions.' },
-  { name: 'Mat Pilates', image: '/images/rebase-class-mat-pilates.jpg', description: 'Core-focused mat work for posture & tone.' },
-];
+import { classOfferings, resolveDisplayName } from '@/config/serviceConfig';
 
 const ClassSchedule = () => {
   const today = useMemo(() => new Date(), []);
@@ -115,7 +109,7 @@ const ClassSchedule = () => {
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0 space-y-1">
-                        <h4 className="font-medium text-foreground text-sm">{cls.name}</h4>
+                        <h4 className="font-medium text-foreground text-sm">{resolveDisplayName(cls.name)}</h4>
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />

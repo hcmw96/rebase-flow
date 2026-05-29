@@ -21,7 +21,7 @@ interface HomePageProps {
   onSelectService: (service: BookingServiceData) => void;
 }
 
-// Popular service groups (removed Members Suite)
+// Popular service groups (Communal Contrast booked via class schedule)
 const POPULAR_GROUPS = ['Infrared Suite', 'Cryotherapy', 'Hyperbaric Oxygen'];
 
 const groupingPatterns: { pattern: RegExp; groupName: string }[] = [

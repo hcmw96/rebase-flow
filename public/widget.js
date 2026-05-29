@@ -7226,7 +7226,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     ] });
   }
   const serviceGroupMappings = [
-    { pattern: /^members?\s*(only|suite)/i, groupName: "Members Suite" },
+    { pattern: /^members?\s*(only|suite)/i, groupName: "Communal Contrast" },
     { pattern: /^iv\s*(drip|add\s*on)/i, groupName: "IV Drip" },
     { pattern: /^nad\+?/i, groupName: "NAD+" },
     { pattern: /^vitamin\s*shots?/i, groupName: "IV Drip" },
@@ -7390,7 +7390,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     "Longevity": "/images/rebase-longevity.jpg",
     "Athletes Performance": "/images/rebase-athletes-performance.jpg",
     "Core Radiance": "/images/rebase-core-radiance.jpg",
-    "Members Suite": "/images/rebase-members-suite.jpg"
+    "Communal Contrast": "/images/rebase-members-suite.jpg"
   };
   const categoryImages = {
     "Recovery": "/images/rebase-hbot-new.png",
@@ -7433,7 +7433,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     "Four Hand Divine Healing": "Synchronised four-hand massage for the ultimate sensory escape.",
     "Hyaluronic Acid": "Joint-support injections to ease stiffness and improve mobility.",
     "PRP Therapy": "Platelet-rich plasma therapy to stimulate natural tissue regeneration.",
-    "Members Suite": "Communal contrast therapy in our shared wellness space.",
+    "Communal Contrast": "Communal contrast therapy in our shared wellness space.",
     "Off Peak Access": "Discounted off-peak entry to our communal wellness space."
   };
   const GENERIC_SERVICE_DESCRIPTION = "Experience our premium wellness service.";
@@ -7474,7 +7474,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     " 45 Minute Classes": "Single 45-minute class credit.",
     "30 Minute Classes": "Single 30-minute express class credit.",
     "1 Hour Classes": "Single 60-minute class credit.",
-    // Members Suite
+    // Communal Contrast
     "Off Peak Access": "Discounted off-peak entry to the communal wellness space.",
     "members only": "Communal contrast therapy in our shared wellness space."
   };
@@ -7691,12 +7691,6 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     } else {
       return new Date(value);
     }
-  }
-  function addDays(date, amount) {
-    const _date = toDate(date);
-    if (isNaN(amount)) return constructFrom(date, NaN);
-    _date.setDate(_date.getDate() + amount);
-    return _date;
   }
   function addMonths(date, amount) {
     const _date = toDate(date);
@@ -9179,6 +9173,13 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
   function subMonths(date, amount) {
     return addMonths(date, -amount);
   }
+  function isUpcomingSession(startDateTime, now = Date.now()) {
+    const start = new Date(startDateTime).getTime();
+    return Number.isFinite(start) && start > now;
+  }
+  function filterUpcomingSessions(items, now = Date.now()) {
+    return items.filter((item) => isUpcomingSession(item.startDateTime, now));
+  }
   function BookingCalendar({ selectedDate, onSelect, availableDates }) {
     const [currentMonth, setCurrentMonth] = reactExports.useState(/* @__PURE__ */ new Date());
     const today = startOfDay(/* @__PURE__ */ new Date());
@@ -9307,10 +9308,13 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
       setAvailableSlots([]);
       client.getAvailability({
         sessionTypeId: selectedVariant.id,
-        startDate: format(selectedDate, "yyyy-MM-dd"),
-        endDate: format(addDays(selectedDate, 1), "yyyy-MM-dd")
+        startDate: format(selectedDate, "yyyy-MM-dd")
       }).then((data) => {
-        setAvailableSlots(data.availableItems || []);
+        const items = filterUpcomingSessions(data.availableItems || []);
+        const forDay = items.filter(
+          (slot) => selectedDate ? isSameDay(new Date(slot.startDateTime), selectedDate) : true
+        );
+        setAvailableSlots(forDay);
         setIsLoadingSlots(false);
       }).catch(() => {
         setIsLoadingSlots(false);
@@ -9503,15 +9507,29 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
             ] })
           ] }),
           error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "bg-red-500/10 border border-red-500/30 rounded-xl p-4 text-sm text-red-400", children: error }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            "button",
-            {
-              onClick: handleConfirmBooking,
-              disabled: isBooking,
-              className: "w-full py-4 bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)] font-semibold rounded-xl hover:bg-[hsl(35,15%,80%)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
-              children: isBooking ? "Booking..." : isAuthenticated ? "Confirm Booking" : "Sign In to Book"
-            }
-          )
+          !isAuthenticated && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-[hsl(35,8%,55%)]", children: "Sign in with your Mindbody account to complete this booking." }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-3", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: () => setStep("time"),
+                disabled: isBooking,
+                className: "flex-1 py-3 border border-[hsl(25,10%,25%)] text-[hsl(35,15%,88%)] font-medium rounded-xl hover:bg-[hsl(25,12%,18%)] transition-colors disabled:opacity-50",
+                children: "Change Time"
+              }
+            ),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              "button",
+              {
+                type: "button",
+                onClick: handleConfirmBooking,
+                disabled: isBooking,
+                className: "flex-1 py-3 bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)] font-semibold rounded-xl hover:bg-[hsl(35,15%,80%)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                children: isBooking ? "Booking..." : isAuthenticated ? "Confirm Booking" : "Sign In to Book"
+              }
+            )
+          ] })
         ] }),
         step === "success" && selectedSlot && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-center space-y-6 py-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { className: "h-8 w-8 text-green-500", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
@@ -9595,7 +9613,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     ) });
   }
   const widgetStyles = "/* Widget Styles - Injected into Shadow DOM */\n\n/* Animations */\n@keyframes slideDown {\n  from {\n    opacity: 0;\n    height: 0;\n  }\n  to {\n    opacity: 1;\n    height: auto;\n  }\n}\n\n@keyframes fadeIn {\n  from {\n    opacity: 0;\n    transform: translateY(10px);\n  }\n  to {\n    opacity: 1;\n    transform: translateY(0);\n  }\n}\n\n@keyframes pulse {\n  0%, 100% {\n    opacity: 1;\n  }\n  50% {\n    opacity: 0.5;\n  }\n}\n\n/* Base Styles */\n.rebase-widget {\n  box-sizing: border-box;\n  line-height: 1.5;\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n}\n\n.rebase-widget *,\n.rebase-widget *::before,\n.rebase-widget *::after {\n  box-sizing: inherit;\n}\n\n/* Utility Classes */\n.rebase-widget .animate-pulse {\n  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;\n}\n\n/* Line Clamp */\n.rebase-widget .line-clamp-2 {\n  display: -webkit-box;\n  -webkit-line-clamp: 2;\n  -webkit-box-orient: vertical;\n  overflow: hidden;\n}\n\n/* Scrollbar Styling */\n.rebase-widget ::-webkit-scrollbar {\n  width: 6px;\n  height: 6px;\n}\n\n.rebase-widget ::-webkit-scrollbar-track {\n  background: hsl(25, 10%, 15%);\n  border-radius: 3px;\n}\n\n.rebase-widget ::-webkit-scrollbar-thumb {\n  background: hsl(25, 10%, 30%);\n  border-radius: 3px;\n}\n\n.rebase-widget ::-webkit-scrollbar-thumb:hover {\n  background: hsl(25, 10%, 40%);\n}\n\n/* Hide scrollbar for touch devices but keep functionality */\n@media (hover: none) {\n  .rebase-widget ::-webkit-scrollbar {\n    display: none;\n  }\n  \n  .rebase-widget {\n    -ms-overflow-style: none;\n    scrollbar-width: none;\n  }\n}\n";
-  const DEFAULT_API_URL = "https://ipmrdxtgrxvwzbrbiuvz.supabase.co";
+  const DEFAULT_API_URL = "https://yzlhwvwdkardcuipwwtq.supabase.co";
   class RebaseServicesWidget2 extends HTMLElement {
     constructor() {
       super();

@@ -24,7 +24,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { ServiceVariant } from '@/components/ServiceCard';
-import { priceOverrides } from '@/config/serviceConfig';
+import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
 
 export interface BookingServiceData {
@@ -101,6 +101,8 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
 
   // Check if this is a class booking
   const isClassBooking = !!(service?.classDescriptionIds?.length);
+
+  const serviceDisplayName = service?.title ? resolveDisplayName(service.title) : '';
 
   // Check if this entire service is contact-only
   const isFullContactOnly = service?.contactOnly === true;
@@ -317,10 +319,10 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
   const displayDuration = activeVariant?.duration ? `${activeVariant.duration} min` : '';
   const displayPrice = activeVariant?.price
     ? `£${activeVariant.price.toFixed(2)}`
-    : (service?.title && priceOverrides[service.title] !== undefined
-        ? `£${priceOverrides[service.title].toFixed(2)}`
+    : (serviceDisplayName && priceOverrides[serviceDisplayName] !== undefined
+        ? `£${priceOverrides[serviceDisplayName].toFixed(2)}`
         : 'Contact for pricing');
-  const displayTitle = activeVariant?.name || service?.title || '';
+  const displayTitle = resolveDisplayName(activeVariant?.name || service?.title || '');
 
   if (!service) return null;
 
@@ -335,7 +337,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
             <div className="relative shrink-0 h-[35vh]">
               <img
                 src={service.image}
-                alt={service.title}
+                alt={serviceDisplayName}
                 className="absolute inset-0 w-full h-full object-cover"
               />
               {/* Gradient overlay */}
@@ -366,7 +368,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
               {/* Service info overlaid at bottom of image */}
               <div className="absolute bottom-0 left-0 right-0 p-4 z-10">
                 <h2 className="text-xl font-semibold text-foreground">
-                  {hasVariants ? service.title : `Book ${service.title}`}
+                  {hasVariants ? serviceDisplayName : `Book ${serviceDisplayName}`}
                 </h2>
                 {activeVariant && !hasVariants && (
                   <p className="text-sm text-muted-foreground mt-0.5">
@@ -388,7 +390,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
               </button>
               <div className="flex-1 min-w-0">
                 <h2 className="text-base font-semibold text-foreground truncate">
-                  {bookingComplete ? 'Confirmed' : service.title}
+                  {bookingComplete ? 'Confirmed' : serviceDisplayName}
                 </h2>
               </div>
             </div>
@@ -400,13 +402,13 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService }: BookingDrawe
             {isClassBooking ? (
               <ClassScheduleFlow
                 classDescriptionIds={service.classDescriptionIds!}
-                className={service.title}
+                className={serviceDisplayName}
                 onClose={onClose}
               />
             ) : isFullContactOnly && !hasVariants ? (
-              <ContactReceptionMessage serviceName={service.title} />
+              <ContactReceptionMessage serviceName={serviceDisplayName} />
             ) : showContactMessage && isVariantContactOnly ? (
-              <ContactReceptionMessage serviceName={activeVariant?.name || service.title} />
+              <ContactReceptionMessage serviceName={resolveDisplayName(activeVariant?.name || service.title)} />
             ) : bookingComplete && selectedSlot ? (
               /* ── Success ── */
               <motion.div

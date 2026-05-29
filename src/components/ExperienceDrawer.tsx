@@ -17,6 +17,7 @@ import {
   classOfferings,
   priceOverrides,
   classDescriptionIdMap,
+  resolveDisplayName,
   extractDurationFromName,
   canonicalizeServiceName,
   resolveCategory,
@@ -147,21 +148,22 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   };
 
   const handleSelectService = (service: GroupedService) => {
+    const displayName = resolveDisplayName(service.baseName);
     setBookingService({
-      title: service.baseName,
+      title: displayName,
       description: service.description,
       category: service.category,
       image: service.image,
       variants: service.variants,
       contactOnly: service.contactOnly,
-      ...(classDescriptionIdMap[service.baseName] ? { classDescriptionIds: classDescriptionIdMap[service.baseName] } : {}),
+      ...(classDescriptionIdMap[displayName] ? { classDescriptionIds: classDescriptionIdMap[displayName] } : {}),
     });
     setBookingOpen(true);
   };
 
   const handleSelectClass = (cls: typeof classOfferings[0]) => {
     setBookingService({
-      title: cls.name,
+      title: resolveDisplayName(cls.name),
       description: cls.description,
       category: 'Signature Classes',
       image: cls.image,

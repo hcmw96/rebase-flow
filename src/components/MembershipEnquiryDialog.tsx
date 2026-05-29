@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 
-const SUPPORT_EMAIL = "support@rebaserecovery.com";
+const MEMBERSHIP_EMAIL = "membership@rebaserecovery.com";
 
 interface MembershipEnquiryDialogProps {
   open: boolean;
@@ -47,7 +47,7 @@ const MembershipEnquiryDialog = ({
         .join("\n")
     );
 
-    window.location.href = `mailto:${SUPPORT_EMAIL}?subject=${subject}&body=${body}`;
+    window.location.href = `mailto:${MEMBERSHIP_EMAIL}?subject=${subject}&body=${body}`;
     onOpenChange(false);
   };
 
@@ -59,7 +59,7 @@ const MembershipEnquiryDialog = ({
             Enquire about {tierName}
           </DialogTitle>
           <DialogDescription className="text-[#F9ECD9]/50 font-light">
-            Share your details and we&apos;ll get back to you at {SUPPORT_EMAIL}.
+            Share your details and we&apos;ll get back to you at {MEMBERSHIP_EMAIL}.
           </DialogDescription>
         </DialogHeader>
 

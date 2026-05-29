@@ -10,7 +10,7 @@ import { Helmet } from "react-helmet-async";
 
 const SITE_URL = "https://rebase-flow.lovable.app";
 
-const faqs: { q: string; a: string }[] = [
+const faqs: { q: string; a: string; email?: string }[] = [
   {
     q: "Do I need to be a member to use the facility?",
     a: "Both membership and single-use passes are offered. Memberships (monthly, 6-month, or 12-month) provide the best value; single-use passes are available for non-members.",
@@ -62,6 +62,11 @@ const faqs: { q: string; a: string }[] = [
   {
     q: "What is your Health and Safety policy?",
     a: "All treatments are administered by trained professionals to the highest standards. Clients are encouraged to discuss any health concerns with the team before booking.",
+  },
+  {
+    q: "Private events and partnerships",
+    a: "For private events or partnerships please email",
+    email: "df@rebaserecovery.com",
   },
 ];
 
@@ -124,7 +129,20 @@ const FAQ = () => {
                 {f.q}
               </AccordionTrigger>
               <AccordionContent className="text-foreground/75 text-sm sm:text-base leading-relaxed pb-5">
-                {f.a}
+                {f.email ? (
+                  <>
+                    {f.a}{" "}
+                    <a
+                      href={`mailto:${f.email}`}
+                      className="text-primary hover:underline"
+                    >
+                      {f.email}
+                    </a>
+                    .
+                  </>
+                ) : (
+                  f.a
+                )}
               </AccordionContent>
             </AccordionItem>
           ))}

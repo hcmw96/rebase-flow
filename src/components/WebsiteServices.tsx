@@ -31,6 +31,7 @@ import {
   resolveGroupDescription,
   resolveVariantDescription,
   staticWebsiteCatalogue,
+  resolveDisplayName,
 } from '@/config/serviceConfig';
 
 
@@ -156,14 +157,15 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     // Prefer the live group (with real Mindbody variant IDs) when available.
     const live = liveGroups.get(service.baseName);
     const target = live ?? service;
+    const displayName = resolveDisplayName(target.baseName);
     onSelectService({
-      title: target.baseName,
+      title: displayName,
       description: target.description || service.description,
       category: target.category,
       image: target.image || service.image,
       variants: target.variants,
       contactOnly: target.contactOnly,
-      ...(classDescriptionIdMap[target.baseName] ? { classDescriptionIds: classDescriptionIdMap[target.baseName] } : {}),
+      ...(classDescriptionIdMap[displayName] ? { classDescriptionIds: classDescriptionIdMap[displayName] } : {}),
     });
   };
 
@@ -216,7 +218,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                       <motion.button
                         key={cls.name}
                         onClick={() => onSelectService({
-                          title: cls.name,
+                          title: resolveDisplayName(cls.name),
                           description: cls.description,
                           category: 'Signature Classes',
                           image: cls.image,

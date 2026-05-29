@@ -2,7 +2,7 @@ import { ServiceVariant } from '@/components/ServiceCard';
 
 // ── Grouping patterns ──────────────────────────────────────────────
 export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
-  { pattern: /^members?\s*(only|suite)/i, groupName: 'Members Suite' },
+  { pattern: /^members?\s*(only|suite)/i, groupName: 'Communal Contrast' },
   { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
   { pattern: /^nad\+?/i, groupName: 'NAD+' },
   { pattern: /^vitamin\s*shots?/i, groupName: 'IV Drip' },
@@ -157,7 +157,7 @@ export const serviceImages: Record<string, string> = {
   'Longevity': '/images/rebase-longevity.jpg',
   'Athletes Performance': '/images/rebase-athletes-performance.jpg',
   'Core Radiance': '/images/rebase-core-radiance.jpg',
-  'Members Suite': '/images/rebase-members-suite.jpg',
+  'Communal Contrast': '/images/rebase-members-suite.jpg',
 };
 
 export const serviceImagePositions: Record<string, string> = {
@@ -185,12 +185,12 @@ export const packageGroups = new Set([
 
 // ── Class-based services (shown in Services grid but booked via class schedule) ──
 export const classDescriptionIdMap: Record<string, number[]> = {
-  'Members Suite': [5],
+  'Communal Contrast': [5],
 };
 
 // ── Price overrides (when Mindbody API returns null) ──────────────
 export const priceOverrides: Record<string, number> = {
-  'Members Suite': 65,
+  'Communal Contrast': 65,
 };
 
 // ── Short descriptions (website cards) ─────────────────────────────
@@ -228,7 +228,7 @@ export const shortDescriptions: Record<string, string> = {
   'Four Hand Divine Healing': 'Synchronised four-hand massage for the ultimate sensory escape.',
   'Hyaluronic Acid': 'Joint-support injections to ease stiffness and improve mobility.',
   'PRP Therapy': 'Platelet-rich plasma therapy to stimulate natural tissue regeneration.',
-  'Members Suite': 'Communal contrast therapy in our shared wellness space.',
+  'Communal Contrast': 'Communal contrast therapy in our shared wellness space.',
   'Off Peak Access': 'Discounted off-peak entry to our communal wellness space.',
 };
 
@@ -287,7 +287,7 @@ export const variantDescriptions: Record<string, string> = {
   '30 Minute Classes': 'Single 30-minute express class credit.',
   '1 Hour Classes': 'Single 60-minute class credit.',
 
-  // Members Suite
+  // Communal Contrast
   'Off Peak Access': 'Discounted off-peak entry to the communal wellness space.',
   'members only': 'Communal contrast therapy in our shared wellness space.',
 };
@@ -314,9 +314,9 @@ export const resolveVariantDescription = (
 // ── Class offerings (website) ──────────────────────────────────────
 export const classOfferings = [
   {
-    name: 'Urban Oasis',
+    name: 'Yoga Flow + Heat & Ice',
     image: '/images/rebase-class-urban-oasis.jpg',
-    description: 'A calming escape combining breathwork and meditation in candlelit surroundings.',
+    description: 'Yoga flow combined with heat and ice contrast for strength, flexibility and recovery.',
     classDescriptionIds: [7],
   },
   {
@@ -346,11 +346,24 @@ export function extractDurationFromName(name: string): { baseName: string; durat
   return { baseName: name, duration: null };
 }
 
+const legacyServiceNameAliases: Record<string, string> = {
+  "Member's Suite": 'Communal Contrast',
+  'Members Suite': 'Communal Contrast',
+  'Urban Oasis': 'Yoga Flow + Heat & Ice',
+};
+
 export function canonicalizeServiceName(baseName: string): string {
+  const trimmed = baseName.trim();
+  if (legacyServiceNameAliases[trimmed]) return legacyServiceNameAliases[trimmed];
   for (const { pattern, groupName } of serviceGroupMappings) {
-    if (pattern.test(baseName)) return groupName;
+    if (pattern.test(trimmed)) return groupName;
   }
-  return baseName;
+  return trimmed;
+}
+
+/** User-facing service label (maps legacy Mindbody names e.g. Members Suite → Communal Contrast). */
+export function resolveDisplayName(name: string): string {
+  return canonicalizeServiceName(name);
 }
 
 // ── Shared grouped service type ────────────────────────────────────
@@ -396,7 +409,7 @@ export interface StaticServiceEntry {
 }
 
 export const staticWebsiteCatalogue: StaticServiceEntry[] = [
-  { baseName: "Members Suite", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5] },
+  { baseName: "Communal Contrast", category: "Communal Contrast", image: "/images/rebase-members-suite.jpg", shortDescription: "Communal contrast therapy in our shared wellness space.", fromPrice: 65, contactOnly: false, classDescriptionIds: [5] },
   { baseName: "Infrared Suite", category: "Private Suites", image: "/images/rebase-infrared-suite.jpg", shortDescription: "Detoxifying infrared heat followed by an invigorating ice bath.", fromPrice: 190, contactOnly: false },
   
   { baseName: "Premium Suite", category: "Private Suites", image: "/images/rebase-private-suites.webp", shortDescription: "Private suite with Finnish sauna, ice baths and bucket shower.", fromPrice: 240, contactOnly: false },

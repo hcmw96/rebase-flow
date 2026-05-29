@@ -25,11 +25,14 @@ import {
   resolveGroupDescription,
   resolveVariantDescription,
   staticWebsiteCatalogue,
+  resolveDisplayName,
 } from '@/config/serviceConfig';
 
 
+import type { BookingServiceData } from '@/components/booking/BookingDrawer';
+
 interface ServicesProps {
-  onSelectService?: (service: import('@/components/booking/BookingDrawer').BookingServiceData) => void;
+  onSelectService?: (service: BookingServiceData) => void;
 }
 
 const Services = ({ onSelectService }: ServicesProps) => {
@@ -165,11 +168,16 @@ const Services = ({ onSelectService }: ServicesProps) => {
   }, [groupedServices, searchQuery]);
 
 
-  const handleSelectService = (service: any) => {
+  const handleSelectService = (service: BookingServiceData & { baseName?: string; contactOnly?: boolean }) => {
+    const displayName = resolveDisplayName(service.title ?? service.baseName ?? '');
     onSelectService?.({
-      ...service,
+      title: displayName,
+      description: service.description,
+      category: service.category,
+      image: service.image,
+      variants: service.variants,
       contactOnly: service.contactOnly,
-      ...(classDescriptionIdMap[service.baseName] ? { classDescriptionIds: classDescriptionIdMap[service.baseName] } : {}),
+      ...(classDescriptionIdMap[displayName] ? { classDescriptionIds: classDescriptionIdMap[displayName] } : {}),
     });
   };
 

@@ -12,6 +12,7 @@ import BookingCalendar from '@/components/booking/BookingCalendar';
 import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { resolveDisplayName } from '@/config/serviceConfig';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -152,7 +153,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
           <p className="text-sm text-muted-foreground">You're all set.</p>
         </div>
         <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-left text-sm">
-          <div className="font-medium text-foreground">{selectedClass.name}</div>
+          <div className="font-medium text-foreground">{resolveDisplayName(selectedClass.name)}</div>
           <div className="flex items-center gap-3">
             <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
             <span>{format(new Date(selectedClass.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
@@ -248,7 +249,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
                   )}
                 >
                   <div className="space-y-1">
-                    <div className="font-medium text-foreground">{cls.name}</div>
+                    <div className="font-medium text-foreground">{resolveDisplayName(cls.name)}</div>
                     <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
@@ -257,7 +258,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
                       {cls.staffName && (
                         <span className="flex items-center gap-1">
                           <User className="h-3 w-3" />
-                          {cls.staffName}
+                          {resolveDisplayName(cls.staffName)}
                         </span>
                       )}
                       <span className="flex items-center gap-1">
@@ -283,7 +284,7 @@ const ClassScheduleFlow = ({ classDescriptionIds, className: clsName, onClose }:
             Confirm Booking
           </h3>
           <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-sm">
-            <h4 className="font-semibold text-base text-foreground">{selectedClass.name}</h4>
+            <h4 className="font-semibold text-base text-foreground">{resolveDisplayName(selectedClass.name)}</h4>
             {selectedClass.description && (
               <p className="text-sm text-muted-foreground">{stripHtml(selectedClass.description)}</p>
             )}

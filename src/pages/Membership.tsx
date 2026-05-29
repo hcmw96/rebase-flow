@@ -202,6 +202,19 @@ const Membership = () => {
         tierName={enquiryTier ?? ""}
       />
 
+      <section className="pb-20 px-5 sm:px-8">
+        <p className="text-center text-[#F9ECD9]/50 text-sm sm:text-base font-light max-w-xl mx-auto leading-relaxed">
+          For corporate memberships please contact{" "}
+          <a
+            href="mailto:df@rebaserecovery.com"
+            className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
+          >
+            df@rebaserecovery.com
+          </a>
+          .
+        </p>
+      </section>
+
       <Footer />
     </div>
   );

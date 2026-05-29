@@ -148,6 +148,16 @@ const Contact = () => {
                 </Card>
               ))}
             </div>
+            <p className="text-center text-foreground/60 text-sm sm:text-base font-light mt-10 max-w-2xl mx-auto leading-relaxed">
+              For private events or partnerships please email{" "}
+              <a
+                href="mailto:df@rebaserecovery.com"
+                className="text-primary hover:underline"
+              >
+                df@rebaserecovery.com
+              </a>
+              .
+            </p>
           </div>
         </section>
 

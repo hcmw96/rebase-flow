@@ -20,7 +20,7 @@ const experiences = [
     name: "Signature Classes",
     image: "/images/rebase-class-contrast-immersion.jpg",
     description:
-      "From Urban Oasis breathwork and meditation to Contrast Immersion, Yoga and Mat Pilates — our signature class programme is designed to complement your recovery journey and build lasting resilience.",
+      "From Yoga Flow + Heat & Ice to Contrast Immersion, Yoga and Mat Pilates — our signature class programme is designed to complement your recovery journey and build lasting resilience.",
   },
   {
     name: "Private Suites",
