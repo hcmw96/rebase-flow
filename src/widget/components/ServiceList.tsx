@@ -3,7 +3,6 @@ import { useWidget, GroupedService, ServiceVariant } from '../context/WidgetCont
 import { createApiClient, MindbodyService } from '../api/client';
 import { CategorySection } from './CategorySection';
 import {
-  serviceGroupMappings,
   hiddenGroupNames,
   hiddenProgramIds,
   isHiddenServiceName,
@@ -18,15 +17,8 @@ import {
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
+  canonicalizeServiceName,
 } from '../../config/serviceConfig';
-
-
-function canonicalizeServiceName(baseName: string): string {
-  for (const { pattern, groupName } of serviceGroupMappings) {
-    if (pattern.test(baseName)) return groupName;
-  }
-  return baseName;
-}
 
 interface ServiceListProps {
   onSelectService: (service: GroupedService) => void;

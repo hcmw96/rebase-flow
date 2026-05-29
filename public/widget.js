@@ -7227,6 +7227,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
   }
   const serviceGroupMappings = [
     { pattern: /^members?\s*(only|suite)/i, groupName: "Communal Contrast" },
+    { pattern: /urban\s*oasis/i, groupName: "Yoga Flow + Heat & Ice" },
     { pattern: /^iv\s*(drip|add\s*on)/i, groupName: "IV Drip" },
     { pattern: /^nad\+?/i, groupName: "NAD+" },
     { pattern: /^vitamin\s*shots?/i, groupName: "IV Drip" },
@@ -7419,6 +7420,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     "Brazilian Lymphatic": "Specialised drainage massage to reduce fluid retention.",
     "Nutritional Therapy": "Personalised nutrition guidance for optimal health.",
     "Myofascial Dry Needling": "Precision needling to release deep muscular tension.",
+    "Yoga Flow + Heat & Ice": "Yoga flow combined with heat and ice contrast for strength, flexibility and recovery.",
     "Sound Bath": "Immersive sonic experience using crystal bowls and gongs to deeply relax the nervous system.",
     "Vitamin Shots": "Quick intramuscular vitamin boosters for targeted energy, immunity and recovery.",
     "Blood Test": "Comprehensive lab panels to inform your personalised wellness strategy.",
@@ -7476,7 +7478,10 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     "1 Hour Classes": "Single 60-minute class credit.",
     // Communal Contrast
     "Off Peak Access": "Discounted off-peak entry to the communal wellness space.",
-    "members only": "Communal contrast therapy in our shared wellness space."
+    "members only": "Communal contrast therapy in our shared wellness space.",
+    // Cryotherapy packs
+    "Cryotherapy - 10 pack": "Ten whole-body cryotherapy sessions — save vs single visits.",
+    "Cryotherapy - 10 pack ": "Ten whole-body cryotherapy sessions — save vs single visits."
   };
   const normalisedVariantDescriptions = Object.fromEntries(
     Object.entries(variantDescriptions).map(([k2, v2]) => [k2.trim().toLowerCase(), v2])
@@ -7492,11 +7497,24 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
     if (match2) return { baseName: name.replace(match2[0], "").trim(), duration: parseInt(match2[1], 10) };
     return { baseName: name, duration: null };
   }
+  const legacyServiceNameAliases = {
+    "Member's Suite": "Communal Contrast",
+    "Members Suite": "Communal Contrast",
+    "Urban Oasis": "Yoga Flow + Heat & Ice",
+    "Urban Oasis Class": "Yoga Flow + Heat & Ice"
+  };
+  const legacyServiceNameAliasesLower = Object.fromEntries(
+    Object.entries(legacyServiceNameAliases).map(([k2, v2]) => [k2.toLowerCase(), v2])
+  );
   function canonicalizeServiceName(baseName) {
+    const trimmed = baseName.trim();
+    if (legacyServiceNameAliases[trimmed]) return legacyServiceNameAliases[trimmed];
+    const lower = legacyServiceNameAliasesLower[trimmed.toLowerCase()];
+    if (lower) return lower;
     for (const { pattern, groupName } of serviceGroupMappings) {
-      if (pattern.test(baseName)) return groupName;
+      if (pattern.test(trimmed)) return groupName;
     }
-    return baseName;
+    return trimmed;
   }
   function ServiceList({ onSelectService }) {
     const { config } = useWidget();
@@ -7548,6 +7566,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
           }
         }
         const isIvFirstConsult = canonicalName === "IV Drip" && /first\s*consult|initial/i.test(service.name);
+        const isPack = service.isPack === true;
         const variantDesc = resolveVariantDescription(
           service.name,
           canonicalName,
@@ -7555,11 +7574,13 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
         );
         groups.get(canonicalName).variants.push({
           id: service.id,
-          duration: duration ?? service.defaultTimeLength,
+          duration: isPack ? null : duration ?? service.defaultTimeLength,
           price: isIvFirstConsult ? 0 : service.price,
           name: service.name,
           description: variantDesc,
-          contactOnly: isIvFirstConsult || isContactOnly
+          contactOnly: isIvFirstConsult || isContactOnly || isPack,
+          isPack,
+          packSessionCount: service.packSessionCount ?? null
         });
       }
       for (const group of groups.values()) {
@@ -7571,6 +7592,7 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
           const aF = /follow\s*up/i.test(a.name) ? 1 : 0;
           const bF = /follow\s*up/i.test(b.name) ? 1 : 0;
           if (aF !== bF) return aF - bF;
+          if (a.isPack !== b.isPack) return a.isPack ? 1 : -1;
           return (a.duration ?? 0) - (b.duration ?? 0);
         });
       }
@@ -9413,14 +9435,17 @@ var __publicField = (obj, key, value) => __defNormalProp(obj, typeof key !== "sy
                 /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex-1 min-w-0 pr-3", children: [
                   /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-[hsl(35,15%,88%)]", children: variant.name }),
                   variant.description && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-[hsl(35,8%,55%)] mt-1 leading-relaxed line-clamp-2", children: variant.description.replace(/<[^>]*>/g, "").trim() }),
-                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-[hsl(35,8%,55%)] flex items-center gap-3 mt-1", children: variant.duration && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1", children: [
+                  /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm text-[hsl(35,8%,55%)] flex items-center gap-3 mt-1", children: variant.isPack && variant.packSessionCount ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                    variant.packSessionCount,
+                    " sessions"
+                  ] }) : variant.duration ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1", children: [
                     /* @__PURE__ */ jsxRuntimeExports.jsxs("svg", { className: "h-3 w-3", viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: "2", children: [
                       /* @__PURE__ */ jsxRuntimeExports.jsx("circle", { cx: "12", cy: "12", r: "10" }),
                       /* @__PURE__ */ jsxRuntimeExports.jsx("polyline", { points: "12 6 12 12 16 14" })
                     ] }),
                     variant.duration,
                     " min"
-                  ] }) })
+                  ] }) : null })
                 ] }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-semibold text-[hsl(35,15%,88%)]", children: variant.price ? `£${variant.price.toFixed(2)}` : "Contact" })
               ]

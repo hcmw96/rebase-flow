@@ -252,7 +252,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                         </div>
                         <div className="p-5 space-y-2">
                             <h3 className="font-serif text-xl text-[#F9ECD9] font-light">
-                              {cls.name}
+                              {resolveDisplayName(cls.name)}
                             </h3>
                           <p className="text-[#F9ECD9]/50 text-xs font-light leading-relaxed">
                             {cls.description}

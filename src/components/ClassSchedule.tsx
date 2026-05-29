@@ -72,7 +72,7 @@ const ClassSchedule = () => {
             <div className="relative h-24 overflow-hidden">
               <img src={cls.image} alt={cls.name} className="w-full h-full object-cover" loading="lazy" />
               <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
-              <h4 className="absolute bottom-2 left-3 text-white text-xs font-medium">{cls.name}</h4>
+              <h4 className="absolute bottom-2 left-3 text-white text-xs font-medium">{resolveDisplayName(cls.name)}</h4>
             </div>
           </div>
         ))}

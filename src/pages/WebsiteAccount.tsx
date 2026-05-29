@@ -20,7 +20,7 @@ const WebsiteAccount = () => {
         path="/account"
         noindex
       />
-      <Navigation />
+      <Navigation variant="light" />
       <main className="pt-24 pb-12 min-h-screen">
         {isLoading || isRedirecting ? (
           <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">

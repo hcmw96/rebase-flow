@@ -5,6 +5,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+/** Mindbody legacy labels → user-facing names (keep in sync with src/config/serviceConfig.ts). */
+function resolveDisplayName(name: string): string {
+  const trimmed = name.trim();
+  const aliases: Record<string, string> = {
+    "Member's Suite": "Communal Contrast",
+    "Members Suite": "Communal Contrast",
+    "Urban Oasis": "Yoga Flow + Heat & Ice",
+    "Urban Oasis Class": "Yoga Flow + Heat & Ice",
+  };
+  if (aliases[trimmed]) return aliases[trimmed];
+  const lower = trimmed.toLowerCase();
+  const fromLower = Object.entries(aliases).find(([k]) => k.toLowerCase() === lower)?.[1];
+  if (fromLower) return fromLower;
+  if (/^members?\s*(only|suite)/i.test(trimmed)) return "Communal Contrast";
+  if (/urban\s*oasis/i.test(trimmed)) return "Yoga Flow + Heat & Ice";
+  return trimmed;
+}
+
 async function getStaffToken(): Promise<string> {
   const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
   const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
@@ -128,7 +146,7 @@ serve(async (req) => {
       .map((c: any) => ({
       id: c.Id.toString(),
       classDescriptionId: c.ClassDescription?.Id,
-      name: c.ClassDescription?.Name || "Class",
+      name: resolveDisplayName(c.ClassDescription?.Name || "Class"),
       description: c.ClassDescription?.Description || "",
       startDateTime: c.StartDateTime,
       endDateTime: c.EndDateTime,
@@ -143,7 +161,7 @@ serve(async (req) => {
       isCanceled: c.IsCanceled,
       isWaitlistAvailable: c.IsWaitlistAvailable,
       programId: c.ClassDescription?.Program?.Id,
-      programName: c.ClassDescription?.Program?.Name,
+      programName: resolveDisplayName(c.ClassDescription?.Program?.Name || ""),
     }));
 
     return new Response(

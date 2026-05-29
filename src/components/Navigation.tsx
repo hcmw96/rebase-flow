@@ -12,7 +12,47 @@ const locations = [
   { name: "The Strand", active: false },
 ];
 
-const Navigation = () => {
+type NavigationVariant = "dark" | "light";
+
+const navThemes = {
+  dark: {
+    text: "text-[#F9ECD9]",
+    textMuted: "text-[#F9ECD9]/60",
+    textHover: "hover:text-[#F9ECD9]",
+    border: "border-[#F9ECD9]/20",
+    logoClass: "h-12 brightness-0 invert",
+    shellOpen: "bg-[#3B2712] border-[#F9ECD9]/10",
+    shellScrolled: "bg-black/40 backdrop-blur-xl border-[#F9ECD9]/10",
+    shellDefault: "bg-transparent border-white/10",
+    bookBtn:
+      "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20",
+    authBtn: "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60",
+    mobileMenu: "border-[#F9ECD9]/10 bg-[#3B2712]",
+    mobileAuth: "bg-[#F9ECD9] text-[#3B2712]",
+  },
+  light: {
+    text: "text-[#3B2712]",
+    textMuted: "text-[#3B2712]/60",
+    textHover: "hover:text-[#3B2712]",
+    border: "border-[#3B2712]/20",
+    logoClass: "h-12",
+    shellOpen: "bg-[#F9ECD9] border-[#3B2712]/10",
+    shellScrolled: "bg-[#F9ECD9]/95 backdrop-blur-xl border-[#3B2712]/10",
+    shellDefault: "bg-[#F9ECD9]/90 backdrop-blur-sm border-[#3B2712]/10",
+    bookBtn:
+      "border-[#3B2712]/20 bg-[#3B2712]/5 text-[#3B2712] hover:bg-[#3B2712]/10",
+    authBtn: "bg-[#3B2712] border-[#3B2712] text-[#F9ECD9] hover:bg-[#3B2712]/90",
+    mobileMenu: "border-[#3B2712]/10 bg-[#F9ECD9]",
+    mobileAuth: "bg-[#3B2712] text-[#F9ECD9]",
+  },
+} as const;
+
+interface NavigationProps {
+  variant?: NavigationVariant;
+}
+
+const Navigation = ({ variant = "dark" }: NavigationProps) => {
+  const theme = navThemes[variant];
   const [isOpen, setIsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
   const [selectedLocation, setSelectedLocation] = useState(locations[0]);
@@ -63,20 +103,16 @@ const Navigation = () => {
     };
   }, []);
 
-  const textColor = "text-[#F9ECD9]";
-  const textMuted = "text-[#F9ECD9]/60";
-  const borderColor = "border-[#F9ECD9]/20";
-
   return (
     <nav
       aria-label="Main navigation"
       className={cn(
         "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
         isOpen
-          ? "bg-[#3B2712] border-[#F9ECD9]/10"
+          ? theme.shellOpen
           : scrolled
-            ? "bg-black/40 backdrop-blur-xl border-[#F9ECD9]/10"
-            : "bg-transparent border-white/10"
+            ? theme.shellScrolled
+            : theme.shellDefault
       )}
     >
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
@@ -86,10 +122,7 @@ const Navigation = () => {
             <img
               src={wordmark}
               alt="Rebase Recovery logo"
-              className={cn(
-                "w-auto transition-all duration-300",
-                "h-12 brightness-0 invert"
-              )}
+              className={cn("w-auto transition-all duration-300", theme.logoClass)}
             />
           </Link>
 
@@ -112,7 +145,8 @@ const Navigation = () => {
                     }}
                     className={cn(
                       "text-[13px] font-medium tracking-[0.08em] transition-colors duration-300",
-                      `${textMuted} hover:${textColor}`
+                      theme.textMuted,
+                      theme.textHover
                     )}
                   >
                     {item.label}
@@ -125,7 +159,7 @@ const Navigation = () => {
                   to={item.href}
                   className={cn(
                     "text-[13px] font-medium tracking-[0.08em] transition-colors duration-300",
-                    isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
+                    isActive(item.href) ? theme.text : cn(theme.textMuted, theme.textHover)
                   )}
                 >
                   {item.label}
@@ -139,7 +173,7 @@ const Navigation = () => {
                 onClick={() => setLocationOpen(!locationOpen)}
                 className={cn(
                   "flex items-center gap-1.5 text-[13px] font-medium tracking-[0.08em] transition-colors",
-                  textMuted
+                  theme.textMuted
                 )}
               >
                 {selectedLocation.name}
@@ -184,7 +218,7 @@ const Navigation = () => {
               aria-label="Book a wellness experience"
               className={cn(
                 "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md rounded-none transition-all duration-300",
-                "border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
+                theme.bookBtn
               )}
             >
               Book Now
@@ -195,9 +229,7 @@ const Navigation = () => {
                 <Button
                   className={cn(
                     "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
-                    scrolled
-                      ? "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
-                      : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
+                    theme.authBtn
                   )}
                 >
                   {mbSession?.firstName ? `Hi, ${mbSession.firstName}` : "My account"}
@@ -210,9 +242,7 @@ const Navigation = () => {
                 disabled={authLoading || isRedirecting}
                 className={cn(
                   "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
-                  scrolled
-                    ? "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
-                    : "bg-black/40 border-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-black/60"
+                  theme.authBtn
                 )}
               >
                 {authLoading || isRedirecting ? "…" : "Sign in"}
@@ -226,7 +256,10 @@ const Navigation = () => {
               variant="outline"
               size="sm"
               onClick={handleBookNow}
-              className="text-[11px] tracking-[0.08em] px-3 h-8 rounded-none border-[#F9ECD9]/20 bg-[#F9ECD9]/10 text-[#F9ECD9] hover:bg-[#F9ECD9]/20"
+              className={cn(
+                "text-[11px] tracking-[0.08em] px-3 h-8 rounded-none",
+                theme.bookBtn
+              )}
             >
               Book Now
               <ChevronRight className="ml-1 h-3 w-3" />
@@ -235,7 +268,7 @@ const Navigation = () => {
               variant="ghost"
               size="sm"
               onClick={() => setIsOpen(!isOpen)}
-              className={textColor}
+              className={theme.text}
               aria-label={isOpen ? "Close menu" : "Open menu"}
               aria-expanded={isOpen}
             >
@@ -246,7 +279,7 @@ const Navigation = () => {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="lg:hidden border-t border-[#F9ECD9]/10 bg-[#3B2712] min-h-[calc(100vh-3.5rem)]">
+          <div className={cn("lg:hidden border-t min-h-[calc(100vh-3.5rem)]", theme.mobileMenu)}>
             <div className="py-4 space-y-1">
               {navItems.map((item) => {
                 if (item.href.includes("#")) {
@@ -265,7 +298,8 @@ const Navigation = () => {
                       }}
                       className={cn(
                         "block px-3 py-2.5 text-sm font-medium tracking-wider transition-colors",
-                        `${textMuted} hover:${textColor}`
+                        theme.textMuted,
+                        theme.textHover
                       )}
                     >
                       {item.label}
@@ -278,7 +312,7 @@ const Navigation = () => {
                     to={item.href}
                     className={cn(
                       "block px-3 py-2.5 text-sm font-medium tracking-wider transition-colors",
-                      isActive(item.href) ? textColor : `${textMuted} hover:${textColor}`
+                      isActive(item.href) ? theme.text : cn(theme.textMuted, theme.textHover)
                     )}
                     onClick={() => setIsOpen(false)}
                   >
@@ -300,7 +334,7 @@ const Navigation = () => {
                     className={cn(
                       "block w-full text-left py-1.5 text-sm",
                       loc.active
-                        ? textMuted
+                        ? theme.textMuted
                         : "text-muted-foreground/40"
                     )}
                   >
@@ -315,16 +349,13 @@ const Navigation = () => {
               </div>
 
               <div className="flex gap-3 px-3 pt-3">
-                <Button variant="outline" onClick={handleBookNow} className={cn("flex-1 rounded-none tracking-wider text-sm", borderColor, textColor)}>
+                <Button variant="outline" onClick={handleBookNow} className={cn("flex-1 rounded-none tracking-wider text-sm", theme.border, theme.text)}>
                   Book Now <ChevronRight className="ml-1 h-3.5 w-3.5" />
                 </Button>
                 {isAuthenticated ? (
                   <Link to="/account" className="flex-1" onClick={() => setIsOpen(false)}>
                     <Button
-                      className={cn(
-                        "w-full rounded-none tracking-wider text-sm",
-                        scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]"
-                      )}
+                      className={cn("w-full rounded-none tracking-wider text-sm", theme.mobileAuth)}
                     >
                       {mbSession?.firstName ? `Hi, ${mbSession.firstName}` : "My account"}
                     </Button>
@@ -332,10 +363,7 @@ const Navigation = () => {
                 ) : (
                   <Button
                     type="button"
-                    className={cn(
-                      "flex-1 rounded-none tracking-wider text-sm",
-                      scrolled ? "bg-[#3B2712] text-[#F9ECD9]" : "bg-[#F9ECD9] text-[#3B2712]"
-                    )}
+                    className={cn("flex-1 rounded-none tracking-wider text-sm", theme.mobileAuth)}
                     disabled={authLoading || isRedirecting}
                     onClick={() => {
                       setIsOpen(false);

@@ -243,7 +243,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                         <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1a] via-transparent to-transparent" />
                       </div>
                       <div className="p-4 space-y-1.5 pr-20">
-                        <h4 className="text-base text-[#F9ECD9] font-light">{cls.name}</h4>
+                        <h4 className="text-base text-[#F9ECD9] font-light">{resolveDisplayName(cls.name)}</h4>
                         <p className="text-[#F9ECD9]/40 text-xs font-light leading-relaxed">{cls.description}</p>
                       </div>
                     </motion.button>

@@ -3,6 +3,7 @@ import { ServiceVariant } from '@/components/ServiceCard';
 // ── Grouping patterns ──────────────────────────────────────────────
 export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
   { pattern: /^members?\s*(only|suite)/i, groupName: 'Communal Contrast' },
+  { pattern: /urban\s*oasis/i, groupName: 'Yoga Flow + Heat & Ice' },
   { pattern: /^iv\s*(drip|add\s*on)/i, groupName: 'IV Drip' },
   { pattern: /^nad\+?/i, groupName: 'NAD+' },
   { pattern: /^vitamin\s*shots?/i, groupName: 'IV Drip' },
@@ -214,6 +215,7 @@ export const shortDescriptions: Record<string, string> = {
   'Brazilian Lymphatic': 'Specialised drainage massage to reduce fluid retention.',
   'Nutritional Therapy': 'Personalised nutrition guidance for optimal health.',
   'Myofascial Dry Needling': 'Precision needling to release deep muscular tension.',
+  'Yoga Flow + Heat & Ice': 'Yoga flow combined with heat and ice contrast for strength, flexibility and recovery.',
   'Sound Bath': 'Immersive sonic experience using crystal bowls and gongs to deeply relax the nervous system.',
   'Vitamin Shots': 'Quick intramuscular vitamin boosters for targeted energy, immunity and recovery.',
   'Blood Test': 'Comprehensive lab panels to inform your personalised wellness strategy.',
@@ -354,11 +356,18 @@ const legacyServiceNameAliases: Record<string, string> = {
   "Member's Suite": 'Communal Contrast',
   'Members Suite': 'Communal Contrast',
   'Urban Oasis': 'Yoga Flow + Heat & Ice',
+  "Urban Oasis Class": 'Yoga Flow + Heat & Ice',
 };
+
+const legacyServiceNameAliasesLower = Object.fromEntries(
+  Object.entries(legacyServiceNameAliases).map(([k, v]) => [k.toLowerCase(), v]),
+);
 
 export function canonicalizeServiceName(baseName: string): string {
   const trimmed = baseName.trim();
   if (legacyServiceNameAliases[trimmed]) return legacyServiceNameAliases[trimmed];
+  const lower = legacyServiceNameAliasesLower[trimmed.toLowerCase()];
+  if (lower) return lower;
   for (const { pattern, groupName } of serviceGroupMappings) {
     if (pattern.test(trimmed)) return groupName;
   }
