@@ -315,16 +315,6 @@ const AccountPage = () => {
         transition={{ delay: 0.2 }}
         className="space-y-3"
       >
-        <a
-          href="https://rebase.co.uk"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex items-center justify-between p-4 rounded-lg border border-black/[0.06] bg-white/40 hover:bg-white/60 transition-colors"
-        >
-          <span className="text-sm text-black/70">Visit Rebase Website</span>
-          <ExternalLink className="h-4 w-4 text-black/30" />
-        </a>
-
         <Link
           to="/privacy-policy"
           className="flex items-center justify-between p-4 rounded-lg border border-black/[0.06] bg-white/40 hover:bg-white/60 transition-colors"
