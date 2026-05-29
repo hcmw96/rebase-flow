@@ -75,7 +75,7 @@ const Membership = () => {
         path="/membership"
         jsonLd={[
           breadcrumbSchema([
-            { name: "Home", path: "/website" },
+            { name: "Home", path: "/" },
             { name: "Membership", path: "/membership" },
           ]),
           itemListServicesSchema(

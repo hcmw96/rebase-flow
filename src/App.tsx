@@ -4,7 +4,7 @@ import * as React from "react";
 import { HelmetProvider } from "react-helmet-async";
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AuthRedirectOverlay from "./components/AuthRedirectOverlay";
 import ScrollToTop from "./components/ScrollToTop";
@@ -47,7 +47,8 @@ const App = () => (
           {!navigator.userAgent.includes('despia') && <CookieConsent />}
           <ScrollToTop />
           <Routes>
-            <Route path="/website" element={<Index />} />
+            <Route path="/" element={<Index />} />
+            <Route path="/website" element={<Navigate to="/" replace />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/membership" element={<Membership />} />
             <Route path="/account" element={<WebsiteAccount />} />
@@ -58,8 +59,9 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/faq" element={<FAQ />} />
-            <Route path="/" element={<AppShell />} />
-            <Route path="*" element={<AppShell />} />
+            <Route path="/app" element={<AppShell />} />
+            <Route path="/app/*" element={<AppShell />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
           <AuthOverlayMount />
         </BrowserRouter>

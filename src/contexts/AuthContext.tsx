@@ -6,6 +6,7 @@ import {
   readOAuthReturnFromUrl,
   clearOAuthParamsFromUrl,
 } from '@/lib/oauthReturn';
+import { APP_HOME, WEBSITE_HOME } from '@/lib/routes';
 
 export type { MindbodySession };
 
@@ -25,9 +26,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const MB_STORAGE_KEY = 'mb_session';
 
-/** Marketing / web routes (not the native shell at `/`). */
+/** Marketing / web routes (not the member app at `/app`). */
 const WEBSITE_PATH_PREFIXES = [
-  '/website',
   '/account',
   '/sign-in',
   '/membership',
@@ -40,9 +40,14 @@ const WEBSITE_PATH_PREFIXES = [
 ] as const;
 
 function isWebsitePath(pathname: string): boolean {
+  if (pathname === WEBSITE_HOME) return true;
   return WEBSITE_PATH_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`),
   );
+}
+
+function isAppPath(pathname: string): boolean {
+  return pathname === APP_HOME || pathname.startsWith(`${APP_HOME}/`);
 }
 
 /** Where Mindbody should send the user after OAuth (path + query, same origin). */
@@ -52,19 +57,18 @@ function getOAuthReturnTo(): string {
   const isNativeApp = navigator.userAgent.includes('despia');
 
   if (isNativeApp) {
-    return pathWithSearch || '/';
+    return pathWithSearch || APP_HOME;
   }
 
-  // Web: `/` is the native shell; signed-in users should land on the public site.
-  if (pathname === '/' || pathname === '') {
-    return '/website';
+  if (isAppPath(pathname)) {
+    return pathWithSearch;
   }
 
   if (isWebsitePath(pathname)) {
     return pathWithSearch;
   }
 
-  return '/website';
+  return WEBSITE_HOME;
 }
 
 function persistSession(session: MindbodySession) {

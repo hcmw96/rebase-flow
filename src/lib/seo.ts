@@ -104,7 +104,7 @@ export function localBusinessSchema(overrides?: { url?: string }) {
     "@id": `${SITE_URL}/#organization`,
     name: BUSINESS.name,
     description: BUSINESS.description,
-    url: overrides?.url ?? `${SITE_URL}/website`,
+    url: overrides?.url ?? `${SITE_URL}/`,
     image: DEFAULT_OG_IMAGE,
     logo: `${SITE_URL}/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png`,
     telephone: BUSINESS.phone,
@@ -205,7 +205,7 @@ export const WEBSITE_ROUTES: Array<{
   changefreq: "weekly" | "monthly" | "yearly";
   priority: number;
 }> = [
-  { path: "/website", changefreq: "weekly", priority: 1.0 },
+  { path: "/", changefreq: "weekly", priority: 1.0 },
   { path: "/experiences", changefreq: "weekly", priority: 0.9 },
   { path: "/membership", changefreq: "monthly", priority: 0.8 },
   { path: "/contact", changefreq: "monthly", priority: 0.7 },

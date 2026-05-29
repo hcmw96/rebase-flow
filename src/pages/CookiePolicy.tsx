@@ -13,7 +13,7 @@ const CookiePolicy = () => {
         )}
         path="/cookie-policy"
         jsonLd={breadcrumbSchema([
-          { name: "Home", path: "/website" },
+          { name: "Home", path: "/" },
           { name: "Cookie Policy", path: "/cookie-policy" },
         ])}
       />

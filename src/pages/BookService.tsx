@@ -172,7 +172,7 @@ const BookService = () => {
 
   const handleBack = () => {
     if (currentStep === 1) {
-      navigate('/');
+      navigate('/app');
     } else {
       setCurrentStep(currentStep - 1);
     }
@@ -228,7 +228,7 @@ const BookService = () => {
             <Card className="max-w-md w-full">
               <CardContent className="p-8 text-center space-y-4">
                 <p className="text-muted-foreground">Service not found.</p>
-                <Button onClick={() => navigate('/')} variant="outline">
+                <Button onClick={() => navigate('/app')} variant="outline">
                   <ChevronLeft className="h-4 w-4 mr-2" />
                   Back
                 </Button>
@@ -289,7 +289,7 @@ const BookService = () => {
                   </div>
                   
                   <div className="flex flex-col gap-3">
-                    <Button onClick={() => navigate('/')}>
+                    <Button onClick={() => navigate('/app')}>
                       Back to Home
                     </Button>
                   </div>

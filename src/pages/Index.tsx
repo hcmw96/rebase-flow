@@ -28,7 +28,7 @@ const Index = () => {
       <SeoHead
         title={seoTitle("Premium Wellness & Recovery Studio")}
         description={truncateDescription(HOME_DESCRIPTION)}
-        path="/website"
+        path="/"
         jsonLd={localBusinessSchema()}
       />
       <Navigation />

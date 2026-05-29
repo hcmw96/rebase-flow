@@ -118,7 +118,7 @@ const Navigation = ({ variant = "dark" }: NavigationProps) => {
       <div className="max-w-[1400px] mx-auto px-5 sm:px-8">
         <div className={cn("flex justify-between items-center transition-all duration-300", scrolled ? "h-14" : "h-20")}>
           {/* Logo */}
-          <Link to="/website" className="flex-shrink-0" aria-label="Rebase Recovery home">
+          <Link to="/" className="flex-shrink-0" aria-label="Rebase Recovery home">
             <img
               src={wordmark}
               alt="Rebase Recovery logo"

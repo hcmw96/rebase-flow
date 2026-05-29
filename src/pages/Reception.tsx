@@ -34,7 +34,7 @@ const Reception = () => {
               
               <div className="flex justify-center">
                 <Button 
-                  onClick={() => navigate('/')}
+                  onClick={() => navigate('/app')}
                   variant="outline"
                   className="gap-2"
                 >

@@ -102,7 +102,7 @@ const Experiences = () => {
         ogImage={absoluteUrl("/images/rebase-cryo.webp")}
         jsonLd={[
           breadcrumbSchema([
-            { name: "Home", path: "/website" },
+            { name: "Home", path: "/" },
             { name: "Experiences", path: "/experiences" },
           ]),
           itemListServicesSchema(

@@ -34,7 +34,7 @@ const Login = () => {
         setUser(session?.user ?? null);
         
         if (session?.user) {
-          navigate('/dashboard');
+          navigate('/app');
         }
       }
     );

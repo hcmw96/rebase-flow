@@ -20,7 +20,7 @@ const services = [
 ] as const;
 
 const quickLinks = [
-  { href: "/website", label: "Home", match: "/website" },
+  { href: "/", label: "Home", match: "/" },
   { href: "/experiences", label: "Services", match: "/experiences" },
   { href: "/experiences", label: "Book Now", match: "/experiences" },
   { href: "/membership", label: "Membership", match: "/membership" },
@@ -73,7 +73,7 @@ function FooterNavLink({
   return (
     <NavLink
       to={href}
-      end={match === "/website"}
+      end={match === "/"}
       className={({ isActive: navActive }) =>
         cn(linkClass, (navActive || isActive) && activeLinkClass)
       }
@@ -93,7 +93,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link
-              to="/website"
+              to="/"
               className="inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
               aria-label="Rebase Recovery home"
             >

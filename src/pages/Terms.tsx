@@ -13,7 +13,7 @@ const Terms = () => {
         )}
         path="/terms"
         jsonLd={breadcrumbSchema([
-          { name: "Home", path: "/website" },
+          { name: "Home", path: "/" },
           { name: "Terms", path: "/terms" },
         ])}
       />

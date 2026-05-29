@@ -246,7 +246,7 @@ const NextSession = ({ next }: { next: any }) => {
         {next.staffName && <p className="text-xs text-[#3B2712]/50">with {next.staffName}</p>}
         {next.locationName && <p className="text-xs text-[#3B2712]/50">{next.locationName}</p>}
       </div>
-      <Link to="/">
+      <Link to="/app">
         <Button
           variant="outline"
           className="w-full rounded-none border-[#3B2712]/20 text-[#3B2712] hover:bg-[#3B2712]/5 tracking-wider text-sm"

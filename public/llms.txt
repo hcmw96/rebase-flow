@@ -6,7 +6,8 @@ Rebase Recovery is a members-friendly wellness destination focused on recovery, 
 
 ## Pages
 
-- [Home](/website): Overview of Rebase Recovery, signature experiences and locations.
+- [Home](/): Overview of Rebase Recovery, signature experiences and locations.
+- [App](/app): Member booking app (services, bookings, account).
 - [Experiences](/experiences): Browse every service — communal contrast, private suites, hyperbaric oxygen, cryotherapy, massage therapy, IV drips and regen & manual therapies.
 - [Membership](/membership): Membership tiers and benefits.
 - [Members Sign In](/members): Sign in for members to manage bookings.

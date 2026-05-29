@@ -1,6 +1,5 @@
 User-agent: *
 Allow: /
-Allow: /website
 Allow: /experiences
 Allow: /membership
 Allow: /contact
@@ -9,6 +8,7 @@ Allow: /privacy-policy
 Allow: /terms
 Allow: /cookie-policy
 
+Disallow: /app
 Disallow: /account
 Disallow: /sign-in
 Disallow: /members

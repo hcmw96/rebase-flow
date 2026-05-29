@@ -111,7 +111,7 @@ const Contact = () => {
         path="/contact"
         jsonLd={[
           breadcrumbSchema([
-            { name: "Home", path: "/website" },
+            { name: "Home", path: "/" },
             { name: "Contact", path: "/contact" },
           ]),
           contactSchema,

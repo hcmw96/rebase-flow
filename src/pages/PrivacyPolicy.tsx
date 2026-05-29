@@ -13,7 +13,7 @@ const PrivacyPolicy = () => {
         )}
         path="/privacy-policy"
         jsonLd={breadcrumbSchema([
-          { name: "Home", path: "/website" },
+          { name: "Home", path: "/" },
           { name: "Privacy Policy", path: "/privacy-policy" },
         ])}
       />
