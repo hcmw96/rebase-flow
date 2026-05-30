@@ -20,11 +20,19 @@ export interface ClassifiedBookingError {
 export function classifyBookingError(raw: string | undefined | null): ClassifiedBookingError {
   const msg = (raw || '').toLowerCase();
 
+  if (msg.includes('site id does not match')) {
+    return {
+      kind: 'session_expired',
+      message:
+        'Your Mindbody account is not linked to this studio. Sign out, then sign in again with the email you use at Rebase.',
+    };
+  }
+
   if (
-    msg.includes('site id does not match') ||
     msg.includes('session not found') ||
     msg.includes('session expired') ||
-    msg.includes('please log in')
+    msg.includes('please log in again') ||
+    msg.includes('please log in first')
   ) {
     return { kind: 'session_expired', message: 'Your sign-in expired. Please sign in again.' };
   }

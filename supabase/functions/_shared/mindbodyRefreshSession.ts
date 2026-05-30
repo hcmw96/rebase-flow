@@ -24,8 +24,9 @@ type MbSessionRow = {
 export async function refreshMindbodySessionIfNeeded(
   supabase: SupabaseClient,
   session: MbSessionRow,
+  options?: { force?: boolean },
 ): Promise<MbSessionRow | null> {
-  if (!isMindbodyTokenExpired(session.token_expires_at)) {
+  if (!options?.force && !isMindbodyTokenExpired(session.token_expires_at)) {
     return session;
   }
 

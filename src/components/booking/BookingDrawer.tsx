@@ -73,7 +73,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 );
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId }: BookingDrawerProps) => {
-  const { mbSession, isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const { isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl, refreshMbSession } = useAuth();
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
   const bookServiceMutation = useBookService();
   const queryClient = useQueryClient();
@@ -256,10 +256,23 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
     }
   };
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      setSessionExpiredMessage(null);
+      void refreshMbSession();
+    }
+  }, [isAuthenticated, refreshMbSession]);
+
   const handleConfirmBooking = async () => {
     if (!selectedSlot) return;
     if (!isAuthenticated) {
       startSignInForBooking();
+      return;
+    }
+
+    const activeSession = await refreshMbSession();
+    if (!activeSession?.sessionId) {
+      setSessionExpiredMessage('Your sign-in expired. Please sign in again.');
       return;
     }
 
@@ -286,7 +299,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
 
       if (classified.kind === 'session_expired') {
         setSessionExpiredMessage(classified.message);
-        logout();
       } else if (classified.kind === 'payment_required') {
         toast.error(classified.message, {
           action: {

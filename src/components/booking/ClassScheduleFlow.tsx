@@ -125,7 +125,7 @@ const ClassScheduleFlow = ({
   resumeClassId,
   bookingService,
 }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const { isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl, refreshMbSession } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -232,6 +232,13 @@ const ClassScheduleFlow = ({
     }
   }, [resumeClassId, filteredClasses]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      setSessionExpiredMessage(null);
+      void refreshMbSession();
+    }
+  }, [isAuthenticated, refreshMbSession]);
+
   const startSignIn = (cls?: MindbodyClass | null) => {
     const target = cls ?? selectedClass;
     if (bookingService) {
@@ -258,6 +265,12 @@ const ClassScheduleFlow = ({
   const handleBook = async () => {
     if (!selectedClass) return;
 
+    const activeSession = await refreshMbSession();
+    if (!activeSession?.sessionId) {
+      setSessionExpiredMessage('Your sign-in expired. Please sign in again.');
+      return;
+    }
+
     try {
       await bookMutation.mutateAsync({
         bookingType: 'class',
@@ -276,7 +289,6 @@ const ClassScheduleFlow = ({
       );
       if (classified.kind === 'session_expired') {
         setSessionExpiredMessage(classified.message);
-        logout();
       } else {
         toast.error(classified.message);
       }

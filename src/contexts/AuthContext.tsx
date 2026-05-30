@@ -24,7 +24,7 @@ interface AuthContextType {
   /** Open Mindbody account creation (same tab). */
   openMindbodySignUp: () => void;
   logout: () => void;
-  refreshMbSession: () => Promise<void>;
+  refreshMbSession: () => Promise<MindbodySession | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -343,18 +343,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMbSession(null);
   }, []);
 
-  const refreshMbSession = useCallback(async () => {
+  const refreshMbSession = useCallback(async (): Promise<MindbodySession | null> => {
     const stored = localStorage.getItem(MB_STORAGE_KEY);
-    if (!stored) return;
+    if (!stored) return null;
     try {
       const parsed = JSON.parse(stored) as MindbodySession;
+      await fetch(`${SUPABASE_URL}/functions/v1/mindbody-refresh-token`, {
+        method: 'POST',
+        headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({ sessionId: parsed.sessionId }),
+      }).catch(() => undefined);
+
       const serverSession = await fetchServerSession(parsed.sessionId);
       if (serverSession) {
         persistSession(serverSession);
         setMbSession(serverSession);
+        return serverSession;
       }
+      if (!isSessionExpired(parsed.expiresAt)) {
+        setMbSession(parsed);
+        return parsed;
+      }
+      localStorage.removeItem(MB_STORAGE_KEY);
+      setMbSession(null);
+      return null;
     } catch {
-      /* ignore */
+      return null;
     }
   }, []);
 

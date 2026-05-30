@@ -1,5 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveSiteClientId } from "../_shared/mindbodyClientResolve.ts";
+import { getStaffToken } from "../_shared/mindbodyStaff.ts";
 import {
   isMindbodyTokenExpired,
   refreshMindbodySessionIfNeeded,
@@ -9,6 +11,140 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+type MbSession = {
+  id: string;
+  mindbody_client_id: string;
+  access_token: string;
+  refresh_token: string | null;
+  token_expires_at: string;
+};
+
+async function loadBookableSession(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  sessionId: string,
+): Promise<MbSession | Response> {
+  let { data: session, error: sessionError } = await supabaseAdmin
+    .from("mb_sessions")
+    .select("*")
+    .eq("id", sessionId)
+    .single();
+
+  if (sessionError || !session) {
+    return new Response(
+      JSON.stringify({
+        error: "Session not found. Please log in again.",
+        requiresLogin: true,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+    );
+  }
+
+  if (isMindbodyTokenExpired(session.token_expires_at)) {
+    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, session);
+    if (!refreshed) {
+      return new Response(
+        JSON.stringify({
+          error: "Session expired. Please log in again.",
+          requiresLogin: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+      );
+    }
+    session = refreshed;
+  }
+
+  return session as MbSession;
+}
+
+async function resolveBookingClientId(
+  session: MbSession,
+  apiKey: string,
+  siteId: string,
+): Promise<string> {
+  const publicId = session.mindbody_client_id;
+  let clientId = await resolveSiteClientId(publicId, apiKey, siteId, session.access_token);
+  if (clientId === publicId) {
+    try {
+      const staffToken = await getStaffToken();
+      clientId = await resolveSiteClientId(publicId, apiKey, siteId, staffToken);
+    } catch (e) {
+      console.warn("Staff client resolve failed:", e);
+    }
+  }
+  console.log("Booking ClientId:", publicId, "->", clientId);
+  return clientId;
+}
+
+async function mindbodyPostWithRetry(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  session: MbSession,
+  apiKey: string,
+  siteId: string,
+  url: string,
+  body: Record<string, unknown>,
+): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
+  const attempt = async (activeSession: MbSession) => {
+    const clientId = await resolveBookingClientId(activeSession, apiKey, siteId);
+    const payload = { ...body, ClientId: clientId };
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Api-Key": apiKey,
+        "SiteId": siteId,
+        Authorization: `Bearer ${activeSession.access_token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    return { response, clientId };
+  };
+
+  let { response } = await attempt(session);
+
+  if (response.status === 401 && session.refresh_token) {
+    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, session, { force: true });
+    if (refreshed) {
+      ({ response } = await attempt(refreshed));
+      session = refreshed;
+    }
+  }
+
+  if (!response.ok) {
+    const rawText = await response.text();
+    console.error("Mindbody booking error:", response.status, rawText);
+    let errorData: Record<string, unknown> = {};
+    try {
+      errorData = JSON.parse(rawText);
+    } catch {
+      /* non-JSON */
+    }
+    const mbMessage =
+      (errorData as { Error?: { Message?: string } }).Error?.Message ||
+      rawText ||
+      "Failed to complete booking";
+
+    if (response.status === 401) {
+      return {
+        ok: false,
+        response: new Response(
+          JSON.stringify({ error: mbMessage, requiresLogin: true }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+        ),
+      };
+    }
+
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: mbMessage }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  return { ok: true, data: await response.json() };
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -72,154 +208,69 @@ serve(async (req) => {
         );
       }
     }
-    // Get user session with access token
-    let { data: session, error: sessionError } = await supabaseAdmin
-      .from("mb_sessions")
-      .select("*")
-      .eq("id", sessionId)
-      .single();
+    const sessionResult = await loadBookableSession(supabaseAdmin, sessionId);
+    if (sessionResult instanceof Response) return sessionResult;
+    const session = sessionResult;
 
-    if (sessionError || !session) {
-      return new Response(
-        JSON.stringify({
-          error: "Session not found. Please log in again.",
-          requiresLogin: true,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
-      );
-    }
-
-    if (isMindbodyTokenExpired(session.token_expires_at)) {
-      const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, session);
-      if (!refreshed) {
-        return new Response(
-          JSON.stringify({
-            error: "Session expired. Please log in again.",
-            requiresLogin: true,
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
-        );
-      }
-      session = refreshed;
-    }
-
-    // Diagnostic: decode token site claim
-    try {
-      const parts = (session.access_token as string).split(".");
-      if (parts.length === 3) {
-        const padded = parts[1] + "=".repeat((4 - (parts[1].length % 4)) % 4);
-        const claims = JSON.parse(atob(padded.replace(/-/g, "+").replace(/_/g, "/")));
-        console.log("Token claims (site):", JSON.stringify({
-          site_ids: claims.site_ids,
-          siteid: claims.siteid,
-          site_id: claims.site_id,
-          subscriberId: claims.subscriberId,
-          aud: claims.aud,
-        }), "Env siteId:", siteId);
-      }
-    } catch (e) {
-      console.log("Could not decode access_token claims:", e);
-    }
-
-    let bookingResult;
-    let mindbodyId;
+    let bookingResult: Record<string, unknown>;
+    let mindbodyId: string | undefined;
 
     if (bookingType === "class") {
-      // Book a class
       if (!classId) {
         throw new Error("classId is required for class booking");
       }
 
-      const response = await fetch(
+      const result = await mindbodyPostWithRetry(
+        supabaseAdmin,
+        session,
+        apiKey,
+        siteId,
         "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Api-Key": apiKey,
-            "SiteId": siteId,
-            "Authorization": `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            ClassId: parseInt(classId),
-            ClientId: session.mindbody_client_id,
-            RequirePayment: true,
-            Waitlist: false,
-            SendEmail: true,
-          }),
-        }
+          ClassId: parseInt(classId),
+          RequirePayment: true,
+          Waitlist: false,
+          SendEmail: true,
+        },
       );
-
-      if (!response.ok) {
-        const rawText = await response.text();
-        console.error("Class booking error raw:", response.status, rawText);
-        let errorData: any = {};
-        try { errorData = JSON.parse(rawText); } catch { /* non-JSON */ }
-        const mbMessage = errorData.Error?.Message || rawText || "Failed to book class";
-        if (response.status === 401) {
-          return new Response(
-            JSON.stringify({ error: mbMessage, requiresLogin: true }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
-          );
-        }
-        throw new Error(mbMessage);
-      }
-
-      bookingResult = await response.json();
+      if (!result.ok) return result.response;
+      bookingResult = result.data as Record<string, unknown>;
       mindbodyId = classId;
     } else {
-      // Book an appointment
       if (!sessionTypeId || !staffId || !startDateTime) {
         throw new Error("sessionTypeId, staffId, and startDateTime are required");
       }
 
-      const response = await fetch(
+      const result = await mindbodyPostWithRetry(
+        supabaseAdmin,
+        session,
+        apiKey,
+        siteId,
         "https://api.mindbodyonline.com/public/v6/appointment/addappointment",
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Api-Key": apiKey,
-            "SiteId": siteId,
-            "Authorization": `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({
-            ClientId: session.mindbody_client_id,
-            LocationId: locationId || 1,
-            StaffId: parseInt(staffId),
-            SessionTypeId: parseInt(sessionTypeId),
-            StartDateTime: startDateTime,
-            ApplyPayment: true,
-            SendConfirmationEmail: true,
-          }),
-        }
+          LocationId: locationId || 1,
+          StaffId: parseInt(staffId),
+          SessionTypeId: parseInt(sessionTypeId),
+          StartDateTime: startDateTime,
+          ApplyPayment: true,
+          SendConfirmationEmail: true,
+        },
       );
-
-      if (!response.ok) {
-        const rawText = await response.text();
-        console.error("Appointment booking error raw:", response.status, rawText);
-        let errorData: any = {};
-        try { errorData = JSON.parse(rawText); } catch { /* non-JSON */ }
-        const mbMessage = errorData.Error?.Message || rawText || "Failed to book appointment";
-        if (response.status === 401) {
-          return new Response(
-            JSON.stringify({ error: mbMessage, requiresLogin: true }),
-            { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
-          );
-        }
-        throw new Error(mbMessage);
-      }
-
-      bookingResult = await response.json();
-      mindbodyId = bookingResult.Appointment?.Id?.toString();
+      if (!result.ok) return result.response;
+      bookingResult = result.data as Record<string, unknown>;
+      mindbodyId = (bookingResult.Appointment as { Id?: number })?.Id?.toString();
     }
 
     // Build metadata with fallbacks to client-provided values so the row is never sparse.
-    const resolvedStaffName = bookingResult.Appointment?.Staff?.FirstName
-      ? `${bookingResult.Appointment.Staff.FirstName} ${bookingResult.Appointment.Staff.LastName || ""}`.trim()
+    const appointment = bookingResult.Appointment as {
+      Staff?: { FirstName?: string; LastName?: string };
+      Location?: { Name?: string };
+    } | undefined;
+    const classInfo = bookingResult.Class as { StartDateTime?: string; EndDateTime?: string } | undefined;
+    const resolvedStaffName = appointment?.Staff?.FirstName
+      ? `${appointment.Staff.FirstName} ${appointment.Staff.LastName || ""}`.trim()
       : (staffName || null);
-    const resolvedLocationName =
-      bookingResult.Appointment?.Location?.Name || locationName || null;
+    const resolvedLocationName = appointment?.Location?.Name || locationName || null;
 
     // Save booking to local database
     const { data: booking, error: bookingError } = await supabaseAdmin
@@ -232,8 +283,8 @@ serve(async (req) => {
         service_id: sessionTypeId || classId,
         staff_name: resolvedStaffName,
         location_name: resolvedLocationName,
-        start_time: startDateTime || bookingResult.Class?.StartDateTime,
-        end_time: endDateTime || bookingResult.Class?.EndDateTime,
+        start_time: startDateTime || classInfo?.StartDateTime,
+        end_time: endDateTime || classInfo?.EndDateTime,
         status: "confirmed",
         booking_type: bookingType,
         idempotency_key: idempotencyKey || null,

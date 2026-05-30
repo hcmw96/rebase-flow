@@ -112,7 +112,7 @@ export function useMyBookings() {
 }
 
 export function useBookService() {
-  const { mbSession, logout } = useAuth();
+  const { mbSession } = useAuth();
   const queryClient = useQueryClient();
 
   return useMutation({
@@ -132,10 +132,6 @@ export function useBookService() {
 
       if (!response.ok) {
         const parsed = await parseFunctionError(response, 'Failed to book');
-        if (parsed.requiresLogin) {
-          localStorage.removeItem('mb_session');
-          logout();
-        }
         throw new Error(parsed.message);
       }
 
