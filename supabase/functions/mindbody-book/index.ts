@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveSiteClientId } from "../_shared/mindbodyClientResolve.ts";
+import { resolveSiteClientId, type ClientProfile } from "../_shared/mindbodyClientResolve.ts";
+import { fetchMindbodyClientProfile } from "../_shared/mindbodyClientProfile.ts";
 import { getStaffToken } from "../_shared/mindbodyStaff.ts";
 import {
   isMindbodyTokenExpired,
@@ -18,6 +19,9 @@ type MbSession = {
   access_token: string;
   refresh_token: string | null;
   token_expires_at: string;
+  email?: string | null;
+  first_name?: string | null;
+  last_name?: string | null;
 };
 
 async function loadBookableSession(
@@ -57,22 +61,41 @@ async function loadBookableSession(
   return session as MbSession;
 }
 
+async function sessionClientProfile(
+  session: MbSession,
+  apiKey: string,
+  siteId: string,
+): Promise<ClientProfile> {
+  let email = session.email ?? undefined;
+  let firstName = session.first_name ?? undefined;
+  let lastName = session.last_name ?? undefined;
+
+  if ((!email || !firstName) && session.access_token) {
+    const fetched = await fetchMindbodyClientProfile(
+      session.mindbody_client_id,
+      session.access_token,
+      apiKey,
+      siteId,
+    );
+    if (fetched) {
+      email = email ?? fetched.email;
+      firstName = firstName ?? fetched.firstName;
+      lastName = lastName ?? fetched.lastName;
+    }
+  }
+
+  return { email, firstName, lastName };
+}
+
 async function resolveBookingClientId(
   publicClientId: string,
   apiKey: string,
   siteId: string,
-  bearerToken: string,
-): Promise<string> {
-  let clientId = await resolveSiteClientId(publicClientId, apiKey, siteId, bearerToken);
-  if (clientId === publicClientId) {
-    try {
-      const staffToken = await getStaffToken();
-      clientId = await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken);
-    } catch (e) {
-      console.warn("Staff client resolve failed:", e);
-    }
-  }
-  console.log("Booking ClientId:", publicClientId, "->", clientId);
+  staffToken: string,
+  profile: ClientProfile,
+): Promise<string | null> {
+  const clientId = await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken, profile);
+  console.log("Booking ClientId:", publicClientId, "->", clientId ?? "(unresolved)");
   return clientId;
 }
 
@@ -131,7 +154,22 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  const clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken);
+  const profile = await sessionClientProfile(session, apiKey, siteId);
+  const clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
+  if (!clientId) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We could not find your Rebase profile in Mindbody. Create a Rebase account via Mindbody or email reception@rebaserecovery.com and we will link your booking.",
+          profileNotFound: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
   const payload = { ...body, ClientId: clientId };
 
   let response = await postToMindbody(url, apiKey, siteId, staffToken, payload);
@@ -277,6 +315,7 @@ serve(async (req) => {
           RequirePayment: true,
           Waitlist: false,
           SendEmail: true,
+          CrossRegionalBooking: true,
         },
       );
       if (!result.ok) return result.response;

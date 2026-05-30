@@ -20,6 +20,20 @@ export interface ClassifiedBookingError {
 export function classifyBookingError(raw: string | undefined | null): ClassifiedBookingError {
   const msg = (raw || '').toLowerCase();
 
+  if (
+    (msg.includes('custom id') && msg.includes('does not exist')) ||
+    msg.includes('profile in mindbody') ||
+    msg.includes('profilenotfound')
+  ) {
+    return {
+      kind: 'unknown',
+      message:
+        'Your Mindbody sign-in is not linked to a Rebase client profile yet. Use Create Mindbody Account below, or email reception@rebaserecovery.com and we will set you up.',
+      actionLabel: 'Email reception',
+      actionRoute: 'mailto:reception@rebaserecovery.com',
+    };
+  }
+
   if (msg.includes('site id does not match')) {
     return {
       kind: 'unknown',
