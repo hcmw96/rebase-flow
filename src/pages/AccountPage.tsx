@@ -16,7 +16,7 @@ const bookingStart = (b: { startTime?: string; startDateTime?: string }) =>
   new Date(b.startTime || b.startDateTime || 0);
 
 const AccountPage = () => {
-  const { mbSession, isAuthenticated, logout, login, refreshMbSession } = useAuth();
+  const { mbSession, isAuthenticated, logout, login, refreshMbSession, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
   const { data: bookingsData, isLoading: bookingsLoading } = useMyBookings();
   const { data: membershipData } = useClientMembership();
   const [message, setMessage] = useState('');
@@ -63,7 +63,12 @@ const AccountPage = () => {
         <p className="text-sm text-muted-foreground">
           Sign in with your Mindbody account to view bookings and manage your visits.
         </p>
-        <Button onClick={login} className="w-full">Sign in with Mindbody</Button>
+        <Button onClick={() => login()} className="w-full">Sign in with Mindbody</Button>
+        {mindbodySignUpUrl && (
+          <Button variant="outline" onClick={openMindbodySignUp} className="w-full">
+            Create Mindbody account
+          </Button>
+        )}
       </div>
     );
   }

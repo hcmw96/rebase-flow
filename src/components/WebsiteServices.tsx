@@ -366,7 +366,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
           className="mt-16 flex justify-center"
         >
           <Link
-            to="/auth"
+            to="/membership"
             className="px-10 py-4 bg-white/10 backdrop-blur-md border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-white/20 hover:border-[#F9ECD9]/40 transition-all duration-300 uppercase tracking-[0.2em] text-sm font-light"
           >
             Join Our Community

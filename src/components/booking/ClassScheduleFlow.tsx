@@ -125,7 +125,7 @@ const ClassScheduleFlow = ({
   resumeClassId,
   bookingService,
 }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout } = useAuth();
+  const { isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -242,6 +242,17 @@ const ClassScheduleFlow = ({
     setSessionExpiredMessage(null);
     logout();
     login({ clearSession: true });
+  };
+
+  const startCreateAccount = (cls?: MindbodyClass | null) => {
+    const target = cls ?? selectedClass;
+    if (bookingService) {
+      stashPendingBooking(bookingService, {
+        selectedClassId: target?.id,
+      });
+    }
+    setSessionExpiredMessage(null);
+    openMindbodySignUp();
   };
 
   const handleBook = async () => {
@@ -498,6 +509,8 @@ const ClassScheduleFlow = ({
               isPending={bookMutation.isPending}
               changeTimeLabel="Change session"
               sessionExpiredMessage={sessionExpiredMessage}
+              onCreateAccount={() => startCreateAccount(selectedClass)}
+              showCreateAccount={!!mindbodySignUpUrl}
             />
           </div>
         </div>

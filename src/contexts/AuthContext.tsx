@@ -18,6 +18,10 @@ interface AuthContextType {
   authError: string | null;
   /** Full-page Mindbody OAuth. Pass `clearSession` when replacing an expired token. */
   login: (options?: { clearSession?: boolean }) => void;
+  /** Branded-web URL where new clients create a Mindbody login for this studio. */
+  mindbodySignUpUrl: string | null;
+  /** Open Mindbody account creation (same tab). */
+  openMindbodySignUp: () => void;
   logout: () => void;
   refreshMbSession: () => Promise<void>;
 }
@@ -133,6 +137,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [mindbodySignUpUrl, setMindbodySignUpUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && typeof data.signUpUrl === 'string') {
+          setMindbodySignUpUrl(data.signUpUrl);
+        }
+      } catch {
+        /* optional — create-account link hidden if unavailable */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // OAuth return + restore session from storage (validated against server when online)
   useEffect(() => {
@@ -293,6 +317,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const openMindbodySignUp = useCallback(() => {
+    if (!mindbodySignUpUrl) {
+      toast.error('Account creation is temporarily unavailable. Please contact reception.');
+      return;
+    }
+    window.location.assign(mindbodySignUpUrl);
+  }, [mindbodySignUpUrl]);
+
   const logout = useCallback(() => {
     localStorage.removeItem(MB_STORAGE_KEY);
     setMbSession(null);
@@ -322,6 +354,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isRedirecting,
         authError,
         login,
+        mindbodySignUpUrl,
+        openMindbodySignUp,
         logout,
         refreshMbSession,
       }}

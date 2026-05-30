@@ -8,6 +8,8 @@ interface BookingConfirmActionsProps {
   isPending: boolean;
   changeTimeLabel?: string;
   sessionExpiredMessage?: string | null;
+  onCreateAccount?: () => void;
+  showCreateAccount?: boolean;
 }
 
 /**
@@ -20,6 +22,8 @@ const BookingConfirmActions = ({
   isPending,
   changeTimeLabel = 'Change Time',
   sessionExpiredMessage,
+  onCreateAccount,
+  showCreateAccount = false,
 }: BookingConfirmActionsProps) => (
   <div className="space-y-3">
     {sessionExpiredMessage && (
@@ -28,9 +32,23 @@ const BookingConfirmActions = ({
       </p>
     )}
     {!isAuthenticated && !sessionExpiredMessage && (
-      <p className="text-sm text-muted-foreground leading-relaxed">
-        Sign in with your Mindbody account to complete this booking.
-      </p>
+      <div className="space-y-1.5 text-sm text-muted-foreground leading-relaxed">
+        <p>Sign in with your Mindbody account to complete this booking.</p>
+        {showCreateAccount && onCreateAccount && (
+          <p>
+            New to Rebase?{' '}
+            <button
+              type="button"
+              onClick={onCreateAccount}
+              disabled={isPending}
+              className="text-foreground font-medium underline underline-offset-2 hover:text-foreground/80"
+            >
+              Create a Mindbody account
+            </button>
+            {' '}first, then return here to sign in.
+          </p>
+        )}
+      </div>
     )}
     <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
       <Button
@@ -54,6 +72,17 @@ const BookingConfirmActions = ({
         )}
       </Button>
     </div>
+    {!isAuthenticated && showCreateAccount && onCreateAccount && (
+      <Button
+        type="button"
+        variant="outline"
+        onClick={onCreateAccount}
+        disabled={isPending}
+        className="w-full min-h-11"
+      >
+        Create Mindbody Account
+      </Button>
+    )}
   </div>
 );
 

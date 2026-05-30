@@ -1,5 +1,4 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
@@ -14,11 +13,10 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
-import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail, CreditCard } from 'lucide-react';
+import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
-import { useClientMembership } from '@/hooks/useMindbodyMembership';
 import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -75,10 +73,9 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 );
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId }: BookingDrawerProps) => {
-  const { mbSession, isAuthenticated, login, logout } = useAuth();
+  const { mbSession, isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
   const bookServiceMutation = useBookService();
-  const navigate = useNavigate();
   const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -109,6 +106,12 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
     setSessionExpiredMessage(null);
     logout();
     login({ clearSession: true });
+  };
+
+  const startCreateAccountForBooking = () => {
+    if (service) stashPendingBooking(service);
+    setSessionExpiredMessage(null);
+    openMindbodySignUp();
   };
 
   // Check if this is a class booking
@@ -203,18 +206,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
     });
   }, [monthAvailabilityData]);
 
-  // Membership / pricing-option pre-check. Only run when authenticated & at confirm step.
-  const { data: membershipData } = useClientMembership();
-  const hasUsablePass = useMemo(() => {
-    if (!membershipData) return false;
-    const hasMembership = (membershipData.memberships?.length ?? 0) > 0;
-    const hasContract = (membershipData.contracts?.length ?? 0) > 0;
-    const hasService = (membershipData.clientServices || []).some(
-      (s) => (s.remaining ?? 0) > 0,
-    );
-    return hasMembership || hasContract || hasService;
-  }, [membershipData]);
-
   const handleUpsellSelect = (serviceName: string) => {
     if (onSwitchService) onSwitchService(serviceName);
   };
@@ -299,10 +290,9 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
       } else if (classified.kind === 'payment_required') {
         toast.error(classified.message, {
           action: {
-            label: 'Memberships',
+            label: 'Email reception',
             onClick: () => {
-              onClose();
-              navigate('/membership');
+              window.location.href = 'mailto:reception@rebaserecovery.com';
             },
           },
         });
@@ -635,53 +625,22 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
                         </div>
                       </div>
 
-                      {isAuthenticated && membershipData && !hasUsablePass ? (
-                        <div className="bg-accent/30 border border-accent/40 rounded-lg p-4 space-y-3">
-                          <div className="flex items-start gap-3">
-                            <div className="w-8 h-8 rounded-full bg-accent/40 flex items-center justify-center shrink-0">
-                              <CreditCard className="h-4 w-4 text-foreground/80" />
-                            </div>
-                            <div className="space-y-1">
-                              <p className="text-sm font-semibold text-foreground">You'll need a pass to book this</p>
-                              <p className="text-xs text-muted-foreground leading-relaxed">
-                                Pick up a single-use pass or a membership — both unlock instant booking.
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <Button
-                              onClick={() => {
-                                onClose();
-                                navigate('/membership');
-                              }}
-                              className="flex-1"
-                            >
-                              View memberships
-                            </Button>
-                            <Button asChild variant="outline" className="flex-1">
-                              <a href="mailto:reception@rebaserecovery.com">
-                                <Mail className="h-4 w-4 mr-2" />
-                                Reception
-                              </a>
-                            </Button>
-                          </div>
-                        </div>
-                      ) : (
-                        <BookingConfirmActions
-                          onChangeTime={() => {
-                            setSessionExpiredMessage(null);
-                            setCurrentStep(timeStep);
-                          }}
-                          onConfirm={
-                            sessionExpiredMessage
-                              ? startSignInForBooking
-                              : handleConfirmBooking
-                          }
-                          isAuthenticated={isAuthenticated && !sessionExpiredMessage}
-                          isPending={isBooking}
-                          sessionExpiredMessage={sessionExpiredMessage}
-                        />
-                      )}
+                      <BookingConfirmActions
+                        onChangeTime={() => {
+                          setSessionExpiredMessage(null);
+                          setCurrentStep(timeStep);
+                        }}
+                        onConfirm={
+                          sessionExpiredMessage
+                            ? startSignInForBooking
+                            : handleConfirmBooking
+                        }
+                        isAuthenticated={isAuthenticated && !sessionExpiredMessage}
+                        isPending={isBooking}
+                        sessionExpiredMessage={sessionExpiredMessage}
+                        onCreateAccount={startCreateAccountForBooking}
+                        showCreateAccount={!!mindbodySignUpUrl}
+                      />
 
                       {onSwitchService && (
                         <UpsellSuggestions

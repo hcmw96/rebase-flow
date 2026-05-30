@@ -34,13 +34,16 @@ export function classifyBookingError(raw: string | undefined | null): Classified
     msg.includes('no sessions remaining') ||
     msg.includes('package') ||
     msg.includes('payment') ||
-    msg.includes('insufficient')
+    msg.includes('insufficient') ||
+    msg.includes('does not have a valid') ||
+    msg.includes('unable to apply')
   ) {
     return {
       kind: 'payment_required',
-      message: "You don't have a pass that covers this booking.",
-      actionLabel: 'View memberships',
-      actionRoute: '/membership',
+      message:
+        "We couldn't complete this booking in Mindbody — you may need a session pass or payment on your account. Contact reception and we'll help you book.",
+      actionLabel: 'Email reception',
+      actionRoute: 'mailto:reception@rebaserecovery.com',
     };
   }
 

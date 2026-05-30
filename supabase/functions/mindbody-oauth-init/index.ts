@@ -5,14 +5,36 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+function mindbodySignUpUrl(siteId: string): string {
+  return `https://cart.mindbodyonline.com/sites/${siteId}/client/new`;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const siteId = Deno.env.get("MINDBODY_SITE_ID");
+
+  if (req.method === "GET") {
+    if (!siteId) {
+      return new Response(
+        JSON.stringify({ error: "Missing Mindbody site configuration" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+    return new Response(
+      JSON.stringify({ signUpUrl: mindbodySignUpUrl(siteId) }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+    );
+  }
+
+  if (req.method !== "POST") {
+    return new Response("Method not allowed", { status: 405, headers: corsHeaders });
+  }
+
   try {
     const clientId = Deno.env.get("MINDBODY_OAUTH_CLIENT_ID");
-    const siteId = Deno.env.get("MINDBODY_SITE_ID");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
 
     if (!clientId || !siteId || !supabaseUrl) {
@@ -63,7 +85,11 @@ serve(async (req) => {
       .replace(/scope=[^&]*/, `scope=${encodeURIComponent(scope)}`);
 
     return new Response(
-      JSON.stringify({ authUrl: authUrlString, state }),
+      JSON.stringify({
+        authUrl: authUrlString,
+        state,
+        signUpUrl: mindbodySignUpUrl(siteId),
+      }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
     );
   } catch (error) {
