@@ -133,7 +133,8 @@ const ClassScheduleFlow = ({
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
-  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), SCHEDULE_WEEKS_AHEAD), 'yyyy-MM-dd');
@@ -218,7 +219,8 @@ const ClassScheduleFlow = ({
   };
 
   const handleClassSelect = (cls: MindbodyClass) => {
-    setSessionExpiredMessage(null);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
     setSelectedClass(cls);
     setCurrentStep(2);
   };
@@ -234,7 +236,8 @@ const ClassScheduleFlow = ({
 
   useEffect(() => {
     if (isAuthenticated) {
-      setSessionExpiredMessage(null);
+      setBookingError(null);
+      setBookingErrorRequiresSignIn(false);
       void refreshMbSession();
     }
   }, [isAuthenticated, refreshMbSession]);
@@ -246,7 +249,8 @@ const ClassScheduleFlow = ({
         selectedClassId: target?.id,
       });
     }
-    setSessionExpiredMessage(null);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
     logout();
     login({ clearSession: true });
   };
@@ -258,7 +262,8 @@ const ClassScheduleFlow = ({
         selectedClassId: target?.id,
       });
     }
-    setSessionExpiredMessage(null);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
     openMindbodySignUp();
   };
 
@@ -267,9 +272,13 @@ const ClassScheduleFlow = ({
 
     const activeSession = await refreshMbSession();
     if (!activeSession?.sessionId) {
-      setSessionExpiredMessage('Your sign-in expired. Please sign in again.');
+      setBookingError('Your sign-in expired. Please sign in again.');
+      setBookingErrorRequiresSignIn(true);
       return;
     }
+
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
 
     try {
       await bookMutation.mutateAsync({
@@ -287,20 +296,8 @@ const ClassScheduleFlow = ({
       const classified = classifyBookingError(
         error instanceof Error ? error.message : undefined,
       );
-      if (classified.kind === 'session_expired') {
-        setSessionExpiredMessage(classified.message);
-      } else if (classified.actionRoute?.startsWith('mailto:')) {
-        toast.error(classified.message, {
-          action: {
-            label: classified.actionLabel || 'Email',
-            onClick: () => {
-              window.location.href = classified.actionRoute!;
-            },
-          },
-        });
-      } else {
-        toast.error(classified.message);
-      }
+      setBookingError(classified.message);
+      setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
     }
   };
 
@@ -517,19 +514,21 @@ const ClassScheduleFlow = ({
           <div className="sticky bottom-0 z-10 border-t border-border/60 bg-background pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
             <BookingConfirmActions
               onChangeTime={() => {
-                setSessionExpiredMessage(null);
+                setBookingError(null);
+                setBookingErrorRequiresSignIn(false);
                 setSelectedClass(null);
                 setCurrentStep(1);
               }}
               onConfirm={
-                sessionExpiredMessage
+                !isAuthenticated || bookingErrorRequiresSignIn
                   ? () => startSignIn(selectedClass)
                   : handleConfirm
               }
-              isAuthenticated={isAuthenticated && !sessionExpiredMessage}
+              isAuthenticated={isAuthenticated}
               isPending={bookMutation.isPending}
               changeTimeLabel="Change session"
-              sessionExpiredMessage={sessionExpiredMessage}
+              bookingError={bookingError}
+              bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
               onCreateAccount={() => startCreateAccount(selectedClass)}
             />
           </div>

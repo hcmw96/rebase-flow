@@ -74,7 +74,8 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId }: BookingDrawerProps) => {
   const { isAuthenticated, login, logout, refreshMbSession } = useAuth();
-  const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
+  const [bookingError, setBookingError] = useState<string | null>(null);
+  const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
   const bookServiceMutation = useBookService();
   const queryClient = useQueryClient();
 
@@ -96,21 +97,24 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
         setSelectedVariant(null);
         setBookingComplete(false);
         setIdempotencyKey(null);
-        setSessionExpiredMessage(null);
+        setBookingError(null);
+        setBookingErrorRequiresSignIn(false);
       }, 300);
     }
   };
 
   const startSignInForBooking = () => {
     if (service) stashPendingBooking(service);
-    setSessionExpiredMessage(null);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
     logout();
     login({ clearSession: true });
   };
 
   const startCreateAccountForBooking = () => {
     if (service) stashPendingBooking(service);
-    setSessionExpiredMessage(null);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
     openMindbodySignUp();
   };
 
@@ -258,7 +262,8 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
 
   useEffect(() => {
     if (isAuthenticated) {
-      setSessionExpiredMessage(null);
+      setBookingError(null);
+      setBookingErrorRequiresSignIn(false);
       void refreshMbSession();
     }
   }, [isAuthenticated, refreshMbSession]);
@@ -272,9 +277,13 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
 
     const activeSession = await refreshMbSession();
     if (!activeSession?.sessionId) {
-      setSessionExpiredMessage('Your sign-in expired. Please sign in again.');
+      setBookingError('Your sign-in expired. Please sign in again.');
+      setBookingErrorRequiresSignIn(true);
       return;
     }
+
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
 
     try {
       await bookServiceMutation.mutateAsync({
@@ -294,30 +303,16 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
       if (navigator.userAgent.includes('despia')) {
         despia('successhaptic://');
       }
-    } catch (error: any) {
-      const classified = classifyBookingError(error?.message);
-
-      if (classified.kind === 'session_expired') {
-        setSessionExpiredMessage(classified.message);
-      } else if (classified.kind === 'payment_required') {
-        toast.error(classified.message, {
-          action: {
-            label: 'Email reception',
-            onClick: () => {
-              window.location.href = 'mailto:reception@rebaserecovery.com';
-            },
-          },
-        });
-      } else if (classified.kind === 'slot_taken') {
-        toast.error(classified.message);
-        // Invalidate availability + bounce back to time picker for a fresh choice
+    } catch (error: unknown) {
+      const classified = classifyBookingError(
+        error instanceof Error ? error.message : undefined,
+      );
+      setBookingError(classified.message);
+      setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
+      if (classified.kind === 'slot_taken') {
         queryClient.invalidateQueries({ queryKey: ['mindbody-availability'] });
         setSelectedSlot(null);
         setCurrentStep(timeStep);
-      } else if (classified.kind === 'duplicate') {
-        toast.error(classified.message);
-      } else {
-        toast.error(classified.message);
       }
 
       if (navigator.userAgent.includes('despia')) {
@@ -639,17 +634,19 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
 
                       <BookingConfirmActions
                         onChangeTime={() => {
-                          setSessionExpiredMessage(null);
+                          setBookingError(null);
+                          setBookingErrorRequiresSignIn(false);
                           setCurrentStep(timeStep);
                         }}
                         onConfirm={
-                          sessionExpiredMessage
+                          !isAuthenticated || bookingErrorRequiresSignIn
                             ? startSignInForBooking
                             : handleConfirmBooking
                         }
-                        isAuthenticated={isAuthenticated && !sessionExpiredMessage}
+                        isAuthenticated={isAuthenticated}
                         isPending={isBooking}
-                        sessionExpiredMessage={sessionExpiredMessage}
+                        bookingError={bookingError}
+                        bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
                         onCreateAccount={startCreateAccountForBooking}
                       />
 

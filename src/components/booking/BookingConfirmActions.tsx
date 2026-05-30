@@ -1,6 +1,7 @@
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import { cn } from '@/lib/utils';
 
 interface BookingConfirmActionsProps {
   onChangeTime: () => void;
@@ -8,7 +9,10 @@ interface BookingConfirmActionsProps {
   isAuthenticated: boolean;
   isPending: boolean;
   changeTimeLabel?: string;
-  sessionExpiredMessage?: string | null;
+  /** Shown when confirm fails or session is invalid — does not change signed-in state. */
+  bookingError?: string | null;
+  /** When true, primary action re-runs sign-in; otherwise user can tap Confirm again. */
+  bookingErrorRequiresSignIn?: boolean;
   /** Stash booking state then open Mindbody registration (same tab). */
   onCreateAccount?: () => void;
 }
@@ -22,7 +26,8 @@ const BookingConfirmActions = ({
   isAuthenticated,
   isPending,
   changeTimeLabel = 'Change Time',
-  sessionExpiredMessage,
+  bookingError,
+  bookingErrorRequiresSignIn = false,
   onCreateAccount,
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
@@ -39,24 +44,40 @@ const BookingConfirmActions = ({
 
   return (
     <div className="space-y-3">
-      {sessionExpiredMessage && (
-        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
-          {sessionExpiredMessage}
+      {bookingError && (
+        <p
+          className={cn(
+            'text-sm rounded-lg px-3 py-2.5 leading-relaxed',
+            bookingErrorRequiresSignIn
+              ? 'text-destructive bg-destructive/10 border border-destructive/20'
+              : 'text-foreground/90 bg-amber-500/10 border border-amber-500/25',
+          )}
+        >
+          {bookingError}
         </p>
       )}
       {showGuestActions && (
         <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-          <p>
-            {sessionExpiredMessage
-              ? 'Sign in again with Mindbody to complete this booking.'
-              : 'Sign in with your Mindbody account to complete this booking.'}
-          </p>
+          <p>Sign in with your Mindbody account to complete this booking.</p>
           <p>
             <span className="font-medium text-foreground">New to Rebase?</span>{' '}
             Create a free Mindbody account first — it only takes a minute — then return here and tap{' '}
             <span className="font-medium text-foreground">Sign In to Book</span>.
           </p>
         </div>
+      )}
+      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && (
+        <p className="text-sm text-muted-foreground">
+          You&apos;re signed in. Tap <span className="font-medium text-foreground">Confirm Booking</span>{' '}
+          to try again, or email{' '}
+          <a
+            href="mailto:reception@rebaserecovery.com"
+            className="font-medium text-foreground underline underline-offset-2"
+          >
+            reception@rebaserecovery.com
+          </a>
+          .
+        </p>
       )}
       <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
         <Button
