@@ -16,6 +16,7 @@ import {
   categoryOrder,
   serviceOrderWithinCategory,
   contactOnlyGroups,
+  COMMUNAL_CONTRAST_DESCRIPTION,
   shortDescriptions,
   classOfferings,
   priceOverrides,
@@ -131,9 +132,12 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
         baseName: entry.baseName,
         category: entry.category,
         image: entry.image,
-        description: live && !isPlaceholderDescription(live.description)
-          ? live.description
-          : entry.shortDescription,
+        description:
+          entry.baseName === 'Communal Contrast'
+            ? COMMUNAL_CONTRAST_DESCRIPTION
+            : live && !isPlaceholderDescription(live.description)
+              ? live.description
+              : entry.shortDescription,
         variants: live?.variants ?? [],
         contactOnly: entry.contactOnly,
       };

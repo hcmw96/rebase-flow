@@ -196,6 +196,9 @@ export const priceOverrides: Record<string, number> = {
 };
 
 // ── Short descriptions (website cards) ─────────────────────────────
+export const COMMUNAL_CONTRAST_DESCRIPTION =
+  'The Communal Contrast gives you access to several ice baths, traditional Finnish sauna, and bucket showers for independent use. Designed to foster relaxation and recovery, this shared area provides a self-guided experience for guests to enhance their well-being. Please note this is not a class, spaces are limited to availability and we limit drop-ins to one session per person per day to ensure availability for all guests. These sessions are up to 50 minutes.';
+
 export const shortDescriptions: Record<string, string> = {
   'Infrared Suite': 'Detoxifying infrared heat followed by an invigorating ice bath.',
   'Premium Suite': 'Private suite with Finnish sauna, ice baths and bucket shower.',
@@ -233,8 +236,7 @@ export const shortDescriptions: Record<string, string> = {
   'Four Hand Divine Healing': 'Synchronised four-hand massage for the ultimate sensory escape.',
   'Hyaluronic Acid': 'Joint-support injections to ease stiffness and improve mobility.',
   'PRP Therapy': 'Platelet-rich plasma therapy to stimulate natural tissue regeneration.',
-  'Communal Contrast':
-    'Our communal wellness space featuring contrast therapy pools, relaxation areas and a curated recovery environment. Perfect for unwinding after a treatment or enjoying a social wellness session with friends.',
+  'Communal Contrast': COMMUNAL_CONTRAST_DESCRIPTION,
   'Off Peak Access': 'Discounted off-peak entry to our communal wellness space.',
 };
 
@@ -253,6 +255,7 @@ export const resolveGroupDescription = (
   current: string | null | undefined,
   baseName: string,
 ): string => {
+  if (baseName === 'Communal Contrast') return COMMUNAL_CONTRAST_DESCRIPTION;
   if (!isPlaceholderDescription(current)) return current as string;
   return shortDescriptions[baseName] || GENERIC_SERVICE_DESCRIPTION;
 };
@@ -447,8 +450,7 @@ export const staticWebsiteCatalogue: StaticServiceEntry[] = [
     baseName: "Communal Contrast",
     category: "Communal Contrast",
     image: "/images/rebase-members-suite.jpg",
-    shortDescription:
-      "Our communal wellness space featuring contrast therapy pools, relaxation areas and a curated recovery environment. Perfect for unwinding after a treatment or enjoying a social wellness session with friends.",
+    shortDescription: COMMUNAL_CONTRAST_DESCRIPTION,
     fromPrice: 65,
     contactOnly: false,
     classDescriptionIds: [5, 47, 49],

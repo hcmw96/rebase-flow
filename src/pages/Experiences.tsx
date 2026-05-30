@@ -8,6 +8,7 @@ import { motion } from "framer-motion";
 import { ChevronRight } from "lucide-react";
 import ExperienceDrawer from "@/components/ExperienceDrawer";
 import SeoHead from "@/components/seo/SeoHead";
+import { COMMUNAL_CONTRAST_DESCRIPTION } from "@/config/serviceConfig";
 import {
   absoluteUrl,
   breadcrumbSchema,
@@ -20,8 +21,7 @@ const experiences = [
   {
     name: "Communal Contrast",
     image: "/images/rebase-members-suite.jpg",
-    description:
-      "Our communal wellness space featuring contrast therapy pools, relaxation areas and a curated recovery environment. Perfect for unwinding after a treatment or enjoying a social wellness session with friends.",
+    description: COMMUNAL_CONTRAST_DESCRIPTION,
   },
   {
     name: "Signature Classes",
