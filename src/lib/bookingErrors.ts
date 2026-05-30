@@ -28,7 +28,7 @@ export function classifyBookingError(raw: string | undefined | null): Classified
     return {
       kind: 'unknown',
       message:
-        'Your Mindbody sign-in is not linked to a Rebase client profile yet. Use Create Mindbody Account below, or email reception@rebaserecovery.com and we will set you up.',
+        'We could not match your Mindbody sign-in to your Rebase client record. Sign out and sign in again, or email reception@rebaserecovery.com and we will complete the booking for you.',
       actionLabel: 'Email reception',
       actionRoute: 'mailto:reception@rebaserecovery.com',
     };

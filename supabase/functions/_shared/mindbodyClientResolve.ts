@@ -3,6 +3,8 @@ type MindbodyClientRow = {
   Id?: number | string;
   UniqueId?: number | string;
   Email?: string;
+  FirstName?: string;
+  LastName?: string;
 };
 
 export type ClientProfile = {
@@ -20,10 +22,15 @@ function mindbodyHeaders(apiKey: string, siteId: string, bearerToken: string) {
   };
 }
 
+function normalizeEmail(email: string): string {
+  return email.trim().toLowerCase();
+}
+
 function pickMatchingClient(
   clients: MindbodyClientRow[],
   publicClientId: string,
   siteId: string,
+  profile?: ClientProfile,
 ): MindbodyClientRow | null {
   const pub = publicClientId.trim();
   for (const client of clients) {
@@ -31,7 +38,24 @@ function pickMatchingClient(
     const id = client.Id != null ? String(client.Id) : "";
     if (unique === pub || id === pub) return client;
   }
-  // Prefer a client whose home site matches when present on the row
+
+  const email = profile?.email?.trim();
+  if (email) {
+    const want = normalizeEmail(email);
+    const byEmail = clients.find((c) => c.Email && normalizeEmail(c.Email) === want);
+    if (byEmail?.Id != null) return byEmail;
+  }
+
+  const first = profile?.firstName?.trim().toLowerCase();
+  const last = profile?.lastName?.trim().toLowerCase();
+  if (first && last) {
+    const byName = clients.find((c) =>
+      c.FirstName?.trim().toLowerCase() === first &&
+      c.LastName?.trim().toLowerCase() === last
+    );
+    if (byName?.Id != null) return byName;
+  }
+
   for (const client of clients) {
     const homeSite = (client as { HomeLocation?: { SiteId?: number } }).HomeLocation?.SiteId;
     if (homeSite != null && String(homeSite) === String(siteId) && client.Id != null) {
@@ -56,7 +80,8 @@ async function fetchClients(
   return (data.Clients || []) as MindbodyClientRow[];
 }
 
-async function lookupClients(
+/** OAuth `sub` is Mindbody's Custom/Unique id — query UniqueIds, not ClientIds. */
+async function lookupByUniqueId(
   publicClientId: string,
   apiKey: string,
   siteId: string,
@@ -65,24 +90,39 @@ async function lookupClients(
 ): Promise<MindbodyClientRow | null> {
   const enc = encodeURIComponent(publicClientId);
   const urls = [
+    `https://api.mindbodyonline.com/public/v6/client/clients?UniqueIds=${enc}&limit=20&CrossRegionalLookup=true`,
+    `https://api.mindbodyonline.com/public/v6/client/clients?UniqueIds=${enc}&limit=20`,
     `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${enc}&limit=20&CrossRegionalLookup=true`,
-    `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${enc}&limit=20`,
     `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=20&CrossRegionalLookup=true`,
   ];
 
-  const email = profile?.email?.trim();
-  if (email) {
-    urls.push(
-      `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${encodeURIComponent(email)}&limit=20&CrossRegionalLookup=true`,
-    );
+  for (const url of urls) {
+    const clients = await fetchClients(url, apiKey, siteId, bearerToken);
+    const match = pickMatchingClient(clients, publicClientId, siteId, profile);
+    if (match?.Id != null) return match;
   }
+  return null;
+}
+
+async function lookupByEmail(
+  email: string,
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  publicClientId: string,
+  profile?: ClientProfile,
+): Promise<MindbodyClientRow | null> {
+  const enc = encodeURIComponent(email.trim());
+  const urls = [
+    `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=50&CrossRegionalLookup=true`,
+    `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=50`,
+  ];
 
   for (const url of urls) {
     const clients = await fetchClients(url, apiKey, siteId, bearerToken);
-    const match = pickMatchingClient(clients, publicClientId, siteId);
+    const match = pickMatchingClient(clients, publicClientId, siteId, profile);
     if (match?.Id != null) return match;
   }
-
   return null;
 }
 
@@ -91,27 +131,32 @@ async function fetchCrossRegionalSiteClientId(
   apiKey: string,
   siteId: string,
   bearerToken: string,
+  numericHint?: string | null,
 ): Promise<string | null> {
-  const url =
-    `https://api.mindbodyonline.com/public/v6/client/clientcrossregionalassociations?ClientId=${encodeURIComponent(publicClientId)}`;
-  const res = await fetch(url, { method: "GET", headers: mindbodyHeaders(apiKey, siteId, bearerToken) });
-  if (!res.ok) return null;
+  const idsToTry = [publicClientId, numericHint].filter(Boolean) as string[];
 
-  const data = await res.json();
-  const associations = (data.CrossRegionalClientAssociations ||
-    data.ClientAssociations ||
-    data.Associations ||
-    []) as Array<{ SiteId?: number; ClientId?: number | string; Id?: number | string }>;
+  for (const clientId of idsToTry) {
+    const url =
+      `https://api.mindbodyonline.com/public/v6/client/clientcrossregionalassociations?ClientId=${encodeURIComponent(clientId)}`;
+    const res = await fetch(url, { method: "GET", headers: mindbodyHeaders(apiKey, siteId, bearerToken) });
+    if (!res.ok) continue;
 
-  for (const row of associations) {
-    if (row.SiteId != null && String(row.SiteId) === String(siteId)) {
-      const id = row.ClientId ?? row.Id;
-      if (id != null) return String(id);
+    const data = await res.json();
+    const associations = (data.CrossRegionalClientAssociations ||
+      data.ClientAssociations ||
+      data.Associations ||
+      []) as Array<{ SiteId?: number; ClientId?: number | string; Id?: number | string }>;
+
+    for (const row of associations) {
+      if (row.SiteId != null && String(row.SiteId) === String(siteId)) {
+        const id = row.ClientId ?? row.Id;
+        if (id != null) return String(id);
+      }
     }
-  }
 
-  const first = associations.find((r) => (r.ClientId ?? r.Id) != null);
-  if (first) return String(first.ClientId ?? first.Id);
+    const first = associations.find((r) => (r.ClientId ?? r.Id) != null);
+    if (first) return String(first.ClientId ?? first.Id);
+  }
 
   return null;
 }
@@ -142,18 +187,9 @@ async function addClientAtSite(
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     console.error("Mindbody addclient failed:", res.status, errText);
-    if (/duplicate|already exists|email/i.test(errText)) {
-      const email = profile.email?.trim();
-      if (email) {
-        const clients = await fetchClients(
-          `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${encodeURIComponent(email)}&limit=20&CrossRegionalLookup=true`,
-          apiKey,
-          siteId,
-          staffToken,
-        );
-        const match = pickMatchingClient(clients, publicClientId, siteId) ?? clients[0];
-        if (match?.Id != null) return String(match.Id);
-      }
+    if (email && /duplicate|already exists|email/i.test(errText)) {
+      const found = await lookupByEmail(email, apiKey, siteId, staffToken, publicClientId, profile);
+      if (found?.Id != null) return String(found.Id);
     }
     return null;
   }
@@ -181,37 +217,37 @@ export async function resolveSiteClientId(
   const pub = publicClientId.trim();
   if (!pub) return null;
 
-  const found = await lookupClients(pub, apiKey, siteId, bearerToken, profile);
-  if (found?.Id != null) {
-    const numeric = String(found.Id);
-    console.log("Resolved client via GET clients:", pub, "->", numeric, "UniqueId:", found.UniqueId);
-    return numeric;
+  const email = profile?.email?.trim();
+  if (email) {
+    const byEmail = await lookupByEmail(email, apiKey, siteId, bearerToken, pub, profile);
+    if (byEmail?.Id != null) {
+      const numeric = String(byEmail.Id);
+      console.log("Resolved client via email:", email, "->", numeric, "UniqueId:", byEmail.UniqueId);
+      return numeric;
+    }
   }
 
-  const crossRegionalId = await fetchCrossRegionalSiteClientId(pub, apiKey, siteId, bearerToken);
+  const byUnique = await lookupByUniqueId(pub, apiKey, siteId, bearerToken, profile);
+  const numericHint = byUnique?.Id != null ? String(byUnique.Id) : null;
+  if (numericHint && numericHint !== pub) {
+    console.log("Resolved client via UniqueId:", pub, "->", numericHint);
+    return numericHint;
+  }
+
+  const crossRegionalId = await fetchCrossRegionalSiteClientId(pub, apiKey, siteId, bearerToken, numericHint);
   if (crossRegionalId && crossRegionalId !== pub) {
     console.log("Resolved client via cross-regional associations:", pub, "->", crossRegionalId);
     return crossRegionalId;
   }
 
-  if (profile && (profile.email || profile.firstName)) {
+  // Only create a net-new profile when we have no email (true first-time guest).
+  if (!email && profile && profile.firstName) {
     const created = await addClientAtSite(apiKey, siteId, bearerToken, pub, profile);
     if (created) return created;
   }
 
-  console.warn("Could not resolve site client id for public id:", pub);
+  console.warn("Could not resolve site client id for public id:", pub, "email:", email ?? "(none)");
   return null;
-}
-
-/** @deprecated Use resolveSiteClientId — returns null instead of public id on failure. */
-export async function resolveSiteClientIdLegacy(
-  publicClientId: string,
-  apiKey: string,
-  siteId: string,
-  bearerToken: string,
-): Promise<string> {
-  const resolved = await resolveSiteClientId(publicClientId, apiKey, siteId, bearerToken);
-  return resolved ?? publicClientId;
 }
 
 /** Probe that the user's OAuth token is accepted for this site (read-only). */
@@ -221,8 +257,9 @@ export async function probeUserMindbodyToken(
   apiKey: string,
   siteId: string,
 ): Promise<{ ok: boolean; status: number; body: string }> {
+  const enc = encodeURIComponent(publicClientId);
   const res = await fetch(
-    `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${encodeURIComponent(publicClientId)}&limit=1`,
+    `https://api.mindbodyonline.com/public/v6/client/clients?UniqueIds=${enc}&limit=1&CrossRegionalLookup=true`,
     {
       headers: {
         "Api-Key": apiKey,

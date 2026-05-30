@@ -7,6 +7,8 @@ import {
   normalizeIdTokenPayload,
   type NormalizedProfile,
 } from "../_shared/mindbodyClientProfile.ts";
+import { resolveSiteClientId } from "../_shared/mindbodyClientResolve.ts";
+import { getStaffToken } from "../_shared/mindbodyStaff.ts";
 import { MINDBODY_OAUTH_SCOPE } from "../_shared/mindbodyRefreshSession.ts";
 
 const corsHeaders = {
@@ -192,11 +194,29 @@ async function exchangeAndSaveSession(
     auth: { persistSession: false, autoRefreshToken: false },
   });
 
+  let mindbodySiteClientId: string | null = null;
+  if (apiKey && userInfo.sub) {
+    try {
+      const staffToken = await getStaffToken();
+      mindbodySiteClientId = await resolveSiteClientId(userInfo.sub, apiKey, siteId, staffToken, {
+        email: userInfo.email,
+        firstName: userInfo.given_name,
+        lastName: userInfo.family_name,
+      });
+      if (mindbodySiteClientId) {
+        console.log("OAuth linked site client:", userInfo.sub, "->", mindbodySiteClientId);
+      }
+    } catch (linkErr) {
+      console.warn("Site client link at OAuth (non-fatal):", linkErr);
+    }
+  }
+
   const { data: session, error: sessionError } = await supabase
     .from("mb_sessions")
     .upsert(
       {
         mindbody_client_id: userInfo.sub,
+        mindbody_site_client_id: mindbodySiteClientId,
         email: userInfo.email,
         first_name: userInfo.given_name,
         last_name: userInfo.family_name,

@@ -47,7 +47,7 @@ export async function fetchMindbodyClientProfile(
 ): Promise<{ email?: string; firstName?: string; lastName?: string } | null> {
   try {
     const res = await fetch(
-      `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${encodeURIComponent(mindbodyClientId)}&limit=5&CrossRegionalLookup=true`,
+      `https://api.mindbodyonline.com/public/v6/client/clients?UniqueIds=${encodeURIComponent(mindbodyClientId)}&limit=5&CrossRegionalLookup=true`,
       {
         headers: {
           "Api-Key": apiKey,

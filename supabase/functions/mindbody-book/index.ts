@@ -1,7 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { resolveSiteClientId, type ClientProfile } from "../_shared/mindbodyClientResolve.ts";
-import { fetchMindbodyClientProfile } from "../_shared/mindbodyClientProfile.ts";
+import { fetchMindbodyClientProfile, fetchOidcUserInfo } from "../_shared/mindbodyClientProfile.ts";
 import { getStaffToken } from "../_shared/mindbodyStaff.ts";
 import {
   isMindbodyTokenExpired,
@@ -16,6 +16,7 @@ const corsHeaders = {
 type MbSession = {
   id: string;
   mindbody_client_id: string;
+  mindbody_site_client_id?: string | null;
   access_token: string;
   refresh_token: string | null;
   token_expires_at: string;
@@ -71,6 +72,12 @@ async function sessionClientProfile(
   let lastName = session.last_name ?? undefined;
 
   if ((!email || !firstName) && session.access_token) {
+    const oidc = await fetchOidcUserInfo(session.access_token);
+    if (oidc) {
+      email = email ?? oidc.email;
+      firstName = firstName ?? oidc.given_name;
+      lastName = lastName ?? oidc.family_name;
+    }
     const fetched = await fetchMindbodyClientProfile(
       session.mindbody_client_id,
       session.access_token,
@@ -154,15 +161,26 @@ async function mindbodyPostWithRetry(
     };
   }
 
+  let clientId = session.mindbody_site_client_id?.trim() || null;
   const profile = await sessionClientProfile(session, apiKey, siteId);
-  const clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
+
+  if (!clientId) {
+    clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
+    if (clientId) {
+      await supabaseAdmin
+        .from("mb_sessions")
+        .update({ mindbody_site_client_id: clientId, updated_at: new Date().toISOString() })
+        .eq("id", session.id);
+    }
+  }
+
   if (!clientId) {
     return {
       ok: false,
       response: new Response(
         JSON.stringify({
           error:
-            "We could not find your Rebase profile in Mindbody. Create a Rebase account via Mindbody or email reception@rebaserecovery.com and we will link your booking.",
+            "We could not match your Mindbody sign-in to your Rebase client record. Sign out, sign in again, or email reception@rebaserecovery.com — we will complete the booking for you.",
           profileNotFound: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
