@@ -85,16 +85,6 @@ function extractMindbodyErrorMessage(rawText: string): string {
   }
 }
 
-function isSiteOrAuthError(status: number, message: string): boolean {
-  const lower = message.toLowerCase();
-  return (
-    status === 401 ||
-    lower.includes("site id does not match") ||
-    lower.includes("invalid user token") ||
-    lower.includes("unauthorized")
-  );
-}
-
 async function postToMindbody(
   url: string,
   apiKey: string,
@@ -124,50 +114,67 @@ async function mindbodyPostWithRetry(
 ): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
   const publicClientId = session.mindbody_client_id;
 
-  const attemptWithToken = async (bearerToken: string) => {
-    const clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, bearerToken);
-    const payload = { ...body, ClientId: clientId };
-    const response = await postToMindbody(url, apiKey, siteId, bearerToken, payload);
-    return { response, payload };
-  };
-
-  let activeSession = session;
-  let { response } = await attemptWithToken(activeSession.access_token);
-
-  if (response.status === 401 && activeSession.refresh_token) {
-    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
-    if (refreshed) {
-      activeSession = refreshed;
-      ({ response } = await attemptWithToken(activeSession.access_token));
-    }
+  // OAuth proves *who* the client is; staff token completes the booking at this site.
+  // Consumer tokens often fail with "site id does not match" when the user visits multiple
+  // studios (Rebase is linked under Places You Go, but the API token scope differs).
+  let staffToken: string;
+  try {
+    staffToken = await getStaffToken();
+  } catch (staffErr) {
+    console.error("Staff token unavailable:", staffErr);
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "Booking is temporarily unavailable. Please contact reception." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 },
+      ),
+    };
   }
 
-  if (!response.ok) {
-    const rawText = await response.text();
-    const mbMessage = extractMindbodyErrorMessage(rawText);
-    console.error("Mindbody booking (user token):", response.status, mbMessage);
+  const clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken);
+  const payload = { ...body, ClientId: clientId };
 
-    if (isSiteOrAuthError(response.status, mbMessage)) {
-      try {
-        const staffToken = await getStaffToken();
-        const staffResponse = await attemptWithToken(staffToken);
-        if (staffResponse.response.ok) {
-          console.log("Mindbody booking succeeded via staff token fallback");
-          return { ok: true, data: await staffResponse.response.json() };
-        }
-        const staffText = await staffResponse.response.text();
-        const staffMessage = extractMindbodyErrorMessage(staffText);
-        console.error("Mindbody booking (staff token):", staffResponse.response.status, staffMessage);
-      } catch (staffErr) {
-        console.error("Staff token booking fallback failed:", staffErr);
-      }
+  let response = await postToMindbody(url, apiKey, siteId, staffToken, payload);
+
+  if (!response.ok) {
+    const staffText = await response.text();
+    const staffMessage = extractMindbodyErrorMessage(staffText);
+    console.error("Mindbody booking (staff):", response.status, staffMessage);
+
+    // Optional second attempt with the consumer token (some sites require it).
+    let activeSession = session;
+    if (isMindbodyTokenExpired(activeSession.token_expires_at) && activeSession.refresh_token) {
+      const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
+      if (refreshed) activeSession = refreshed;
     }
 
-    if (response.status === 401 || /site id does not match/i.test(mbMessage)) {
+    const userResponse = await postToMindbody(
+      url,
+      apiKey,
+      siteId,
+      activeSession.access_token,
+      payload,
+    );
+    if (userResponse.ok) {
+      console.log("Mindbody booking succeeded via consumer token");
+      return { ok: true, data: await userResponse.json() };
+    }
+
+    const userText = await userResponse.text();
+    const userMessage = extractMindbodyErrorMessage(userText);
+    console.error("Mindbody booking (consumer):", userResponse.status, userMessage);
+
+    const finalMessage = staffMessage || userMessage;
+    const requiresLogin =
+      userResponse.status === 401 &&
+      !/site id does not match/i.test(finalMessage) &&
+      !/pricing option|payment|package|sessions remaining/i.test(finalMessage.toLowerCase());
+
+    if (requiresLogin) {
       return {
         ok: false,
         response: new Response(
-          JSON.stringify({ error: mbMessage, requiresLogin: true }),
+          JSON.stringify({ error: finalMessage, requiresLogin: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
         ),
       };
@@ -176,7 +183,7 @@ async function mindbodyPostWithRetry(
     return {
       ok: false,
       response: new Response(
-        JSON.stringify({ error: mbMessage }),
+        JSON.stringify({ error: finalMessage }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
     };

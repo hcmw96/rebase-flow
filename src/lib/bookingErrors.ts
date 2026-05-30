@@ -22,9 +22,11 @@ export function classifyBookingError(raw: string | undefined | null): Classified
 
   if (msg.includes('site id does not match')) {
     return {
-      kind: 'session_expired',
+      kind: 'unknown',
       message:
-        'We could not link your Mindbody sign-in to Rebase. Tap Sign In to Book again, or create a Mindbody account with the same email you use at the studio. If it keeps failing, email reception@rebaserecovery.com and we will book you in.',
+        'Mindbody could not complete this booking from the app. Your account can still be linked to Rebase — please try again, or email reception@rebaserecovery.com and we will book you in.',
+      actionLabel: 'Email reception',
+      actionRoute: 'mailto:reception@rebaserecovery.com',
     };
   }
 

@@ -289,6 +289,15 @@ const ClassScheduleFlow = ({
       );
       if (classified.kind === 'session_expired') {
         setSessionExpiredMessage(classified.message);
+      } else if (classified.actionRoute?.startsWith('mailto:')) {
+        toast.error(classified.message, {
+          action: {
+            label: classified.actionLabel || 'Email',
+            onClick: () => {
+              window.location.href = classified.actionRoute!;
+            },
+          },
+        });
       } else {
         toast.error(classified.message);
       }
