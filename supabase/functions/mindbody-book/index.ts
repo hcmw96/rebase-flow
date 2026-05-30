@@ -58,22 +58,60 @@ async function loadBookableSession(
 }
 
 async function resolveBookingClientId(
-  session: MbSession,
+  publicClientId: string,
   apiKey: string,
   siteId: string,
+  bearerToken: string,
 ): Promise<string> {
-  const publicId = session.mindbody_client_id;
-  let clientId = await resolveSiteClientId(publicId, apiKey, siteId, session.access_token);
-  if (clientId === publicId) {
+  let clientId = await resolveSiteClientId(publicClientId, apiKey, siteId, bearerToken);
+  if (clientId === publicClientId) {
     try {
       const staffToken = await getStaffToken();
-      clientId = await resolveSiteClientId(publicId, apiKey, siteId, staffToken);
+      clientId = await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken);
     } catch (e) {
       console.warn("Staff client resolve failed:", e);
     }
   }
-  console.log("Booking ClientId:", publicId, "->", clientId);
+  console.log("Booking ClientId:", publicClientId, "->", clientId);
   return clientId;
+}
+
+function extractMindbodyErrorMessage(rawText: string): string {
+  try {
+    const errorData = JSON.parse(rawText) as { Error?: { Message?: string } };
+    return errorData.Error?.Message || rawText;
+  } catch {
+    return rawText;
+  }
+}
+
+function isSiteOrAuthError(status: number, message: string): boolean {
+  const lower = message.toLowerCase();
+  return (
+    status === 401 ||
+    lower.includes("site id does not match") ||
+    lower.includes("invalid user token") ||
+    lower.includes("unauthorized")
+  );
+}
+
+async function postToMindbody(
+  url: string,
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  body: Record<string, unknown>,
+): Promise<Response> {
+  return fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Api-Key": apiKey,
+      "SiteId": siteId,
+      Authorization: `Bearer ${bearerToken}`,
+    },
+    body: JSON.stringify(body),
+  });
 }
 
 async function mindbodyPostWithRetry(
@@ -84,47 +122,48 @@ async function mindbodyPostWithRetry(
   url: string,
   body: Record<string, unknown>,
 ): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
-  const attempt = async (activeSession: MbSession) => {
-    const clientId = await resolveBookingClientId(activeSession, apiKey, siteId);
+  const publicClientId = session.mindbody_client_id;
+
+  const attemptWithToken = async (bearerToken: string) => {
+    const clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, bearerToken);
     const payload = { ...body, ClientId: clientId };
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Api-Key": apiKey,
-        "SiteId": siteId,
-        Authorization: `Bearer ${activeSession.access_token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-    return { response, clientId };
+    const response = await postToMindbody(url, apiKey, siteId, bearerToken, payload);
+    return { response, payload };
   };
 
-  let { response } = await attempt(session);
+  let activeSession = session;
+  let { response } = await attemptWithToken(activeSession.access_token);
 
-  if (response.status === 401 && session.refresh_token) {
-    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, session, { force: true });
+  if (response.status === 401 && activeSession.refresh_token) {
+    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
     if (refreshed) {
-      ({ response } = await attempt(refreshed));
-      session = refreshed;
+      activeSession = refreshed;
+      ({ response } = await attemptWithToken(activeSession.access_token));
     }
   }
 
   if (!response.ok) {
     const rawText = await response.text();
-    console.error("Mindbody booking error:", response.status, rawText);
-    let errorData: Record<string, unknown> = {};
-    try {
-      errorData = JSON.parse(rawText);
-    } catch {
-      /* non-JSON */
-    }
-    const mbMessage =
-      (errorData as { Error?: { Message?: string } }).Error?.Message ||
-      rawText ||
-      "Failed to complete booking";
+    const mbMessage = extractMindbodyErrorMessage(rawText);
+    console.error("Mindbody booking (user token):", response.status, mbMessage);
 
-    if (response.status === 401) {
+    if (isSiteOrAuthError(response.status, mbMessage)) {
+      try {
+        const staffToken = await getStaffToken();
+        const staffResponse = await attemptWithToken(staffToken);
+        if (staffResponse.response.ok) {
+          console.log("Mindbody booking succeeded via staff token fallback");
+          return { ok: true, data: await staffResponse.response.json() };
+        }
+        const staffText = await staffResponse.response.text();
+        const staffMessage = extractMindbodyErrorMessage(staffText);
+        console.error("Mindbody booking (staff token):", staffResponse.response.status, staffMessage);
+      } catch (staffErr) {
+        console.error("Staff token booking fallback failed:", staffErr);
+      }
+    }
+
+    if (response.status === 401 || /site id does not match/i.test(mbMessage)) {
       return {
         ok: false,
         response: new Response(

@@ -24,7 +24,7 @@ export function classifyBookingError(raw: string | undefined | null): Classified
     return {
       kind: 'session_expired',
       message:
-        'Your Mindbody account is not linked to this studio. Sign out, then sign in again with the email you use at Rebase.',
+        'We could not link your Mindbody sign-in to Rebase. Tap Sign In to Book again, or create a Mindbody account with the same email you use at the studio. If it keeps failing, email reception@rebaserecovery.com and we will book you in.',
     };
   }
 
