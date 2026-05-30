@@ -34,23 +34,27 @@ export function BookingCalendar({ selectedDate, onSelect, availableDates }: Book
   const weekDays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
 
   return (
-    <div className="bg-[hsl(25,12%,12%)]/50 border border-[hsl(25,10%,20%)] rounded-xl p-4">
+    <div className="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-[hsl(25,10%,20%)] bg-[hsl(25,12%,12%)]/50 p-3 sm:p-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-4">
+      <div className="mb-3 flex w-full min-w-0 items-center justify-between gap-2 sm:mb-4">
         <button
+          type="button"
           onClick={() => setCurrentMonth(prev => subMonths(prev, 1))}
-          className="p-2 rounded-lg hover:bg-[hsl(25,10%,15%)] transition-colors text-[hsl(35,15%,88%)]"
+          className="touch-manipulation rounded-lg p-2.5 text-[hsl(35,15%,88%)] transition-colors hover:bg-[hsl(25,10%,15%)] sm:p-2"
+          aria-label="Previous month"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="15 18 9 12 15 6" />
           </svg>
         </button>
-        <h3 className="text-lg font-medium text-[hsl(35,15%,88%)]">
+        <h3 className="truncate text-base font-medium text-[hsl(35,15%,88%)] sm:text-lg">
           {format(currentMonth, 'MMMM yyyy')}
         </h3>
         <button
+          type="button"
           onClick={() => setCurrentMonth(prev => addMonths(prev, 1))}
-          className="p-2 rounded-lg hover:bg-[hsl(25,10%,15%)] transition-colors text-[hsl(35,15%,88%)]"
+          className="touch-manipulation rounded-lg p-2.5 text-[hsl(35,15%,88%)] transition-colors hover:bg-[hsl(25,10%,15%)] sm:p-2"
+          aria-label="Next month"
         >
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
             <polyline points="9 18 15 12 9 6" />
@@ -59,19 +63,22 @@ export function BookingCalendar({ selectedDate, onSelect, availableDates }: Book
       </div>
 
       {/* Week day headers */}
-      <div className="grid grid-cols-7 gap-1 mb-2">
+      <div className="mb-1 grid w-full min-w-0 grid-cols-7 gap-0.5 sm:mb-2 sm:gap-1">
         {weekDays.map(day => (
-          <div key={day} className="text-center text-xs font-medium text-[hsl(35,8%,55%)] py-2">
+          <div
+            key={day}
+            className="flex h-8 items-center justify-center text-center text-[0.7rem] font-medium text-[hsl(35,8%,55%)] sm:h-9 sm:text-xs"
+          >
             {day}
           </div>
         ))}
       </div>
 
       {/* Calendar grid */}
-      <div className="grid grid-cols-7 gap-1">
+      <div className="grid w-full min-w-0 grid-cols-7 gap-0.5 sm:gap-1">
         {days.map((day, index) => {
           if (!day) {
-            return <div key={`empty-${index}`} className="aspect-square" />;
+            return <div key={`empty-${index}`} className="aspect-square w-full min-w-0" />;
           }
 
           const isPast = isBefore(day, today);
@@ -83,10 +90,11 @@ export function BookingCalendar({ selectedDate, onSelect, availableDates }: Book
           return (
             <button
               key={day.toISOString()}
+              type="button"
               onClick={() => isAvailable && onSelect(day)}
               disabled={!isAvailable}
               className={`
-                aspect-square rounded-lg flex items-center justify-center text-sm font-medium transition-all
+                flex aspect-square w-full min-w-0 touch-manipulation items-center justify-center rounded-lg text-sm font-medium transition-all
                 ${isSelected 
                   ? 'bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)]' 
                   : isTodayDate 

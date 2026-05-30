@@ -23,6 +23,10 @@ function resolveDisplayName(name: string): string {
   return trimmed;
 }
 
+/** Keep in sync with COMMUNAL_CONTRAST_DESCRIPTION in src/config/serviceConfig.ts */
+const COMMUNAL_CONTRAST_DESCRIPTION =
+  "The Communal Contrast gives you access to several ice baths, traditional Finnish sauna, and bucket showers for independent use. Designed to foster relaxation and recovery, this shared area provides a self-guided experience for guests to enhance their well-being. Please note this is not a class, spaces are limited to availability and we limit drop-ins to one session per person per day to ensure availability for all guests. These sessions are up to 50 minutes.";
+
 async function getStaffToken(): Promise<string> {
   const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
   const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
@@ -186,7 +190,11 @@ serve(async (req) => {
       id: c.Id.toString(),
       classDescriptionId: c.ClassDescription?.Id,
       name: resolveDisplayName(c.ClassDescription?.Name || "Class"),
-      description: c.ClassDescription?.Description || "",
+      description: (() => {
+        const displayName = resolveDisplayName(c.ClassDescription?.Name || "Class");
+        if (displayName === "Communal Contrast") return COMMUNAL_CONTRAST_DESCRIPTION;
+        return c.ClassDescription?.Description || "";
+      })(),
       startDateTime: c.StartDateTime,
       endDateTime: c.EndDateTime,
       staffId: c.Staff?.Id,

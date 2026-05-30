@@ -20,7 +20,7 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
-import { resolveDisplayName, resolveDisplayText } from '@/config/serviceConfig';
+import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
 
@@ -470,11 +470,18 @@ const ClassScheduleFlow = ({
               <h4 className="font-semibold text-base text-foreground">
                 {resolveDisplayName(selectedClass.name)}
               </h4>
-              {selectedClass.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {resolveDisplayText(stripHtml(selectedClass.description))}
-                </p>
-              )}
+              {(() => {
+                const confirmDescription = resolveGroupDescription(
+                  selectedClass.description,
+                  resolveDisplayName(selectedClass.name),
+                );
+                if (!confirmDescription) return null;
+                return (
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {resolveDisplayText(stripHtml(confirmDescription))}
+                  </p>
+                );
+              })()}
               <div className="space-y-2.5">
                 <div className="flex items-start gap-3">
                   <Calendar className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />

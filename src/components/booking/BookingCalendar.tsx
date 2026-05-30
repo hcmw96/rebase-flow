@@ -33,7 +33,12 @@ const BookingCalendar = ({
   };
 
   return (
-    <div className={cn("glass-card rounded-xl p-4 relative", className)}>
+    <div
+      className={cn(
+        "glass-card relative w-full min-w-0 max-w-full overflow-hidden rounded-xl p-3 sm:p-4",
+        className,
+      )}
+    >
       {isLoading && (
         <div className="absolute top-3 right-3 z-10">
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -52,7 +57,7 @@ const BookingCalendar = ({
           if (!availabilityLoaded) return isPast;
           return isPast || !isDateAvailable(date);
         }}
-        className={cn("p-3 pointer-events-auto")}
+        className={cn("w-full min-w-0 max-w-full p-0 pointer-events-auto")}
         modifiers={{
           available: (date) => date >= today && isDateAvailable(date),
           unavailable: (date) =>
