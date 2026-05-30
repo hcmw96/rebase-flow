@@ -217,6 +217,8 @@ export const shortDescriptions: Record<string, string> = {
   'Nutritional Therapy': 'Personalised nutrition guidance for optimal health.',
   'Myofascial Dry Needling': 'Precision needling to release deep muscular tension.',
   'Yoga Flow + Heat & Ice': 'Yoga flow combined with heat and ice contrast for strength, flexibility and recovery.',
+  'Stretch & Sauna':
+    'Guided stretching in the sauna, then mat work and assisted stretching to release tension and reset.',
   'Sound Bath': 'Immersive sonic experience using crystal bowls and gongs to deeply relax the nervous system.',
   'Vitamin Shots': 'Quick intramuscular vitamin boosters for targeted energy, immunity and recovery.',
   'Blood Test': 'Comprehensive lab panels to inform your personalised wellness strategy.',
@@ -344,6 +346,13 @@ export const classOfferings = [
     image: '/images/rebase-class-mat-pilates.jpg',
     description: 'Core-focused mat work to improve posture, tone and stability.',
     classDescriptionIds: [20],
+  },
+  {
+    name: 'Stretch & Sauna',
+    image: '/images/rebase-ice-sauna-new.webp',
+    description:
+      'Guided stretching in the sauna, then mat work and assisted stretching to release tension and reset.',
+    classDescriptionIds: [66],
   },
 ];
 
