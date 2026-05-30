@@ -54,6 +54,10 @@ serve(async (req) => {
       // empty body is fine
     }
 
+    if (!origin) {
+      throw new Error("Missing app origin — reload the page and try again");
+    }
+
     // Server-determined redirect URI pointing to our callback edge function
     const redirectUri = `${supabaseUrl}/functions/v1/mindbody-oauth-callback`;
 
@@ -66,7 +70,7 @@ serve(async (req) => {
     });
     const state = btoa(statePayload);
 
-    const scope = "openid email profile Mindbody.Api.Public.v6";
+    const scope = "openid email profile offline_access Mindbody.Api.Public.v6";
     const responseType = "code id_token";
     const nonce = crypto.randomUUID();
     const authUrl = new URL("https://signin.mindbodyonline.com/connect/authorize");

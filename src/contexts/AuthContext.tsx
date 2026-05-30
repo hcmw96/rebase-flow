@@ -7,6 +7,7 @@ import {
   clearOAuthParamsFromUrl,
 } from '@/lib/oauthReturn';
 import { APP_HOME, WEBSITE_HOME } from '@/lib/routes';
+import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
 export type { MindbodySession };
 
@@ -119,6 +120,7 @@ function isSessionExpired(expiresAt: string): boolean {
 async function fetchServerSession(sessionId: string): Promise<MindbodySession | null> {
   const res = await fetch(
     `${SUPABASE_URL}/functions/v1/mindbody-session-status?sessionId=${encodeURIComponent(sessionId)}`,
+    { headers: supabaseFunctionHeaders() },
   );
   if (!res.ok) return null;
   const data = await res.json();
@@ -143,7 +145,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`);
+        const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
+          headers: supabaseFunctionHeaders(),
+        });
         if (!res.ok) return;
         const data = await res.json();
         if (!cancelled && typeof data.signUpUrl === 'string') {
@@ -218,13 +222,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return;
         }
 
-        const serverSession = await fetchServerSession(parsed.sessionId);
+        let serverSession: MindbodySession | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          serverSession = await fetchServerSession(parsed.sessionId);
+          if (serverSession) break;
+          await new Promise((r) => setTimeout(r, 400));
+        }
         if (cancelled) return;
 
         if (serverSession) {
           persistSession(serverSession);
           setMbSession(serverSession);
           registerNativePush(serverSession);
+        } else if (!isSessionExpired(parsed.expiresAt)) {
+          // Trust local session if server check is slow/unreachable (e.g. right after OAuth).
+          setMbSession(parsed);
+          registerNativePush(parsed);
         } else {
           localStorage.removeItem(MB_STORAGE_KEY);
         }
@@ -291,7 +304,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       const res = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-oauth-init`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           native: isNative,
           origin: window.location.origin,

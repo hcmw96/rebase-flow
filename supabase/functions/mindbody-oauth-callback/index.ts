@@ -7,6 +7,7 @@ import {
   normalizeIdTokenPayload,
   type NormalizedProfile,
 } from "../_shared/mindbodyClientProfile.ts";
+import { MINDBODY_OAUTH_SCOPE } from "../_shared/mindbodyRefreshSession.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,6 +43,51 @@ function parseState(stateStr: string): StatePayload {
     return JSON.parse(decoded);
   } catch {
     return { csrf: stateStr, native: false, origin: "" };
+  }
+}
+
+const ALLOWED_APP_HOSTS = new Set([
+  "rebaserecovery.com",
+  "www.rebaserecovery.com",
+  "rebase.echo.london",
+  "localhost:5173",
+  "localhost:8080",
+  "127.0.0.1:5173",
+  "127.0.0.1:8080",
+]);
+
+const ALLOWED_APP_HOST_SUFFIXES = [".netlify.app", ".lovable.app"];
+
+function isAllowedAppHost(host: string): boolean {
+  const normalized = host.toLowerCase();
+  if (ALLOWED_APP_HOSTS.has(normalized)) return true;
+  if (ALLOWED_APP_HOST_SUFFIXES.some((suffix) => normalized.endsWith(suffix))) return true;
+
+  const extra = Deno.env.get("ALLOWED_APP_ORIGINS");
+  if (!extra) return false;
+  for (const entry of extra.split(",")) {
+    const trimmed = entry.trim();
+    if (!trimmed) continue;
+    try {
+      if (new URL(trimmed).host.toLowerCase() === normalized) return true;
+    } catch {
+      if (trimmed.toLowerCase() === normalized) return true;
+    }
+  }
+  return false;
+}
+
+/** Validate OAuth return origin from state (prevents open redirects). */
+function normalizeAppOrigin(origin: string): string | null {
+  const trimmed = origin.trim();
+  if (!trimmed) return null;
+  try {
+    const url = new URL(trimmed);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return null;
+    if (!isAllowedAppHost(url.host)) return null;
+    return `${url.protocol}//${url.host}`;
+  } catch {
+    return null;
   }
 }
 
@@ -96,7 +142,7 @@ async function exchangeAndSaveSession(
     redirect_uri: redirectUri,
     client_id: clientId,
     client_secret: clientSecret,
-    scope: "openid email profile Mindbody.Api.Public.v6",
+    scope: MINDBODY_OAUTH_SCOPE,
     subscriberId: siteId,
   };
 
@@ -203,10 +249,12 @@ serve(async (req) => {
         const error = formData.get("error")?.toString() || "";
         const stateStr = (formData.get("state") as string) || "";
         const statePayload = parseState(stateStr);
-        formPostOrigin = statePayload.origin;
+        const rawOrigin = statePayload.origin || "";
+        formPostOrigin = normalizeAppOrigin(rawOrigin) || undefined;
         formPostReturnTo = statePayload.returnTo;
 
         if (!formPostOrigin) {
+          console.error("OAuth state origin rejected:", rawOrigin || "(empty)");
           throw new Error("OAuth state missing app origin — sign in again from the app");
         }
 

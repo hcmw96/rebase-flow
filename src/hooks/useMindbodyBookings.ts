@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
@@ -122,7 +123,7 @@ export function useBookService() {
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
         body: JSON.stringify({
           sessionId: mbSession.sessionId,
           ...params,

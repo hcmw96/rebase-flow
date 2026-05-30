@@ -1,14 +1,15 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { fetchMindbodyClientProfile } from "../_shared/mindbodyClientProfile.ts";
+import {
+  isMindbodyTokenExpired,
+  refreshMindbodySessionIfNeeded,
+} from "../_shared/mindbodyRefreshSession.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-/** Buffer before we treat the stored access token as expired (clock skew / network delay). */
-const EXPIRY_BUFFER_MS = 2 * 60 * 1000;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -36,7 +37,9 @@ serve(async (req) => {
 
     let { data: session, error } = await supabase
       .from("mb_sessions")
-      .select("id, mindbody_client_id, email, first_name, last_name, token_expires_at, access_token")
+      .select(
+        "id, mindbody_client_id, email, first_name, last_name, token_expires_at, access_token, refresh_token",
+      )
       .eq("id", sessionId)
       .maybeSingle();
 
@@ -47,12 +50,15 @@ serve(async (req) => {
       });
     }
 
-    const expiresAtMs = new Date(session.token_expires_at).getTime();
-    if (Number.isNaN(expiresAtMs) || expiresAtMs - EXPIRY_BUFFER_MS <= Date.now()) {
-      return new Response(JSON.stringify({ valid: false, reason: "expired" }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
+    if (isMindbodyTokenExpired(session.token_expires_at)) {
+      const refreshed = await refreshMindbodySessionIfNeeded(supabase, session);
+      if (!refreshed) {
+        return new Response(JSON.stringify({ valid: false, reason: "expired" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+      session = refreshed;
     }
 
     if (!session.access_token) {

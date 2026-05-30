@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  isMindbodyTokenExpired,
+  refreshMindbodySessionIfNeeded,
+} from "../_shared/mindbodyRefreshSession.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -69,7 +73,7 @@ serve(async (req) => {
       }
     }
     // Get user session with access token
-    const { data: session, error: sessionError } = await supabaseAdmin
+    let { data: session, error: sessionError } = await supabaseAdmin
       .from("mb_sessions")
       .select("*")
       .eq("id", sessionId)
@@ -85,16 +89,18 @@ serve(async (req) => {
       );
     }
 
-    const tokenExpiresMs = new Date(session.token_expires_at).getTime();
-    const expiryBufferMs = 2 * 60 * 1000;
-    if (Number.isNaN(tokenExpiresMs) || tokenExpiresMs - expiryBufferMs <= Date.now()) {
-      return new Response(
-        JSON.stringify({
-          error: "Session expired. Please log in again.",
-          requiresLogin: true,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
-      );
+    if (isMindbodyTokenExpired(session.token_expires_at)) {
+      const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, session);
+      if (!refreshed) {
+        return new Response(
+          JSON.stringify({
+            error: "Session expired. Please log in again.",
+            requiresLogin: true,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+        );
+      }
+      session = refreshed;
     }
 
     // Diagnostic: decode token site claim
