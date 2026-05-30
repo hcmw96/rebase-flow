@@ -7,6 +7,7 @@ import {
   clearOAuthParamsFromUrl,
 } from '@/lib/oauthReturn';
 import { APP_HOME, WEBSITE_HOME } from '@/lib/routes';
+import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
 import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
 export type { MindbodySession };
@@ -20,7 +21,7 @@ interface AuthContextType {
   /** Full-page Mindbody OAuth. Pass `clearSession` when replacing an expired token. */
   login: (options?: { clearSession?: boolean }) => void;
   /** Branded-web URL where new clients create a Mindbody login for this studio. */
-  mindbodySignUpUrl: string | null;
+  mindbodySignUpUrl: string;
   /** Open Mindbody account creation (same tab). */
   openMindbodySignUp: () => void;
   logout: () => void;
@@ -139,7 +140,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [mindbodySignUpUrl, setMindbodySignUpUrl] = useState<string | null>(null);
+  const [mindbodySignUpUrl, setMindbodySignUpUrl] = useState<string>(() =>
+    resolveMindbodySignUpUrl(),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -154,7 +157,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setMindbodySignUpUrl(data.signUpUrl);
         }
       } catch {
-        /* optional — create-account link hidden if unavailable */
+        /* keep env/default sign-up URL */
       }
     })();
     return () => {
@@ -331,11 +334,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openMindbodySignUp = useCallback(() => {
-    if (!mindbodySignUpUrl) {
-      toast.error('Account creation is temporarily unavailable. Please contact reception.');
-      return;
-    }
-    window.location.assign(mindbodySignUpUrl);
+    window.location.assign(mindbodySignUpUrl || resolveMindbodySignUpUrl());
   }, [mindbodySignUpUrl]);
 
   const logout = useCallback(() => {

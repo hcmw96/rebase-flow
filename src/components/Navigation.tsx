@@ -60,7 +60,7 @@ const Navigation = ({ variant = "dark" }: NavigationProps) => {
   const locationRef = useRef<HTMLDivElement>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const { isAuthenticated, mbSession, isLoading: authLoading, login, isRedirecting } = useAuth();
+  const { isAuthenticated, mbSession } = useAuth();
 
   const handleBookNow = () => {
     setIsOpen(false);
@@ -236,17 +236,17 @@ const Navigation = ({ variant = "dark" }: NavigationProps) => {
                 </Button>
               </Link>
             ) : (
-              <Button
-                type="button"
-                onClick={() => login()}
-                disabled={authLoading || isRedirecting}
-                className={cn(
-                  "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
-                  theme.authBtn
-                )}
-              >
-                {authLoading || isRedirecting ? "…" : "Sign in"}
-              </Button>
+              <Link to="/account">
+                <Button
+                  type="button"
+                  className={cn(
+                    "text-[13px] tracking-[0.08em] px-6 h-10 backdrop-blur-md border rounded-none transition-all duration-300",
+                    theme.authBtn
+                  )}
+                >
+                  Sign in
+                </Button>
+              </Link>
             )}
           </div>
 
@@ -361,17 +361,18 @@ const Navigation = ({ variant = "dark" }: NavigationProps) => {
                     </Button>
                   </Link>
                 ) : (
-                  <Button
-                    type="button"
-                    className={cn("flex-1 rounded-none tracking-wider text-sm", theme.mobileAuth)}
-                    disabled={authLoading || isRedirecting}
-                    onClick={() => {
-                      setIsOpen(false);
-                      login();
-                    }}
+                  <Link
+                    to="/account"
+                    className="flex-1"
+                    onClick={() => setIsOpen(false)}
                   >
-                    Sign in
-                  </Button>
+                    <Button
+                      type="button"
+                      className={cn("w-full rounded-none tracking-wider text-sm", theme.mobileAuth)}
+                    >
+                      Sign in / Register
+                    </Button>
+                  </Link>
                 )}
               </div>
             </div>

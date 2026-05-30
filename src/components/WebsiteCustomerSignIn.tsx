@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 
 const WebsiteCustomerSignIn = () => {
-  const { login, authError, isRedirecting, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const { login, authError, isRedirecting, openMindbodySignUp } = useAuth();
 
   return (
     <div className="flex flex-col items-center justify-center min-h-[60vh] px-6 text-center max-w-md mx-auto">
@@ -13,8 +13,8 @@ const WebsiteCustomerSignIn = () => {
       </div>
       <h1 className="text-3xl font-light text-[#3B2712] tracking-tight mb-3">Sign in to book</h1>
       <p className="text-sm text-[#3B2712]/60 mb-8 leading-relaxed">
-        Use your Mindbody account to book sessions, view upcoming visits, and manage your bookings at
-        Rebase.
+        Bookings run through Mindbody. Sign in if you already have an account, or create one below —
+        it only takes a minute.
       </p>
 
       {authError && (
@@ -32,24 +32,20 @@ const WebsiteCustomerSignIn = () => {
           {isRedirecting ? 'Redirecting to Mindbody…' : 'Sign in with Mindbody'}
           {!isRedirecting && <ChevronRight className="ml-1.5 h-3.5 w-3.5" />}
         </Button>
-        {mindbodySignUpUrl && (
-          <Button
-            type="button"
-            variant="outline"
-            onClick={openMindbodySignUp}
-            disabled={isRedirecting}
-            className="rounded-none px-8 h-11 w-full border-[#3B2712]/25 text-[#3B2712] hover:bg-[#3B2712]/5 tracking-[0.08em] text-[13px]"
-          >
-            Create Mindbody account
-          </Button>
-        )}
+        <Button
+          type="button"
+          variant="outline"
+          onClick={openMindbodySignUp}
+          disabled={isRedirecting}
+          className="rounded-none px-8 h-11 w-full border-[#3B2712]/25 text-[#3B2712] hover:bg-[#3B2712]/5 tracking-[0.08em] text-[13px]"
+        >
+          Create Mindbody account
+        </Button>
       </div>
 
-      {mindbodySignUpUrl && (
-        <p className="mt-4 text-xs text-[#3B2712]/45 leading-relaxed">
-          New to Rebase? Create your Mindbody account first, then return here to sign in and book.
-        </p>
-      )}
+      <p className="mt-4 text-xs text-[#3B2712]/45 leading-relaxed">
+        After registering, return to this page and use &ldquo;Sign in with Mindbody&rdquo; to book.
+      </p>
 
       <Link
         to="/experiences"

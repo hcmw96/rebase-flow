@@ -125,7 +125,7 @@ const ClassScheduleFlow = ({
   resumeClassId,
   bookingService,
 }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl, refreshMbSession } = useAuth();
+  const { isAuthenticated, login, logout, refreshMbSession } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -522,7 +522,6 @@ const ClassScheduleFlow = ({
               changeTimeLabel="Change session"
               sessionExpiredMessage={sessionExpiredMessage}
               onCreateAccount={() => startCreateAccount(selectedClass)}
-              showCreateAccount={!!mindbodySignUpUrl}
             />
           </div>
         </div>

@@ -5,7 +5,7 @@ import Logo from '@/components/Logo';
 import BackgroundVideo from '@/components/BackgroundVideo';
 
 const AuthPage = () => {
-  const { login, authError, isRedirecting, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const { login, authError, isRedirecting, openMindbodySignUp } = useAuth();
 
   return (
     <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
@@ -37,24 +37,20 @@ const AuthPage = () => {
             >
               {isRedirecting ? 'Redirecting…' : 'Sign in with Mindbody'}
             </Button>
-            {mindbodySignUpUrl && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={openMindbodySignUp}
-                disabled={isRedirecting}
-                className="w-full border-white/25 text-white/90 hover:bg-white/10 bg-transparent"
-              >
-                Create Mindbody account
-              </Button>
-            )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={openMindbodySignUp}
+              disabled={isRedirecting}
+              className="w-full border-white/25 text-white/90 hover:bg-white/10 bg-transparent"
+            >
+              Create Mindbody account
+            </Button>
           </div>
 
-          {mindbodySignUpUrl && (
-            <p className="text-xs text-white/45 leading-relaxed px-2">
-              Bookings use Mindbody — Rebase&apos;s booking system. Create an account once, then sign in to book.
-            </p>
-          )}
+          <p className="text-xs text-white/45 leading-relaxed px-2">
+            New here? Create your Mindbody account first, then sign in to book.
+          </p>
         </motion.div>
       </div>
     </div>

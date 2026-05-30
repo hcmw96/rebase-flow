@@ -1,5 +1,6 @@
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface BookingConfirmActionsProps {
   onChangeTime: () => void;
@@ -8,8 +9,8 @@ interface BookingConfirmActionsProps {
   isPending: boolean;
   changeTimeLabel?: string;
   sessionExpiredMessage?: string | null;
+  /** Stash booking state then open Mindbody registration (same tab). */
   onCreateAccount?: () => void;
-  showCreateAccount?: boolean;
 }
 
 /**
@@ -23,67 +24,81 @@ const BookingConfirmActions = ({
   changeTimeLabel = 'Change Time',
   sessionExpiredMessage,
   onCreateAccount,
-  showCreateAccount = false,
-}: BookingConfirmActionsProps) => (
-  <div className="space-y-3">
-    {sessionExpiredMessage && (
-      <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
-        {sessionExpiredMessage}
-      </p>
-    )}
-    {!isAuthenticated && !sessionExpiredMessage && (
-      <div className="space-y-1.5 text-sm text-muted-foreground leading-relaxed">
-        <p>Sign in with your Mindbody account to complete this booking.</p>
-        {showCreateAccount && onCreateAccount && (
+}: BookingConfirmActionsProps) => {
+  const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+
+  const handleCreateAccount = () => {
+    if (onCreateAccount) {
+      onCreateAccount();
+      return;
+    }
+    openMindbodySignUp();
+  };
+
+  const showGuestActions = !isAuthenticated;
+
+  return (
+    <div className="space-y-3">
+      {sessionExpiredMessage && (
+        <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2.5">
+          {sessionExpiredMessage}
+        </p>
+      )}
+      {showGuestActions && (
+        <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
           <p>
-            New to Rebase?{' '}
-            <button
-              type="button"
-              onClick={onCreateAccount}
-              disabled={isPending}
-              className="text-foreground font-medium underline underline-offset-2 hover:text-foreground/80"
-            >
-              Create a Mindbody account
-            </button>
-            {' '}first, then return here to sign in.
+            {sessionExpiredMessage
+              ? 'Sign in again with Mindbody to complete this booking.'
+              : 'Sign in with your Mindbody account to complete this booking.'}
           </p>
-        )}
+          <p>
+            <span className="font-medium text-foreground">New to Rebase?</span>{' '}
+            Create a free Mindbody account first — it only takes a minute — then return here and tap{' '}
+            <span className="font-medium text-foreground">Sign In to Book</span>.
+          </p>
+        </div>
+      )}
+      <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
+        <Button
+          variant="outline"
+          onClick={onChangeTime}
+          className="w-full sm:flex-1 min-h-11"
+          disabled={isPending}
+        >
+          {changeTimeLabel}
+        </Button>
+        <Button onClick={onConfirm} disabled={isPending} className="w-full sm:flex-1 min-h-11">
+          {isPending ? (
+            <>
+              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+              Booking...
+            </>
+          ) : isAuthenticated ? (
+            'Confirm Booking'
+          ) : (
+            'Sign In to Book'
+          )}
+        </Button>
       </div>
-    )}
-    <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
-      <Button
-        variant="outline"
-        onClick={onChangeTime}
-        className="w-full sm:flex-1 min-h-11"
-        disabled={isPending}
-      >
-        {changeTimeLabel}
-      </Button>
-      <Button onClick={onConfirm} disabled={isPending} className="w-full sm:flex-1 min-h-11">
-        {isPending ? (
-          <>
-            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-            Booking...
-          </>
-        ) : isAuthenticated ? (
-          'Confirm Booking'
-        ) : (
-          'Sign In to Book'
-        )}
-      </Button>
+      {showGuestActions && (
+        <Button
+          type="button"
+          variant="outline"
+          onClick={handleCreateAccount}
+          disabled={isPending}
+          className="w-full min-h-11"
+        >
+          Create Mindbody Account
+        </Button>
+      )}
+      {showGuestActions && mindbodySignUpUrl && (
+        <p className="text-xs text-muted-foreground text-center leading-relaxed">
+          You&apos;ll register on Mindbody (Rebase&apos;s booking system), then come back to this
+          page to sign in.
+        </p>
+      )}
     </div>
-    {!isAuthenticated && showCreateAccount && onCreateAccount && (
-      <Button
-        type="button"
-        variant="outline"
-        onClick={onCreateAccount}
-        disabled={isPending}
-        className="w-full min-h-11"
-      >
-        Create Mindbody Account
-      </Button>
-    )}
-  </div>
-);
+  );
+};
 
 export default BookingConfirmActions;

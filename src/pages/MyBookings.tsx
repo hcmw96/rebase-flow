@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const MyBookings = () => {
-  const { mbSession, isAuthenticated, login, openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const { mbSession, isAuthenticated, login, openMindbodySignUp } = useAuth();
   const { data: bookingsData, isLoading, error } = useMyBookings();
   const cancelMutation = useCancelBooking();
 
@@ -61,11 +61,9 @@ const MyBookings = () => {
         <Calendar className="h-12 w-12 text-muted-foreground" />
         <p className="text-sm text-muted-foreground">Sign in to view your bookings</p>
         <Button onClick={() => login()} className="w-full">Sign in with Mindbody</Button>
-        {mindbodySignUpUrl && (
-          <Button variant="outline" onClick={openMindbodySignUp} className="w-full">
-            Create Mindbody account
-          </Button>
-        )}
+        <Button variant="outline" onClick={openMindbodySignUp} className="w-full">
+          Create Mindbody account
+        </Button>
       </div>
     );
   }

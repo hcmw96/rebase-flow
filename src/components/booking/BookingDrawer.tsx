@@ -73,7 +73,7 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
 );
 
 const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId }: BookingDrawerProps) => {
-  const { isAuthenticated, login, logout, openMindbodySignUp, mindbodySignUpUrl, refreshMbSession } = useAuth();
+  const { isAuthenticated, login, logout, refreshMbSession } = useAuth();
   const [sessionExpiredMessage, setSessionExpiredMessage] = useState<string | null>(null);
   const bookServiceMutation = useBookService();
   const queryClient = useQueryClient();
@@ -651,7 +651,6 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
                         isPending={isBooking}
                         sessionExpiredMessage={sessionExpiredMessage}
                         onCreateAccount={startCreateAccountForBooking}
-                        showCreateAccount={!!mindbodySignUpUrl}
                       />
 
                       {onSwitchService && (
