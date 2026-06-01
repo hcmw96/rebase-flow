@@ -7,6 +7,10 @@ import {
   isMindbodyTokenExpired,
   refreshMindbodySessionIfNeeded,
 } from "../_shared/mindbodyRefreshSession.ts";
+import {
+  ensureMindbodyClientEmail,
+  sendBookingConfirmationEmails,
+} from "../_shared/bookingConfirmationEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,7 +145,7 @@ async function mindbodyPostWithRetry(
   siteId: string,
   url: string,
   body: Record<string, unknown>,
-): Promise<{ ok: true; data: unknown } | { ok: false; response: Response }> {
+): Promise<{ ok: true; data: unknown; clientId: string } | { ok: false; response: Response }> {
   const publicClientId = session.mindbody_client_id;
 
   // OAuth proves *who* the client is; staff token completes the booking at this site.
@@ -187,6 +191,8 @@ async function mindbodyPostWithRetry(
       ),
     };
   }
+
+  await ensureMindbodyClientEmail(apiKey, siteId, staffToken, clientId, profile.email);
 
   const payload = { ...body, ClientId: clientId };
 
@@ -250,7 +256,7 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  return { ok: true, data: await response.json() };
+  return { ok: true, data: await response.json(), clientId };
 }
 
 serve(async (req) => {
@@ -321,6 +327,7 @@ serve(async (req) => {
 
     let bookingResult: Record<string, unknown>;
     let mindbodyId: string | undefined;
+    let bookedClientId: string | undefined;
 
     if (bookingType === "class") {
       if (!classId) {
@@ -344,6 +351,7 @@ serve(async (req) => {
       if (!result.ok) return result.response;
       bookingResult = result.data as Record<string, unknown>;
       mindbodyId = classId;
+      bookedClientId = result.clientId;
     } else {
       if (!sessionTypeId || !staffId || !startDateTime) {
         throw new Error("sessionTypeId, staffId, and startDateTime are required");
@@ -367,6 +375,7 @@ serve(async (req) => {
       if (!result.ok) return result.response;
       bookingResult = result.data as Record<string, unknown>;
       mindbodyId = (bookingResult.Appointment as { Id?: number })?.Id?.toString();
+      bookedClientId = result.clientId;
     }
 
     // Build metadata with fallbacks to client-provided values so the row is never sparse.
@@ -403,6 +412,29 @@ serve(async (req) => {
     if (bookingError) {
       console.error("Local booking save error:", bookingError);
       // Don't throw - the Mindbody booking succeeded
+    }
+
+    try {
+      const profile = await sessionClientProfile(session, apiKey, siteId);
+      await sendBookingConfirmationEmails(
+        {
+          to: profile.email,
+          firstName: profile.firstName,
+          serviceName: serviceName || "Booking",
+          startTime: startDateTime || classInfo?.StartDateTime,
+          endTime: endDateTime || classInfo?.EndDateTime,
+          locationName: resolvedLocationName,
+          bookingType: bookingType === "appointment" ? "appointment" : "class",
+        },
+        {
+          apiKey,
+          siteId,
+          mindbodyClientId: bookedClientId,
+          classId: bookingType === "class" ? classId : undefined,
+        },
+      );
+    } catch (emailErr) {
+      console.error("Confirmation email error (booking still confirmed):", emailErr);
     }
 
     return new Response(
