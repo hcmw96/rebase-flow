@@ -10,21 +10,33 @@ export function mindbodySignInUrl(siteId: string): string {
   return `https://cart.mindbodyonline.com/sites/${siteId}/session/new`;
 }
 
-/** Branded-web catalog (pricing options / passes). */
+/**
+ * All online pricing options (Mindbody Marketing Links format).
+ * @see https://support.mindbodyonline.com/s/article/How-to-create-and-use-Mindbody-Marketing-Links
+ */
+export function mindbodyPricingListUrl(siteId: string): string {
+  return `https://go.mindbodyonline.com/book/app/pricing/${encodeURIComponent(siteId)}`;
+}
+
+/** @deprecated Use mindbodyPricingListUrl */
 export function mindbodyCatalogUrl(siteId: string): string {
-  return `https://cart.mindbodyonline.com/sites/${siteId}`;
+  return mindbodyPricingListUrl(siteId);
 }
 
 /**
- * Deep link to buy a sale/pricing option by Mindbody service Id (from `pack-{id}` in our API).
- * Override with VITE_CONTRAST_PASS_BUY_URL if your studio uses a custom Mindbody link.
+ * Checkout for one pricing option (sale service id from API `pack-{id}`).
+ * Override with VITE_CONTRAST_PASS_BUY_URL if Mindbody gives you a custom marketing link.
  */
-export function mindbodyBuySaleServiceUrl(siteId: string, _saleServiceId?: string | number): string {
+export function mindbodyBuySaleServiceUrl(siteId: string, saleServiceId?: string | number): string {
   const override = import.meta.env.VITE_CONTRAST_PASS_BUY_URL?.trim();
   if (override) return override;
 
-  // Branded-web deep links vary by studio; open Buy → Pricing Options in the consumer site.
-  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(siteId)}&stype=41&sView=services`;
+  const site = encodeURIComponent(siteId);
+  if (saleServiceId != null && String(saleServiceId).replace(/^pack-/, '').length > 0) {
+    const productId = String(saleServiceId).replace(/^pack-/, '');
+    return `https://go.mindbodyonline.com/book/app/pricing/${site}/${encodeURIComponent(productId)}`;
+  }
+  return mindbodyPricingListUrl(siteId);
 }
 
 /** Sign-up URL for the client app (env override, then studio default). */

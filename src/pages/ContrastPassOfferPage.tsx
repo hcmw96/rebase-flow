@@ -167,7 +167,7 @@ const ContrastPassOfferPage = () => {
                   rel="noopener noreferrer"
                   className="underline underline-offset-2"
                 >
-                  Mindbody
+                  Mindbody pricing options
                 </a>
                 .
               </p>
