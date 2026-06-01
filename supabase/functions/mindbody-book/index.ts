@@ -190,47 +190,49 @@ async function mindbodyPostWithRetry(
 
   const payload = { ...body, ClientId: clientId };
 
-  let response = await postToMindbody(url, apiKey, siteId, staffToken, payload);
+  // CRITICAL: Book with the client's OAuth token only. Staff/business-mode tokens can
+  // add clients to classes without charging (RequirePayment is not enforced the same way).
+  let activeSession = session;
+  if (isMindbodyTokenExpired(activeSession.token_expires_at) && activeSession.refresh_token) {
+    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
+    if (refreshed) activeSession = refreshed;
+  }
+
+  if (!activeSession.access_token) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error: "Session expired. Please sign in again.",
+          requiresLogin: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
+      ),
+    };
+  }
+
+  const response = await postToMindbody(url, apiKey, siteId, activeSession.access_token, payload);
 
   if (!response.ok) {
-    const staffText = await response.text();
-    const staffMessage = extractMindbodyErrorMessage(staffText);
-    console.error("Mindbody booking (staff):", response.status, staffMessage);
+    const rawText = await response.text();
+    const message = extractMindbodyErrorMessage(rawText);
+    console.error("Mindbody booking (consumer):", response.status, message);
 
-    // Optional second attempt with the consumer token (some sites require it).
-    let activeSession = session;
-    if (isMindbodyTokenExpired(activeSession.token_expires_at) && activeSession.refresh_token) {
-      const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
-      if (refreshed) activeSession = refreshed;
-    }
+    const lower = message.toLowerCase();
+    const paymentIssue =
+      /pricing option|payment|package|sessions remaining|insufficient|does not have a valid|unable to apply|no .*available|not paid/i
+        .test(lower);
 
-    const userResponse = await postToMindbody(
-      url,
-      apiKey,
-      siteId,
-      activeSession.access_token,
-      payload,
-    );
-    if (userResponse.ok) {
-      console.log("Mindbody booking succeeded via consumer token");
-      return { ok: true, data: await userResponse.json() };
-    }
-
-    const userText = await userResponse.text();
-    const userMessage = extractMindbodyErrorMessage(userText);
-    console.error("Mindbody booking (consumer):", userResponse.status, userMessage);
-
-    const finalMessage = staffMessage || userMessage;
     const requiresLogin =
-      userResponse.status === 401 &&
-      !/site id does not match/i.test(finalMessage) &&
-      !/pricing option|payment|package|sessions remaining/i.test(finalMessage.toLowerCase());
+      response.status === 401 &&
+      !/site id does not match/i.test(lower) &&
+      !paymentIssue;
 
     if (requiresLogin) {
       return {
         ok: false,
         response: new Response(
-          JSON.stringify({ error: finalMessage, requiresLogin: true }),
+          JSON.stringify({ error: message, requiresLogin: true }),
           { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401 },
         ),
       };
@@ -239,7 +241,10 @@ async function mindbodyPostWithRetry(
     return {
       ok: false,
       response: new Response(
-        JSON.stringify({ error: finalMessage }),
+        JSON.stringify({
+          error: message,
+          paymentRequired: paymentIssue,
+        }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
     };

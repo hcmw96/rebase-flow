@@ -7,9 +7,12 @@ const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 async function parseFunctionError(
   response: Response,
   fallback: string,
-): Promise<{ message: string; requiresLogin?: boolean }> {
+): Promise<{ message: string; requiresLogin?: boolean; paymentRequired?: boolean }> {
   try {
     const body = await response.json();
+    if (body?.paymentRequired && typeof body.error === 'string') {
+      return { message: body.error, paymentRequired: true };
+    }
     if (body?.requiresLogin) {
       return {
         message:
