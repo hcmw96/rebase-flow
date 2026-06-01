@@ -19,12 +19,12 @@ export function mindbodyCatalogUrl(siteId: string): string {
  * Deep link to buy a sale/pricing option by Mindbody service Id (from `pack-{id}` in our API).
  * Override with VITE_CONTRAST_PASS_BUY_URL if your studio uses a custom Mindbody link.
  */
-export function mindbodyBuySaleServiceUrl(siteId: string, saleServiceId: string | number): string {
+export function mindbodyBuySaleServiceUrl(siteId: string, _saleServiceId?: string | number): string {
   const override = import.meta.env.VITE_CONTRAST_PASS_BUY_URL?.trim();
   if (override) return override;
 
-  const id = String(saleServiceId).replace(/^pack-/, '');
-  return `https://cart.mindbodyonline.com/sites/${encodeURIComponent(siteId)}/cart?itemId=${encodeURIComponent(id)}`;
+  // Branded-web deep links vary by studio; open Buy → Pricing Options in the consumer site.
+  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(siteId)}&stype=41&sView=services`;
 }
 
 /** Sign-up URL for the client app (env override, then studio default). */

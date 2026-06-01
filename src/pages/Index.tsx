@@ -3,9 +3,8 @@ import { useResumePendingBooking } from "@/hooks/useResumePendingBooking";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
-import JuneContrastPassBanner from "@/components/JuneContrastPassBanner";
+import JuneContrastPassPopup from "@/components/JuneContrastPassPopup";
 import WebsiteServices from "@/components/WebsiteServices";
-import { useContrastPassOffer } from "@/hooks/useContrastPassOffer";
 import BookingDrawer, { BookingServiceData } from "@/components/booking/BookingDrawer";
 import SeoHead from "@/components/seo/SeoHead";
 import { localBusinessSchema, seoTitle, truncateDescription } from "@/lib/seo";
@@ -14,7 +13,6 @@ const HOME_DESCRIPTION =
   "Luxury wellness in Marylebone, London: infrared sauna, cryotherapy, hyperbaric oxygen, ice bath & massage. Book recovery at Rebase Recovery.";
 
 const Index = () => {
-  const { saleActive: junePromoActive } = useContrastPassOffer();
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();
@@ -45,8 +43,8 @@ const Index = () => {
         path="/"
         jsonLd={localBusinessSchema()}
       />
-      <JuneContrastPassBanner />
-      <Navigation topClassName={junePromoActive ? "top-9" : "top-0"} />
+      <JuneContrastPassPopup />
+      <Navigation />
       <main id="main-content">
         <Hero />
         <WebsiteServices onSelectService={handleSelectService} />

@@ -192,12 +192,10 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  await ensureMindbodyClientEmail(apiKey, siteId, staffToken, clientId, profile.email);
+  ensureMindbodyClientEmail(apiKey, siteId, staffToken, clientId, profile.email).catch((e) =>
+    console.warn("ensureMindbodyClientEmail:", e)
+  );
 
-  const payload = { ...body, ClientId: clientId };
-
-  // CRITICAL: Book with the client's OAuth token only. Staff/business-mode tokens can
-  // add clients to classes without charging (RequirePayment is not enforced the same way).
   let activeSession = session;
   if (isMindbodyTokenExpired(activeSession.token_expires_at) && activeSession.refresh_token) {
     const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
@@ -217,21 +215,70 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  const response = await postToMindbody(url, apiKey, siteId, activeSession.access_token, payload);
-
-  if (!response.ok) {
+  const attemptBook = async (bearerToken: string, label: string) => {
+    const payload = { ...body, ClientId: clientId };
+    const response = await postToMindbody(url, apiKey, siteId, bearerToken, payload);
     const rawText = await response.text();
     const message = extractMindbodyErrorMessage(rawText);
-    console.error("Mindbody booking (consumer):", response.status, message);
+    let data: unknown = null;
+    if (response.ok) {
+      try {
+        data = rawText ? JSON.parse(rawText) : {};
+      } catch {
+        data = {};
+      }
+    }
+    console.log(`Mindbody booking (${label}):`, response.status, response.ok ? "ok" : message);
+    return { ok: response.ok, status: response.status, message, data };
+  };
 
+  const isPaymentError = (message: string) =>
+    /pricing option|payment|package|sessions remaining|insufficient|does not have a valid|unable to apply|no .*available|not paid|does not have/i
+      .test(message.toLowerCase());
+
+  const allowStaffFallback = (message: string, status: number) => {
+    if (isPaymentError(message)) return false;
     const lower = message.toLowerCase();
-    const paymentIssue =
-      /pricing option|payment|package|sessions remaining|insufficient|does not have a valid|unable to apply|no .*available|not paid/i
-        .test(lower);
+    return (
+      /site id does not match/i.test(lower) ||
+      /client with custom id/i.test(lower) ||
+      /cross.?regional/i.test(lower) ||
+      (status === 401 && !/session expired|invalid token/i.test(lower))
+    );
+  };
+
+  // 1) Consumer OAuth first — enforces RequirePayment / ApplyPayment on the client's account.
+  let bookResult = await attemptBook(activeSession.access_token, "consumer");
+
+  // Re-resolve client id if Mindbody rejected the cached numeric id.
+  if (
+    !bookResult.ok &&
+    /custom id|does not exist|invalid client/i.test(bookResult.message.toLowerCase())
+  ) {
+    const resolved = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
+    if (resolved && resolved !== clientId) {
+      clientId = resolved;
+      await supabaseAdmin
+        .from("mb_sessions")
+        .update({ mindbody_site_client_id: clientId, updated_at: new Date().toISOString() })
+        .eq("id", session.id);
+      bookResult = await attemptBook(activeSession.access_token, "consumer");
+    }
+  }
+
+  // 2) Staff fallback only for site-scope / client-id issues (not payment). Still sends RequirePayment.
+  if (!bookResult.ok && allowStaffFallback(bookResult.message, bookResult.status)) {
+    console.warn("Consumer booking failed; trying staff fallback:", bookResult.message);
+    bookResult = await attemptBook(staffToken, "staff");
+  }
+
+  if (!bookResult.ok) {
+    const { message, status } = bookResult;
+    const paymentIssue = isPaymentError(message);
 
     const requiresLogin =
-      response.status === 401 &&
-      !/site id does not match/i.test(lower) &&
+      status === 401 &&
+      !/site id does not match/i.test(message.toLowerCase()) &&
       !paymentIssue;
 
     if (requiresLogin) {
@@ -256,7 +303,7 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  return { ok: true, data: await response.json(), clientId };
+  return { ok: true, data: bookResult.data, clientId };
 }
 
 serve(async (req) => {
