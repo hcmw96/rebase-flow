@@ -16,7 +16,7 @@ export const CONTRAST_PASS_OFFER = {
   validityDays: 14,
   sessionsPerDay: 1,
   summary:
-    'One communal contrast session per day for 14 days from the date of purchase — ice baths, Finnish sauna and bucket showers in our shared Members’ Suite.',
+    'One communal contrast session per day for 14 days from the date of purchase — ice baths, Finnish sauna and bucket showers in our Communal Contrast shared area.',
   terms: [
     'The pass includes one communal contrast session per day for 14 consecutive days starting on the date of purchase (not the calendar month).',
     'Example: a purchase on 30 June includes sessions through 13 July.',

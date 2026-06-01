@@ -61,8 +61,8 @@ export const CORE_SERVICES = [
     image: `${SITE_URL}/images/rebase-massage.jpg`,
   },
   {
-    name: "Members Suite",
-    description: "Communal contrast suite and signature wellness classes at Rebase Marylebone.",
+    name: "Communal Contrast",
+    description: "Shared ice baths, Finnish sauna and bucket showers for independent contrast sessions at Rebase Marylebone.",
     image: `${SITE_URL}/images/rebase-members-suite.jpg`,
   },
 ] as const;

@@ -1,5 +1,3 @@
-import { getStaffToken } from "./mindbodyStaff.ts";
-
 export type BookingConfirmationDetails = {
   to?: string | null;
   firstName?: string | null;
@@ -141,64 +139,17 @@ export async function ensureMindbodyClientEmail(
   }
 }
 
-/**
- * Mindbody sends booking confirmation emails when SendEmail is set on a staff-authenticated
- * addclienttoclass call. Consumer OAuth bookings do not trigger them reliably.
- */
-export async function tryMindbodyClassConfirmationEmail(
-  apiKey: string,
-  siteId: string,
-  clientId: string,
-  classId: string,
-): Promise<void> {
-  try {
-    const staffToken = await getStaffToken();
-    const res = await fetch("https://api.mindbodyonline.com/public/v6/class/addclienttoclass", {
-      method: "POST",
-      headers: mindbodyHeaders(apiKey, siteId, staffToken),
-      body: JSON.stringify({
-        ClientId: clientId,
-        ClassId: parseInt(classId, 10),
-        RequirePayment: false,
-        Waitlist: false,
-        SendEmail: true,
-        Test: false,
-      }),
-    });
-    if (res.ok) {
-      console.log("Mindbody class confirmation email triggered for class", classId);
-      return;
-    }
-    const text = await res.text();
-    // Client already enrolled — some sites still process SendEmail on duplicate attempts.
-    if (/already|duplicate|enrolled|booked/i.test(text)) {
-      console.log("Mindbody class email trigger (client already in class):", text.slice(0, 200));
-    } else {
-      console.warn("Mindbody class SendEmail trigger failed:", res.status, text.slice(0, 300));
-    }
-  } catch (e) {
-    console.warn("Mindbody class SendEmail trigger error:", e);
-  }
-}
-
 /** Send all confirmation channels after a successful booking (non-blocking for HTTP response). */
 export async function sendBookingConfirmationEmails(
   details: BookingConfirmationDetails,
-  opts: {
+  _opts?: {
     apiKey: string;
     siteId: string;
     mindbodyClientId?: string | null;
     classId?: string;
   },
 ): Promise<void> {
+  // Rebase email only. Do not call addclienttoclass with a staff token + RequirePayment:false —
+  // that can enroll clients without payment if the consumer booking did not complete.
   await sendRebaseBookingConfirmation(details);
-
-  if (details.bookingType === "class" && opts.classId && opts.mindbodyClientId) {
-    await tryMindbodyClassConfirmationEmail(
-      opts.apiKey,
-      opts.siteId,
-      opts.mindbodyClientId,
-      opts.classId,
-    );
-  }
 }

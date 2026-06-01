@@ -34,11 +34,25 @@ export function classifyBookingError(raw: string | undefined | null): Classified
     };
   }
 
-  if (msg.includes('site id does not match')) {
+  if (
+    msg.includes('session pass or payment') ||
+    msg.includes('purchase a pass') ||
+    msg.includes('no pass')
+  ) {
+    return {
+      kind: 'payment_required',
+      message:
+        'You need a session pass or payment on your Mindbody account before we can book this. Purchase online, then try again.',
+      actionLabel: 'View passes',
+      actionRoute: '/offers/2-week-unlimited-contrast-pass',
+    };
+  }
+
+  if (msg.includes('site id does not match') || msg.includes('sign in again from rebaserecovery')) {
     return {
       kind: 'unknown',
       message:
-        'Mindbody could not complete this booking from the app. Your account can still be linked to Rebase — please try again, or email reception@rebaserecovery.com and we will book you in.',
+        'Mindbody could not complete this booking from the app. Sign out, then sign in again from rebaserecovery.com. If you have a pass, ensure Rebase is linked under Mindbody Places You Go.',
       actionLabel: 'Email reception',
       actionRoute: 'mailto:reception@rebaserecovery.com',
     };

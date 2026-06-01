@@ -11,6 +11,10 @@ import {
   ensureMindbodyClientEmail,
   sendBookingConfirmationEmails,
 } from "../_shared/bookingConfirmationEmail.ts";
+import {
+  fetchActiveClientServices,
+  pickBookableClientServiceId,
+} from "../_shared/mindbodyClientServices.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -215,8 +219,25 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  const attemptBook = async (bearerToken: string, label: string) => {
-    const payload = { ...body, ClientId: clientId };
+  type BookAttemptResult = {
+    ok: boolean;
+    status: number;
+    message: string;
+    data: unknown;
+  };
+
+  const siteIdNum = parseInt(siteId, 10);
+  const crossRegionalExtras: Record<string, unknown> = Number.isFinite(siteIdNum)
+    ? { CrossRegionalBookingClientServiceSiteID: siteIdNum }
+    : {};
+
+  const attemptBook = async (
+    bearerToken: string,
+    label: string,
+    bookingClientId: string,
+    extra: Record<string, unknown> = {},
+  ): Promise<BookAttemptResult> => {
+    const payload = { ...body, ...crossRegionalExtras, ...extra, ClientId: bookingClientId };
     const response = await postToMindbody(url, apiKey, siteId, bearerToken, payload);
     const rawText = await response.text();
     const message = extractMindbodyErrorMessage(rawText);
@@ -236,49 +257,90 @@ async function mindbodyPostWithRetry(
     /pricing option|payment|package|sessions remaining|insufficient|does not have a valid|unable to apply|no .*available|not paid|does not have/i
       .test(message.toLowerCase());
 
-  const allowStaffFallback = (message: string, status: number) => {
-    if (isPaymentError(message)) return false;
-    const lower = message.toLowerCase();
-    return (
-      /site id does not match/i.test(lower) ||
-      /client with custom id/i.test(lower) ||
-      /cross.?regional/i.test(lower) ||
-      (status === 401 && !/session expired|invalid token/i.test(lower))
+  const isClientIdRetryable = (message: string) =>
+    /site id does not match|custom id|does not exist|invalid client|cross.?regional/i.test(
+      message.toLowerCase(),
     );
-  };
 
-  // 1) Consumer OAuth first — enforces RequirePayment / ApplyPayment on the client's account.
-  let bookResult = await attemptBook(activeSession.access_token, "consumer");
+  const consumerClientIds = [...new Set([clientId, publicClientId].filter(Boolean))];
 
-  // Re-resolve client id if Mindbody rejected the cached numeric id.
+  let bookResult: BookAttemptResult | null = null;
+
+  // 1) Consumer OAuth — tries site numeric id and OAuth unique id (fixes many "site id" errors).
+  for (const cid of consumerClientIds) {
+    bookResult = await attemptBook(activeSession.access_token, `consumer:${cid}`, cid);
+    if (bookResult.ok) break;
+    if (isPaymentError(bookResult.message)) break;
+    if (!isClientIdRetryable(bookResult.message)) break;
+  }
+
+  // Re-resolve numeric client id if Mindbody rejected it.
   if (
+    bookResult &&
     !bookResult.ok &&
     /custom id|does not exist|invalid client/i.test(bookResult.message.toLowerCase())
   ) {
     const resolved = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
-    if (resolved && resolved !== clientId) {
+    if (resolved && !consumerClientIds.includes(resolved)) {
       clientId = resolved;
       await supabaseAdmin
         .from("mb_sessions")
         .update({ mindbody_site_client_id: clientId, updated_at: new Date().toISOString() })
         .eq("id", session.id);
-      bookResult = await attemptBook(activeSession.access_token, "consumer");
+      bookResult = await attemptBook(activeSession.access_token, `consumer:resolved:${clientId}`, clientId);
     }
   }
 
-  // 2) Staff fallback only for site-scope / client-id issues (not payment). Still sends RequirePayment.
-  if (!bookResult.ok && allowStaffFallback(bookResult.message, bookResult.status)) {
-    console.warn("Consumer booking failed; trying staff fallback:", bookResult.message);
-    bookResult = await attemptBook(staffToken, "staff");
+  // 2) Consumer + explicit pass/credit (ClientServiceId) when the account has one.
+  if (bookResult && !bookResult.ok && !isPaymentError(bookResult.message)) {
+    for (const cid of [clientId, publicClientId]) {
+      const services = await fetchActiveClientServices(
+        apiKey,
+        siteId,
+        activeSession.access_token,
+        cid,
+      );
+      const clientServiceId = pickBookableClientServiceId(services);
+      if (!clientServiceId) continue;
+
+      bookResult = await attemptBook(
+        activeSession.access_token,
+        `consumer:pass:${clientServiceId}`,
+        cid,
+        { ClientServiceId: clientServiceId },
+      );
+      if (bookResult.ok || isPaymentError(bookResult.message)) break;
+    }
   }
 
-  if (!bookResult.ok) {
-    const { message, status } = bookResult;
+  // 3) Staff fallback ONLY when a pass/credit exists — apply it via ClientServiceId (no unpaid comps).
+  if (bookResult && !bookResult.ok && isClientIdRetryable(bookResult.message)) {
+    const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
+    const clientServiceId = pickBookableClientServiceId(staffServices);
+
+    if (clientServiceId) {
+      console.warn(
+        "Consumer booking blocked by site scope; applying pass via staff with ClientServiceId:",
+        clientServiceId,
+      );
+      bookResult = await attemptBook(staffToken, `staff:pass:${clientServiceId}`, clientId, {
+        ClientServiceId: clientServiceId,
+        RequirePayment: body.RequirePayment ?? true,
+      });
+    }
+  }
+
+  if (!bookResult?.ok) {
+    const { message, status } = bookResult ?? { message: "Booking failed", status: 400 };
     const paymentIssue = isPaymentError(message);
+    const siteScopeIssue = /site id does not match/i.test(message.toLowerCase());
+
+    const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
+    const hasPass = pickBookableClientServiceId(staffServices) != null;
 
     const requiresLogin =
       status === 401 &&
-      !/site id does not match/i.test(message.toLowerCase()) &&
+      !siteScopeIssue &&
       !paymentIssue;
 
     if (requiresLogin) {
@@ -291,12 +353,23 @@ async function mindbodyPostWithRetry(
       };
     }
 
+    let userMessage = message;
+    if (paymentIssue || (!hasPass && siteScopeIssue)) {
+      userMessage =
+        "You need a session pass or payment on your Mindbody account before we can book this. Purchase a pass (or single visit) in Mindbody, then try again — or email reception@rebaserecovery.com.";
+    } else if (siteScopeIssue) {
+      userMessage =
+        "Mindbody could not complete this booking from the app. Sign out, then sign in again from rebaserecovery.com. If you already have a pass, make sure Rebase is linked under Mindbody Places You Go.";
+    }
+
     return {
       ok: false,
       response: new Response(
         JSON.stringify({
-          error: message,
-          paymentRequired: paymentIssue,
+          error: userMessage,
+          paymentRequired: paymentIssue || (!hasPass && !siteScopeIssue),
+          siteScopeIssue,
+          noPassOnFile: !hasPass,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
@@ -393,6 +466,7 @@ serve(async (req) => {
           Waitlist: false,
           SendEmail: true,
           CrossRegionalBooking: true,
+          CrossRegionalBookingClientServiceSiteID: parseInt(siteId, 10) || undefined,
         },
       );
       if (!result.ok) return result.response;
