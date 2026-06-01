@@ -3,6 +3,7 @@ import { useResumePendingBooking } from "@/hooks/useResumePendingBooking";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
+import JuneContrastPassBanner from "@/components/JuneContrastPassBanner";
 import WebsiteServices from "@/components/WebsiteServices";
 import BookingDrawer, { BookingServiceData } from "@/components/booking/BookingDrawer";
 import SeoHead from "@/components/seo/SeoHead";
@@ -45,6 +46,7 @@ const Index = () => {
       <Navigation />
       <main id="main-content">
         <Hero />
+        <JuneContrastPassBanner />
         <WebsiteServices onSelectService={handleSelectService} />
       </main>
       <Footer />

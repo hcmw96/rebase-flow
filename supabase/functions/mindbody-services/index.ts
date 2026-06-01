@@ -469,7 +469,12 @@ function extractMinutes(name: string | undefined): number | null {
 }
 
 function isSessionPack(name: string): boolean {
-  return /\bpack\b/i.test(name) || /\d+\s*[-–]?\s*session\s*pack/i.test(name);
+  return (
+    /\bpack\b/i.test(name) ||
+    /\d+\s*[-–]?\s*session\s*pack/i.test(name) ||
+    /\bpass\b/i.test(name) ||
+    /unlimited\s*\d+\s*week/i.test(name)
+  );
 }
 
 function hasSpecificDurationPricing(
