@@ -36,15 +36,16 @@ export function classifyBookingError(raw: string | undefined | null): Classified
 
   if (
     msg.includes('session pass or payment') ||
+    msg.includes('charge your card on file') ||
+    msg.includes('buy a single visit') ||
     msg.includes('purchase a pass') ||
+    msg.includes('payment or a session pass') ||
     msg.includes('no pass')
   ) {
     return {
       kind: 'payment_required',
       message:
-        'You need a session pass or payment on your Mindbody account before we can book this. Purchase online, then try again.',
-      actionLabel: 'View passes',
-      actionRoute: '/offers/2-week-unlimited-contrast-pass',
+        'Use a session pass or pay for this visit below, then tap Confirm Booking again.',
     };
   }
 

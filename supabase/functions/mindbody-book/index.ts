@@ -15,6 +15,11 @@ import {
   fetchActiveClientServices,
   pickBookableClientServiceId,
 } from "../_shared/mindbodyClientServices.ts";
+import {
+  checkoutClassWithStoredCard,
+  fetchSaleServicesForClass,
+  pickSaleServiceForClass,
+} from "../_shared/mindbodyCheckout.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -354,12 +359,12 @@ async function mindbodyPostWithRetry(
     }
 
     let userMessage = message;
-    if (paymentIssue || (!hasPass && siteScopeIssue)) {
-      userMessage =
-        "You need a session pass or payment on your Mindbody account before we can book this. Purchase a pass (or single visit) in Mindbody, then try again — or email reception@rebaserecovery.com.";
-    } else if (siteScopeIssue) {
+    if (siteScopeIssue) {
       userMessage =
         "Mindbody could not complete this booking from the app. Sign out, then sign in again from rebaserecovery.com. If you already have a pass, make sure Rebase is linked under Mindbody Places You Go.";
+    } else if (paymentIssue || !hasPass) {
+      userMessage =
+        "We couldn't apply a session pass or charge your card on file for this visit. Buy a single visit or pass below, then tap Confirm Booking again.";
     }
 
     return {
@@ -367,7 +372,7 @@ async function mindbodyPostWithRetry(
       response: new Response(
         JSON.stringify({
           error: userMessage,
-          paymentRequired: paymentIssue || (!hasPass && !siteScopeIssue),
+          paymentRequired: paymentIssue || !hasPass,
           siteScopeIssue,
           noPassOnFile: !hasPass,
         }),
@@ -377,6 +382,128 @@ async function mindbodyPostWithRetry(
   }
 
   return { ok: true, data: bookResult.data, clientId };
+}
+
+/** Book a class: use pass credit, or charge stored card + book via checkout when none on file. */
+async function bookClassWithPayment(
+  supabaseAdmin: ReturnType<typeof createClient>,
+  session: MbSession,
+  apiKey: string,
+  siteId: string,
+  classId: string,
+  locationId: number | undefined,
+): Promise<{ ok: true; data: unknown; clientId: string } | { ok: false; response: Response }> {
+  const classBody = {
+    ClassId: parseInt(classId, 10),
+    RequirePayment: true,
+    Waitlist: false,
+    SendEmail: true,
+    CrossRegionalBooking: true,
+    CrossRegionalBookingClientServiceSiteID: parseInt(siteId, 10) || undefined,
+  };
+
+  let staffToken: string;
+  try {
+    staffToken = await getStaffToken();
+  } catch {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "Booking is temporarily unavailable. Please contact reception." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 },
+      ),
+    };
+  }
+
+  const publicClientId = session.mindbody_client_id;
+  let clientId = session.mindbody_site_client_id?.trim() || null;
+  const profile = await sessionClientProfile(session, apiKey, siteId);
+  if (!clientId) {
+    clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
+    if (clientId) {
+      await supabaseAdmin
+        .from("mb_sessions")
+        .update({ mindbody_site_client_id: clientId, updated_at: new Date().toISOString() })
+        .eq("id", session.id);
+    }
+  }
+  if (!clientId) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We could not match your Mindbody sign-in to your Rebase client record. Sign out, sign in again, or email reception@rebaserecovery.com.",
+          profileNotFound: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  let activeSession = session;
+  if (isMindbodyTokenExpired(activeSession.token_expires_at) && activeSession.refresh_token) {
+    const refreshed = await refreshMindbodySessionIfNeeded(supabaseAdmin, activeSession, { force: true });
+    if (refreshed) activeSession = refreshed;
+  }
+
+  const passOnFile =
+    pickBookableClientServiceId(
+      await fetchActiveClientServices(apiKey, siteId, activeSession.access_token, clientId),
+    ) ??
+    pickBookableClientServiceId(
+      await fetchActiveClientServices(apiKey, siteId, staffToken, clientId),
+    );
+
+  if (passOnFile) {
+    return mindbodyPostWithRetry(
+      supabaseAdmin,
+      activeSession,
+      apiKey,
+      siteId,
+      "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
+      classBody,
+    );
+  }
+
+  const classIdNum = parseInt(classId, 10);
+  const locId = locationId && locationId > 0 ? locationId : 1;
+
+  for (const [token, label] of [
+    [activeSession.access_token, "consumer"] as const,
+    [staffToken, "staff"] as const,
+  ]) {
+    const saleServices = await fetchSaleServicesForClass(apiKey, siteId, token, classIdNum, locId);
+    const saleService = pickSaleServiceForClass(saleServices);
+    if (!saleService?.Id) {
+      console.warn(`No sale service for class ${classId} (${label})`);
+      continue;
+    }
+    const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
+    if (amount <= 0) continue;
+
+    const checkout = await checkoutClassWithStoredCard(apiKey, siteId, token, {
+      clientId,
+      classId: classIdNum,
+      locationId: locId,
+      serviceId: saleService.Id,
+      amount,
+    });
+    if (checkout.ok) {
+      console.log(`Class ${classId} booked via checkout (${label})`);
+      return { ok: true, data: checkout.data, clientId };
+    }
+    console.warn(`Checkout (${label}) failed:`, checkout.message);
+  }
+
+  return mindbodyPostWithRetry(
+    supabaseAdmin,
+    activeSession,
+    apiKey,
+    siteId,
+    "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
+    classBody,
+  );
 }
 
 serve(async (req) => {
@@ -454,20 +581,13 @@ serve(async (req) => {
         throw new Error("classId is required for class booking");
       }
 
-      const result = await mindbodyPostWithRetry(
+      const result = await bookClassWithPayment(
         supabaseAdmin,
         session,
         apiKey,
         siteId,
-        "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
-        {
-          ClassId: parseInt(classId),
-          RequirePayment: true,
-          Waitlist: false,
-          SendEmail: true,
-          CrossRegionalBooking: true,
-          CrossRegionalBookingClientServiceSiteID: parseInt(siteId, 10) || undefined,
-        },
+        classId,
+        typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
       );
       if (!result.ok) return result.response;
       bookingResult = result.data as Record<string, unknown>;

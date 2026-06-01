@@ -1,7 +1,9 @@
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
+import type { BookingPaymentOption } from '@/lib/bookingPaymentOptions';
 import { cn } from '@/lib/utils';
+import BookingPaymentPrompt from './BookingPaymentPrompt';
 
 interface BookingConfirmActionsProps {
   onChangeTime: () => void;
@@ -9,17 +11,14 @@ interface BookingConfirmActionsProps {
   isAuthenticated: boolean;
   isPending: boolean;
   changeTimeLabel?: string;
-  /** Shown when confirm fails or session is invalid — does not change signed-in state. */
   bookingError?: string | null;
-  /** When true, primary action re-runs sign-in; otherwise user can tap Confirm again. */
   bookingErrorRequiresSignIn?: boolean;
-  /** Stash booking state then open Mindbody registration (same tab). */
+  /** Show pay-before-book options (proactive or after payment error). */
+  showPaymentOptions?: boolean;
+  paymentOptions?: BookingPaymentOption[];
   onCreateAccount?: () => void;
 }
 
-/**
- * Shared confirm-step actions: change selection, then Mindbody sign-in, then confirm.
- */
 const BookingConfirmActions = ({
   onChangeTime,
   onConfirm,
@@ -28,6 +27,8 @@ const BookingConfirmActions = ({
   changeTimeLabel = 'Change Time',
   bookingError,
   bookingErrorRequiresSignIn = false,
+  showPaymentOptions = false,
+  paymentOptions = [],
   onCreateAccount,
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
@@ -41,9 +42,18 @@ const BookingConfirmActions = ({
   };
 
   const showGuestActions = !isAuthenticated;
+  const paymentBlocked =
+    showPaymentOptions && paymentOptions.length > 0 && isAuthenticated && !bookingErrorRequiresSignIn;
 
   return (
     <div className="space-y-3">
+      {paymentBlocked && (
+        <BookingPaymentPrompt
+          options={paymentOptions}
+          variant={bookingError ? 'after-error' : 'proactive'}
+        />
+      )}
+
       {bookingError && (
         <p
           className={cn(
@@ -56,6 +66,7 @@ const BookingConfirmActions = ({
           {bookingError}
         </p>
       )}
+
       {showGuestActions && (
         <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
           <p>Sign in with your Mindbody account to complete this booking.</p>
@@ -66,10 +77,11 @@ const BookingConfirmActions = ({
           </p>
         </div>
       )}
-      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && (
+
+      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !paymentBlocked && (
         <p className="text-sm text-muted-foreground">
-          You&apos;re signed in. Tap <span className="font-medium text-foreground">Confirm Booking</span>{' '}
-          to try again, or email{' '}
+          Tap <span className="font-medium text-foreground">Confirm Booking</span> to try again, or
+          email{' '}
           <a
             href="mailto:reception@rebaserecovery.com"
             className="font-medium text-foreground underline underline-offset-2"
@@ -79,6 +91,14 @@ const BookingConfirmActions = ({
           .
         </p>
       )}
+
+      {paymentBlocked && !bookingError && (
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          Already paid or have a pass on your account? Tap confirm — we&apos;ll check your Mindbody
+          credits.
+        </p>
+      )}
+
       <div className="flex flex-col-reverse gap-2.5 sm:flex-row sm:gap-3">
         <Button
           variant="outline"
@@ -95,12 +115,13 @@ const BookingConfirmActions = ({
               Booking...
             </>
           ) : isAuthenticated ? (
-            'Confirm Booking'
+            paymentBlocked ? "I've paid — confirm booking" : 'Confirm Booking'
           ) : (
             'Sign In to Book'
           )}
         </Button>
       </div>
+
       {showGuestActions && (
         <Button
           type="button"
@@ -112,6 +133,7 @@ const BookingConfirmActions = ({
           Create Mindbody Account
         </Button>
       )}
+
       {showGuestActions && mindbodySignUpUrl && (
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
           You&apos;ll register on Mindbody (Rebase&apos;s booking system), then come back to this

@@ -1,23 +1,15 @@
 import { useMemo } from 'react';
 import { CONTRAST_PASS_OFFER, isContrastPassSaleActive } from '@/config/contrastPassOffer';
 import { mindbodyBuySaleServiceUrl, mindbodyCatalogUrl, REBASE_MINDBODY_SITE_ID } from '@/lib/mindbodyAuth';
-import { fetchServices, type MindbodyService } from '@/hooks/useMindbodyServices';
+import { findContrastPassProduct } from '@/lib/mindbodyProducts';
+import { fetchServices } from '@/hooks/useMindbodyServices';
 import { useQuery } from '@tanstack/react-query';
 
 function resolveSiteId(): string {
   return import.meta.env.VITE_MINDBODY_SITE_ID?.trim() || REBASE_MINDBODY_SITE_ID;
 }
 
-export function findContrastPassProduct(services: MindbodyService[] | undefined): MindbodyService | null {
-  if (!services?.length) return null;
-  const exact = services.find(
-    (s) => s.isPack && s.name.trim() === CONTRAST_PASS_OFFER.mindbodyProductName,
-  );
-  if (exact) return exact;
-  return (
-    services.find((s) => s.isPack && CONTRAST_PASS_OFFER.mindbodyNamePattern.test(s.name)) ?? null
-  );
-}
+export { findContrastPassProduct };
 
 export function useContrastPassOffer() {
   const siteId = resolveSiteId();

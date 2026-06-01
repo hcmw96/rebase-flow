@@ -1,42 +1,31 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
+import { BookingMutationError } from '@/lib/bookingMutationError';
 import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
-async function parseFunctionError(
-  response: Response,
-  fallback: string,
-): Promise<{ message: string; requiresLogin?: boolean; paymentRequired?: boolean }> {
+async function parseFunctionError(response: Response, fallback: string): Promise<never> {
   try {
     const body = await response.json();
-    if (body?.paymentRequired && typeof body.error === 'string') {
-      return { message: body.error, paymentRequired: true };
-    }
-    if (body?.requiresLogin) {
-      return {
-        message:
-          (typeof body.error === 'string' && body.error) ||
-          'Session expired. Please log in again.',
-        requiresLogin: true,
-      };
-    }
-    if (typeof body?.error === 'string' && body.error) {
-      return { message: body.error };
-    }
-    if (typeof body?.message === 'string' && body.message) {
-      return { message: body.message };
-    }
-  } catch {
-    /* non-JSON body */
+    const message =
+      (typeof body?.error === 'string' && body.error) ||
+      (typeof body?.message === 'string' && body.message) ||
+      `${fallback} (${response.status})`;
+
+    throw new BookingMutationError(message, {
+      paymentRequired: Boolean(body?.paymentRequired),
+      requiresLogin: Boolean(body?.requiresLogin) || response.status === 401,
+      siteScopeIssue: Boolean(body?.siteScopeIssue),
+      noPassOnFile: Boolean(body?.noPassOnFile),
+    });
+  } catch (e) {
+    if (e instanceof BookingMutationError) throw e;
   }
   if (response.status === 401) {
-    return {
-      message: 'Session expired. Please log in again.',
-      requiresLogin: true,
-    };
+    throw new BookingMutationError('Session expired. Please log in again.', { requiresLogin: true });
   }
-  return { message: `${fallback} (${response.status})` };
+  throw new BookingMutationError(`${fallback} (${response.status})`);
 }
 
 export interface Booking {
@@ -134,8 +123,7 @@ export function useBookService() {
       });
 
       if (!response.ok) {
-        const parsed = await parseFunctionError(response, 'Failed to book');
-        throw new Error(parsed.message);
+        await parseFunctionError(response, 'Failed to book');
       }
 
       return response.json();
@@ -166,8 +154,7 @@ export function useCancelBooking() {
       });
 
       if (!response.ok) {
-        const parsed = await parseFunctionError(response, 'Failed to cancel');
-        throw new Error(parsed.message);
+        await parseFunctionError(response, 'Failed to cancel');
       }
 
       return response.json();

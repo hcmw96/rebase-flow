@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
+import { useClientMembership } from '@/hooks/useMindbodyMembership';
+import { useBookingPaymentOptions } from '@/hooks/useBookingPaymentOptions';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
@@ -23,6 +25,8 @@ import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
+import { BookingMutationError } from '@/lib/bookingMutationError';
+import { hasCommunalContrastCredit } from '@/lib/bookingPaymentOptions';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -135,6 +139,20 @@ const ClassScheduleFlow = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
+  const [bookingNeedsPayment, setBookingNeedsPayment] = useState(false);
+
+  const serviceLabel = resolveDisplayName(bookingService?.title ?? clsName);
+  const { options: paymentOptions, applies: paymentApplies } = useBookingPaymentOptions(serviceLabel);
+  const { data: membershipData, isLoading: membershipLoading } = useClientMembership();
+  const hasContrastCredit = hasCommunalContrastCredit(membershipData?.clientServices);
+
+  const showPaymentPrompt =
+    paymentApplies &&
+    isAuthenticated &&
+    currentStep === 2 &&
+    !membershipLoading &&
+    (!hasContrastCredit || bookingNeedsPayment) &&
+    paymentOptions.length > 0;
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), SCHEDULE_WEEKS_AHEAD), 'yyyy-MM-dd');
@@ -279,11 +297,13 @@ const ClassScheduleFlow = ({
 
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingNeedsPayment(false);
 
     try {
       await bookMutation.mutateAsync({
         bookingType: 'class',
         classId: selectedClass.id,
+        locationId: selectedClass.locationId,
         serviceName: selectedClass.name,
         startDateTime: selectedClass.startDateTime,
         endDateTime: selectedClass.endDateTime,
@@ -293,9 +313,21 @@ const ClassScheduleFlow = ({
       setBookingComplete(true);
       toast.success('Class booked successfully!');
     } catch (error: unknown) {
+      if (error instanceof BookingMutationError) {
+        const needsPay = Boolean(error.flags.paymentRequired || error.flags.noPassOnFile);
+        setBookingNeedsPayment(needsPay);
+        setBookingError(
+          needsPay
+            ? 'Payment or a session pass is required. Use the options below, then confirm again.'
+            : error.message,
+        );
+        setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
+        return;
+      }
       const classified = classifyBookingError(
         error instanceof Error ? error.message : undefined,
       );
+      setBookingNeedsPayment(classified.kind === 'payment_required');
       setBookingError(classified.message);
       setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
     }
@@ -523,6 +555,7 @@ const ClassScheduleFlow = ({
               onChangeTime={() => {
                 setBookingError(null);
                 setBookingErrorRequiresSignIn(false);
+                setBookingNeedsPayment(false);
                 setSelectedClass(null);
                 setCurrentStep(1);
               }}
@@ -536,6 +569,8 @@ const ClassScheduleFlow = ({
               changeTimeLabel="Change session"
               bookingError={bookingError}
               bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
+              showPaymentOptions={showPaymentPrompt}
+              paymentOptions={paymentOptions}
               onCreateAccount={() => startCreateAccount(selectedClass)}
             />
           </div>

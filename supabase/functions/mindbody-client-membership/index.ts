@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { resolveSiteClientId } from "../_shared/mindbodyClientResolve.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -98,38 +99,21 @@ serve(async (req) => {
     const publicClientId = session.mindbody_client_id;
     const now = new Date();
 
-    // Resolve the site-local numeric ClientId from the OAuth public id.
-    // Mindbody's /client/clients supports `ClientIds` (the public-id) and returns
-    // the local Id we need for the other client/* endpoints.
-    let clientId: string = publicClientId;
+    let clientId =
+      (await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken)) ?? publicClientId;
     let membershipIcon: number | null = null;
-    // Try several lookup strategies — Mindbody's `Id` semantics vary by site.
-    const lookupUrls = [
-      `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${publicClientId}&limit=1&CrossRegionalLookup=true`,
-      `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${publicClientId}&limit=1&CrossRegionalLookup=true`,
-      `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${publicClientId}&limit=1`,
-    ];
-    for (const lookupUrl of lookupUrls) {
-      try {
-        const r = await fetch(lookupUrl, { method: "GET", headers: mbHeaders });
-        if (!r.ok) {
-          console.warn("clients lookup non-OK:", r.status, lookupUrl, await r.text());
-          continue;
-        }
+    try {
+      const r = await fetch(
+        `https://api.mindbodyonline.com/public/v6/client/clients?ClientIds=${encodeURIComponent(clientId)}&limit=1&CrossRegionalLookup=true`,
+        { method: "GET", headers: mbHeaders },
+      );
+      if (r.ok) {
         const data = await r.json();
         const client = (data.Clients || [])[0];
-        if (client) {
-          if (client.Id) clientId = String(client.Id);
-          if (typeof client.MembershipIcon === "number") membershipIcon = client.MembershipIcon;
-          console.log("Resolved client", publicClientId, "->", clientId);
-          break;
-        }
-      } catch (e) {
-        console.error("clients lookup error:", e);
+        if (typeof client?.MembershipIcon === "number") membershipIcon = client.MembershipIcon;
       }
-    }
-    if (clientId === publicClientId) {
-      console.warn("Could not resolve numeric ClientId for", publicClientId);
+    } catch (e) {
+      console.warn("membership icon lookup:", e);
     }
 
     // 1. Contracts
