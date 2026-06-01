@@ -49,9 +49,11 @@ const navThemes = {
 
 interface NavigationProps {
   variant?: NavigationVariant;
+  /** e.g. `top-9` when a fixed promo bar sits above the nav (homepage June offer). */
+  topClassName?: string;
 }
 
-const Navigation = ({ variant = "dark" }: NavigationProps) => {
+const Navigation = ({ variant = "dark", topClassName = "top-0" }: NavigationProps) => {
   const theme = navThemes[variant];
   const [isOpen, setIsOpen] = useState(false);
   const [locationOpen, setLocationOpen] = useState(false);
@@ -107,7 +109,8 @@ const Navigation = ({ variant = "dark" }: NavigationProps) => {
     <nav
       aria-label="Main navigation"
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b",
+        "fixed left-0 right-0 z-50 transition-all duration-300 border-b",
+        topClassName,
         isOpen
           ? theme.shellOpen
           : scrolled
