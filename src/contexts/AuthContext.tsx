@@ -320,8 +320,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Failed to get login URL');
       }
 
-      // Use full-page redirect for both native and web.
-      // Popup OAuth can be blocked/blanked by browser cross-origin restrictions.
+      if (!isNative) {
+        const popup = window.open(
+          data.authUrl,
+          'rebase-mindbody-oauth',
+          'popup=yes,width=480,height=720,noopener,noreferrer',
+        );
+        if (popup) {
+          const poll = window.setInterval(() => {
+            if (popup.closed) {
+              window.clearInterval(poll);
+              setIsRedirecting(false);
+            }
+          }, 400);
+          return;
+        }
+      }
+
       window.location.assign(data.authUrl);
       return;
     } catch (error) {

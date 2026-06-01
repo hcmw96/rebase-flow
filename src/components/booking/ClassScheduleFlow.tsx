@@ -14,7 +14,7 @@ import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
-import { useBookingPaymentOptions } from '@/hooks/useBookingPaymentOptions';
+import { buildCommunalContrastCheckoutSummary } from '@/lib/bookingCheckoutSummary';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
@@ -26,7 +26,6 @@ import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from 
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
 import { BookingMutationError } from '@/lib/bookingMutationError';
-import { hasCommunalContrastCredit } from '@/lib/bookingPaymentOptions';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -139,20 +138,17 @@ const ClassScheduleFlow = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
-  const [bookingNeedsPayment, setBookingNeedsPayment] = useState(false);
+  const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
 
   const serviceLabel = resolveDisplayName(bookingService?.title ?? clsName);
-  const { options: paymentOptions, applies: paymentApplies } = useBookingPaymentOptions(serviceLabel);
-  const { data: membershipData, isLoading: membershipLoading } = useClientMembership();
-  const hasContrastCredit = hasCommunalContrastCredit(membershipData?.clientServices);
+  const { data: membershipData } = useClientMembership();
 
-  const showPaymentPrompt =
-    paymentApplies &&
-    isAuthenticated &&
-    currentStep === 2 &&
-    !membershipLoading &&
-    (!hasContrastCredit || bookingNeedsPayment) &&
-    paymentOptions.length > 0;
+  const checkoutSummary =
+    isAuthenticated && currentStep === 2
+      ? buildCommunalContrastCheckoutSummary(serviceLabel, membershipData?.clientServices, {
+          needsCardOnFile,
+        })
+      : null;
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), SCHEDULE_WEEKS_AHEAD), 'yyyy-MM-dd');
@@ -297,10 +293,10 @@ const ClassScheduleFlow = ({
 
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
-    setBookingNeedsPayment(false);
+    setNeedsCardOnFile(false);
 
     try {
-      await bookMutation.mutateAsync({
+      const result = await bookMutation.mutateAsync({
         bookingType: 'class',
         classId: selectedClass.id,
         locationId: selectedClass.locationId,
@@ -311,23 +307,20 @@ const ClassScheduleFlow = ({
         staffName: selectedClass.staffName,
       });
       setBookingComplete(true);
-      toast.success('Class booked successfully!');
+      const paid = result?.payment?.amountGbp;
+      toast.success(
+        paid != null ? `Booked — £${paid} paid` : 'Your session is booked',
+      );
     } catch (error: unknown) {
       if (error instanceof BookingMutationError) {
-        const needsPay = Boolean(error.flags.paymentRequired || error.flags.noPassOnFile);
-        setBookingNeedsPayment(needsPay);
-        setBookingError(
-          needsPay
-            ? 'Payment or a session pass is required. Use the options below, then confirm again.'
-            : error.message,
-        );
+        setNeedsCardOnFile(Boolean(error.flags.noStoredCard));
+        setBookingError(error.message);
         setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
         return;
       }
       const classified = classifyBookingError(
         error instanceof Error ? error.message : undefined,
       );
-      setBookingNeedsPayment(classified.kind === 'payment_required');
       setBookingError(classified.message);
       setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
     }
@@ -555,7 +548,7 @@ const ClassScheduleFlow = ({
               onChangeTime={() => {
                 setBookingError(null);
                 setBookingErrorRequiresSignIn(false);
-                setBookingNeedsPayment(false);
+                setNeedsCardOnFile(false);
                 setSelectedClass(null);
                 setCurrentStep(1);
               }}
@@ -569,8 +562,7 @@ const ClassScheduleFlow = ({
               changeTimeLabel="Change session"
               bookingError={bookingError}
               bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
-              showPaymentOptions={showPaymentPrompt}
-              paymentOptions={paymentOptions}
+              checkoutSummary={checkoutSummary}
               onCreateAccount={() => startCreateAccount(selectedClass)}
             />
           </div>

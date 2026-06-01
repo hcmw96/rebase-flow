@@ -10,6 +10,12 @@ export function mindbodySignInUrl(siteId: string): string {
   return `https://cart.mindbodyonline.com/sites/${siteId}/session/new`;
 }
 
+/** Client account area (add card, profile) — not the public pricing catalog. */
+export function mindbodyClientAccountUrl(siteId?: string): string {
+  const id = siteId?.trim() || import.meta.env.VITE_MINDBODY_SITE_ID?.trim() || REBASE_MINDBODY_SITE_ID;
+  return `https://cart.mindbodyonline.com/sites/${encodeURIComponent(id)}/client`;
+}
+
 /**
  * All online pricing options (Mindbody Marketing Links format).
  * @see https://support.mindbodyonline.com/s/article/How-to-create-and-use-Mindbody-Marketing-Links

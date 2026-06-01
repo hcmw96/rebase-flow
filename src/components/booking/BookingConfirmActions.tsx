@@ -1,9 +1,9 @@
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
-import type { BookingPaymentOption } from '@/lib/bookingPaymentOptions';
+import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
+import BookingConfirmCheckout from '@/components/booking/BookingConfirmCheckout';
 import { cn } from '@/lib/utils';
-import BookingPaymentPrompt from './BookingPaymentPrompt';
 
 interface BookingConfirmActionsProps {
   onChangeTime: () => void;
@@ -13,9 +13,7 @@ interface BookingConfirmActionsProps {
   changeTimeLabel?: string;
   bookingError?: string | null;
   bookingErrorRequiresSignIn?: boolean;
-  /** Show pay-before-book options (proactive or after payment error). */
-  showPaymentOptions?: boolean;
-  paymentOptions?: BookingPaymentOption[];
+  checkoutSummary?: BookingCheckoutSummary | null;
   onCreateAccount?: () => void;
 }
 
@@ -27,8 +25,7 @@ const BookingConfirmActions = ({
   changeTimeLabel = 'Change Time',
   bookingError,
   bookingErrorRequiresSignIn = false,
-  showPaymentOptions = false,
-  paymentOptions = [],
+  checkoutSummary = null,
   onCreateAccount,
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
@@ -42,16 +39,15 @@ const BookingConfirmActions = ({
   };
 
   const showGuestActions = !isAuthenticated;
-  const paymentBlocked =
-    showPaymentOptions && paymentOptions.length > 0 && isAuthenticated && !bookingErrorRequiresSignIn;
+  const confirmLabel =
+    checkoutSummary && !checkoutSummary.pass
+      ? `Confirm & pay £${checkoutSummary.priceGbp}`
+      : 'Confirm booking';
 
   return (
     <div className="space-y-3">
-      {paymentBlocked && (
-        <BookingPaymentPrompt
-          options={paymentOptions}
-          variant={bookingError ? 'after-error' : 'proactive'}
-        />
+      {isAuthenticated && checkoutSummary && !bookingErrorRequiresSignIn && (
+        <BookingConfirmCheckout summary={checkoutSummary} />
       )}
 
       {bookingError && (
@@ -69,19 +65,21 @@ const BookingConfirmActions = ({
 
       {showGuestActions && (
         <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
-          <p>Sign in with your Mindbody account to complete this booking.</p>
+          <p>
+            Sign in with your Mindbody account to book here — we&apos;ll open Mindbody in a new window,
+            then bring you back to confirm your session on Rebase.
+          </p>
           <p>
             <span className="font-medium text-foreground">New to Rebase?</span>{' '}
-            Create a free Mindbody account first — it only takes a minute — then return here and tap{' '}
-            <span className="font-medium text-foreground">Sign In to Book</span>.
+            Create a free Mindbody account first, then return and tap{' '}
+            <span className="font-medium text-foreground">Sign in to book</span>.
           </p>
         </div>
       )}
 
-      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !paymentBlocked && (
+      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && (
         <p className="text-sm text-muted-foreground">
-          Tap <span className="font-medium text-foreground">Confirm Booking</span> to try again, or
-          email{' '}
+          Tap <span className="font-medium text-foreground">{confirmLabel}</span> to try again, or email{' '}
           <a
             href="mailto:reception@rebaserecovery.com"
             className="font-medium text-foreground underline underline-offset-2"
@@ -89,13 +87,6 @@ const BookingConfirmActions = ({
             reception@rebaserecovery.com
           </a>
           .
-        </p>
-      )}
-
-      {paymentBlocked && !bookingError && (
-        <p className="text-xs text-muted-foreground leading-relaxed">
-          Already paid or have a pass on your account? Tap confirm — we&apos;ll check your Mindbody
-          credits.
         </p>
       )}
 
@@ -115,9 +106,9 @@ const BookingConfirmActions = ({
               Booking...
             </>
           ) : isAuthenticated ? (
-            paymentBlocked ? "I've paid — confirm booking" : 'Confirm Booking'
+            confirmLabel
           ) : (
-            'Sign In to Book'
+            'Sign in to book'
           )}
         </Button>
       </div>
@@ -130,14 +121,13 @@ const BookingConfirmActions = ({
           disabled={isPending}
           className="w-full min-h-11"
         >
-          Create Mindbody Account
+          Create Mindbody account
         </Button>
       )}
 
       {showGuestActions && mindbodySignUpUrl && (
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          You&apos;ll register on Mindbody (Rebase&apos;s booking system), then come back to this
-          page to sign in.
+          Account creation opens Mindbody in a new tab. Booking and payment stay on Rebase.
         </p>
       )}
     </div>

@@ -35,17 +35,14 @@ export function classifyBookingError(raw: string | undefined | null): Classified
   }
 
   if (
-    msg.includes('session pass or payment') ||
+    msg.includes('no payment card') ||
+    msg.includes('add a card') ||
     msg.includes('charge your card on file') ||
-    msg.includes('buy a single visit') ||
-    msg.includes('purchase a pass') ||
-    msg.includes('payment or a session pass') ||
-    msg.includes('no pass')
+    msg.includes('session pass')
   ) {
     return {
       kind: 'payment_required',
-      message:
-        'Use a session pass or pay for this visit below, then tap Confirm Booking again.',
+      message: raw || 'Could not complete payment. Check the message above and try again.',
     };
   }
 

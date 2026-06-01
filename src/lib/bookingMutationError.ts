@@ -3,6 +3,8 @@ export type BookingFailureFlags = {
   requiresLogin?: boolean;
   siteScopeIssue?: boolean;
   noPassOnFile?: boolean;
+  /** No card saved on the Mindbody client profile */
+  noStoredCard?: boolean;
 };
 
 export class BookingMutationError extends Error {

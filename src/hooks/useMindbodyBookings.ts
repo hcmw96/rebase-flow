@@ -18,6 +18,7 @@ async function parseFunctionError(response: Response, fallback: string): Promise
       requiresLogin: Boolean(body?.requiresLogin) || response.status === 401,
       siteScopeIssue: Boolean(body?.siteScopeIssue),
       noPassOnFile: Boolean(body?.noPassOnFile),
+      noStoredCard: Boolean(body?.noStoredCard),
     });
   } catch (e) {
     if (e instanceof BookingMutationError) throw e;

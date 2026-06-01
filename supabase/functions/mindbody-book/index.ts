@@ -364,7 +364,7 @@ async function mindbodyPostWithRetry(
         "Mindbody could not complete this booking from the app. Sign out, then sign in again from rebaserecovery.com. If you already have a pass, make sure Rebase is linked under Mindbody Places You Go.";
     } else if (paymentIssue || !hasPass) {
       userMessage =
-        "We couldn't apply a session pass or charge your card on file for this visit. Buy a single visit or pass below, then tap Confirm Booking again.";
+        "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.";
     }
 
     return {
@@ -392,7 +392,10 @@ async function bookClassWithPayment(
   siteId: string,
   classId: string,
   locationId: number | undefined,
-): Promise<{ ok: true; data: unknown; clientId: string } | { ok: false; response: Response }> {
+): Promise<
+  | { ok: true; data: unknown; clientId: string; payment?: { method: "pass" | "stored_card"; amountGbp?: number } }
+  | { ok: false; response: Response }
+> {
   const classBody = {
     ClassId: parseInt(classId, 10),
     RequirePayment: true,
@@ -456,7 +459,7 @@ async function bookClassWithPayment(
     );
 
   if (passOnFile) {
-    return mindbodyPostWithRetry(
+    const booked = await mindbodyPostWithRetry(
       supabaseAdmin,
       activeSession,
       apiKey,
@@ -464,10 +467,15 @@ async function bookClassWithPayment(
       "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
       classBody,
     );
+    if (booked.ok) {
+      return { ...booked, payment: { method: "pass" as const } };
+    }
+    return booked;
   }
 
   const classIdNum = parseInt(classId, 10);
   const locId = locationId && locationId > 0 ? locationId : 1;
+  let sawNoStoredCard = false;
 
   for (const [token, label] of [
     [activeSession.access_token, "consumer"] as const,
@@ -491,12 +499,18 @@ async function bookClassWithPayment(
     });
     if (checkout.ok) {
       console.log(`Class ${classId} booked via checkout (${label})`);
-      return { ok: true, data: checkout.data, clientId };
+      return {
+        ok: true,
+        data: checkout.data,
+        clientId,
+        payment: { method: "stored_card", amountGbp: amount },
+      };
     }
+    if (checkout.noStoredCard) sawNoStoredCard = true;
     console.warn(`Checkout (${label}) failed:`, checkout.message);
   }
 
-  return mindbodyPostWithRetry(
+  const fallback = await mindbodyPostWithRetry(
     supabaseAdmin,
     activeSession,
     apiKey,
@@ -504,6 +518,24 @@ async function bookClassWithPayment(
     "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
     classBody,
   );
+
+  if (!fallback.ok && sawNoStoredCard) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "No payment card is saved on your Mindbody account. Add a card using the link on this page, then confirm again.",
+          paymentRequired: true,
+          noStoredCard: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  return fallback;
 }
 
 serve(async (req) => {
@@ -575,6 +607,7 @@ serve(async (req) => {
     let bookingResult: Record<string, unknown>;
     let mindbodyId: string | undefined;
     let bookedClientId: string | undefined;
+    let paymentMeta: { method: "pass" | "stored_card"; amountGbp?: number } | undefined;
 
     if (bookingType === "class") {
       if (!classId) {
@@ -593,6 +626,7 @@ serve(async (req) => {
       bookingResult = result.data as Record<string, unknown>;
       mindbodyId = classId;
       bookedClientId = result.clientId;
+      paymentMeta = result.payment;
     } else {
       if (!sessionTypeId || !staffId || !startDateTime) {
         throw new Error("sessionTypeId, staffId, and startDateTime are required");
@@ -688,6 +722,7 @@ serve(async (req) => {
           startTime: startDateTime,
           status: "confirmed",
         },
+        payment: paymentMeta,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
