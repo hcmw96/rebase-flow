@@ -13,7 +13,7 @@ export function mindbodySignInUrl(siteId: string): string {
 /** Client account area (add card, profile) — not the public pricing catalog. */
 export function mindbodyClientAccountUrl(siteId?: string): string {
   const id = siteId?.trim() || import.meta.env.VITE_MINDBODY_SITE_ID?.trim() || REBASE_MINDBODY_SITE_ID;
-  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(id)}&stype=45`;
+  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(id)}&stype=-2&subTab=account`;
 }
 
 /**
