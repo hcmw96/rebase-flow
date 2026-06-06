@@ -1,12 +1,18 @@
 import { CreditCard, Ticket } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { CONTRAST_PASS_OFFER, isContrastPassSaleActive } from '@/config/contrastPassOffer';
+import { formatJunePassTermsReminder, type JunePassUsageSummary } from '@/lib/contrastPassUsage';
 import { cn } from '@/lib/utils';
 
 export type BookingCheckoutSummary = {
   priceGbp: number;
   /** Active pass/credit on the Mindbody account */
-  pass?: { name: string; remaining: number | null };
+  pass?: {
+    name: string;
+    remaining: number | null;
+    usage?: JunePassUsageSummary;
+    termsReminder?: boolean;
+  };
   /** Card on file could not be charged — rare fallback only */
   needsCardOnFile?: boolean;
   accountUrl?: string;
@@ -24,10 +30,15 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
   const { priceGbp, pass, needsCardOnFile, accountUrl } = summary;
 
   if (pass) {
+    const usageLine =
+      pass.usage && pass.termsReminder
+        ? formatJunePassTermsReminder(pass.usage)
+        : null;
+
     return (
       <div
         className={cn(
-          'rounded-lg border border-primary/25 bg-primary/5 px-4 py-3.5 space-y-1',
+          'rounded-lg border border-primary/25 bg-primary/5 px-4 py-3.5 space-y-2',
           className,
         )}
       >
@@ -45,6 +56,11 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
               )}
               . Tap confirm to book this slot on Rebase.
             </p>
+            {usageLine && (
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Offer terms: {usageLine}. Mindbody enforces expiry and one session per day.
+              </p>
+            )}
           </div>
         </div>
       </div>

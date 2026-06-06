@@ -21,6 +21,9 @@ verify_jwt = false
 [functions.mindbody-book]
 verify_jwt = false
 
+[functions.mindbody-purchase-pass]
+verify_jwt = false
+
 [functions.mindbody-cancel]
 verify_jwt = false
 

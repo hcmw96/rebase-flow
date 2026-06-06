@@ -2,12 +2,19 @@ import { priceOverrides } from '@/config/serviceConfig';
 import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import type { ClientService } from '@/hooks/useMindbodyMembership';
-import { hasCommunalContrastCredit, isCommunalContrastService } from '@/lib/bookingPaymentOptions';
+import { isCommunalContrastService } from '@/lib/bookingPaymentOptions';
+import {
+  findJuneContrastPass,
+  getJunePassUsageSummary,
+  isJuneContrastPassName,
+} from '@/lib/contrastPassUsage';
 
 export function findCommunalContrastPass(
   clientServices: ClientService[] | undefined,
 ): ClientService | null {
   if (!clientServices?.length) return null;
+  const june = findJuneContrastPass(clientServices);
+  if (june) return june;
   return (
     clientServices.find((s) => {
       if (!/contrast|communal|members?\s*suite|off\s*peak|pass|unlimited|visit/i.test(s.name)) {
@@ -27,11 +34,15 @@ export function buildCommunalContrastCheckoutSummary(
 
   const pass = findCommunalContrastPass(clientServices);
   if (pass) {
+    const junePass = isJuneContrastPassName(pass.name);
     return {
       priceGbp: priceOverrides['Communal Contrast'] ?? 65,
       pass: {
         name: pass.name,
         remaining: pass.remaining ?? null,
+        ...(junePass
+          ? { usage: getJunePassUsageSummary(pass), termsReminder: true as const }
+          : {}),
       },
     };
   }

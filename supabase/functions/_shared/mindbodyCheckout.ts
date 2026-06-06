@@ -53,42 +53,60 @@ export function pickSaleServiceForClass(services: SaleServiceRow[]): SaleService
   return prefer ?? pool[0] ?? null;
 }
 
-export type CheckoutClassResult =
+export type CheckoutResult =
   | { ok: true; data: Record<string, unknown> }
   | { ok: false; message: string; noStoredCard?: boolean };
 
+function parseCheckoutFailure(
+  res: Response,
+  raw: string,
+  data: Record<string, unknown>,
+): { message: string; noStoredCard: boolean } {
+  const message =
+    (data as { Error?: { Message?: string } }).Error?.Message ||
+    (data as { Message?: string }).Message ||
+    raw.slice(0, 400) ||
+    `Checkout failed (${res.status})`;
+  const lower = message.toLowerCase();
+  const noStoredCard =
+    /stored card|no card|card on file|payment method|credit card|billing/i.test(lower);
+  return { message, noStoredCard };
+}
+
 /**
- * Charge the client's stored Mindbody card and book the class in one checkout.
+ * Charge stored card via Mindbody checkout (pricing option / pass purchase or class + payment).
  * @see https://api.mindbodyonline.com/public/v6/sale/checkoutshoppingcart
  */
-export async function checkoutClassWithStoredCard(
+export async function checkoutWithStoredCard(
   apiKey: string,
   siteId: string,
   bearerToken: string,
   opts: {
     clientId: string;
-    classId: number;
     locationId: number;
     serviceId: number;
     amount: number;
+    classIds?: number[];
   },
-): Promise<CheckoutClassResult> {
+): Promise<CheckoutResult> {
+  const item: Record<string, unknown> = {
+    Item: {
+      Type: "Service",
+      Metadata: { Id: String(opts.serviceId) },
+    },
+    Quantity: 1,
+  };
+  if (opts.classIds?.length) {
+    item.ClassIds = opts.classIds;
+  }
+
   const body = {
     ClientId: opts.clientId,
     LocationId: opts.locationId,
     InStore: false,
     SendEmail: true,
     Test: false,
-    Items: [
-      {
-        Item: {
-          Type: "Service",
-          Metadata: { Id: String(opts.serviceId) },
-        },
-        Quantity: 1,
-        ClassIds: [opts.classId],
-      },
-    ],
+    Items: [item],
     Payments: [
       {
         Type: "StoredCard",
@@ -112,20 +130,55 @@ export async function checkoutClassWithStoredCard(
   }
 
   if (res.ok) {
-    console.log("checkoutshoppingcart ok for class", opts.classId);
     return { ok: true, data };
   }
 
-  const message =
-    (data as { Error?: { Message?: string } }).Error?.Message ||
-    (data as { Message?: string }).Message ||
-    raw.slice(0, 400) ||
-    `Checkout failed (${res.status})`;
-
-  const lower = message.toLowerCase();
-  const noStoredCard =
-    /stored card|no card|card on file|payment method|credit card|billing/i.test(lower);
-
+  const { message, noStoredCard } = parseCheckoutFailure(res, raw, data);
   console.warn("checkoutshoppingcart failed:", res.status, message.slice(0, 300));
   return { ok: false, message, noStoredCard };
+}
+
+/** Charge stored card and book the class in one checkout. */
+export async function checkoutClassWithStoredCard(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  opts: {
+    clientId: string;
+    classId: number;
+    locationId: number;
+    serviceId: number;
+    amount: number;
+  },
+): Promise<CheckoutResult> {
+  const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
+    clientId: opts.clientId,
+    locationId: opts.locationId,
+    serviceId: opts.serviceId,
+    amount: opts.amount,
+    classIds: [opts.classId],
+  });
+  if (result.ok) {
+    console.log("checkoutshoppingcart ok for class", opts.classId);
+  }
+  return result;
+}
+
+/** Purchase a pricing option (e.g. 2-week pass) — no class booking in this cart. */
+export async function checkoutServiceWithStoredCard(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  opts: {
+    clientId: string;
+    locationId: number;
+    serviceId: number;
+    amount: number;
+  },
+): Promise<CheckoutResult> {
+  const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, opts);
+  if (result.ok) {
+    console.log("checkoutshoppingcart ok for service", opts.serviceId);
+  }
+  return result;
 }

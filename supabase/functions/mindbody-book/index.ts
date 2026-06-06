@@ -13,8 +13,11 @@ import {
 } from "../_shared/bookingConfirmationEmail.ts";
 import {
   fetchActiveClientServices,
+  findJuneContrastPassRow,
   pickBookableClientServiceId,
 } from "../_shared/mindbodyClientServices.ts";
+import { isJuneContrastPassName } from "../_shared/contrastPass.ts";
+import { logJunePassClassBooking } from "../_shared/contrastPassUsageLog.ts";
 import {
   checkoutClassWithStoredCard,
   fetchSaleServicesForClass,
@@ -393,7 +396,13 @@ async function bookClassWithPayment(
   classId: string,
   locationId: number | undefined,
 ): Promise<
-  | { ok: true; data: unknown; clientId: string; payment?: { method: "pass" | "stored_card"; amountGbp?: number } }
+  | {
+    ok: true;
+    data: unknown;
+    clientId: string;
+    payment?: { method: "pass" | "stored_card"; amountGbp?: number };
+    clientServiceId?: number;
+  }
   | { ok: false; response: Response }
 > {
   const classBody = {
@@ -465,10 +474,14 @@ async function bookClassWithPayment(
       apiKey,
       siteId,
       "https://api.mindbodyonline.com/public/v6/class/addclienttoclass",
-      classBody,
+      { ...classBody, ClientServiceId: passOnFile },
     );
     if (booked.ok) {
-      return { ...booked, payment: { method: "pass" as const } };
+      return {
+        ...booked,
+        payment: { method: "pass" as const },
+        clientServiceId: passOnFile,
+      };
     }
     return booked;
   }
@@ -608,6 +621,7 @@ serve(async (req) => {
     let mindbodyId: string | undefined;
     let bookedClientId: string | undefined;
     let paymentMeta: { method: "pass" | "stored_card"; amountGbp?: number } | undefined;
+    let bookedClientServiceId: number | undefined;
 
     if (bookingType === "class") {
       if (!classId) {
@@ -627,6 +641,7 @@ serve(async (req) => {
       mindbodyId = classId;
       bookedClientId = result.clientId;
       paymentMeta = result.payment;
+      bookedClientServiceId = result.clientServiceId;
     } else {
       if (!sessionTypeId || !staffId || !startDateTime) {
         throw new Error("sessionTypeId, staffId, and startDateTime are required");
@@ -680,6 +695,10 @@ serve(async (req) => {
         status: "confirmed",
         booking_type: bookingType,
         idempotency_key: idempotencyKey || null,
+        payment_method: paymentMeta?.method ?? null,
+        mindbody_client_service_id: bookedClientServiceId != null
+          ? String(bookedClientServiceId)
+          : null,
       })
       .select()
       .single();
@@ -687,6 +706,43 @@ serve(async (req) => {
     if (bookingError) {
       console.error("Local booking save error:", bookingError);
       // Don't throw - the Mindbody booking succeeded
+    }
+
+    const communalContrast =
+      /communal\s*contrast/i.test(serviceName || "") || bookingType === "class";
+    if (
+      bookingType === "class" &&
+      paymentMeta?.method === "pass" &&
+      communalContrast &&
+      bookedClientId
+    ) {
+      try {
+        const staffToken = await getStaffToken();
+        const services = await fetchActiveClientServices(
+          apiKey,
+          siteId,
+          staffToken,
+          bookedClientId,
+        );
+        const junePass =
+          (bookedClientServiceId != null &&
+            services.find((s) => s.Id === bookedClientServiceId && isJuneContrastPassName(s.Name))) ||
+          findJuneContrastPassRow(services);
+        if (junePass?.Id != null) {
+          await logJunePassClassBooking(supabaseAdmin, {
+            sessionId,
+            mindbodyClientId: session.mindbody_client_id,
+            mindbodySiteClientId: bookedClientId,
+            mindbodyClientServiceId: junePass.Id,
+            mindbodyClassId: classId,
+            bookingId: booking?.id ?? null,
+            serviceName: serviceName || null,
+            classStartTime: startDateTime || classInfo?.StartDateTime || null,
+          });
+        }
+      } catch (logErr) {
+        console.warn("June pass booking audit:", logErr);
+      }
     }
 
     try {

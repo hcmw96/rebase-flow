@@ -23,7 +23,8 @@ export const CONTRAST_PASS_OFFER = {
     'Sessions are limited to one per day, are non-transferable, non-refundable, and cannot be extended beyond the validity period.',
     'Subject to availability; drop-in rules for communal contrast still apply (one session per person per day at the studio).',
     'Available to purchase online throughout June 2026 only, while stocks last.',
-    'Pass must be purchased via Mindbody; sign in or create an account at checkout.',
+    'Sign in with your Mindbody account to purchase on rebaserecovery.com; booking sessions also stays on our website.',
+    'Usage is tracked on your Mindbody account: 14-day validity from purchase, one communal contrast session per day, non-transferable.',
   ],
 } as const;
 

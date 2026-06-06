@@ -1,3 +1,5 @@
+import { isJuneContrastPassName, pickJuneContrastPassServiceId } from "./contrastPass.ts";
+
 /** Active Mindbody client service (session pack / pass credit). */
 export type MindbodyClientServiceRow = {
   Id?: number;
@@ -41,14 +43,22 @@ export async function fetchActiveClientServices(
   });
 }
 
-/** Pick a pass/credit to pay for a class booking (prefers contrast-related names). */
+/** Pick a pass/credit to pay for a class booking (prefers June 2-week pass, then contrast-related). */
 export function pickBookableClientServiceId(
   services: MindbodyClientServiceRow[],
 ): number | null {
   if (!services.length) return null;
+  const juneId = pickJuneContrastPassServiceId(services);
+  if (juneId != null) return juneId;
   const prefer = services.find((s) =>
     /contrast|communal|class|visit|session|pass|unlimited|drop/i.test(s.Name || "")
   );
   const pick = prefer ?? services[0];
   return pick.Id != null ? Number(pick.Id) : null;
+}
+
+export function findJuneContrastPassRow(
+  services: MindbodyClientServiceRow[],
+): MindbodyClientServiceRow | null {
+  return services.find((s) => isJuneContrastPassName(s.Name)) ?? null;
 }
