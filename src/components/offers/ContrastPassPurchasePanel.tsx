@@ -1,6 +1,7 @@
 import { CreditCard, Loader2, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import PaymentCardSetupStep from '@/components/payment/PaymentCardSetupStep';
 import { useAuth } from '@/contexts/AuthContext';
 import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import { cn } from '@/lib/utils';
@@ -13,9 +14,11 @@ type ContrastPassPurchasePanelProps = {
   purchaseComplete: boolean;
   error: string | null;
   needsCardOnFile: boolean;
+  cardSetupRetryHint?: string | null;
   onSignIn: () => void;
   onCreateAccount: () => void;
   onPurchase: () => void;
+  onContinueAfterCard: () => void;
 };
 
 const ContrastPassPurchasePanel = ({
@@ -26,9 +29,11 @@ const ContrastPassPurchasePanel = ({
   purchaseComplete,
   error,
   needsCardOnFile,
+  cardSetupRetryHint = null,
   onSignIn,
   onCreateAccount,
   onPurchase,
+  onContinueAfterCard,
 }: ContrastPassPurchasePanelProps) => {
   const { isAuthenticated, isRedirecting } = useAuth();
   const accountUrl = mindbodyClientAccountUrl();
@@ -94,6 +99,32 @@ const ContrastPassPurchasePanel = ({
     );
   }
 
+  if (needsCardOnFile) {
+    return (
+      <div className="space-y-4">
+        <h2 className="font-serif text-xl text-[#F9ECD9]">Almost there</h2>
+        <PaymentCardSetupStep
+          variant="offer"
+          accountUrl={accountUrl}
+          onContinue={onContinueAfterCard}
+          isRetrying={isPurchasing}
+          continueLabel="I've added my card — continue"
+          description="Add a payment card to your Mindbody account to complete your purchase."
+          retryingLabel="Processing your purchase…"
+          footerNote="Mindbody opens in a new tab. Return here when you're done — we'll finish your purchase on Rebase."
+          retryHint={cardSetupRetryHint}
+        />
+        <Button
+          asChild
+          variant="outline"
+          className="h-12 w-full rounded-none border-[#F9ECD9]/30 bg-transparent text-[#F9ECD9] hover:bg-[#F9ECD9]/10"
+        >
+          <Link to="/experiences#communal-contrast">How to book sessions</Link>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4">
       <h2 className="font-serif text-xl text-[#F9ECD9]">Get your pass</h2>
@@ -129,20 +160,6 @@ const ContrastPassPurchasePanel = ({
           )}
         >
           {error}
-        </p>
-      )}
-
-      {needsCardOnFile && (
-        <p className="text-xs text-[#F9ECD9]/60">
-          <a
-            href={accountUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="underline underline-offset-2 text-[#F9ECD9]/90"
-          >
-            Add a payment method in Mindbody
-          </a>{' '}
-          (new tab), then return and tap pay again.
         </p>
       )}
 

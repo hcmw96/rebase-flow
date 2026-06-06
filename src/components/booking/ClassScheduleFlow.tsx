@@ -26,6 +26,12 @@ import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from 
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
 import { BookingMutationError } from '@/lib/bookingMutationError';
+import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
+import {
+  clearSessionNeedsPaymentCard,
+  markSessionNeedsPaymentCard,
+  sessionNeedsPaymentCard,
+} from '@/lib/paymentCardSetupStorage';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -128,7 +134,7 @@ const ClassScheduleFlow = ({
   resumeClassId,
   bookingService,
 }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout, refreshMbSession } = useAuth();
+  const { isAuthenticated, login, logout, refreshMbSession, mbSession } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -139,9 +145,11 @@ const ClassScheduleFlow = ({
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
+  const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
 
   const serviceLabel = resolveDisplayName(bookingService?.title ?? clsName);
-  const { data: membershipData } = useClientMembership();
+  const { data: membershipData, refetch: refetchMembership } = useClientMembership();
+  const accountUrl = mindbodyClientAccountUrl();
 
   const checkoutSummary =
     isAuthenticated && currentStep === 2
@@ -149,6 +157,18 @@ const ClassScheduleFlow = ({
           needsCardOnFile,
         })
       : null;
+
+  useEffect(() => {
+    if (
+      isAuthenticated &&
+      currentStep === 2 &&
+      checkoutSummary &&
+      !checkoutSummary.pass &&
+      sessionNeedsPaymentCard(mbSession?.sessionId)
+    ) {
+      setNeedsCardOnFile(true);
+    }
+  }, [isAuthenticated, currentStep, checkoutSummary, mbSession?.sessionId]);
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
   const endDate = format(addDays(new Date(), SCHEDULE_WEEKS_AHEAD), 'yyyy-MM-dd');
@@ -293,9 +313,13 @@ const ClassScheduleFlow = ({
 
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
-    setNeedsCardOnFile(false);
+    setCardSetupRetryHint(null);
+    if (!needsCardOnFile) {
+      setNeedsCardOnFile(false);
+    }
 
     try {
+      await refetchMembership();
       const result = await bookMutation.mutateAsync({
         bookingType: 'class',
         classId: selectedClass.id,
@@ -307,13 +331,31 @@ const ClassScheduleFlow = ({
         staffName: selectedClass.staffName,
       });
       setBookingComplete(true);
+      setNeedsCardOnFile(false);
+      clearSessionNeedsPaymentCard();
       const paid = result?.payment?.amountGbp;
       toast.success(
         paid != null ? `Booked — £${paid} paid` : 'Your session is booked',
       );
     } catch (error: unknown) {
       if (error instanceof BookingMutationError) {
-        setNeedsCardOnFile(Boolean(error.flags.noStoredCard));
+        if (error.flags.noStoredCard) {
+          if (mbSession?.sessionId) {
+            markSessionNeedsPaymentCard(mbSession.sessionId);
+          }
+          setNeedsCardOnFile(true);
+          setBookingError(null);
+          setBookingErrorRequiresSignIn(false);
+          if (needsCardOnFile) {
+            setCardSetupRetryHint(
+              "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
+            );
+          }
+          return;
+        }
+        setNeedsCardOnFile(false);
+        setCardSetupRetryHint(null);
+        clearSessionNeedsPaymentCard();
         setBookingError(error.message);
         setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
         return;
@@ -549,6 +591,7 @@ const ClassScheduleFlow = ({
                 setBookingError(null);
                 setBookingErrorRequiresSignIn(false);
                 setNeedsCardOnFile(false);
+                setCardSetupRetryHint(null);
                 setSelectedClass(null);
                 setCurrentStep(1);
               }}
@@ -564,6 +607,10 @@ const ClassScheduleFlow = ({
               bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
               checkoutSummary={checkoutSummary}
               onCreateAccount={() => startCreateAccount(selectedClass)}
+              needsCardOnFile={needsCardOnFile}
+              accountUrl={accountUrl}
+              onContinueAfterCard={handleBook}
+              cardSetupRetryHint={cardSetupRetryHint}
             />
           </div>
         </div>

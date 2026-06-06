@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import BookingConfirmCheckout from '@/components/booking/BookingConfirmCheckout';
+import PaymentCardSetupStep from '@/components/payment/PaymentCardSetupStep';
 import { cn } from '@/lib/utils';
 
 interface BookingConfirmActionsProps {
@@ -15,6 +16,10 @@ interface BookingConfirmActionsProps {
   bookingErrorRequiresSignIn?: boolean;
   checkoutSummary?: BookingCheckoutSummary | null;
   onCreateAccount?: () => void;
+  needsCardOnFile?: boolean;
+  accountUrl?: string;
+  onContinueAfterCard?: () => void;
+  cardSetupRetryHint?: string | null;
 }
 
 const BookingConfirmActions = ({
@@ -27,6 +32,10 @@ const BookingConfirmActions = ({
   bookingErrorRequiresSignIn = false,
   checkoutSummary = null,
   onCreateAccount,
+  needsCardOnFile = false,
+  accountUrl,
+  onContinueAfterCard,
+  cardSetupRetryHint = null,
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
 
@@ -39,6 +48,8 @@ const BookingConfirmActions = ({
   };
 
   const showGuestActions = !isAuthenticated;
+  const showCardSetup =
+    isAuthenticated && needsCardOnFile && Boolean(accountUrl) && Boolean(onContinueAfterCard);
   const confirmLabel =
     checkoutSummary && !checkoutSummary.pass
       ? `Confirm & pay £${checkoutSummary.priceGbp}`
@@ -46,11 +57,20 @@ const BookingConfirmActions = ({
 
   return (
     <div className="space-y-3">
-      {isAuthenticated && checkoutSummary && !bookingErrorRequiresSignIn && (
+      {isAuthenticated && checkoutSummary && !bookingErrorRequiresSignIn && !showCardSetup && (
         <BookingConfirmCheckout summary={checkoutSummary} />
       )}
 
-      {bookingError && (
+      {showCardSetup && accountUrl && onContinueAfterCard && (
+        <PaymentCardSetupStep
+          accountUrl={accountUrl}
+          onContinue={onContinueAfterCard}
+          isRetrying={isPending}
+          retryHint={cardSetupRetryHint}
+        />
+      )}
+
+      {bookingError && !showCardSetup && (
         <p
           className={cn(
             'text-sm rounded-lg px-3 py-2.5 leading-relaxed',
@@ -77,7 +97,7 @@ const BookingConfirmActions = ({
         </div>
       )}
 
-      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && (
+      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !showCardSetup && (
         <p className="text-sm text-muted-foreground">
           Tap <span className="font-medium text-foreground">{confirmLabel}</span> to try again, or email{' '}
           <a
@@ -99,18 +119,20 @@ const BookingConfirmActions = ({
         >
           {changeTimeLabel}
         </Button>
-        <Button onClick={onConfirm} disabled={isPending} className="w-full sm:flex-1 min-h-11">
-          {isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-              Booking...
-            </>
-          ) : isAuthenticated ? (
-            confirmLabel
-          ) : (
-            'Sign in to book'
-          )}
-        </Button>
+        {!showCardSetup && (
+          <Button onClick={onConfirm} disabled={isPending} className="w-full sm:flex-1 min-h-11">
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Booking...
+              </>
+            ) : isAuthenticated ? (
+              confirmLabel
+            ) : (
+              'Sign in to book'
+            )}
+          </Button>
+        )}
       </div>
 
       {showGuestActions && (

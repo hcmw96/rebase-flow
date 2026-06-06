@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import SeoHead from '@/components/seo/SeoHead';
@@ -8,6 +8,11 @@ import { useContrastPassOffer } from '@/hooks/useContrastPassOffer';
 import { usePurchaseContrastPass } from '@/hooks/usePurchaseContrastPass';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingMutationError } from '@/lib/bookingMutationError';
+import {
+  clearSessionNeedsPaymentCard,
+  markSessionNeedsPaymentCard,
+  sessionNeedsPaymentCard,
+} from '@/lib/paymentCardSetupStorage';
 import { breadcrumbSchema, seoTitle, truncateDescription } from '@/lib/seo';
 import { Check } from 'lucide-react';
 import { toast } from 'sonner';
@@ -17,12 +22,19 @@ const PAGE_DESCRIPTION =
 
 const ContrastPassOfferPage = () => {
   const { saleActive, displayPrice, isLoading, product } = useContrastPassOffer();
-  const { login, openMindbodySignUp, isAuthenticated } = useAuth();
+  const { login, openMindbodySignUp, isAuthenticated, mbSession } = useAuth();
   const purchaseMutation = usePurchaseContrastPass();
 
   const [purchaseComplete, setPurchaseComplete] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
+  const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (isAuthenticated && sessionNeedsPaymentCard(mbSession?.sessionId)) {
+      setNeedsCardOnFile(true);
+    }
+  }, [isAuthenticated, mbSession?.sessionId]);
 
   const handlePurchase = async () => {
     if (!product?.id) {
@@ -31,16 +43,39 @@ const ContrastPassOfferPage = () => {
     }
 
     setPurchaseError(null);
-    setNeedsCardOnFile(false);
+    setCardSetupRetryHint(null);
+    if (!needsCardOnFile) {
+      setNeedsCardOnFile(false);
+    }
 
     try {
       const result = await purchaseMutation.mutateAsync(product.id);
       setPurchaseComplete(true);
+      setNeedsCardOnFile(false);
+      clearSessionNeedsPaymentCard();
       toast.success(`Pass purchased — £${result.amountGbp}`);
     } catch (error: unknown) {
       if (error instanceof BookingMutationError) {
+        if (error.flags.noStoredCard) {
+          if (mbSession?.sessionId) {
+            markSessionNeedsPaymentCard(mbSession.sessionId);
+          }
+          setNeedsCardOnFile(true);
+          setPurchaseError(null);
+          if (needsCardOnFile) {
+            setCardSetupRetryHint(
+              "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
+            );
+          }
+          if (error.flags.requiresLogin) {
+            login();
+          }
+          return;
+        }
+        setNeedsCardOnFile(false);
+        setCardSetupRetryHint(null);
+        clearSessionNeedsPaymentCard();
         setPurchaseError(error.message);
-        setNeedsCardOnFile(Boolean(error.flags.noStoredCard));
         if (error.flags.requiresLogin) {
           login();
         }
@@ -118,9 +153,11 @@ const ContrastPassOfferPage = () => {
                   purchaseComplete={purchaseComplete}
                   error={purchaseError}
                   needsCardOnFile={needsCardOnFile}
+                  cardSetupRetryHint={cardSetupRetryHint}
                   onSignIn={() => login()}
                   onCreateAccount={openMindbodySignUp}
                   onPurchase={handlePurchase}
+                  onContinueAfterCard={handlePurchase}
                 />
               ) : (
                 <>

@@ -8,6 +8,7 @@ import {
 } from '@/lib/oauthReturn';
 import { APP_HOME, WEBSITE_HOME } from '@/lib/routes';
 import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
+import { clearSessionNeedsPaymentCard } from '@/lib/paymentCardSetupStorage';
 import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
 export type { MindbodySession };
@@ -354,6 +355,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const logout = useCallback(() => {
     localStorage.removeItem(MB_STORAGE_KEY);
+    clearSessionNeedsPaymentCard();
     setMbSession(null);
   }, []);
 

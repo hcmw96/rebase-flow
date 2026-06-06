@@ -27,7 +27,7 @@ interface BookingConfirmCheckoutProps {
  * Explains how payment works on the Rebase confirm step (no redirect to Mindbody pricing).
  */
 const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutProps) => {
-  const { priceGbp, pass, needsCardOnFile, accountUrl } = summary;
+  const { priceGbp, pass } = summary;
 
   if (pass) {
     const usageLine =
@@ -80,20 +80,6 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
           </p>
         </div>
       </div>
-      {needsCardOnFile && accountUrl && (
-        <p className="text-xs text-muted-foreground pl-6">
-          No card on file?{' '}
-          <a
-            href={accountUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-foreground underline underline-offset-2"
-          >
-            Add a payment method in Mindbody
-          </a>{' '}
-          (opens in a new tab), then return here and confirm.
-        </p>
-      )}
       {isContrastPassSaleActive() && (
         <p className="text-xs text-muted-foreground pl-6 border-t border-border/60 pt-2">
           Visiting often?{' '}
