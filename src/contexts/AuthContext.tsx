@@ -8,6 +8,8 @@ import {
 } from '@/lib/oauthReturn';
 import { APP_HOME, WEBSITE_HOME } from '@/lib/routes';
 import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
+import { markOAuthUsedPopup } from '@/lib/bookingResume';
+import { shouldUseOAuthPopup } from '@/lib/mobileBrowser';
 import { clearSessionNeedsPaymentCard } from '@/lib/paymentCardSetupStorage';
 import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
@@ -321,13 +323,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Failed to get login URL');
       }
 
-      if (!isNative) {
+      if (shouldUseOAuthPopup()) {
         const popup = window.open(
           data.authUrl,
           'rebase-mindbody-oauth',
           'popup=yes,width=480,height=720,noopener,noreferrer',
         );
         if (popup) {
+          markOAuthUsedPopup();
           const poll = window.setInterval(() => {
             if (popup.closed) {
               window.clearInterval(poll);

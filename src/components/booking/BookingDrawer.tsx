@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import { format, addDays, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
@@ -24,7 +24,9 @@ import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
-import { stashPendingBooking } from '@/lib/bookingResume';
+import { stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
+import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
+import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
 import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 
 export interface BookingServiceData {
@@ -43,6 +45,7 @@ interface BookingDrawerProps {
   service: BookingServiceData | null;
   onSwitchService?: (serviceName: string) => void;
   resumeClassId?: string;
+  resumeAppointment?: PendingAppointmentState;
 }
 
 const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
@@ -72,8 +75,15 @@ const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
   </motion.div>
 );
 
-const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId }: BookingDrawerProps) => {
-  const { isAuthenticated, login, logout, refreshMbSession } = useAuth();
+const BookingDrawer = ({
+  open,
+  onClose,
+  service,
+  onSwitchService,
+  resumeClassId,
+  resumeAppointment,
+}: BookingDrawerProps) => {
+  const { isAuthenticated, login, logout, refreshMbSession, mindbodySignUpUrl } = useAuth();
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
   const bookServiceMutation = useBookService();
@@ -85,6 +95,7 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+  const restoredAppointmentRef = useRef<string | null>(null);
 
   // Reset state when drawer opens with new service
   const handleOpenChange = (isOpen: boolean) => {
@@ -99,23 +110,9 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
         setIdempotencyKey(null);
         setBookingError(null);
         setBookingErrorRequiresSignIn(false);
+        restoredAppointmentRef.current = null;
       }, 300);
     }
-  };
-
-  const startSignInForBooking = () => {
-    if (service) stashPendingBooking(service);
-    setBookingError(null);
-    setBookingErrorRequiresSignIn(false);
-    logout();
-    login({ clearSession: true });
-  };
-
-  const startCreateAccountForBooking = () => {
-    if (service) stashPendingBooking(service);
-    setBookingError(null);
-    setBookingErrorRequiresSignIn(false);
-    openMindbodySignUp();
   };
 
   // Check if this is a class booking
@@ -134,6 +131,65 @@ const BookingDrawer = ({ open, onClose, service, onSwitchService, resumeClassId 
     if (service?.variants?.length === 1) return service.variants[0];
     return null;
   }, [selectedVariant, service]);
+
+  const buildPendingAppointment = useCallback((): PendingAppointmentState | undefined => {
+    if (isClassBooking || !service) return undefined;
+    return {
+      currentStep,
+      selectedVariantId: activeVariant?.id,
+      selectedDate: selectedDate ? format(selectedDate, 'yyyy-MM-dd') : undefined,
+      selectedSlot: selectedSlot ?? undefined,
+    };
+  }, [isClassBooking, service, currentStep, activeVariant?.id, selectedDate, selectedSlot]);
+
+  const stashBookingProgress = useCallback(() => {
+    if (!service) return;
+    if (isClassBooking) {
+      stashPendingBooking(service);
+      return;
+    }
+    stashPendingBooking(service, { appointment: buildPendingAppointment() });
+  }, [service, isClassBooking, buildPendingAppointment]);
+
+  useEffect(() => {
+    if (!open || !resumeAppointment || isClassBooking || !service) return;
+    const key = JSON.stringify(resumeAppointment);
+    if (restoredAppointmentRef.current === key) return;
+    restoredAppointmentRef.current = key;
+
+    if (resumeAppointment.selectedVariantId && service.variants?.length) {
+      const variant = service.variants.find((v) => v.id === resumeAppointment.selectedVariantId);
+      if (variant) setSelectedVariant(variant);
+    }
+    if (resumeAppointment.selectedDate) {
+      const [y, m, d] = resumeAppointment.selectedDate.split('-').map(Number);
+      if (Number.isFinite(y) && Number.isFinite(m) && Number.isFinite(d)) {
+        setSelectedDate(new Date(y, m - 1, d));
+      }
+    }
+    if (resumeAppointment.selectedSlot) {
+      setSelectedSlot(resumeAppointment.selectedSlot);
+    }
+    setCurrentStep(resumeAppointment.currentStep);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
+  }, [open, resumeAppointment, isClassBooking, service]);
+
+  const startSignInForBooking = () => {
+    stashBookingProgress();
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
+    logout();
+    login({ clearSession: true });
+  };
+
+  const startCreateAccountForBooking = () => {
+    stashBookingProgress();
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
+    const url = mindbodySignUpUrl || resolveMindbodySignUpUrl();
+    openMindbodyExternalUrl(url);
+  };
 
   // Check if the selected variant is contact-only
   const isVariantContactOnly = activeVariant?.contactOnly === true;

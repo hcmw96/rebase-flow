@@ -26,7 +26,8 @@ import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from 
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
 import { BookingMutationError } from '@/lib/bookingMutationError';
-import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
+import { mindbodyClientAccountUrl, resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
+import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
 import {
   clearSessionNeedsPaymentCard,
   markSessionNeedsPaymentCard,
@@ -134,7 +135,7 @@ const ClassScheduleFlow = ({
   resumeClassId,
   bookingService,
 }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout, refreshMbSession, mbSession } = useAuth();
+  const { isAuthenticated, login, logout, refreshMbSession, mbSession, mindbodySignUpUrl } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
 
@@ -298,7 +299,8 @@ const ClassScheduleFlow = ({
     }
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
-    openMindbodySignUp();
+    const url = mindbodySignUpUrl || resolveMindbodySignUpUrl();
+    openMindbodyExternalUrl(url);
   };
 
   const handleBook = async () => {

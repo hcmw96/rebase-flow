@@ -6,7 +6,7 @@ const corsHeaders = {
 };
 
 function mindbodySignUpUrl(siteId: string): string {
-  return `https://cart.mindbodyonline.com/sites/${siteId}/client/new`;
+  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(siteId)}&stype=42`;
 }
 
 serve(async (req) => {

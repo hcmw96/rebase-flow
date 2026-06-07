@@ -1,24 +1,50 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
 import {
   clearPendingBooking,
+  consumeOAuthUsedPopup,
   peekPendingBooking,
-  stashPendingBooking,
   type PendingBooking,
 } from '@/lib/bookingResume';
 
+function pendingKey(pending: PendingBooking, targetPath: string): string {
+  return JSON.stringify({
+    path: targetPath,
+    hash: pending.hash,
+    title: pending.service.title,
+    classId: pending.selectedClassId,
+    step: pending.appointment?.currentStep,
+    slot: pending.appointment?.selectedSlot?.startDateTime,
+  });
+}
+
 /**
- * After Mindbody OAuth, reopen the booking drawer the user had in progress.
+ * After Mindbody OAuth / sign-up, reopen the booking drawer in progress.
+ * Mobile: same-tab redirects and bfcache back-navigation (pageshow).
  */
 export function useResumePendingBooking(onResume: (pending: PendingBooking) => void) {
   const { isLoading, isAuthenticated } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
-  const resumedRef = useRef(false);
+  const completedRef = useRef(false);
+  const guestPromptKeyRef = useRef<string | null>(null);
+  const [pageShowTick, setPageShowTick] = useState(0);
 
   useEffect(() => {
-    if (isLoading || resumedRef.current) return;
+    const onPageShow = (event: PageTransitionEvent) => {
+      if (event.persisted) {
+        completedRef.current = false;
+        guestPromptKeyRef.current = null;
+        setPageShowTick((n) => n + 1);
+      }
+    };
+    window.addEventListener('pageshow', onPageShow);
+    return () => window.removeEventListener('pageshow', onPageShow);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading) return;
 
     const pending = peekPendingBooking();
     if (!pending) return;
@@ -33,10 +59,36 @@ export function useResumePendingBooking(onResume: (pending: PendingBooking) => v
       return;
     }
 
-    if (!isAuthenticated) return;
+    const key = pendingKey(pending, targetPath);
+
+    if (!isAuthenticated) {
+      if (guestPromptKeyRef.current !== key) {
+        guestPromptKeyRef.current = key;
+        onResume(pending);
+      }
+      return;
+    }
+
+    if (completedRef.current) return;
+
+    if (consumeOAuthUsedPopup()) {
+      clearPendingBooking();
+      completedRef.current = true;
+      guestPromptKeyRef.current = null;
+      return;
+    }
 
     clearPendingBooking();
-    resumedRef.current = true;
+    completedRef.current = true;
+    guestPromptKeyRef.current = null;
     onResume(pending);
-  }, [isLoading, isAuthenticated, location.pathname, location.hash, navigate, onResume]);
+  }, [
+    isLoading,
+    isAuthenticated,
+    location.pathname,
+    location.hash,
+    navigate,
+    onResume,
+    pageShowTick,
+  ]);
 }

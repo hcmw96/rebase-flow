@@ -1,5 +1,7 @@
 import { useState, useCallback } from "react";
 import { useResumePendingBooking } from "@/hooks/useResumePendingBooking";
+import type { PendingAppointmentState } from "@/lib/bookingResume";
+import { clearPendingBooking } from "@/lib/bookingResume";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
@@ -16,11 +18,13 @@ const Index = () => {
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+  const [resumeAppointment, setResumeAppointment] = useState<PendingAppointmentState | undefined>();
 
   useResumePendingBooking(
     useCallback((pending) => {
       setBookingService(pending.service);
       setResumeClassId(pending.selectedClassId);
+      setResumeAppointment(pending.appointment);
       setDrawerOpen(true);
     }, []),
   );
@@ -33,6 +37,8 @@ const Index = () => {
   const handleCloseDrawer = useCallback(() => {
     setDrawerOpen(false);
     setResumeClassId(undefined);
+    setResumeAppointment(undefined);
+    clearPendingBooking();
   }, []);
 
   return (
@@ -55,6 +61,7 @@ const Index = () => {
         onClose={handleCloseDrawer}
         service={bookingService}
         resumeClassId={resumeClassId}
+        resumeAppointment={resumeAppointment}
         onSwitchService={() => {
           setDrawerOpen(false);
           setTimeout(() => {

@@ -2,8 +2,9 @@
 export const REBASE_MINDBODY_SITE_ID = '5736189';
 
 /** Mindbody branded-web URLs for a studio site (site ID is public in OAuth). */
+/** Branded-web new-client registration (stype 42 = create account). */
 export function mindbodySignUpUrl(siteId: string): string {
-  return `https://cart.mindbodyonline.com/sites/${siteId}/client/new`;
+  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(siteId)}&stype=42`;
 }
 
 export function mindbodySignInUrl(siteId: string): string {

@@ -1,6 +1,7 @@
 import { useMemo, useState, useCallback } from 'react';
 import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
-import type { PendingBooking } from '@/lib/bookingResume';
+import type { PendingBooking, PendingAppointmentState } from '@/lib/bookingResume';
+import { clearPendingBooking } from '@/lib/bookingResume';
 import { ImageCardScrim, ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
@@ -52,10 +53,12 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+  const [resumeAppointment, setResumeAppointment] = useState<PendingAppointmentState | undefined>();
 
   const handleResumeBooking = useCallback((pending: PendingBooking) => {
     setBookingService(pending.service);
     setResumeClassId(pending.selectedClassId);
+    setResumeAppointment(pending.appointment);
     setBookingOpen(true);
   }, []);
 
@@ -325,9 +328,12 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
         onClose={() => {
           setBookingOpen(false);
           setResumeClassId(undefined);
+          setResumeAppointment(undefined);
+          clearPendingBooking();
         }}
         service={bookingService}
         resumeClassId={resumeClassId}
+        resumeAppointment={resumeAppointment}
       />
     </>
   );
