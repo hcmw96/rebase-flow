@@ -1,5 +1,6 @@
 import { CreditCard, ExternalLink, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { openMindbodyClientAccount } from '@/lib/mindbodyAuth';
 import { cn } from '@/lib/utils';
 
 type PaymentCardSetupStepProps = {
@@ -16,7 +17,7 @@ type PaymentCardSetupStepProps = {
 };
 
 const PaymentCardSetupStep = ({
-  accountUrl,
+  accountUrl: _accountUrl,
   onContinue,
   isRetrying,
   variant = 'default',
@@ -30,7 +31,7 @@ const PaymentCardSetupStep = ({
   const isOffer = variant === 'offer';
 
   const openAccountPage = () => {
-    window.open(accountUrl, '_blank', 'noopener,noreferrer');
+    openMindbodyClientAccount();
   };
 
   return (

@@ -24,6 +24,12 @@ import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
+import { BookingMutationError } from '@/lib/bookingMutationError';
+import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
+import {
+  clearSessionNeedsPaymentCard,
+  markSessionNeedsPaymentCard,
+} from '@/lib/paymentCardSetupStorage';
 import { stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
 import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
 import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
@@ -83,9 +89,12 @@ const BookingDrawer = ({
   resumeClassId,
   resumeAppointment,
 }: BookingDrawerProps) => {
-  const { isAuthenticated, login, logout, refreshMbSession, mindbodySignUpUrl } = useAuth();
+  const { isAuthenticated, login, logout, refreshMbSession, mindbodySignUpUrl, mbSession } = useAuth();
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
+  const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
+  const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
+  const accountUrl = mindbodyClientAccountUrl();
   const bookServiceMutation = useBookService();
   const queryClient = useQueryClient();
 
@@ -110,6 +119,8 @@ const BookingDrawer = ({
         setIdempotencyKey(null);
         setBookingError(null);
         setBookingErrorRequiresSignIn(false);
+        setNeedsCardOnFile(false);
+        setCardSetupRetryHint(null);
         restoredAppointmentRef.current = null;
       }, 300);
     }
@@ -340,6 +351,10 @@ const BookingDrawer = ({
 
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setCardSetupRetryHint(null);
+    if (!needsCardOnFile) {
+      setNeedsCardOnFile(false);
+    }
 
     try {
       await bookServiceMutation.mutateAsync({
@@ -355,11 +370,35 @@ const BookingDrawer = ({
         idempotencyKey: idempotencyKey || undefined,
       });
       setBookingComplete(true);
+      setNeedsCardOnFile(false);
+      clearSessionNeedsPaymentCard();
       toast.success('Booking confirmed!');
       if (navigator.userAgent.includes('despia')) {
         despia('successhaptic://');
       }
     } catch (error: unknown) {
+      if (error instanceof BookingMutationError) {
+        if (error.flags.noStoredCard) {
+          if (mbSession?.sessionId) {
+            markSessionNeedsPaymentCard(mbSession.sessionId);
+          }
+          setNeedsCardOnFile(true);
+          setBookingError(null);
+          setBookingErrorRequiresSignIn(false);
+          if (needsCardOnFile) {
+            setCardSetupRetryHint(
+              "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
+            );
+          }
+          return;
+        }
+        setNeedsCardOnFile(false);
+        setCardSetupRetryHint(null);
+        clearSessionNeedsPaymentCard();
+        setBookingError(error.message);
+        setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
+        return;
+      }
       const classified = classifyBookingError(
         error instanceof Error ? error.message : undefined,
       );
@@ -692,6 +731,8 @@ const BookingDrawer = ({
                         onChangeTime={() => {
                           setBookingError(null);
                           setBookingErrorRequiresSignIn(false);
+                          setNeedsCardOnFile(false);
+                          setCardSetupRetryHint(null);
                           setCurrentStep(timeStep);
                         }}
                         onConfirm={
@@ -704,6 +745,10 @@ const BookingDrawer = ({
                         bookingError={bookingError}
                         bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
                         onCreateAccount={startCreateAccountForBooking}
+                        needsCardOnFile={needsCardOnFile}
+                        accountUrl={accountUrl}
+                        onContinueAfterCard={handleConfirmBooking}
+                        cardSetupRetryHint={cardSetupRetryHint}
                       />
 
                       {onSwitchService && (

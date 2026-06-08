@@ -1,5 +1,5 @@
 import { priceOverrides } from '@/config/serviceConfig';
-import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
+import { resolveMindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import type { ClientService } from '@/hooks/useMindbodyMembership';
 import { isCommunalContrastService } from '@/lib/bookingPaymentOptions';
@@ -50,6 +50,6 @@ export function buildCommunalContrastCheckoutSummary(
   return {
     priceGbp: priceOverrides['Communal Contrast'] ?? 65,
     needsCardOnFile: options?.needsCardOnFile,
-    accountUrl: mindbodyClientAccountUrl(),
+    accountUrl: resolveMindbodyClientAccountUrl(),
   };
 }

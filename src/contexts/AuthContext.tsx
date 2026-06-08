@@ -7,9 +7,13 @@ import {
   clearOAuthParamsFromUrl,
 } from '@/lib/oauthReturn';
 import { APP_HOME, WEBSITE_HOME } from '@/lib/routes';
-import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
+import {
+  mindbodyClientAccountUrl,
+  resolveMindbodyClientAccountUrl,
+  resolveMindbodySignUpUrl,
+} from '@/lib/mindbodyAuth';
 import { markOAuthUsedPopup } from '@/lib/bookingResume';
-import { shouldUseOAuthPopup } from '@/lib/mobileBrowser';
+import { openMindbodyExternalUrl, shouldUseOAuthPopup } from '@/lib/mobileBrowser';
 import { clearSessionNeedsPaymentCard } from '@/lib/paymentCardSetupStorage';
 import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
@@ -25,8 +29,12 @@ interface AuthContextType {
   login: (options?: { clearSession?: boolean }) => void;
   /** Branded-web URL where new clients create a Mindbody login for this studio. */
   mindbodySignUpUrl: string;
+  /** Mindbody account URL — payment cards & profile (stype=-2, subTab=account). */
+  mindbodyAccountUrl: string;
   /** Open Mindbody account creation (same tab). */
   openMindbodySignUp: () => void;
+  /** Open Mindbody account page to add a card or manage profile. */
+  openMindbodyClientAccount: () => void;
   logout: () => void;
   refreshMbSession: () => Promise<MindbodySession | null>;
 }
@@ -146,6 +154,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [mindbodySignUpUrl, setMindbodySignUpUrl] = useState<string>(() =>
     resolveMindbodySignUpUrl(),
   );
+  const [mindbodyAccountUrl, setMindbodyAccountUrl] = useState<string>(() =>
+    mindbodyClientAccountUrl(),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -156,11 +167,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         });
         if (!res.ok) return;
         const data = await res.json();
-        if (!cancelled && typeof data.signUpUrl === 'string') {
+        if (cancelled) return;
+        if (typeof data.signUpUrl === 'string') {
           setMindbodySignUpUrl(data.signUpUrl);
         }
+        if (typeof data.accountUrl === 'string') {
+          setMindbodyAccountUrl(data.accountUrl);
+        }
       } catch {
-        /* keep env/default sign-up URL */
+        /* keep env/default URLs */
       }
     })();
     return () => {
@@ -353,8 +368,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openMindbodySignUp = useCallback(() => {
-    window.location.assign(mindbodySignUpUrl || resolveMindbodySignUpUrl());
+    openMindbodyExternalUrl(mindbodySignUpUrl || resolveMindbodySignUpUrl());
   }, [mindbodySignUpUrl]);
+
+  const openMindbodyClientAccountPage = useCallback(() => {
+    openMindbodyExternalUrl(resolveMindbodyClientAccountUrl(mindbodyAccountUrl));
+  }, [mindbodyAccountUrl]);
 
   const logout = useCallback(() => {
     localStorage.removeItem(MB_STORAGE_KEY);
@@ -401,7 +420,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         authError,
         login,
         mindbodySignUpUrl,
+        mindbodyAccountUrl,
         openMindbodySignUp,
+        openMindbodyClientAccount: openMindbodyClientAccountPage,
         logout,
         refreshMbSession,
       }}

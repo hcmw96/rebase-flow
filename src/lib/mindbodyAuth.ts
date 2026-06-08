@@ -1,20 +1,37 @@
+import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
+
 /** Rebase studio Mindbody site (public — used in OAuth and cart URLs). */
 export const REBASE_MINDBODY_SITE_ID = '5736189';
 
-/** Mindbody branded-web URLs for a studio site (site ID is public in OAuth). */
+function resolveSiteId(siteId?: string): string {
+  return siteId?.trim() || import.meta.env.VITE_MINDBODY_SITE_ID?.trim() || REBASE_MINDBODY_SITE_ID;
+}
+
 /** Branded-web new-client registration (stype 42 = create account). */
 export function mindbodySignUpUrl(siteId: string): string {
   return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(siteId)}&stype=42`;
 }
 
+/** @deprecated Rebase uses OAuth sign-in — kept for reference only. */
 export function mindbodySignInUrl(siteId: string): string {
-  return `https://cart.mindbodyonline.com/sites/${siteId}/session/new`;
+  return mindbodyClientAccountUrl(siteId);
 }
 
-/** Client account area (add card, profile) — not the public pricing catalog. */
+/**
+ * Mindbody client account — payment cards & profile.
+ * @see https://clients.mindbodyonline.com/classic/ws?studioid=5736189&stype=-2&subTab=account
+ */
 export function mindbodyClientAccountUrl(siteId?: string): string {
-  const id = siteId?.trim() || import.meta.env.VITE_MINDBODY_SITE_ID?.trim() || REBASE_MINDBODY_SITE_ID;
+  const override = import.meta.env.VITE_MINDBODY_ACCOUNT_URL?.trim();
+  if (override) return override;
+
+  const id = resolveSiteId(siteId);
   return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(id)}&stype=-2&subTab=account`;
+}
+
+/** Open the Mindbody account page (add card, profile) — same-tab on mobile. */
+export function openMindbodyClientAccount(siteId?: string): void {
+  openMindbodyExternalUrl(mindbodyClientAccountUrl(siteId));
 }
 
 /**
@@ -52,4 +69,12 @@ export function resolveMindbodySignUpUrl(apiUrl?: string | null): string {
   if (fromEnv) return mindbodySignUpUrl(fromEnv);
   if (apiUrl && typeof apiUrl === 'string') return apiUrl;
   return mindbodySignUpUrl(REBASE_MINDBODY_SITE_ID);
+}
+
+/** Account URL for payment cards — env override, then studio default. */
+export function resolveMindbodyClientAccountUrl(apiUrl?: string | null): string {
+  const override = import.meta.env.VITE_MINDBODY_ACCOUNT_URL?.trim();
+  if (override) return override;
+  if (apiUrl && typeof apiUrl === 'string') return apiUrl;
+  return mindbodyClientAccountUrl();
 }
