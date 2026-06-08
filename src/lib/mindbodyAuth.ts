@@ -7,9 +7,12 @@ function resolveSiteId(siteId?: string): string {
   return siteId?.trim() || import.meta.env.VITE_MINDBODY_SITE_ID?.trim() || REBASE_MINDBODY_SITE_ID;
 }
 
-/** Branded-web new-client registration (stype 42 = create account). */
+/** New-client registration (su1.asp — not stype=42, which opens the online store). */
 export function mindbodySignUpUrl(siteId: string): string {
-  return `https://clients.mindbodyonline.com/classic/ws?studioid=${encodeURIComponent(siteId)}&stype=42`;
+  const override = import.meta.env.VITE_MINDBODY_SIGNUP_URL?.trim();
+  if (override) return override;
+
+  return `https://clients.mindbodyonline.com/ASP/su1.asp?studioid=${encodeURIComponent(siteId)}`;
 }
 
 /** @deprecated Rebase uses OAuth sign-in — kept for reference only. */
@@ -63,10 +66,8 @@ export function mindbodyBuySaleServiceUrl(siteId: string, saleServiceId?: string
   return mindbodyPricingListUrl(siteId);
 }
 
-/** Sign-up URL for the client app (env override, then studio default). */
+/** Sign-up URL for the client app (API override, then studio default). */
 export function resolveMindbodySignUpUrl(apiUrl?: string | null): string {
-  const fromEnv = import.meta.env.VITE_MINDBODY_SITE_ID?.trim();
-  if (fromEnv) return mindbodySignUpUrl(fromEnv);
   if (apiUrl && typeof apiUrl === 'string') return apiUrl;
   return mindbodySignUpUrl(REBASE_MINDBODY_SITE_ID);
 }
