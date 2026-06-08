@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
 import despia from 'despia-native';
 import { toast } from 'sonner';
 import {
@@ -151,6 +151,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isRedirecting, setIsRedirecting] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
+  const oauthInProgressRef = useRef(false);
+  const oauthPopupRef = useRef<Window | null>(null);
   const [mindbodySignUpUrl, setMindbodySignUpUrl] = useState<string>(() =>
     resolveMindbodySignUpUrl(),
   );
@@ -296,6 +298,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (event.data.error) {
         setAuthError(String(event.data.error));
+        oauthInProgressRef.current = false;
+        oauthPopupRef.current = null;
         setIsRedirecting(false);
         return;
       }
@@ -305,6 +309,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setAuthError(null);
         persistSession(session);
         setMbSession(session);
+        oauthInProgressRef.current = false;
+        oauthPopupRef.current = null;
         setIsRedirecting(false);
       }
     };
@@ -314,12 +320,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = useCallback(async (options?: { clearSession?: boolean }) => {
+    if (oauthInProgressRef.current) return;
+
     setAuthError(null);
     if (options?.clearSession) {
       localStorage.removeItem(MB_STORAGE_KEY);
       setMbSession(null);
     }
+
+    oauthInProgressRef.current = true;
     setIsRedirecting(true);
+
+    const usePopup = shouldUseOAuthPopup();
+    // Open the popup synchronously (user gesture) — async fetch otherwise loses it and
+    // Chrome navigates this tab to authorize while Mindbody opens sign-in in another window.
+    let popup: Window | null = null;
+    if (usePopup) {
+      popup = window.open(
+        'about:blank',
+        'rebase-mindbody-oauth',
+        'popup=yes,width=480,height=720',
+      );
+      oauthPopupRef.current = popup;
+    }
+
     try {
       const isNative = navigator.userAgent.includes('despia');
 
@@ -338,27 +362,33 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         throw new Error(data.error || 'Failed to get login URL');
       }
 
-      if (shouldUseOAuthPopup()) {
-        const popup = window.open(
-          data.authUrl,
-          'rebase-mindbody-oauth',
-          'popup=yes,width=480,height=720,noopener,noreferrer',
-        );
-        if (popup) {
-          markOAuthUsedPopup();
-          const poll = window.setInterval(() => {
-            if (popup.closed) {
-              window.clearInterval(poll);
-              setIsRedirecting(false);
-            }
-          }, 400);
-          return;
-        }
+      if (usePopup && popup && !popup.closed) {
+        popup.location.href = data.authUrl;
+        markOAuthUsedPopup();
+        const poll = window.setInterval(() => {
+          if (popup.closed) {
+            window.clearInterval(poll);
+            oauthInProgressRef.current = false;
+            oauthPopupRef.current = null;
+            setIsRedirecting(false);
+          }
+        }, 400);
+        return;
       }
 
+      if (popup && !popup.closed) {
+        popup.close();
+      }
+      oauthPopupRef.current = null;
+      oauthInProgressRef.current = false;
       window.location.assign(data.authUrl);
       return;
     } catch (error) {
+      if (popup && !popup.closed) {
+        popup.close();
+      }
+      oauthInProgressRef.current = false;
+      oauthPopupRef.current = null;
       console.error('Login error:', error);
       const message = error instanceof Error ? error.message : 'Please try again.';
       setAuthError(message);
