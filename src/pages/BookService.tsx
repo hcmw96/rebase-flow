@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { format, isSameDay, addDays } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +15,7 @@ import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 
 interface ServiceVariant {
   id: string;
@@ -101,13 +102,7 @@ const BookService = () => {
   // Use selected variant ID for availability
   const activeServiceId = selectedVariant?.id || serviceId || '';
 
-  const monthRange = useMemo(() => {
-    const start = new Date();
-    return {
-      startDate: format(start, 'yyyy-MM-dd'),
-      endDate: format(addDays(start, 30), 'yyyy-MM-dd'),
-    };
-  }, []);
+  const monthRange = useMemo(() => bookingHorizonDateRange(), []);
 
   const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
     sessionTypeId: activeServiceId,
@@ -433,6 +428,7 @@ const BookService = () => {
                           onSelect={handleDateSelect}
                           availableDates={availableDates}
                           isLoading={isLoadingMonth}
+                          toDate={bookingHorizonEndDate()}
                         />
                       </div>
                     </CardContent>

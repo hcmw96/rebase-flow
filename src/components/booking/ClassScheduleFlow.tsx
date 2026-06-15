@@ -22,6 +22,7 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { bookingHorizonEndDate, BOOKING_DAYS_AHEAD } from '@/lib/bookingHorizon';
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
@@ -49,8 +50,6 @@ const STEPS = [
   { id: 1, label: 'Schedule' },
   { id: 2, label: 'Confirm' },
 ];
-
-const SCHEDULE_WEEKS_AHEAD = 30;
 
 function weekLabel(weekStart: Date): string {
   const today = new Date();
@@ -172,7 +171,7 @@ const ClassScheduleFlow = ({
   }, [isAuthenticated, currentStep, checkoutSummary, mbSession?.sessionId]);
 
   const startDate = format(new Date(), 'yyyy-MM-dd');
-  const endDate = format(addDays(new Date(), SCHEDULE_WEEKS_AHEAD), 'yyyy-MM-dd');
+  const endDate = format(addDays(new Date(), BOOKING_DAYS_AHEAD), 'yyyy-MM-dd');
 
   const { data: classes = [], isLoading } = useMindbodyClasses({
     startDate,
@@ -205,7 +204,7 @@ const ClassScheduleFlow = ({
     return Array.from(seen.values());
   }, [filteredClasses]);
 
-  /** Group sessions by calendar week, then by day (next 30 days). */
+  /** Group sessions by calendar week, then by day (through the booking horizon). */
   const scheduleByWeek = useMemo(() => {
     const weekMap = new Map<
       string,
@@ -461,7 +460,7 @@ const ClassScheduleFlow = ({
               onSelect={handleDateSelect}
               availableDates={availableDates}
               isLoading={isLoading}
-              toDate={addDays(new Date(), SCHEDULE_WEEKS_AHEAD)}
+              toDate={bookingHorizonEndDate()}
             />
           </div>
 

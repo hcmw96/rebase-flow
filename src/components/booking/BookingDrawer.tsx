@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { format, addDays, isSameDay } from 'date-fns';
+import { format, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
@@ -248,15 +249,9 @@ const BookingDrawer = ({
     return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
   }, [availabilityData, selectedDate]);
 
-  // Prefetch a 30-day availability window so the calendar can grey out
+  // Prefetch availability through the booking horizon so the calendar can grey out
   // days with no bookable slots (no availability OR fully booked).
-  const monthRange = useMemo(() => {
-    const start = new Date();
-    return {
-      startDate: format(start, 'yyyy-MM-dd'),
-      endDate: format(addDays(start, 30), 'yyyy-MM-dd'),
-    };
-  }, []);
+  const monthRange = useMemo(() => bookingHorizonDateRange(), []);
 
   const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
     sessionTypeId: activeServiceId,
@@ -650,6 +645,7 @@ const BookingDrawer = ({
                           onSelect={handleDateSelect}
                           availableDates={availableDates}
                           isLoading={isLoadingMonth}
+                          toDate={bookingHorizonEndDate()}
                         />
                       </div>
                     </motion.div>
