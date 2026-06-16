@@ -187,7 +187,7 @@ export const packageGroups = new Set([
 // ── Class-based services (shown in Services grid but booked via class schedule) ──
 export const classDescriptionIdMap: Record<string, number[]> = {
   // Mindbody uses multiple description IDs for the same communal contrast schedule.
-  'Communal Contrast': [5, 47, 49],
+  'Communal Contrast': [5, 47, 49, 71],
 };
 
 // ── Price overrides (when Mindbody API returns null) ──────────────
@@ -371,6 +371,7 @@ const legacyServiceNameAliases: Record<string, string> = {
   'Members Suite': 'Communal Contrast',
   'Urban Oasis': 'Yoga Flow + Heat & Ice',
   "Urban Oasis Class": 'Yoga Flow + Heat & Ice',
+  "Ladie's Hour: Gut, Glow & Flow": "Ladies' Hour: Gut, Glow & Flow",
 };
 
 const legacyServiceNameAliasesLower = Object.fromEntries(
@@ -453,7 +454,7 @@ export const staticWebsiteCatalogue: StaticServiceEntry[] = [
     shortDescription: COMMUNAL_CONTRAST_DESCRIPTION,
     fromPrice: 65,
     contactOnly: false,
-    classDescriptionIds: [5, 47, 49],
+    classDescriptionIds: [5, 47, 49, 71],
   },
   { baseName: "Infrared Suite", category: "Private Suites", image: "/images/rebase-infrared-suite.jpg", shortDescription: "Detoxifying infrared heat followed by an invigorating ice bath.", fromPrice: 190, contactOnly: false },
   

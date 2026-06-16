@@ -13,6 +13,7 @@ function resolveDisplayName(name: string): string {
     "Members Suite": "Communal Contrast",
     "Urban Oasis": "Yoga Flow + Heat & Ice",
     "Urban Oasis Class": "Yoga Flow + Heat & Ice",
+    "Ladie's Hour: Gut, Glow & Flow": "Ladies' Hour: Gut, Glow & Flow",
   };
   if (aliases[trimmed]) return aliases[trimmed];
   const lower = trimmed.toLowerCase();
