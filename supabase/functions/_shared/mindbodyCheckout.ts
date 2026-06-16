@@ -3,7 +3,64 @@ type SaleServiceRow = {
   Name?: string;
   Price?: number;
   OnlinePrice?: number;
+  Count?: number;
 };
+
+function salePrice(service: SaleServiceRow): number {
+  return service.OnlinePrice ?? service.Price ?? 0;
+}
+
+/** Multi-session / pass products must not be used for a single drop-in class booking. */
+export function isMultiSessionPack(name: string, count?: number): boolean {
+  const n = name.trim();
+  if (count != null && count > 1) return true;
+  return (
+    /\bpack\b/i.test(n) ||
+    /\bpass\b/i.test(n) ||
+    /\bunlimited\b/i.test(n) ||
+    /\d+\s*week/i.test(n) ||
+    /\d+\s*[-–]?\s*session\s*pack/i.test(n) ||
+    /\d+\s*(?:session|visit)s?\s*pack/i.test(n)
+  );
+}
+
+/**
+ * Pick a single-session pricing option for drop-in class checkout.
+ * Never returns multi-session packs (e.g. "10 Communal Contrast Pack").
+ */
+export function pickSaleServiceForClass(services: SaleServiceRow[]): SaleServiceRow | null {
+  if (!services.length) return null;
+
+  const withPrice = services.filter((s) => salePrice(s) > 0);
+  const pool = withPrice.length ? withPrice : services;
+
+  const singles = pool.filter((s) => !isMultiSessionPack(s.Name || "", s.Count));
+  if (!singles.length) {
+    console.warn(
+      "pickSaleServiceForClass: only multi-session packs available — refusing pack checkout",
+      pool.map((s) => ({ id: s.Id, name: s.Name, price: salePrice(s), count: s.Count })),
+    );
+    return null;
+  }
+
+  const contrastMatches = singles.filter((s) =>
+    /communal|contrast|members?\s*suite|off\s*peak|drop|visit|class/i.test(s.Name || ""),
+  );
+  const candidates = contrastMatches.length ? contrastMatches : singles;
+
+  const picked = [...candidates].sort((a, b) => salePrice(a) - salePrice(b))[0] ?? null;
+  if (picked) {
+    console.log("pickSaleServiceForClass:", {
+      id: picked.Id,
+      name: picked.Name,
+      price: salePrice(picked),
+      rejected: pool
+        .filter((s) => s.Id !== picked.Id)
+        .map((s) => ({ id: s.Id, name: s.Name, price: salePrice(s) })),
+    });
+  }
+  return picked;
+}
 
 function headers(apiKey: string, siteId: string, bearerToken: string) {
   return {
@@ -38,19 +95,6 @@ export async function fetchSaleServicesForClass(
   }
   const data = await res.json();
   return (data.Services || []) as SaleServiceRow[];
-}
-
-export function pickSaleServiceForClass(services: SaleServiceRow[]): SaleServiceRow | null {
-  if (!services.length) return null;
-  const withPrice = services.filter((s) => {
-    const p = s.OnlinePrice ?? s.Price;
-    return p != null && p > 0;
-  });
-  const pool = withPrice.length ? withPrice : services;
-  const prefer = pool.find((s) =>
-    /communal|contrast|members?\s*suite|off\s*peak|drop|visit|class/i.test(s.Name || "")
-  );
-  return prefer ?? pool[0] ?? null;
 }
 
 export type CheckoutResult =

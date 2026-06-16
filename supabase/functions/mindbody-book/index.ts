@@ -21,6 +21,7 @@ import { logJunePassClassBooking } from "../_shared/contrastPassUsageLog.ts";
 import {
   checkoutClassWithStoredCard,
   fetchSaleServicesForClass,
+  isMultiSessionPack,
   pickSaleServiceForClass,
 } from "../_shared/mindbodyCheckout.ts";
 
@@ -502,6 +503,15 @@ async function bookClassWithPayment(
     }
     const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
     if (amount <= 0) continue;
+
+    if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
+      console.error(
+        `Refusing pack/pass checkout for class ${classId}:`,
+        saleService.Name,
+        amount,
+      );
+      continue;
+    }
 
     const checkout = await checkoutClassWithStoredCard(apiKey, siteId, token, {
       clientId,
