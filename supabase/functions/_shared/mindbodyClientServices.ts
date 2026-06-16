@@ -43,18 +43,36 @@ export async function fetchActiveClientServices(
   });
 }
 
-/** Pick a pass/credit to pay for a class booking (prefers June 2-week pass, then contrast-related). */
+/**
+ * Pick a pass/credit to pay for a class booking.
+ * Only returns a service id if the client actually has a usable credit/pass.
+ * Never falls through to a retail pricing option (e.g. 10-pack) that would
+ * incorrectly charge the full pack price for a single drop-in.
+ */
 export function pickBookableClientServiceId(
   services: MindbodyClientServiceRow[],
 ): number | null {
   if (!services.length) return null;
+
+  // Prefer the June unlimited pass first.
   const juneId = pickJuneContrastPassServiceId(services);
   if (juneId != null) return juneId;
-  const prefer = services.find((s) =>
-    /contrast|communal|class|visit|session|pass|unlimited|drop/i.test(s.Name || "")
-  );
-  const pick = prefer ?? services[0];
-  return pick.Id != null ? Number(pick.Id) : null;
+
+  // Only pick a service that looks like a genuine per-session credit or pass,
+  // not a retail multi-session pack that hasn't been consumed yet.
+  // A client service with Remaining > 0 is a pre-purchased credit — safe to use.
+  // Exclude rows where Count > 1 AND Remaining equals Count (i.e. fully unused pack)
+  // because applying the whole pack would charge nothing but mark the pack as used.
+  const credit = services.find((s) => {
+    const name = s.Name || "";
+    if (!/contrast|communal|class|visit|session|pass|unlimited|drop/i.test(name)) return false;
+    // If we have explicit remaining info, trust it — any remaining > 0 is usable.
+    if (typeof s.Remaining === "number") return s.Remaining > 0;
+    return true;
+  });
+
+  if (!credit) return null;
+  return credit.Id != null ? Number(credit.Id) : null;
 }
 
 export function findJuneContrastPassRow(
