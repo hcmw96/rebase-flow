@@ -322,7 +322,7 @@ async function mindbodyPostWithRetry(
     }
   }
 
-  // 3) Staff fallback ONLY when a pass/credit exists — apply it via ClientServiceId (no unpaid comps).
+  // 3) Staff fallback when the consumer OAuth token is scoped to another site (Places You Go).
   if (bookResult && !bookResult.ok && isClientIdRetryable(bookResult.message)) {
     const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
     const clientServiceId = pickBookableClientServiceId(staffServices);
@@ -335,6 +335,17 @@ async function mindbodyPostWithRetry(
       bookResult = await attemptBook(staffToken, `staff:pass:${clientServiceId}`, clientId, {
         ClientServiceId: clientServiceId,
         RequirePayment: body.RequirePayment ?? true,
+      });
+    }
+
+    if (bookResult && !bookResult.ok && !isPaymentError(bookResult.message)) {
+      console.warn(
+        "Consumer booking blocked by site scope; retrying via staff with ApplyPayment",
+      );
+      bookResult = await attemptBook(staffToken, "staff:apply-payment", clientId, {
+        ApplyPayment: body.ApplyPayment ?? true,
+        RequirePayment: body.RequirePayment ?? true,
+        SendConfirmationEmail: body.SendConfirmationEmail ?? true,
       });
     }
   }
@@ -365,7 +376,7 @@ async function mindbodyPostWithRetry(
     let userMessage = message;
     if (siteScopeIssue) {
       userMessage =
-        "Mindbody could not complete this booking from the app. Sign out, then sign in again from rebaserecovery.com. If you already have a pass, make sure Rebase is linked under Mindbody Places You Go.";
+        "We couldn't complete this booking in Mindbody. Add a payment card to your Mindbody account if you don't have one on file, then tap Confirm again — or email reception@rebaserecovery.com and we'll book you in.";
     } else if (paymentIssue || !hasPass) {
       userMessage =
         "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.";

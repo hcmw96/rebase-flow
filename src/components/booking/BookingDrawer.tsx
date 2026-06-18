@@ -373,7 +373,7 @@ const BookingDrawer = ({
       }
     } catch (error: unknown) {
       if (error instanceof BookingMutationError) {
-        if (error.flags.noStoredCard) {
+        if (error.flags.noStoredCard || (error.flags.siteScopeIssue && error.flags.paymentRequired)) {
           if (mbSession?.sessionId) {
             markSessionNeedsPaymentCard(mbSession.sessionId);
           }

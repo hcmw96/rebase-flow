@@ -48,9 +48,9 @@ export function classifyBookingError(raw: string | undefined | null): Classified
 
   if (msg.includes('site id does not match') || msg.includes('sign in again from rebaserecovery')) {
     return {
-      kind: 'unknown',
+      kind: 'payment_required',
       message:
-        'Mindbody could not complete this booking from the app. Sign out, then sign in again from rebaserecovery.com. If you have a pass, ensure Rebase is linked under Mindbody Places You Go.',
+        "We couldn't complete this booking in Mindbody. Add a payment card to your Mindbody account if needed, then try again — or email reception@rebaserecovery.com and we'll book you in.",
       actionLabel: 'Email reception',
       actionRoute: 'mailto:reception@rebaserecovery.com',
     };
