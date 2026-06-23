@@ -120,7 +120,13 @@ const BookingConfirmActions = ({
           {changeTimeLabel}
         </Button>
         {!showCardSetup && (
-          <Button onClick={onConfirm} disabled={isPending} className="w-full sm:flex-1 min-h-11">
+          <Button
+            type="button"
+            onClick={onConfirm}
+            disabled={isPending}
+            aria-busy={isPending}
+            className="w-full sm:flex-1 min-h-11"
+          >
             {isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

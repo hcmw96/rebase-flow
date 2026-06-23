@@ -8,18 +8,18 @@ import {
   addWeeks,
 } from 'date-fns';
 import { motion } from 'framer-motion';
-import { Calendar, Clock, MapPin, User, Users, CheckCircle, Loader2 } from 'lucide-react';
+import { Calendar, Clock, MapPin, User, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
 import { buildCommunalContrastCheckoutSummary } from '@/lib/bookingCheckoutSummary';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
+import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { bookingHorizonEndDate, BOOKING_DAYS_AHEAD } from '@/lib/bookingHorizon';
@@ -34,6 +34,7 @@ import {
   markSessionNeedsPaymentCard,
   sessionNeedsPaymentCard,
 } from '@/lib/paymentCardSetupStorage';
+import { createBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -137,10 +138,13 @@ const ClassScheduleFlow = ({
   const { isAuthenticated, login, logout, refreshMbSession, mbSession, mindbodySignUpUrl } = useAuth();
   const bookMutation = useBookService();
   const scheduleRef = useRef<HTMLDivElement>(null);
+  const bookingInFlightRef = useRef(false);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
@@ -276,6 +280,15 @@ const ClassScheduleFlow = ({
     }
   }, [isAuthenticated, refreshMbSession]);
 
+  useEffect(() => {
+    if (currentStep === 2 && selectedClass && !idempotencyKey) {
+      setIdempotencyKey(createBookingIdempotencyKey());
+    }
+    if (currentStep !== 2 && idempotencyKey) {
+      setIdempotencyKey(null);
+    }
+  }, [currentStep, selectedClass, idempotencyKey]);
+
   const startSignIn = (cls?: MindbodyClass | null) => {
     const target = cls ?? selectedClass;
     if (bookingService) {
@@ -303,7 +316,9 @@ const ClassScheduleFlow = ({
   };
 
   const handleBook = async () => {
-    if (!selectedClass) return;
+    if (!selectedClass || bookingComplete || bookingInFlightRef.current || bookMutation.isPending) {
+      return;
+    }
 
     const activeSession = await refreshMbSession();
     if (!activeSession?.sessionId) {
@@ -312,6 +327,8 @@ const ClassScheduleFlow = ({
       return;
     }
 
+    bookingInFlightRef.current = true;
+    setIsSubmitting(true);
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
     setCardSetupRetryHint(null);
@@ -321,7 +338,7 @@ const ClassScheduleFlow = ({
 
     try {
       await refetchMembership();
-      const result = await bookMutation.mutateAsync({
+      await bookMutation.mutateAsync({
         bookingType: 'class',
         classId: selectedClass.id,
         locationId: selectedClass.locationId,
@@ -330,15 +347,14 @@ const ClassScheduleFlow = ({
         endDateTime: selectedClass.endDateTime,
         locationName: selectedClass.locationName,
         staffName: selectedClass.staffName,
+        idempotencyKey: idempotencyKey || undefined,
       });
       setBookingComplete(true);
       setNeedsCardOnFile(false);
       clearSessionNeedsPaymentCard();
-      const paid = result?.payment?.amountGbp;
-      toast.success(
-        paid != null ? `Booked — £${paid} paid` : 'Your session is booked',
-      );
     } catch (error: unknown) {
+      bookingInFlightRef.current = false;
+      setIsSubmitting(false);
       if (error instanceof BookingMutationError) {
         if (error.flags.noStoredCard) {
           if (mbSession?.sessionId) {
@@ -370,58 +386,26 @@ const ClassScheduleFlow = ({
   };
 
   const handleConfirm = () => {
-    if (!selectedClass) return;
+    if (!selectedClass || bookingComplete || isSubmitting || bookMutation.isPending) return;
     if (!isAuthenticated) {
       startSignIn(selectedClass);
       return;
     }
-    handleBook();
+    void handleBook();
   };
 
   if (bookingComplete && selectedClass) {
     return (
-      <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        className="text-center space-y-5 py-6"
-      >
-        <div className="flex justify-center">
-          <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-            <CheckCircle className="h-8 w-8 text-primary" />
-          </div>
-        </div>
-        <div className="space-y-1">
-          <h3 className="text-xl font-semibold text-foreground">Class Booked!</h3>
-          <p className="text-sm text-muted-foreground">You&apos;re all set.</p>
-        </div>
-        <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-left text-sm">
-          <div className="font-medium text-foreground">{resolveDisplayName(selectedClass.name)}</div>
-          <div className="flex items-center gap-3">
-            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>{format(new Date(selectedClass.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
-          </div>
-          <div className="flex items-center gap-3">
-            <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>
-              {format(new Date(selectedClass.startDateTime), 'h:mm a')} –{' '}
-              {format(new Date(selectedClass.endDateTime), 'h:mm a')}
-            </span>
-          </div>
-          {selectedClass.staffName && (
-            <div className="flex items-center gap-3">
-              <User className="h-4 w-4 text-muted-foreground shrink-0" />
-              <span>{selectedClass.staffName}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-3">
-            <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-            <span>{normaliseBrand(selectedClass.locationName)}</span>
-          </div>
-        </div>
-        <Button onClick={onClose} className="w-full">
-          Done
-        </Button>
-      </motion.div>
+      <BookingConfirmationSuccess
+        details={{
+          serviceName: selectedClass.name,
+          startDateTime: selectedClass.startDateTime,
+          endDateTime: selectedClass.endDateTime,
+          staffName: selectedClass.staffName,
+          locationName: selectedClass.locationName,
+        }}
+        onDone={onClose}
+      />
     );
   }
 
@@ -602,7 +586,7 @@ const ClassScheduleFlow = ({
                   : handleConfirm
               }
               isAuthenticated={isAuthenticated}
-              isPending={bookMutation.isPending}
+              isPending={bookMutation.isPending || isSubmitting}
               changeTimeLabel="Change session"
               bookingError={bookingError}
               bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}

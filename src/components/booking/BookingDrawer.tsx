@@ -13,18 +13,19 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
-import { ChevronLeft, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check, Mail } from 'lucide-react';
+import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
+import { ChevronLeft, Calendar, Clock, MapPin, User, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useQueryClient } from '@tanstack/react-query';
-import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
+import { createBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 import { BookingMutationError } from '@/lib/bookingMutationError';
 import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import {
@@ -104,8 +105,10 @@ const BookingDrawer = ({
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const restoredAppointmentRef = useRef<string | null>(null);
+  const bookingInFlightRef = useRef(false);
 
   // Reset state when drawer opens with new service
   const handleOpenChange = (isOpen: boolean) => {
@@ -117,7 +120,9 @@ const BookingDrawer = ({
         setSelectedSlot(null);
         setSelectedVariant(null);
         setBookingComplete(false);
+        setIsSubmitting(false);
         setIdempotencyKey(null);
+        bookingInFlightRef.current = false;
         setBookingError(null);
         setBookingErrorRequiresSignIn(false);
         setNeedsCardOnFile(false);
@@ -297,10 +302,7 @@ const BookingDrawer = ({
   // Generate a fresh idempotency key whenever the user reaches the confirm step for a new slot
   useEffect(() => {
     if (currentStep === confirmStep && selectedSlot && !idempotencyKey) {
-      setIdempotencyKey(
-        (crypto as any)?.randomUUID?.() ||
-          `${Date.now()}-${Math.random().toString(36).slice(2)}`,
-      );
+      setIdempotencyKey(createBookingIdempotencyKey());
     }
     // Reset key when leaving confirm step so the next attempt gets a fresh key
     if (currentStep !== confirmStep && idempotencyKey) {
@@ -331,7 +333,9 @@ const BookingDrawer = ({
   }, [isAuthenticated, refreshMbSession]);
 
   const handleConfirmBooking = async () => {
-    if (!selectedSlot) return;
+    if (!selectedSlot || bookingComplete || bookingInFlightRef.current || bookServiceMutation.isPending) {
+      return;
+    }
     if (!isAuthenticated) {
       startSignInForBooking();
       return;
@@ -344,6 +348,8 @@ const BookingDrawer = ({
       return;
     }
 
+    bookingInFlightRef.current = true;
+    setIsSubmitting(true);
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
     setCardSetupRetryHint(null);
@@ -367,11 +373,12 @@ const BookingDrawer = ({
       setBookingComplete(true);
       setNeedsCardOnFile(false);
       clearSessionNeedsPaymentCard();
-      toast.success('Booking confirmed!');
       if (navigator.userAgent.includes('despia')) {
         despia('successhaptic://');
       }
     } catch (error: unknown) {
+      bookingInFlightRef.current = false;
+      setIsSubmitting(false);
       if (error instanceof BookingMutationError) {
         if (error.flags.noStoredCard || (error.flags.siteScopeIssue && error.flags.paymentRequired)) {
           if (mbSession?.sessionId) {
@@ -412,7 +419,7 @@ const BookingDrawer = ({
   };
 
 
-  const isBooking = bookServiceMutation.isPending;
+  const isBooking = bookServiceMutation.isPending || isSubmitting;
 
   const displayDuration = activeVariant?.duration ? `${activeVariant.duration} min` : '';
   const displayPrice = activeVariant?.price
@@ -520,42 +527,16 @@ const BookingDrawer = ({
             ) : showContactMessage && isVariantContactOnly ? (
               <ContactReceptionMessage serviceName={resolveDisplayName(activeVariant?.name || service.title)} />
             ) : bookingComplete && selectedSlot ? (
-              /* ── Success ── */
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="text-center space-y-5 py-6"
+              <BookingConfirmationSuccess
+                details={{
+                  serviceName: activeVariant?.name || service?.title || 'Booking',
+                  startDateTime: selectedSlot.startDateTime,
+                  endDateTime: selectedSlot.endDateTime,
+                  staffName: selectedSlot.staffName,
+                  locationName: selectedSlot.locationName,
+                }}
+                onDone={onClose}
               >
-                <div className="flex justify-center">
-                  <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-                    <CheckCircle className="h-8 w-8 text-primary" />
-                  </div>
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-semibold text-foreground">Booking Confirmed!</h3>
-                  <p className="text-sm text-muted-foreground">Your appointment has been booked.</p>
-                </div>
-                <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-left text-sm">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span>{format(new Date(selectedSlot.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span>{format(new Date(selectedSlot.startDateTime), 'h:mm a')}</span>
-                  </div>
-                  {selectedSlot.staffName && (
-                    <div className="flex items-center gap-3">
-                      <User className="h-4 w-4 text-muted-foreground shrink-0" />
-                      <span>{selectedSlot.staffName}</span>
-                    </div>
-                  )}
-                  <div className="flex items-center gap-3">
-                    <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
-                    <span>{selectedSlot.locationName}</span>
-                  </div>
-                </div>
-                <Button onClick={onClose} className="w-full">Done</Button>
                 {onSwitchService && (
                   <UpsellSuggestions
                     currentServiceTitle={service?.title || ''}
@@ -563,7 +544,7 @@ const BookingDrawer = ({
                     referenceEndDateTime={selectedSlot?.endDateTime ?? null}
                   />
                 )}
-              </motion.div>
+              </BookingConfirmationSuccess>
             ) : (
               <>
                 {/* Steps indicator */}

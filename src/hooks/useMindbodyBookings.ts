@@ -127,11 +127,23 @@ export function useBookService() {
         await parseFunctionError(response, 'Failed to book');
       }
 
-      return response.json();
+      return response.json() as Promise<{
+        success: boolean;
+        booking?: {
+          id?: string;
+          mindbodyId?: string;
+          serviceName?: string;
+          startTime?: string;
+          status?: string;
+        };
+        payment?: { method: 'pass' | 'stored_card'; amountGbp?: number };
+        idempotent?: boolean;
+      }>;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
     },
+    retry: false,
   });
 }
 
