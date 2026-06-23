@@ -62,6 +62,32 @@ export function pickSaleServiceForClass(services: SaleServiceRow[]): SaleService
   return picked;
 }
 
+/** Pick the cheapest single-session pricing option for appointment checkout. */
+export function pickSaleServiceForSession(services: SaleServiceRow[]): SaleServiceRow | null {
+  if (!services.length) return null;
+
+  const withPrice = services.filter((s) => salePrice(s) > 0);
+  const pool = withPrice.length ? withPrice : services;
+  const singles = pool.filter((s) => !isMultiSessionPack(s.Name || "", s.Count));
+  if (!singles.length) {
+    console.warn(
+      "pickSaleServiceForSession: only multi-session packs available — refusing pack checkout",
+      pool.map((s) => ({ id: s.Id, name: s.Name, price: salePrice(s), count: s.Count })),
+    );
+    return null;
+  }
+
+  const picked = [...singles].sort((a, b) => salePrice(a) - salePrice(b))[0] ?? null;
+  if (picked) {
+    console.log("pickSaleServiceForSession:", {
+      id: picked.Id,
+      name: picked.Name,
+      price: salePrice(picked),
+    });
+  }
+  return picked;
+}
+
 function headers(apiKey: string, siteId: string, bearerToken: string) {
   return {
     "Content-Type": "application/json",
@@ -91,6 +117,37 @@ export async function fetchSaleServicesForClass(
   );
   if (!res.ok) {
     console.warn("sale/services for class failed:", classId, res.status, await res.text().catch(() => ""));
+    return [];
+  }
+  const data = await res.json();
+  return (data.Services || []) as SaleServiceRow[];
+}
+
+/** Pricing options for a session type (appointments / suites). */
+export async function fetchSaleServicesForSessionType(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  sessionTypeId: number,
+  locationId?: number,
+): Promise<SaleServiceRow[]> {
+  const params = new URLSearchParams({
+    SessionTypeIds: String(sessionTypeId),
+    SellOnline: "true",
+  });
+  if (locationId != null) params.set("LocationId", String(locationId));
+
+  const res = await fetch(
+    `https://api.mindbodyonline.com/public/v6/sale/services?${params}`,
+    { method: "GET", headers: headers(apiKey, siteId, bearerToken) },
+  );
+  if (!res.ok) {
+    console.warn(
+      "sale/services for session type failed:",
+      sessionTypeId,
+      res.status,
+      await res.text().catch(() => ""),
+    );
     return [];
   }
   const data = await res.json();
@@ -131,6 +188,7 @@ export async function checkoutWithStoredCard(
     serviceId: number;
     amount: number;
     classIds?: number[];
+    appointmentBookingRequests?: Array<Record<string, unknown>>;
   },
 ): Promise<CheckoutResult> {
   const item: Record<string, unknown> = {
@@ -142,6 +200,9 @@ export async function checkoutWithStoredCard(
   };
   if (opts.classIds?.length) {
     item.ClassIds = opts.classIds;
+  }
+  if (opts.appointmentBookingRequests?.length) {
+    item.AppointmentBookingRequests = opts.appointmentBookingRequests;
   }
 
   const body = {
@@ -204,6 +265,49 @@ export async function checkoutClassWithStoredCard(
   });
   if (result.ok) {
     console.log("checkoutshoppingcart ok for class", opts.classId);
+  }
+  return result;
+}
+
+/** Charge stored card and book an appointment in one checkout. */
+export async function checkoutAppointmentWithStoredCard(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  opts: {
+    clientId: string;
+    locationId: number;
+    serviceId: number;
+    amount: number;
+    staffId: number;
+    sessionTypeId: number;
+    startDateTime: string;
+    endDateTime?: string;
+  },
+): Promise<CheckoutResult> {
+  const appointmentRequest: Record<string, unknown> = {
+    StaffId: opts.staffId,
+    LocationId: opts.locationId,
+    SessionTypeId: opts.sessionTypeId,
+    StartDateTime: opts.startDateTime,
+  };
+  if (opts.endDateTime) {
+    appointmentRequest.EndDateTime = opts.endDateTime;
+  }
+
+  const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
+    clientId: opts.clientId,
+    locationId: opts.locationId,
+    serviceId: opts.serviceId,
+    amount: opts.amount,
+    appointmentBookingRequests: [appointmentRequest],
+  });
+  if (result.ok) {
+    console.log(
+      "checkoutshoppingcart ok for appointment",
+      opts.sessionTypeId,
+      opts.startDateTime,
+    );
   }
   return result;
 }
