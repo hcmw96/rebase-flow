@@ -7,11 +7,12 @@ import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { classOfferings, resolveDisplayName } from '@/config/serviceConfig';
 import { ImageCardScrim } from '@/components/ImageTextScrim';
+import { BOOKING_DAYS_AHEAD } from '@/lib/bookingHorizon';
 
 const ClassSchedule = () => {
   const today = useMemo(() => new Date(), []);
   const startDate = format(today, 'yyyy-MM-dd');
-  const endDate = format(addDays(today, 7), 'yyyy-MM-dd');
+  const endDate = format(addDays(today, BOOKING_DAYS_AHEAD), 'yyyy-MM-dd');
 
   const { data: classes, isLoading, error } = useMindbodyClasses({
     startDate,
@@ -59,7 +60,7 @@ const ClassSchedule = () => {
   if (classesByDay.size === 0) {
     return (
       <div className="text-center py-12">
-        <p className="text-muted-foreground">No classes scheduled this week.</p>
+        <p className="text-muted-foreground">No upcoming classes scheduled.</p>
       </div>
     );
   }

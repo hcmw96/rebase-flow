@@ -357,6 +357,13 @@ export const classOfferings = [
       'Guided stretching in the sauna, then mat work and assisted stretching to release tension and reset.',
     classDescriptionIds: [66],
   },
+  {
+    name: 'Recalibrate: Guided Breathwork & Movement',
+    image: '/images/rebase-class-recalibrate.webp',
+    description:
+      'A weekly ritual to restore your inner balance.\n\nThrough guided breathwork and intentional movement, release tension, regulate your system, and revitalise your energy.\n\nLeave feeling lighter, aligned, and deeply reconnected.',
+    classDescriptionIds: [72],
+  },
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────
