@@ -43,6 +43,7 @@ export interface BookingParams {
   startDateTime?: string;
   endDateTime?: string;
   serviceName?: string;
+  idempotencyKey?: string;
 }
 
 export function createApiClient(baseUrl: string) {
@@ -78,18 +79,36 @@ export function createApiClient(baseUrl: string) {
     },
 
     async bookService(params: BookingParams): Promise<{ success: boolean; booking?: any; error?: string }> {
-      const response = await fetch(`${baseUrl}/functions/v1/mindbody-book`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(params),
-      });
+      const body = JSON.stringify(params);
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to book');
+      for (let attempt = 0; attempt <= 6; attempt++) {
+        const response = await fetch(`${baseUrl}/functions/v1/mindbody-book`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body,
+        });
+
+        if (response.status === 409) {
+          const retryBody = await response.json().catch(() => ({}));
+          if (retryBody?.bookingInProgress && attempt < 6) {
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+            continue;
+          }
+          throw new Error(
+            (typeof retryBody?.error === 'string' && retryBody.error) ||
+              'Your booking is already being processed. Please wait a moment.',
+          );
+        }
+
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to book');
+        }
+
+        return response.json();
       }
 
-      return response.json();
+      throw new Error('Your booking is still being processed. Please check My Bookings shortly.');
     },
 
     async cancelBooking(params: {

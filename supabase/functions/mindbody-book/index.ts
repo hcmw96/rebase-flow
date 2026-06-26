@@ -19,6 +19,13 @@ import {
 import { isJuneContrastPassName } from "../_shared/contrastPass.ts";
 import { logJunePassClassBooking } from "../_shared/contrastPassUsageLog.ts";
 import {
+  buildFallbackIdempotencyKey,
+  bookingInProgressResponse,
+  claimBookingIdempotency,
+  confirmedBookingResponse,
+  releaseBookingClaim,
+} from "../_shared/bookingIdempotency.ts";
+import {
   checkoutClassWithStoredCard,
   checkoutAppointmentWithStoredCard,
   fetchSaleServicesForClass,
@@ -790,34 +797,47 @@ serve(async (req) => {
 
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Idempotency short-circuit: if this key already produced a confirmed booking,
-    // return it without calling Mindbody again. Prevents double-booking on retry.
-    if (idempotencyKey) {
-      const { data: existing } = await supabaseAdmin
-        .from("bookings")
-        .select("*")
-        .eq("idempotency_key", idempotencyKey)
-        .maybeSingle();
+    const effectiveIdempotencyKey =
+      (typeof idempotencyKey === "string" && idempotencyKey.trim()) ||
+      buildFallbackIdempotencyKey({
+        sessionId,
+        bookingType: bookingType || "appointment",
+        classId,
+        sessionTypeId,
+        staffId,
+        startDateTime,
+      });
 
-      if (existing && existing.status === "confirmed") {
-        return new Response(
-          JSON.stringify({
-            success: true,
-            idempotent: true,
-            booking: {
-              id: existing.id,
-              mindbodyId: existing.mindbody_appointment_id || existing.mindbody_class_id,
-              serviceName: existing.service_name,
-              startTime: existing.start_time,
-              status: existing.status,
-            },
-          }),
-          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-        );
-      }
+    if (!startDateTime && bookingType !== "class") {
+      throw new Error("startDateTime is required");
     }
+
+    const claim = await claimBookingIdempotency(supabaseAdmin, {
+      idempotencyKey: effectiveIdempotencyKey,
+      sessionId,
+      bookingType: bookingType === "class" ? "class" : "appointment",
+      serviceName: serviceName || "Booking",
+      startDateTime: startDateTime || new Date().toISOString(),
+      endDateTime: endDateTime ?? null,
+      serviceId: sessionTypeId || classId || null,
+      staffName: staffName ?? null,
+      locationName: locationName ?? null,
+    });
+
+    if (claim.type === "confirmed") {
+      return confirmedBookingResponse(claim.booking);
+    }
+    if (claim.type === "in_progress") {
+      return bookingInProgressResponse();
+    }
+
+    const claimedBookingId = claim.bookingId;
+
     const sessionResult = await loadBookableSession(supabaseAdmin, sessionId);
-    if (sessionResult instanceof Response) return sessionResult;
+    if (sessionResult instanceof Response) {
+      await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+      return sessionResult;
+    }
     const session = sessionResult;
 
     let bookingResult: Record<string, unknown>;
@@ -828,6 +848,7 @@ serve(async (req) => {
 
     if (bookingType === "class") {
       if (!classId) {
+        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
         throw new Error("classId is required for class booking");
       }
 
@@ -839,7 +860,10 @@ serve(async (req) => {
         classId,
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
       );
-      if (!result.ok) return result.response;
+      if (!result.ok) {
+        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+        return result.response;
+      }
       bookingResult = result.data as Record<string, unknown>;
       mindbodyId = classId;
       bookedClientId = result.clientId;
@@ -847,6 +871,7 @@ serve(async (req) => {
       bookedClientServiceId = result.clientServiceId;
     } else {
       if (!sessionTypeId || !staffId || !startDateTime) {
+        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
         throw new Error("sessionTypeId, staffId, and startDateTime are required");
       }
 
@@ -861,7 +886,10 @@ serve(async (req) => {
         startDateTime,
         endDateTime,
       );
-      if (!result.ok) return result.response;
+      if (!result.ok) {
+        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+        return result.response;
+      }
       bookingResult = result.data as Record<string, unknown>;
       const checkoutAppointment = bookingResult.Appointment as { Id?: number } | undefined;
       const checkoutAppointments = bookingResult.Appointments as Array<{ Id?: number }> | undefined;
@@ -884,11 +912,10 @@ serve(async (req) => {
       : (staffName || null);
     const resolvedLocationName = appointment?.Location?.Name || locationName || null;
 
-    // Save booking to local database
+    // Finalise the pending idempotency row (Mindbody already succeeded).
     const { data: booking, error: bookingError } = await supabaseAdmin
       .from("bookings")
-      .insert({
-        session_id: sessionId,
+      .update({
         mindbody_appointment_id: bookingType === "appointment" ? mindbodyId : null,
         mindbody_class_id: bookingType === "class" ? mindbodyId : null,
         service_name: serviceName || "Booking",
@@ -898,19 +925,18 @@ serve(async (req) => {
         start_time: startDateTime || classInfo?.StartDateTime,
         end_time: endDateTime || classInfo?.EndDateTime,
         status: "confirmed",
-        booking_type: bookingType,
-        idempotency_key: idempotencyKey || null,
+        idempotency_key: effectiveIdempotencyKey,
         payment_method: paymentMeta?.method ?? null,
         mindbody_client_service_id: bookedClientServiceId != null
           ? String(bookedClientServiceId)
           : null,
       })
+      .eq("id", claimedBookingId)
       .select()
       .single();
 
     if (bookingError) {
-      console.error("Local booking save error:", bookingError);
-      // Don't throw - the Mindbody booking succeeded
+      console.error("Local booking confirm error:", bookingError);
     }
 
     const communalContrast =

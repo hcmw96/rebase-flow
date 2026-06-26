@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { format, isSameDay } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
+import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 
 interface ServiceVariant {
   id: string;
@@ -42,8 +43,9 @@ interface StoredService {
 const BookService = () => {
   const navigate = useNavigate();
   const { serviceId } = useParams();
-  const { isAuthenticated, login } = useAuth();
+  const { isAuthenticated, login, mbSession } = useAuth();
   const bookServiceMutation = useBookService();
+  const bookingInFlightRef = useRef(false);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
@@ -181,12 +183,27 @@ const BookService = () => {
     }
   };
 
+  const idempotencyKey = useMemo(() => {
+    if (!selectedSlot || !mbSession?.sessionId) return undefined;
+    return buildSlotBookingIdempotencyKey({
+      sessionId: mbSession.sessionId,
+      bookingType: 'appointment',
+      sessionTypeId: selectedSlot.sessionTypeId.toString(),
+      staffId: selectedSlot.staffId.toString(),
+      startDateTime: selectedSlot.startDateTime,
+    });
+  }, [selectedSlot, mbSession?.sessionId]);
+
   const handleConfirmBooking = async () => {
-    if (!selectedSlot) return;
+    if (!selectedSlot || bookingComplete || bookingInFlightRef.current || bookServiceMutation.isPending) {
+      return;
+    }
     if (!isAuthenticated) {
       login();
       return;
     }
+
+    bookingInFlightRef.current = true;
 
     try {
       await bookServiceMutation.mutateAsync({
@@ -196,10 +213,12 @@ const BookService = () => {
         locationId: selectedSlot.locationId,
         startDateTime: selectedSlot.startDateTime,
         serviceName: selectedVariant?.name || service?.title,
+        idempotencyKey,
       });
       setBookingComplete(true);
       toast.success('Booking confirmed!');
     } catch (error) {
+      bookingInFlightRef.current = false;
       toast.error('Failed to complete booking. Please try again.');
     }
   };

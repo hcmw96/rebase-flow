@@ -25,7 +25,7 @@ import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHor
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { classifyBookingError } from '@/lib/bookingErrors';
-import { createBookingIdempotencyKey } from '@/lib/bookingIdempotency';
+import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 import { BookingMutationError } from '@/lib/bookingMutationError';
 import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import {
@@ -106,7 +106,6 @@ const BookingDrawer = ({
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const restoredAppointmentRef = useRef<string | null>(null);
   const bookingInFlightRef = useRef(false);
 
@@ -121,7 +120,6 @@ const BookingDrawer = ({
         setSelectedVariant(null);
         setBookingComplete(false);
         setIsSubmitting(false);
-        setIdempotencyKey(null);
         bookingInFlightRef.current = false;
         setBookingError(null);
         setBookingErrorRequiresSignIn(false);
@@ -299,16 +297,16 @@ const BookingDrawer = ({
     setCurrentStep(confirmStep);
   };
 
-  // Generate a fresh idempotency key whenever the user reaches the confirm step for a new slot
-  useEffect(() => {
-    if (currentStep === confirmStep && selectedSlot && !idempotencyKey) {
-      setIdempotencyKey(createBookingIdempotencyKey());
-    }
-    // Reset key when leaving confirm step so the next attempt gets a fresh key
-    if (currentStep !== confirmStep && idempotencyKey) {
-      setIdempotencyKey(null);
-    }
-  }, [currentStep, confirmStep, selectedSlot, idempotencyKey]);
+  const idempotencyKey = useMemo(() => {
+    if (!selectedSlot || !mbSession?.sessionId) return undefined;
+    return buildSlotBookingIdempotencyKey({
+      sessionId: mbSession.sessionId,
+      bookingType: 'appointment',
+      sessionTypeId: selectedSlot.sessionTypeId.toString(),
+      staffId: selectedSlot.staffId.toString(),
+      startDateTime: selectedSlot.startDateTime,
+    });
+  }, [selectedSlot, mbSession?.sessionId]);
 
   const handleBack = () => {
     // If variant is contact-only, go back to variant selection
@@ -368,7 +366,7 @@ const BookingDrawer = ({
         startDateTime: selectedSlot.startDateTime,
         endDateTime: selectedSlot.endDateTime,
         serviceName: activeVariant?.name || service?.title,
-        idempotencyKey: idempotencyKey || undefined,
+        idempotencyKey,
       });
       setBookingComplete(true);
       setNeedsCardOnFile(false);

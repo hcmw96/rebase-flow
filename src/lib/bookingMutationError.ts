@@ -5,6 +5,8 @@ export type BookingFailureFlags = {
   noPassOnFile?: boolean;
   /** No card saved on the Mindbody client profile */
   noStoredCard?: boolean;
+  /** Another request with the same idempotency key is still processing */
+  bookingInProgress?: boolean;
 };
 
 export class BookingMutationError extends Error {

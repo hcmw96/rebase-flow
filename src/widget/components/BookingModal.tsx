@@ -1,8 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { format, isSameDay } from 'date-fns';
 import { useWidget, GroupedService, ServiceVariant } from '../context/WidgetContext';
 import { createApiClient, AvailableItem } from '../api/client';
 import { filterUpcomingSessions } from '../../lib/sessionTimes';
+import { buildSlotBookingIdempotencyKey } from '../../lib/bookingIdempotency';
 import { BookingCalendar } from './BookingCalendar';
 import { TimeSlotPicker } from './TimeSlotPicker';
 
@@ -27,6 +28,18 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
   const [isLoadingSlots, setIsLoadingSlots] = useState(false);
   const [isBooking, setIsBooking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const bookingInFlightRef = useRef(false);
+
+  const idempotencyKey = useMemo(() => {
+    if (!selectedSlot || !session?.sessionId) return undefined;
+    return buildSlotBookingIdempotencyKey({
+      sessionId: session.sessionId,
+      bookingType: 'appointment',
+      sessionTypeId: selectedSlot.sessionTypeId.toString(),
+      staffId: selectedSlot.staffId.toString(),
+      startDateTime: selectedSlot.startDateTime,
+    });
+  }, [selectedSlot, session?.sessionId]);
 
   const client = useMemo(() => createApiClient(config.apiUrl), [config.apiUrl]);
 
@@ -95,8 +108,9 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       return;
     }
 
-    if (!selectedSlot || !session || !selectedVariant) return;
+    if (!selectedSlot || !session || !selectedVariant || bookingInFlightRef.current) return;
 
+    bookingInFlightRef.current = true;
     setIsBooking(true);
     setError(null);
 
@@ -109,9 +123,11 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
         locationId: selectedSlot.locationId,
         startDateTime: selectedSlot.startDateTime,
         serviceName: selectedVariant.name,
+        idempotencyKey,
       });
       setStep('success');
     } catch (err) {
+      bookingInFlightRef.current = false;
       setError(err instanceof Error ? err.message : 'Failed to book. Please try again.');
     } finally {
       setIsBooking(false);

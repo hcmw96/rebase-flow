@@ -19,6 +19,7 @@ async function parseFunctionError(response: Response, fallback: string): Promise
       siteScopeIssue: Boolean(body?.siteScopeIssue),
       noPassOnFile: Boolean(body?.noPassOnFile),
       noStoredCard: Boolean(body?.noStoredCard),
+      bookingInProgress: Boolean(body?.bookingInProgress) || response.status === 409,
     });
   } catch (e) {
     if (e instanceof BookingMutationError) throw e;
@@ -104,6 +105,9 @@ export function useMyBookings() {
   });
 }
 
+const IN_PROGRESS_RETRY_DELAY_MS = 2000;
+const IN_PROGRESS_MAX_RETRIES = 6;
+
 export function useBookService() {
   const { mbSession } = useAuth();
   const queryClient = useQueryClient();
@@ -114,31 +118,53 @@ export function useBookService() {
         throw new Error('Please sign in to book');
       }
 
-      const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
-        method: 'POST',
-        headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({
-          sessionId: mbSession.sessionId,
-          ...params,
-        }),
+      const body = JSON.stringify({
+        sessionId: mbSession.sessionId,
+        ...params,
       });
 
-      if (!response.ok) {
-        await parseFunctionError(response, 'Failed to book');
+      for (let attempt = 0; attempt <= IN_PROGRESS_MAX_RETRIES; attempt++) {
+        const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
+          method: 'POST',
+          headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
+          body,
+        });
+
+        if (response.status === 409) {
+          const retryBody = await response.json().catch(() => ({}));
+          if (retryBody?.bookingInProgress && attempt < IN_PROGRESS_MAX_RETRIES) {
+            await new Promise((resolve) => setTimeout(resolve, IN_PROGRESS_RETRY_DELAY_MS));
+            continue;
+          }
+          throw new BookingMutationError(
+            (typeof retryBody?.error === 'string' && retryBody.error) ||
+              'Your booking is already being processed. Please wait a moment.',
+            { bookingInProgress: true },
+          );
+        }
+
+        if (!response.ok) {
+          await parseFunctionError(response, 'Failed to book');
+        }
+
+        return response.json() as Promise<{
+          success: boolean;
+          booking?: {
+            id?: string;
+            mindbodyId?: string;
+            serviceName?: string;
+            startTime?: string;
+            status?: string;
+          };
+          payment?: { method: 'pass' | 'stored_card'; amountGbp?: number };
+          idempotent?: boolean;
+        }>;
       }
 
-      return response.json() as Promise<{
-        success: boolean;
-        booking?: {
-          id?: string;
-          mindbodyId?: string;
-          serviceName?: string;
-          startTime?: string;
-          status?: string;
-        };
-        payment?: { method: 'pass' | 'stored_card'; amountGbp?: number };
-        idempotent?: boolean;
-      }>;
+      throw new BookingMutationError(
+        'Your booking is still being processed. Please wait a moment and check My Bookings.',
+        { bookingInProgress: true },
+      );
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });

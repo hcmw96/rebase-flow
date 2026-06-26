@@ -34,7 +34,7 @@ import {
   markSessionNeedsPaymentCard,
   sessionNeedsPaymentCard,
 } from '@/lib/paymentCardSetupStorage';
-import { createBookingIdempotencyKey } from '@/lib/bookingIdempotency';
+import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 
 const stripHtml = (html: string) => {
   if (typeof DOMParser !== 'undefined') {
@@ -144,7 +144,6 @@ const ClassScheduleFlow = ({
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
@@ -280,14 +279,15 @@ const ClassScheduleFlow = ({
     }
   }, [isAuthenticated, refreshMbSession]);
 
-  useEffect(() => {
-    if (currentStep === 2 && selectedClass && !idempotencyKey) {
-      setIdempotencyKey(createBookingIdempotencyKey());
-    }
-    if (currentStep !== 2 && idempotencyKey) {
-      setIdempotencyKey(null);
-    }
-  }, [currentStep, selectedClass, idempotencyKey]);
+  const idempotencyKey = useMemo(() => {
+    if (!selectedClass || !mbSession?.sessionId) return undefined;
+    return buildSlotBookingIdempotencyKey({
+      sessionId: mbSession.sessionId,
+      bookingType: 'class',
+      classId: selectedClass.id,
+      startDateTime: selectedClass.startDateTime,
+    });
+  }, [selectedClass, mbSession?.sessionId]);
 
   const startSignIn = (cls?: MindbodyClass | null) => {
     const target = cls ?? selectedClass;
@@ -347,7 +347,7 @@ const ClassScheduleFlow = ({
         endDateTime: selectedClass.endDateTime,
         locationName: selectedClass.locationName,
         staffName: selectedClass.staffName,
-        idempotencyKey: idempotencyKey || undefined,
+        idempotencyKey,
       });
       setBookingComplete(true);
       setNeedsCardOnFile(false);
