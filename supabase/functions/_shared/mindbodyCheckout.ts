@@ -158,6 +158,25 @@ export type CheckoutResult =
   | { ok: true; data: Record<string, unknown> }
   | { ok: false; message: string; noStoredCard?: boolean };
 
+/**
+ * Try consumer token first; only fall back to staff when the card is missing.
+ * Never retry after an ambiguous failure — the consumer call may have charged.
+ */
+export async function checkoutWithConsumerThenStaff(
+  apiKey: string,
+  siteId: string,
+  consumerToken: string,
+  staffToken: string,
+  runCheckout: (bearerToken: string) => Promise<CheckoutResult>,
+): Promise<CheckoutResult> {
+  const consumer = await runCheckout(consumerToken);
+  if (consumer.ok) return consumer;
+  if (consumer.noStoredCard) {
+    return await runCheckout(staffToken);
+  }
+  return consumer;
+}
+
 function parseCheckoutFailure(
   res: Response,
   raw: string,

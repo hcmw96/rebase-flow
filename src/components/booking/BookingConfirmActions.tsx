@@ -1,3 +1,4 @@
+import { useRef, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
@@ -38,6 +39,7 @@ const BookingConfirmActions = ({
   cardSetupRetryHint = null,
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const confirmLockedRef = useRef(false);
 
   const handleCreateAccount = () => {
     if (onCreateAccount) {
@@ -54,6 +56,15 @@ const BookingConfirmActions = ({
     checkoutSummary && !checkoutSummary.pass
       ? `Confirm & pay £${checkoutSummary.priceGbp}`
       : 'Confirm booking';
+
+  const handleConfirmClick = useCallback(() => {
+    if (isPending || confirmLockedRef.current) return;
+    confirmLockedRef.current = true;
+    onConfirm();
+    window.setTimeout(() => {
+      confirmLockedRef.current = false;
+    }, 3000);
+  }, [isPending, onConfirm]);
 
   return (
     <div className="space-y-3">
@@ -122,7 +133,7 @@ const BookingConfirmActions = ({
         {!showCardSetup && (
           <Button
             type="button"
-            onClick={onConfirm}
+            onClick={handleConfirmClick}
             disabled={isPending}
             aria-busy={isPending}
             className="w-full sm:flex-1 min-h-11"

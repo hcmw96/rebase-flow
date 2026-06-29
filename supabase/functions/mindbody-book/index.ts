@@ -23,19 +23,25 @@ import {
   claimBookingIdempotency,
   confirmedBookingResponse,
   findConfirmedSlotBooking,
+  findConfirmedSlotBookingByMindbodyClient,
   persistBookingCheckout,
   releaseBookingClaim,
   resolveServerIdempotencyKey,
 } from "../_shared/bookingIdempotency.ts";
 import {
-  checkoutClassWithStoredCard,
   checkoutAppointmentWithStoredCard,
+  checkoutClassWithStoredCard,
+  checkoutWithConsumerThenStaff,
   fetchSaleServicesForClass,
   fetchSaleServicesForSessionType,
   isMultiSessionPack,
   pickSaleServiceForClass,
   pickSaleServiceForSession,
 } from "../_shared/mindbodyCheckout.ts";
+import {
+  clientAlreadyBookedAppointment,
+  clientAlreadyBookedClass,
+} from "../_shared/mindbodyBookingGuard.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -407,6 +413,7 @@ async function bookClassWithPayment(
   apiKey: string,
   siteId: string,
   classId: string,
+  startDateTime: string,
   locationId: number | undefined,
 ): Promise<
   | {
@@ -501,51 +508,103 @@ async function bookClassWithPayment(
 
   const classIdNum = parseInt(classId, 10);
   const locId = locationId && locationId > 0 ? locationId : 1;
-  let sawNoStoredCard = false;
 
-  for (const [token, label] of [
-    [activeSession.access_token, "consumer"] as const,
-    [staffToken, "staff"] as const,
-  ]) {
-    const saleServices = await fetchSaleServicesForClass(apiKey, siteId, token, classIdNum, locId);
-    const saleService = pickSaleServiceForClass(saleServices);
-    if (!saleService?.Id) {
-      console.warn(`No sale service for class ${classId} (${label})`);
-      continue;
-    }
-    const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
-    if (amount <= 0) continue;
-
-    if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
-      console.error(
-        `Refusing pack/pass checkout for class ${classId}:`,
-        saleService.Name,
-        amount,
-      );
-      continue;
-    }
-
-    const checkout = await checkoutClassWithStoredCard(apiKey, siteId, token, {
+  if (
+    await clientAlreadyBookedClass(
+      apiKey,
+      siteId,
+      staffToken,
+      publicClientId,
+      classId,
+      startDateTime,
+    )
+  ) {
+    console.log(`Class ${classId} already booked in Mindbody for client ${publicClientId}`);
+    return {
+      ok: true,
+      data: { Class: { Id: classIdNum, StartDateTime: startDateTime } },
       clientId,
-      classId: classIdNum,
-      locationId: locId,
-      serviceId: saleService.Id,
-      amount,
-    });
-    if (checkout.ok) {
-      console.log(`Class ${classId} booked via checkout (${label})`);
-      return {
-        ok: true,
-        data: checkout.data,
-        clientId,
-        payment: { method: "stored_card", amountGbp: amount },
-      };
-    }
-    if (checkout.noStoredCard) sawNoStoredCard = true;
-    console.warn(`Checkout (${label}) failed:`, checkout.message);
+      payment: { method: "stored_card" as const },
+    };
   }
 
-  if (sawNoStoredCard) {
+  let saleService = pickSaleServiceForClass(
+    await fetchSaleServicesForClass(apiKey, siteId, activeSession.access_token, classIdNum, locId),
+  );
+  if (!saleService?.Id) {
+    saleService = pickSaleServiceForClass(
+      await fetchSaleServicesForClass(apiKey, siteId, staffToken, classIdNum, locId),
+    );
+  }
+  if (!saleService?.Id) {
+    console.warn(`No sale service for class ${classId}`);
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
+          paymentRequired: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
+  if (amount <= 0) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "This class is not available for online booking right now." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
+    console.error(`Refusing pack/pass checkout for class ${classId}:`, saleService.Name, amount);
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
+          paymentRequired: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  const checkout = await checkoutWithConsumerThenStaff(
+    apiKey,
+    siteId,
+    activeSession.access_token,
+    staffToken,
+    (token) =>
+      checkoutClassWithStoredCard(apiKey, siteId, token, {
+        clientId,
+        classId: classIdNum,
+        locationId: locId,
+        serviceId: saleService!.Id!,
+        amount,
+      }),
+  );
+
+  if (checkout.ok) {
+    console.log(`Class ${classId} booked via checkout`);
+    return {
+      ok: true,
+      data: checkout.data,
+      clientId,
+      payment: { method: "stored_card", amountGbp: amount },
+    };
+  }
+
+  if (checkout.noStoredCard) {
     return {
       ok: false,
       response: new Response(
@@ -680,60 +739,119 @@ async function bookAppointmentWithPayment(
   const sessionTypeIdNum = parseInt(sessionTypeId, 10);
   const staffIdNum = parseInt(staffId, 10);
   const locId = locationId > 0 ? locationId : 1;
-  let sawNoStoredCard = false;
 
-  for (const [token, label] of [
-    [activeSession.access_token, "consumer"] as const,
-    [staffToken, "staff"] as const,
-  ]) {
-    const saleServices = await fetchSaleServicesForSessionType(
+  if (
+    await clientAlreadyBookedAppointment(
       apiKey,
       siteId,
-      token,
-      sessionTypeIdNum,
-      locId,
-    );
-    const saleService = pickSaleServiceForSession(saleServices);
-    if (!saleService?.Id) {
-      console.warn(`No sale service for session type ${sessionTypeId} (${label})`);
-      continue;
-    }
-    const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
-    if (amount <= 0) continue;
-
-    if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
-      console.error(
-        `Refusing pack/pass checkout for session type ${sessionTypeId}:`,
-        saleService.Name,
-        amount,
-      );
-      continue;
-    }
-
-    const checkout = await checkoutAppointmentWithStoredCard(apiKey, siteId, token, {
-      clientId,
-      locationId: locId,
-      serviceId: saleService.Id,
-      amount,
-      staffId: staffIdNum,
-      sessionTypeId: sessionTypeIdNum,
+      staffToken,
+      publicClientId,
+      sessionTypeId,
+      staffId,
       startDateTime,
-      endDateTime,
-    });
-    if (checkout.ok) {
-      console.log(`Appointment ${sessionTypeId} booked via checkout (${label})`);
-      return {
-        ok: true,
-        data: checkout.data,
-        clientId,
-        payment: { method: "stored_card", amountGbp: amount },
-      };
-    }
-    if (checkout.noStoredCard) sawNoStoredCard = true;
-    console.warn(`Appointment checkout (${label}) failed:`, checkout.message);
+    )
+  ) {
+    console.log(
+      `Appointment ${sessionTypeId} at ${startDateTime} already booked in Mindbody for client ${publicClientId}`,
+    );
+    return {
+      ok: true,
+      data: { Appointment: { StartDateTime: startDateTime } },
+      clientId,
+      payment: { method: "stored_card" as const },
+    };
   }
 
-  if (sawNoStoredCard) {
+  let saleService = pickSaleServiceForSession(
+    await fetchSaleServicesForSessionType(
+      apiKey,
+      siteId,
+      activeSession.access_token,
+      sessionTypeIdNum,
+      locId,
+    ),
+  );
+  if (!saleService?.Id) {
+    saleService = pickSaleServiceForSession(
+      await fetchSaleServicesForSessionType(apiKey, siteId, staffToken, sessionTypeIdNum, locId),
+    );
+  }
+  if (!saleService?.Id) {
+    console.warn(`No sale service for session type ${sessionTypeId}`);
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
+          paymentRequired: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
+  if (amount <= 0) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({ error: "This session is not available for online booking right now." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
+    console.error(
+      `Refusing pack/pass checkout for session type ${sessionTypeId}:`,
+      saleService.Name,
+      amount,
+    );
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
+          paymentRequired: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  const checkout = await checkoutWithConsumerThenStaff(
+    apiKey,
+    siteId,
+    activeSession.access_token,
+    staffToken,
+    (token) =>
+      checkoutAppointmentWithStoredCard(apiKey, siteId, token, {
+        clientId,
+        locationId: locId,
+        serviceId: saleService!.Id!,
+        amount,
+        staffId: staffIdNum,
+        sessionTypeId: sessionTypeIdNum,
+        startDateTime,
+        endDateTime,
+      }),
+  );
+
+  if (checkout.ok) {
+    console.log(`Appointment ${sessionTypeId} booked via checkout`);
+    return {
+      ok: true,
+      data: checkout.data,
+      clientId,
+      payment: { method: "stored_card", amountGbp: amount },
+    };
+  }
+
+  if (checkout.noStoredCard) {
     return {
       ok: false,
       response: new Response(
@@ -807,13 +925,17 @@ serve(async (req) => {
       startDateTime,
     });
 
-    if (!startDateTime && bookingType !== "class") {
+    if (!startDateTime) {
       throw new Error("startDateTime is required");
     }
 
-    const slotStartDateTime = startDateTime || new Date().toISOString();
+    const slotStartDateTime = startDateTime;
     const resolvedBookingType = bookingType === "class" ? "class" : "appointment";
     const resolvedServiceId = sessionTypeId || classId || null;
+
+    const sessionResult = await loadBookableSession(supabaseAdmin, sessionId);
+    if (sessionResult instanceof Response) return sessionResult;
+    const session = sessionResult;
 
     const existingConfirmed = await findConfirmedSlotBooking(supabaseAdmin, {
       sessionId,
@@ -823,6 +945,19 @@ serve(async (req) => {
     });
     if (existingConfirmed) {
       return confirmedBookingResponse(existingConfirmed);
+    }
+
+    const siteClientId = session.mindbody_site_client_id?.trim();
+    if (siteClientId) {
+      const existingByClient = await findConfirmedSlotBookingByMindbodyClient(supabaseAdmin, {
+        mindbodySiteClientId: siteClientId,
+        bookingType: resolvedBookingType,
+        serviceId: resolvedServiceId,
+        startDateTime: slotStartDateTime,
+      });
+      if (existingByClient) {
+        return confirmedBookingResponse(existingByClient);
+      }
     }
 
     const claim = await claimBookingIdempotency(supabaseAdmin, {
@@ -840,19 +975,92 @@ serve(async (req) => {
     if (claim.type === "confirmed") {
       return confirmedBookingResponse(claim.booking);
     }
+
+    let claimedBookingId: string | undefined;
+
     if (claim.type === "in_progress") {
+      try {
+        const staffToken = await getStaffToken();
+        let alreadyInMindbody = false;
+        if (resolvedBookingType === "class" && classId) {
+          alreadyInMindbody = await clientAlreadyBookedClass(
+            apiKey,
+            siteId,
+            staffToken,
+            session.mindbody_client_id,
+            classId,
+            slotStartDateTime,
+          );
+        } else if (sessionTypeId && staffId) {
+          alreadyInMindbody = await clientAlreadyBookedAppointment(
+            apiKey,
+            siteId,
+            staffToken,
+            session.mindbody_client_id,
+            sessionTypeId,
+            staffId,
+            slotStartDateTime,
+          );
+        }
+
+        if (alreadyInMindbody) {
+          const { data: pending } = await supabaseAdmin
+            .from("bookings")
+            .select("id")
+            .eq("idempotency_key", effectiveIdempotencyKey)
+            .eq("status", "pending")
+            .maybeSingle();
+
+          if (pending?.id) {
+            const reconciled = await persistBookingCheckout(supabaseAdmin, {
+              sessionId,
+              bookingId: String(pending.id),
+              idempotencyKey: effectiveIdempotencyKey,
+              bookingType: resolvedBookingType,
+              mindbodyAppointmentId: resolvedBookingType === "appointment" ? undefined : null,
+              mindbodyClassId: resolvedBookingType === "class" ? classId : null,
+              serviceName: serviceName || "Booking",
+              serviceId: resolvedServiceId,
+              staffName: staffName ?? null,
+              locationName: locationName ?? null,
+              startDateTime: slotStartDateTime,
+              endDateTime: endDateTime ?? null,
+              paymentMethod: "stored_card",
+            });
+            if (reconciled) {
+              return confirmedBookingResponse(reconciled);
+            }
+          }
+
+          const recovered =
+            (await findConfirmedSlotBooking(supabaseAdmin, {
+              sessionId,
+              bookingType: resolvedBookingType,
+              serviceId: resolvedServiceId,
+              startDateTime: slotStartDateTime,
+            })) ||
+            (siteClientId
+              ? await findConfirmedSlotBookingByMindbodyClient(supabaseAdmin, {
+                mindbodySiteClientId: siteClientId,
+                bookingType: resolvedBookingType,
+                serviceId: resolvedServiceId,
+                startDateTime: slotStartDateTime,
+              })
+              : null);
+          if (recovered) {
+            return confirmedBookingResponse(recovered);
+          }
+        }
+      } catch (reconcileErr) {
+        console.error("Pending booking reconciliation error:", reconcileErr);
+      }
       return bookingInProgressResponse();
     }
 
-    const claimedBookingId = claim.bookingId;
+    claimedBookingId = claim.bookingId;
+    let mindbodySucceeded = false;
 
-    const sessionResult = await loadBookableSession(supabaseAdmin, sessionId);
-    if (sessionResult instanceof Response) {
-      await releaseBookingClaim(supabaseAdmin, claimedBookingId);
-      return sessionResult;
-    }
-    const session = sessionResult;
-
+    try {
     let bookingResult: Record<string, unknown>;
     let mindbodyId: string | undefined;
     let bookedClientId: string | undefined;
@@ -871,12 +1079,14 @@ serve(async (req) => {
         apiKey,
         siteId,
         classId,
+        slotStartDateTime,
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
       );
       if (!result.ok) {
         await releaseBookingClaim(supabaseAdmin, claimedBookingId);
         return result.response;
       }
+      mindbodySucceeded = true;
       bookingResult = result.data as Record<string, unknown>;
       mindbodyId = classId;
       bookedClientId = result.clientId;
@@ -903,6 +1113,7 @@ serve(async (req) => {
         await releaseBookingClaim(supabaseAdmin, claimedBookingId);
         return result.response;
       }
+      mindbodySucceeded = true;
       bookingResult = result.data as Record<string, unknown>;
       const checkoutAppointment = bookingResult.Appointment as { Id?: number } | undefined;
       const checkoutAppointments = bookingResult.Appointments as Array<{ Id?: number }> | undefined;
@@ -1034,6 +1245,12 @@ serve(async (req) => {
         status: 200,
       }
     );
+    } catch (bookingErr) {
+      if (claimedBookingId && !mindbodySucceeded) {
+        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+      }
+      throw bookingErr;
+    }
   } catch (error) {
     console.error("Booking error:", error);
     return new Response(

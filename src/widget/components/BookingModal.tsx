@@ -108,7 +108,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       return;
     }
 
-    if (!selectedSlot || !session || !selectedVariant || bookingInFlightRef.current) return;
+    if (!selectedSlot || !session || !selectedVariant || bookingInFlightRef.current || isBooking) return;
 
     bookingInFlightRef.current = true;
     setIsBooking(true);

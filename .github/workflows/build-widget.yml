@@ -6,6 +6,9 @@ on:
       - main
     paths:
       - 'src/widget/**'
+      - 'src/lib/bookingIdempotency.ts'
+      - 'src/lib/bookingMutationError.ts'
+      - 'src/lib/sessionTimes.ts'
       - 'vite.widget.config.ts'
       - '.github/workflows/build-widget.yml'
   workflow_dispatch:

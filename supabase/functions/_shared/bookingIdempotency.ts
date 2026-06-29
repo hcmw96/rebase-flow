@@ -90,6 +90,45 @@ export async function findConfirmedSlotBooking(
   return (data as Record<string, unknown> | null) ?? null;
 }
 
+/** Cross-device guard: same Mindbody client must not book the same slot twice. */
+export async function findConfirmedSlotBookingByMindbodyClient(
+  supabase: SupabaseClient,
+  params: {
+    mindbodySiteClientId: string;
+    bookingType: "appointment" | "class";
+    serviceId?: string | null;
+    startDateTime: string;
+  },
+): Promise<Record<string, unknown> | null> {
+  const normalizedStart = normalizeBookingDateTime(params.startDateTime);
+  if (!normalizedStart) return null;
+
+  const { data: sessions } = await supabase
+    .from("mb_sessions")
+    .select("id")
+    .eq("mindbody_site_client_id", params.mindbodySiteClientId);
+
+  const sessionIds = (sessions || []).map((row) => row.id).filter(Boolean);
+  if (!sessionIds.length) return null;
+
+  let query = supabase
+    .from("bookings")
+    .select("*")
+    .in("session_id", sessionIds)
+    .eq("booking_type", params.bookingType)
+    .eq("status", "confirmed")
+    .eq("start_time", normalizedStart);
+
+  if (params.serviceId) {
+    query = query.eq("service_id", params.serviceId);
+  } else {
+    query = query.is("service_id", null);
+  }
+
+  const { data } = await query.order("created_at", { ascending: true }).limit(1).maybeSingle();
+  return (data as Record<string, unknown> | null) ?? null;
+}
+
 /** Reserve an idempotency slot before calling Mindbody (prevents duplicate charges). */
 export async function claimBookingIdempotency(
   supabase: SupabaseClient,

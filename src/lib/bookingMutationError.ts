@@ -7,6 +7,8 @@ export type BookingFailureFlags = {
   noStoredCard?: boolean;
   /** Another request with the same idempotency key is still processing */
   bookingInProgress?: boolean;
+  /** Pass purchase request still processing */
+  purchaseInProgress?: boolean;
 };
 
 export class BookingMutationError extends Error {

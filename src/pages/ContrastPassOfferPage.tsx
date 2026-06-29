@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Navigation from '@/components/Navigation';
 import Footer from '@/components/Footer';
 import SeoHead from '@/components/seo/SeoHead';
@@ -24,6 +24,7 @@ const ContrastPassOfferPage = () => {
   const { saleActive, displayPrice, isLoading, product } = useContrastPassOffer();
   const { login, openMindbodySignUp, isAuthenticated, mbSession } = useAuth();
   const purchaseMutation = usePurchaseContrastPass();
+  const purchaseInFlightRef = useRef(false);
 
   const [purchaseComplete, setPurchaseComplete] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
@@ -37,10 +38,14 @@ const ContrastPassOfferPage = () => {
   }, [isAuthenticated, mbSession?.sessionId]);
 
   const handlePurchase = async () => {
-    if (!product?.id) {
-      toast.error('Pass is not available right now. Please try again shortly.');
+    if (!product?.id || purchaseComplete || purchaseInFlightRef.current || purchaseMutation.isPending) {
+      if (!product?.id) {
+        toast.error('Pass is not available right now. Please try again shortly.');
+      }
       return;
     }
+
+    purchaseInFlightRef.current = true;
 
     setPurchaseError(null);
     setCardSetupRetryHint(null);
@@ -55,6 +60,7 @@ const ContrastPassOfferPage = () => {
       clearSessionNeedsPaymentCard();
       toast.success(`Pass purchased — £${result.amountGbp}`);
     } catch (error: unknown) {
+      purchaseInFlightRef.current = false;
       if (error instanceof BookingMutationError) {
         if (error.flags.noStoredCard) {
           if (mbSession?.sessionId) {

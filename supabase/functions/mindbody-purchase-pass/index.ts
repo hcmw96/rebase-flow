@@ -7,10 +7,16 @@ import {
   isMindbodyTokenExpired,
   refreshMindbodySessionIfNeeded,
 } from "../_shared/mindbodyRefreshSession.ts";
-import { checkoutServiceWithStoredCard } from "../_shared/mindbodyCheckout.ts";
+import { checkoutServiceWithStoredCard, checkoutWithConsumerThenStaff } from "../_shared/mindbodyCheckout.ts";
 import { isJuneContrastPassName } from "../_shared/contrastPass.ts";
-import { fetchActiveClientServices } from "../_shared/mindbodyClientServices.ts";
+import { fetchActiveClientServices, findJuneContrastPassRow } from "../_shared/mindbodyClientServices.ts";
 import { logContrastPassPurchase } from "../_shared/contrastPassUsageLog.ts";
+import {
+  claimPassPurchase,
+  confirmPassPurchase,
+  releasePurchaseClaim,
+  resolvePurchaseProductKey,
+} from "../_shared/purchaseIdempotency.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -249,28 +255,75 @@ serve(async (req) => {
     }
 
     const locId = Number.isFinite(defaultLocationId) ? defaultLocationId : 1;
-    let checkout = await checkoutServiceWithStoredCard(
+    const productKey = resolvePurchaseProductKey(passService.id);
+
+    const activeServices = await fetchActiveClientServices(
+      apiKey,
+      siteId,
+      staffToken,
+      clientId,
+    );
+    const existingPass = findJuneContrastPassRow(activeServices);
+    if (existingPass) {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          idempotent: true,
+          productName: passService.name,
+          amountGbp: passService.amount,
+          validityDays: 14,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+
+    const purchaseClaim = await claimPassPurchase(supabaseAdmin, {
+      sessionId: session.id,
+      mindbodySiteClientId: clientId,
+      productKey,
+      productName: passService.name,
+    });
+
+    if (purchaseClaim.type === "confirmed") {
+      return new Response(
+        JSON.stringify({
+          success: true,
+          idempotent: true,
+          productName: purchaseClaim.productName,
+          amountGbp: purchaseClaim.amountGbp,
+          validityDays: 14,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+      );
+    }
+    if (purchaseClaim.type === "in_progress") {
+      return new Response(
+        JSON.stringify({
+          error: "Your purchase is already being processed. Please wait — do not tap again.",
+          purchaseInProgress: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+      );
+    }
+
+    const claimedPurchaseId = purchaseClaim.claimId;
+
+    const checkout = await checkoutWithConsumerThenStaff(
       apiKey,
       siteId,
       session.access_token,
-      {
-        clientId,
-        locationId: locId,
-        serviceId: passService.id,
-        amount: passService.amount,
-      },
+      staffToken,
+      (token) =>
+        checkoutServiceWithStoredCard(apiKey, siteId, token, {
+          clientId,
+          locationId: locId,
+          serviceId: passService.id,
+          amount: passService.amount,
+        }),
     );
 
     if (!checkout.ok) {
-      checkout = await checkoutServiceWithStoredCard(apiKey, siteId, staffToken, {
-        clientId,
-        locationId: locId,
-        serviceId: passService.id,
-        amount: passService.amount,
-      });
-    }
-
-    if (!checkout.ok) {
+      await releasePurchaseClaim(supabaseAdmin, claimedPurchaseId);
       return new Response(
         JSON.stringify({
           error: checkout.noStoredCard
@@ -283,13 +336,15 @@ serve(async (req) => {
       );
     }
 
-    const activeServices = await fetchActiveClientServices(
+    await confirmPassPurchase(supabaseAdmin, claimedPurchaseId, passService.amount);
+
+    const refreshedServices = await fetchActiveClientServices(
       apiKey,
       siteId,
       staffToken,
       clientId,
     );
-    const passCredit = activeServices.find((s) => isJuneContrastPassName(s.Name));
+    const passCredit = refreshedServices.find((s) => isJuneContrastPassName(s.Name));
 
     await logContrastPassPurchase(supabaseAdmin, {
       sessionId: session.id,
