@@ -15,12 +15,17 @@ export function buildSlotBookingIdempotencyKey(parts: {
   staffId?: string;
   startDateTime?: string;
 }): string {
+  const start =
+    parts.startDateTime && !Number.isNaN(new Date(parts.startDateTime).getTime())
+      ? new Date(parts.startDateTime).toISOString()
+      : (parts.startDateTime || '');
+
   return [
     'slot',
     parts.sessionId,
     parts.bookingType,
     parts.classId || parts.sessionTypeId || '',
     parts.staffId || '',
-    parts.startDateTime || '',
+    start,
   ].join(':');
 }
