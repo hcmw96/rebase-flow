@@ -1,3 +1,4 @@
+import { useRef, useCallback } from 'react';
 import { CreditCard, Loader2, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,16 @@ const ContrastPassPurchasePanel = ({
 }: ContrastPassPurchasePanelProps) => {
   const { isAuthenticated, isRedirecting } = useAuth();
   const accountUrl = mindbodyClientAccountUrl();
+  const purchaseLockedRef = useRef(false);
+
+  const handlePurchaseClick = useCallback(() => {
+    if (isPurchasing || purchaseLockedRef.current) return;
+    purchaseLockedRef.current = true;
+    onPurchase();
+    window.setTimeout(() => {
+      purchaseLockedRef.current = false;
+    }, 5000);
+  }, [isPurchasing, onPurchase]);
 
   if (purchaseComplete) {
     return (
@@ -106,7 +117,9 @@ const ContrastPassPurchasePanel = ({
         <PaymentCardSetupStep
           variant="offer"
           accountUrl={accountUrl}
-          onContinue={onContinueAfterCard}
+          onContinue={() => {
+            handlePurchaseClick();
+          }}
           isRetrying={isPurchasing}
           continueLabel="I've added my card — continue"
           description="Add a payment card to your Mindbody account to complete your purchase."
@@ -167,8 +180,8 @@ const ContrastPassPurchasePanel = ({
         <Button
           type="button"
           className="h-12 flex-1 rounded-none bg-[#F9ECD9] px-8 text-[#3B2712] hover:bg-[#F9ECD9]/90"
-          disabled={isLoadingProduct || isPurchasing || !productName}
-          onClick={onPurchase}
+          disabled={isLoadingProduct || isPurchasing || !productName || purchaseLockedRef.current}
+          onClick={handlePurchaseClick}
         >
           {isPurchasing ? (
             <>

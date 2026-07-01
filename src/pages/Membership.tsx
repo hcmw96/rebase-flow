@@ -1,220 +1,253 @@
-import { useState } from "react";
-import Navigation from "@/components/Navigation";
-import Footer from "@/components/Footer";
-import MembershipEnquiryDialog from "@/components/MembershipEnquiryDialog";
-import { Button } from "@/components/ui/button";
-import { Check } from "lucide-react";
-import { motion } from "framer-motion";
-import SeoHead from "@/components/seo/SeoHead";
+import { useEffect, useState } from 'react';
+import Navigation from '@/components/Navigation';
+import Footer from '@/components/Footer';
+import MembershipEnquiryDialog from '@/components/MembershipEnquiryDialog';
+import MembershipPurchasePanel from '@/components/membership/MembershipPurchasePanel';
+import { Check } from 'lucide-react';
+import { motion } from 'framer-motion';
+import SeoHead from '@/components/seo/SeoHead';
 import {
   breadcrumbSchema,
   itemListServicesSchema,
   seoTitle,
   truncateDescription,
-} from "@/lib/seo";
-
-const tiers = [
-  {
-    name: "Base",
-    image: "/images/rebase-base-membership.webp",
-    overview:
-      "Our Base membership is the perfect platform from which to begin your journey to optimal health. Providing value for money and a chance to try everything on offer at Rebase, this is the perfect entry level membership for those wishing to take their health seriously.",
-    details: [
-      "4 monthly Class Passes",
-      "4 monthly Cryotherapy Sessions",
-      "1 monthly HBOT Session",
-      "8 monthly passes to Communal Contrast",
-      "10% off all additional treatments and bookings",
-      "6 Guest Passes Annually",
-    ],
-  },
-  {
-    name: "Resident",
-    image: "/images/rebase-resident-membership.webp",
-    overview:
-      "Our Resident membership provides access to all treatments at Rebase. Perfect for those wanting to enjoy tailored sports recovery services, dedicated wellness stewardship and concentrated access to all of our contrast services. This membership is perfect for anyone with a focus on performance.",
-    details: [
-      "Unlimited Cryotherapy",
-      "8 monthly Class Passes",
-      "3 monthly Private Suite Sessions",
-      "3 monthly HBOT Sessions",
-      "Unlimited access to Communal Contrast",
-      "10% off all additional treatments and bookings",
-      "12 Guest Passes Annually",
-    ],
-    highlighted: true,
-  },
-  {
-    name: "Ultimate",
-    image: "/images/rebase-ultimate-membership.webp",
-    overview:
-      "The Ultimate membership unlocks the full potential of Rebase. Develop a bespoke package to suit your wellness needs and achieve elemental balance through unlimited access to our Cryo and classes, along with a robust package of private suite sessions, HBOT and recovery practitioners. This membership is for corporate athletes, performance enthusiasts and anyone looking to unlock the full potential of their genetic code.",
-    details: [
-      "Unlimited Access to Classes",
-      "Unlimited Cryotherapy",
-      "6 monthly Private Suite Sessions",
-      "6 monthly HBOT Sessions",
-      "Unlimited access to Communal Contrast",
-      "10% off all additional treatments and bookings",
-      "18 Guest Passes Annually",
-    ],
-  },
-];
+} from '@/lib/seo';
+import {
+  MEMBERSHIP_PERK_FOOTER,
+  MEMBERSHIP_PLANS,
+  formatMembershipPrice,
+} from '@/config/membershipPlans';
+import { useAuth } from '@/contexts/AuthContext';
+import { useClientMembership } from '@/hooks/useMindbodyMembership';
+import { clearMembershipCheckoutLocks } from '@/lib/membershipCheckoutGuard';
+import { hasActiveRebaseMembership } from '@/lib/membershipOwnership';
+import {
+  clearSessionNeedsPaymentCard,
+  sessionNeedsPaymentCard,
+} from '@/lib/paymentCardSetupStorage';
 
 const MEMBERSHIP_DESCRIPTION =
-  "Rebase Recovery membership in Marylebone: cryotherapy, HBOT, private suites, classes and contrast therapy. Base, Resident and Ultimate tiers.";
+  'Rebase Recovery membership in Marylebone: Ultimate, Resident and Base tiers. Cryotherapy, HBOT, private suites, classes and communal contrast. All prices include VAT.';
 
 const Membership = () => {
+  const { login, openMindbodySignUp, isAuthenticated, mbSession } = useAuth();
+  const { data: membershipData, isLoading: membershipLoading, refetch: refetchMembership } =
+    useClientMembership();
   const [enquiryTier, setEnquiryTier] = useState<string | null>(null);
+  const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
+
+  useEffect(() => {
+    if (isAuthenticated && sessionNeedsPaymentCard(mbSession?.sessionId)) {
+      setNeedsCardOnFile(true);
+    }
+  }, [isAuthenticated, mbSession?.sessionId]);
+
+  useEffect(() => {
+    if (hasActiveRebaseMembership(membershipData) && mbSession?.sessionId) {
+      clearMembershipCheckoutLocks(mbSession.sessionId);
+    }
+  }, [membershipData, mbSession?.sessionId]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const onFocus = () => {
+      void refetchMembership();
+    };
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [isAuthenticated, refetchMembership]);
+
+  const handleContinueAfterCard = () => {
+    clearSessionNeedsPaymentCard();
+    setNeedsCardOnFile(false);
+  };
 
   return (
-    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1a1a1a]">
+    <div
+      style={{ position: 'fixed', inset: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
+      className="bg-[#1a1a1a]"
+    >
       <SeoHead
-        title={seoTitle("Membership Plans")}
+        title={seoTitle('Membership Plans')}
         description={truncateDescription(MEMBERSHIP_DESCRIPTION)}
         path="/membership"
         jsonLd={[
           breadcrumbSchema([
-            { name: "Home", path: "/" },
-            { name: "Membership", path: "/membership" },
+            { name: 'Home', path: '/' },
+            { name: 'Membership', path: '/membership' },
           ]),
           itemListServicesSchema(
-            "/membership",
-            "Rebase Recovery Membership Plans",
-            tiers.map((t) => ({
-              name: `${t.name} Membership`,
-              description: t.overview,
+            '/membership',
+            'Rebase Recovery Membership Plans',
+            MEMBERSHIP_PLANS.map((plan) => ({
+              name: `${plan.name} Membership`,
+              description: `${formatMembershipPrice(plan.annualPriceGbp)} per year or ${formatMembershipPrice(plan.monthlyPriceGbp)} per month`,
             })),
           ),
         ]}
       />
       <Navigation />
       <main id="main-content">
-
-      {/* Hero */}
-      <section className="pt-32 pb-16 px-5 sm:px-8" aria-labelledby="membership-heading">
-        <div className="max-w-[1200px] mx-auto text-center">
-          <motion.p
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="text-[#F9ECD9]/40 text-xs uppercase tracking-[0.3em] mb-4 font-light"
-          >
-            Membership
-          </motion.p>
-          <motion.h1
-            id="membership-heading"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
-            className="text-3xl sm:text-4xl lg:text-5xl font-light text-[#F9ECD9] tracking-tight mb-6"
-          >
-            Elevate Your Recovery
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="text-[#F9ECD9]/50 text-base sm:text-lg max-w-2xl mx-auto font-light leading-relaxed"
-          >
-            Choose the membership tier that aligns with your wellness goals.
-            Each level unlocks progressively greater access to our world-class
-            recovery and performance services.
-          </motion.p>
-        </div>
-      </section>
-
-      {/* Tier Cards */}
-      <section className="pb-24 px-5 sm:px-8">
-        <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
-          {tiers.map((tier, idx) => (
-            <motion.div
-              key={tier.name}
-              initial={{ opacity: 0, y: 30 }}
+        <section className="pt-32 pb-10 px-5 sm:px-8" aria-labelledby="membership-heading">
+          <div className="max-w-[1200px] mx-auto text-center">
+            <motion.p
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6, delay: 0.15 * idx }}
-              className={`relative flex flex-col border rounded-sm p-8 sm:p-10 transition-all duration-300 ${
-                tier.highlighted
-                  ? "border-[#F9ECD9]/30 bg-[#F9ECD9]/[0.04]"
-                  : "border-[#F9ECD9]/10 bg-white/[0.02]"
-              }`}
+              transition={{ duration: 0.6 }}
+              className="text-[#F9ECD9]/40 text-xs uppercase tracking-[0.3em] mb-4 font-light"
             >
-              {tier.highlighted && (
-                <span className="absolute -top-3 left-1/2 -translate-x-1/2 bg-[#F9ECD9] text-[#1a1a1a] text-[10px] uppercase tracking-[0.2em] font-medium px-4 py-1">
-                  Most Popular
-                </span>
-              )}
+              Membership
+            </motion.p>
+            <motion.h1
+              id="membership-heading"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+              className="text-3xl sm:text-4xl lg:text-5xl font-light text-[#F9ECD9] tracking-tight mb-6"
+            >
+              Elevate Your Recovery
+            </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="text-[#F9ECD9]/50 text-base sm:text-lg max-w-2xl mx-auto font-light leading-relaxed"
+            >
+              Choose the membership tier that aligns with your wellness goals. Each level unlocks
+              progressively greater access to our world-class recovery and performance services.
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.3 }}
+              className="mt-4 text-[#F9ECD9]/60 text-sm font-medium tracking-wide"
+            >
+              All prices include VAT
+            </motion.p>
+          </div>
+        </section>
 
-              {tier.image && (
-                <div className="-mx-8 sm:-mx-10 -mt-8 sm:-mt-10 mb-6 overflow-hidden rounded-t-sm">
-                  <img
-                    src={tier.image}
-                    alt={`${tier.name} membership at Rebase Recovery, London`}
-                    className="w-full h-48 object-cover"
-                    loading="lazy"
-                  />
-                </div>
-              )}
-
-              <h3 className="text-2xl font-light text-[#F9ECD9] tracking-wide uppercase mb-4">
-                {tier.name}
-              </h3>
-
-              <p className="text-[#F9ECD9]/40 text-sm font-light leading-relaxed mb-8">
-                {tier.overview}
-              </p>
-
-              <div className="border-t border-[#F9ECD9]/10 pt-6 mb-8 flex-1">
-                <p className="text-[#F9ECD9]/30 text-[10px] uppercase tracking-[0.25em] mb-4 font-medium">
-                  What's Included
-                </p>
-                <ul className="space-y-3">
-                  {tier.details.map((detail) => (
-                    <li
-                      key={detail}
-                      className="flex items-start gap-3 text-sm text-[#F9ECD9]/70 font-light"
-                    >
-                      <Check className="h-4 w-4 text-[#F9ECD9]/40 mt-0.5 shrink-0" />
-                      {detail}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <Button
-                type="button"
-                onClick={() => setEnquiryTier(tier.name)}
-                className="w-full rounded-none uppercase tracking-[0.2em] text-sm font-light h-12 bg-transparent border border-[#F9ECD9]/20 text-[#F9ECD9] hover:bg-[#F9ECD9]/10 hover:border-[#F9ECD9]/40 transition-all duration-300"
-                variant="outline"
+        <section className="pb-16 px-5 sm:px-8">
+          <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5">
+            {MEMBERSHIP_PLANS.map((plan, idx) => (
+              <motion.article
+                key={plan.id}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: 0.1 * idx }}
+                className={`relative flex flex-col border rounded-sm overflow-hidden ${
+                  plan.highlighted
+                    ? 'border-[#F9ECD9]/30 lg:scale-[1.02] lg:z-10'
+                    : 'border-[#F9ECD9]/10'
+                }`}
               >
-                Enquire
-              </Button>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+                {plan.highlighted && (
+                  <span className="absolute top-3 right-3 z-10 bg-[#F9ECD9] text-[#1a1a1a] text-[9px] uppercase tracking-[0.2em] font-medium px-3 py-1">
+                    Most Popular
+                  </span>
+                )}
+
+                <header className="bg-[#F9ECD9]/[0.08] border-b border-[#F9ECD9]/10 px-6 py-5 text-center">
+                  <h2 className="text-xl sm:text-2xl font-light text-[#F9ECD9] tracking-[0.2em] uppercase">
+                    {plan.name}
+                  </h2>
+                  <div className="mt-4 space-y-1">
+                    <p className="text-2xl sm:text-3xl font-light text-[#F9ECD9]">
+                      {formatMembershipPrice(plan.annualPriceGbp)}
+                      <span className="text-sm text-[#F9ECD9]/50 font-light"> / year</span>
+                    </p>
+                    <p className="text-sm text-[#F9ECD9]/55 font-light">
+                      or {formatMembershipPrice(plan.monthlyPriceGbp)} per month, if paid monthly
+                    </p>
+                  </div>
+                  <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-[#F9ECD9]/45">
+                    incl. VAT
+                  </p>
+                </header>
+
+                {plan.image && (
+                  <div className="h-36 overflow-hidden border-b border-[#F9ECD9]/10">
+                    <img
+                      src={plan.image}
+                      alt={`${plan.name} membership at Rebase Recovery, London`}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </div>
+                )}
+
+                <div className="flex flex-1 flex-col bg-white/[0.02] px-6 py-6">
+                  <ul className="space-y-3 flex-1">
+                    {plan.features.map((feature) => (
+                      <li
+                        key={feature.label}
+                        className="flex items-start justify-between gap-3 text-sm"
+                      >
+                        <span className="flex items-start gap-2 text-[#F9ECD9]/75 font-light">
+                          <Check
+                            className="h-4 w-4 text-[#F9ECD9]/40 mt-0.5 shrink-0"
+                            aria-hidden
+                          />
+                          {feature.label}
+                        </span>
+                        <span className="text-[#F9ECD9]/90 font-light text-right shrink-0">
+                          {feature.value}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  <p className="mt-6 pt-4 border-t border-[#F9ECD9]/10 text-center text-xs text-[#F9ECD9]/55 font-light leading-relaxed">
+                    {MEMBERSHIP_PERK_FOOTER}
+                  </p>
+
+                  <div className="mt-6 pt-4 border-t border-[#F9ECD9]/10">
+                    <MembershipPurchasePanel
+                      plan={plan}
+                      membershipData={membershipData}
+                      membershipLoading={membershipLoading}
+                      needsCardOnFile={needsCardOnFile && !plan.contactStudio}
+                      onSignIn={() => login()}
+                      onCreateAccount={openMindbodySignUp}
+                      onContactStudio={() => setEnquiryTier(plan.name)}
+                      onContinueAfterCard={handleContinueAfterCard}
+                    />
+                  </div>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        </section>
+
+        <section className="pb-8 px-5 sm:px-8">
+          <p className="text-center text-[#F9ECD9]/45 text-xs sm:text-sm font-light max-w-lg mx-auto leading-relaxed">
+            Annual and monthly billing options are selected in Mindbody at checkout. We open checkout
+            once per tier — do not tap Become a member repeatedly or you may be charged more than
+            once. Payment is processed securely through your Mindbody account.
+          </p>
+        </section>
+
+        <section className="pb-20 px-5 sm:px-8">
+          <p className="text-center text-[#F9ECD9]/50 text-sm sm:text-base font-light max-w-xl mx-auto leading-relaxed">
+            For corporate memberships please contact{' '}
+            <a
+              href="mailto:df@rebaserecovery.com"
+              className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
+            >
+              df@rebaserecovery.com
+            </a>
+            .
+          </p>
+        </section>
+      </main>
 
       <MembershipEnquiryDialog
         open={enquiryTier !== null}
         onOpenChange={(open) => {
           if (!open) setEnquiryTier(null);
         }}
-        tierName={enquiryTier ?? ""}
+        tierName={enquiryTier ?? ''}
       />
-
-      <section className="pb-20 px-5 sm:px-8">
-        <p className="text-center text-[#F9ECD9]/50 text-sm sm:text-base font-light max-w-xl mx-auto leading-relaxed">
-          For corporate memberships please contact{" "}
-          <a
-            href="mailto:df@rebaserecovery.com"
-            className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
-          >
-            df@rebaserecovery.com
-          </a>
-          .
-        </p>
-      </section>
-      </main>
 
       <Footer />
     </div>
