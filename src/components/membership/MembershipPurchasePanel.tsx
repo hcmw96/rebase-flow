@@ -74,7 +74,7 @@ const MembershipPurchasePanel = ({
 
   const openCheckoutOnce = useCallback(
     (options?: { forceRetry?: boolean }) => {
-      if (!plan.checkoutUrl || !sessionId) return false;
+      if (!plan.monthlyCheckoutUrl || !sessionId) return false;
       if (checkoutInFlightRef.current) return false;
       if (alreadyOwnsPlan) return false;
 
@@ -101,7 +101,7 @@ const MembershipPurchasePanel = ({
         return false;
       }
 
-      openMindbodyExternalUrl(plan.checkoutUrl);
+      openMindbodyExternalUrl(plan.monthlyCheckoutUrl);
       setCheckoutOpened(true);
       setRetryCooldownMs(msUntilCheckoutRetryAllowed(getMembershipCheckoutLock(sessionId, plan.id)));
 
@@ -111,7 +111,7 @@ const MembershipPurchasePanel = ({
 
       return true;
     },
-    [plan.checkoutUrl, plan.id, sessionId, alreadyOwnsPlan],
+    [plan.monthlyCheckoutUrl, plan.id, sessionId, alreadyOwnsPlan],
   );
 
   if (membershipLoading && isAuthenticated) {
@@ -147,8 +147,9 @@ const MembershipPurchasePanel = ({
     return (
       <div className="space-y-3">
         <p className="text-xs font-light leading-relaxed text-[#F9ECD9]/70">
-          Sign in with your Mindbody account — we&apos;ll open Mindbody in a new window, then bring
-          you back here to complete membership checkout.
+          Monthly subscriptions ({formatMembershipPrice(plan.monthlyPriceGbp)}/month) are purchased
+          online via Mindbody. Sign in with your Mindbody account — we&apos;ll open Mindbody in a new
+          window, then bring you back here to start your subscription.
         </p>
         <Button
           type="button"
@@ -162,7 +163,7 @@ const MembershipPurchasePanel = ({
               Opening Mindbody…
             </>
           ) : (
-            'Sign in to buy'
+            'Sign in to subscribe monthly'
           )}
         </Button>
         <Button
@@ -173,22 +174,13 @@ const MembershipPurchasePanel = ({
         >
           Create Mindbody account
         </Button>
-      </div>
-    );
-  }
-
-  if (plan.contactStudio) {
-    return (
-      <div className="space-y-3">
-        <p className="text-xs font-light leading-relaxed text-[#F9ECD9]/70">
-          Ultimate membership is tailored to your goals. Contact the studio to discuss your package.
-        </p>
         <Button
           type="button"
-          className="h-11 w-full rounded-none bg-[#F9ECD9] text-[#3B2712] hover:bg-[#F9ECD9]/90 text-xs uppercase tracking-[0.15em]"
+          variant="ghost"
+          className="h-9 w-full rounded-none text-[#F9ECD9]/50 hover:text-[#F9ECD9]/80 hover:bg-transparent text-[10px] uppercase tracking-[0.12em]"
           onClick={onContactStudio}
         >
-          Contact studio
+          Contact studio for annual membership
         </Button>
       </div>
     );
@@ -213,7 +205,7 @@ const MembershipPurchasePanel = ({
           }}
           isRetrying={checkoutInFlightRef.current}
           continueLabel="I've added my card — continue"
-          description="Add a payment card to your Mindbody account to complete your membership purchase."
+          description="Add a payment card to your Mindbody account to complete your monthly membership subscription."
           retryingLabel="Opening checkout…"
           footerNote="Mindbody opens once in a new tab. Do not tap again — multiple checkouts can charge you more than once."
           retryHint={cardSetupRetryHint}
@@ -231,13 +223,14 @@ const MembershipPurchasePanel = ({
             'text-[#F9ECD9]/90 bg-amber-500/10 border border-amber-500/25',
           )}
         >
-          <strong className="font-medium">Checkout opened — do not tap again.</strong> Complete your{' '}
-          {plan.name} membership in the Mindbody window only. Tapping again can open another checkout
-          and charge you twice.
+          <strong className="font-medium">Checkout opened — do not tap again.</strong> Complete your
+          monthly {plan.name} subscription in the Mindbody window only. Tapping again can open another
+          checkout and charge you twice.
         </p>
         <p className="text-xs text-[#F9ECD9]/65 leading-relaxed">
-          Annual ({formatMembershipPrice(plan.annualPriceGbp)}) and monthly (
-          {formatMembershipPrice(plan.monthlyPriceGbp)}) options are in Mindbody.
+          This checkout is for the monthly plan (
+          {formatMembershipPrice(plan.monthlyPriceGbp)}/month). For annual membership (
+          {formatMembershipPrice(plan.annualPriceGbp)}/year), contact the studio.
         </p>
         {retryCooldownMs > 0 ? (
           <p className="text-[10px] text-[#F9ECD9]/45 text-center">
@@ -274,7 +267,16 @@ const MembershipPurchasePanel = ({
         onClick={() => openCheckoutOnce()}
       >
         <ExternalLink className="mr-2 h-3.5 w-3.5" aria-hidden />
-        Become a member
+        Subscribe monthly — {formatMembershipPrice(plan.monthlyPriceGbp)}
+      </Button>
+
+      <Button
+        type="button"
+        variant="outline"
+        className="h-11 w-full rounded-none border-[#F9ECD9]/30 bg-transparent text-[#F9ECD9] hover:bg-[#F9ECD9]/10 text-xs uppercase tracking-[0.15em]"
+        onClick={onContactStudio}
+      >
+        Contact studio for annual — {formatMembershipPrice(plan.annualPriceGbp)}
       </Button>
 
       <Button

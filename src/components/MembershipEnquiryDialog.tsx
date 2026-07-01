@@ -17,12 +17,14 @@ interface MembershipEnquiryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   tierName: string;
+  billingPeriod?: 'annual';
 }
 
 const MembershipEnquiryDialog = ({
   open,
   onOpenChange,
   tierName,
+  billingPeriod,
 }: MembershipEnquiryDialogProps) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -33,13 +35,20 @@ const MembershipEnquiryDialog = ({
     const phone = (form.elements.namedItem("phone") as HTMLInputElement).value.trim();
     const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value.trim();
 
-    const subject = encodeURIComponent(`Membership enquiry: ${tierName}`);
+    const subject = encodeURIComponent(
+      billingPeriod === 'annual'
+        ? `Annual membership enquiry: ${tierName}`
+        : `Membership enquiry: ${tierName}`,
+    );
     const body = encodeURIComponent(
       [
-        message || "I would like to enquire about membership.",
+        billingPeriod === 'annual'
+          ? message || 'I would like to enquire about annual membership.'
+          : message || 'I would like to enquire about membership.',
         "",
         "---",
         `Membership tier: ${tierName}`,
+        billingPeriod === 'annual' ? 'Billing: Annual' : null,
         `Name: ${firstName} ${lastName}`.trim(),
         `Email: ${email}`,
         phone ? `Phone: ${phone}` : null,
@@ -63,10 +72,14 @@ const MembershipEnquiryDialog = ({
       <DialogContent className="max-w-md border-[#F9ECD9]/15 bg-[#1a1a1a] text-[#F9ECD9] sm:rounded-sm">
         <DialogHeader>
           <DialogTitle className="font-light tracking-wide text-[#F9ECD9]">
-            Enquire about {tierName}
+            {billingPeriod === 'annual'
+              ? `Annual ${tierName} membership`
+              : `Enquire about ${tierName}`}
           </DialogTitle>
           <DialogDescription className="text-[#F9ECD9]/50 font-light">
-            Share your details and we&apos;ll get back to you at{" "}
+            {billingPeriod === 'annual'
+              ? "Annual memberships are arranged with the studio. Share your details and we'll get back to you at "
+              : "Share your details and we'll get back to you at "}
             <a
               href={`mailto:${MEMBERSHIP_EMAIL}`}
               className="text-[#F9ECD9]/80 underline underline-offset-2 hover:text-[#F9ECD9]"
@@ -140,7 +153,11 @@ const MembershipEnquiryDialog = ({
               id="membership-message"
               name="message"
               rows={4}
-              placeholder="Tell us about your wellness goals..."
+              placeholder={
+                billingPeriod === 'annual'
+                  ? 'Tell us about your goals and preferred start date...'
+                  : 'Tell us about your wellness goals...'
+              }
               className="resize-none rounded-none border-[#F9ECD9]/20 bg-white/[0.04] text-[#F9ECD9] placeholder:text-[#F9ECD9]/30 focus-visible:ring-[#F9ECD9]/30"
             />
           </div>

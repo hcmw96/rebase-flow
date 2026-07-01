@@ -27,7 +27,7 @@ import {
 } from '@/lib/paymentCardSetupStorage';
 
 const MEMBERSHIP_DESCRIPTION =
-  'Rebase Recovery membership in Marylebone: Ultimate, Resident and Base tiers. Cryotherapy, HBOT, private suites, classes and communal contrast. All prices include VAT.';
+  'Rebase Recovery membership in Marylebone: Ultimate, Resident and Base tiers. Monthly subscriptions online; annual memberships via the studio. All prices include VAT.';
 
 const Membership = () => {
   const { login, openMindbodySignUp, isAuthenticated, mbSession } = useAuth();
@@ -81,7 +81,7 @@ const Membership = () => {
             'Rebase Recovery Membership Plans',
             MEMBERSHIP_PLANS.map((plan) => ({
               name: `${plan.name} Membership`,
-              description: `${formatMembershipPrice(plan.annualPriceGbp)} per year or ${formatMembershipPrice(plan.monthlyPriceGbp)} per month`,
+              description: `${formatMembershipPrice(plan.annualPriceGbp)} per year (contact studio) or ${formatMembershipPrice(plan.monthlyPriceGbp)} per month (subscribe online)`,
             })),
           ),
         ]}
@@ -122,43 +122,54 @@ const Membership = () => {
               transition={{ duration: 0.6, delay: 0.3 }}
               className="mt-4 text-[#F9ECD9]/60 text-sm font-medium tracking-wide"
             >
-              All prices include VAT
+              All prices include VAT · Monthly subscriptions online · Annual via the studio
             </motion.p>
           </div>
         </section>
 
-        <section className="pb-16 px-5 sm:px-8">
-          <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5">
+        <section className="pb-16 px-5 sm:px-8 pt-5">
+          <div className="max-w-[1200px] mx-auto grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-5 lg:items-stretch">
             {MEMBERSHIP_PLANS.map((plan, idx) => (
               <motion.article
                 key={plan.id}
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6, delay: 0.1 * idx }}
-                className={`relative flex flex-col border rounded-sm overflow-hidden ${
+                className={`relative flex flex-col border rounded-sm overflow-visible ${
                   plan.highlighted
                     ? 'border-[#F9ECD9]/30 lg:scale-[1.02] lg:z-10'
                     : 'border-[#F9ECD9]/10'
                 }`}
               >
                 {plan.highlighted && (
-                  <span className="absolute top-3 right-3 z-10 bg-[#F9ECD9] text-[#1a1a1a] text-[9px] uppercase tracking-[0.2em] font-medium px-3 py-1">
+                  <span className="absolute -top-3 left-1/2 -translate-x-1/2 z-20 whitespace-nowrap bg-[#F9ECD9] text-[#1a1a1a] text-[10px] uppercase tracking-[0.2em] font-medium px-4 py-1">
                     Most Popular
                   </span>
                 )}
 
-                <header className="bg-[#F9ECD9]/[0.08] border-b border-[#F9ECD9]/10 px-6 py-5 text-center">
+                <header className="bg-[#F9ECD9]/[0.08] border-b border-[#F9ECD9]/10 px-6 py-5 text-center rounded-t-sm overflow-hidden">
                   <h2 className="text-xl sm:text-2xl font-light text-[#F9ECD9] tracking-[0.2em] uppercase">
                     {plan.name}
                   </h2>
-                  <div className="mt-4 space-y-1">
-                    <p className="text-2xl sm:text-3xl font-light text-[#F9ECD9]">
-                      {formatMembershipPrice(plan.annualPriceGbp)}
-                      <span className="text-sm text-[#F9ECD9]/50 font-light"> / year</span>
-                    </p>
-                    <p className="text-sm text-[#F9ECD9]/55 font-light">
-                      or {formatMembershipPrice(plan.monthlyPriceGbp)} per month, if paid monthly
-                    </p>
+                  <div className="mt-4 space-y-3">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9ECD9]/45 mb-1">
+                        Annual · contact studio
+                      </p>
+                      <p className="text-2xl sm:text-3xl font-light text-[#F9ECD9]">
+                        {formatMembershipPrice(plan.annualPriceGbp)}
+                        <span className="text-sm text-[#F9ECD9]/50 font-light"> / year</span>
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-[0.2em] text-[#F9ECD9]/45 mb-1">
+                        Monthly · subscribe online
+                      </p>
+                      <p className="text-lg sm:text-xl font-light text-[#F9ECD9]/90">
+                        {formatMembershipPrice(plan.monthlyPriceGbp)}
+                        <span className="text-sm text-[#F9ECD9]/50 font-light"> / month</span>
+                      </p>
+                    </div>
                   </div>
                   <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-[#F9ECD9]/45">
                     incl. VAT
@@ -176,7 +187,7 @@ const Membership = () => {
                   </div>
                 )}
 
-                <div className="flex flex-1 flex-col bg-white/[0.02] px-6 py-6">
+                <div className="flex flex-1 flex-col bg-white/[0.02] px-6 py-6 rounded-b-sm overflow-hidden">
                   <ul className="space-y-3 flex-1">
                     {plan.features.map((feature) => (
                       <li
@@ -206,7 +217,7 @@ const Membership = () => {
                       plan={plan}
                       membershipData={membershipData}
                       membershipLoading={membershipLoading}
-                      needsCardOnFile={needsCardOnFile && !plan.contactStudio}
+                      needsCardOnFile={needsCardOnFile}
                       onSignIn={() => login()}
                       onCreateAccount={openMindbodySignUp}
                       onContactStudio={() => setEnquiryTier(plan.name)}
@@ -220,10 +231,11 @@ const Membership = () => {
         </section>
 
         <section className="pb-8 px-5 sm:px-8">
-          <p className="text-center text-[#F9ECD9]/45 text-xs sm:text-sm font-light max-w-lg mx-auto leading-relaxed">
-            Annual and monthly billing options are selected in Mindbody at checkout. We open checkout
-            once per tier — do not tap Become a member repeatedly or you may be charged more than
-            once. Payment is processed securely through your Mindbody account.
+          <p className="text-center text-[#F9ECD9]/45 text-xs sm:text-sm font-light max-w-xl mx-auto leading-relaxed">
+            Monthly memberships are purchased through Mindbody — we open checkout once per tier, so
+            do not tap Subscribe monthly repeatedly or you may be charged more than once. Annual
+            memberships are arranged directly with the studio. Payment is processed securely through
+            your Mindbody account.
           </p>
         </section>
 
@@ -247,6 +259,7 @@ const Membership = () => {
           if (!open) setEnquiryTier(null);
         }}
         tierName={enquiryTier ?? ''}
+        billingPeriod="annual"
       />
 
       <Footer />

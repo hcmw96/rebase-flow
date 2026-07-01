@@ -15,9 +15,8 @@ export type MembershipPlan = {
   features: MembershipFeature[];
   image?: string;
   highlighted?: boolean;
-  /** Mindbody classic membership checkout (stype=40). */
-  checkoutUrl?: string;
-  contactStudio?: boolean;
+  /** Mindbody classic checkout for the monthly subscription only (stype=40). */
+  monthlyCheckoutUrl?: string;
 };
 
 const studioId = REBASE_MINDBODY_SITE_ID;
@@ -30,7 +29,7 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
     annualPriceGbp: 13200,
     monthlyPriceGbp: 1200,
     image: '/images/rebase-ultimate-membership.webp',
-    checkoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=115`,
+    monthlyCheckoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=115`,
     features: [
       { label: 'Communal Suite Access', value: 'Unlimited' },
       { label: 'Cryotherapy', value: 'Unlimited' },
@@ -47,7 +46,7 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
     monthlyPriceGbp: 580,
     image: '/images/rebase-resident-membership.webp',
     highlighted: true,
-    checkoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=101`,
+    monthlyCheckoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=101`,
     features: [
       { label: 'Communal Suite Access', value: 'Unlimited' },
       { label: 'Cryotherapy', value: 'Unlimited' },
@@ -63,7 +62,7 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
     annualPriceGbp: 3740,
     monthlyPriceGbp: 340,
     image: '/images/rebase-base-membership.webp',
-    checkoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=100`,
+    monthlyCheckoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=100`,
     features: [
       { label: 'Communal Suite Access', value: '8 per month' },
       { label: 'Cryotherapy', value: '4 per month' },
