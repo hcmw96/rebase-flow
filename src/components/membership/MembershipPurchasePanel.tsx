@@ -151,14 +151,14 @@ const MembershipPurchasePanel = ({
           {isRedirecting ? (
             <>
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-              Opening Mindbody…
+              Continuing…
             </>
           ) : (
-            'Continue with Mindbody'
+            'Apply for membership'
           )}
         </Button>
         <p className="text-center text-[10px] font-light leading-relaxed text-[#F9ECD9]/45">
-          Sign in or create your Mindbody account to subscribe monthly.
+          Sign in or create an account to complete your monthly membership.
         </p>
       </div>
     );
@@ -240,7 +240,7 @@ const MembershipPurchasePanel = ({
         onClick={() => openCheckoutOnce()}
       >
         <ExternalLink className="mr-2 h-3.5 w-3.5" aria-hidden />
-        Subscribe monthly — {formatMembershipPrice(plan.monthlyPriceGbp)}
+        Apply for membership — {formatMembershipPrice(plan.monthlyPriceGbp)}/month
       </Button>
 
       <Button
