@@ -175,25 +175,19 @@ const Membership = () => {
           </div>
         </section>
 
-        <section className="pb-8 px-5 sm:px-8">
-          <p className="text-center text-[#F9ECD9]/45 text-xs sm:text-sm font-light max-w-xl mx-auto leading-relaxed">
-            Monthly memberships are purchased through Mindbody — we open checkout once per tier, so
-            do not tap Apply for membership repeatedly or you may be charged more than once. Payment is
-            processed securely through your Mindbody account.
-          </p>
-        </section>
-
         <section className="pb-6 px-5 sm:px-8">
-          <p className="text-center text-[#F9ECD9]/50 text-sm sm:text-base font-light max-w-xl mx-auto leading-relaxed">
-            For annual membership please{' '}
+          <p className="text-center text-[#F9ECD9]/45 text-xs sm:text-sm font-light max-w-xl mx-auto leading-relaxed">
+            Please do not tap &lsquo;subscribe monthly&rsquo; repeatedly or you may be charged more than
+            once. Monthly memberships are purchased through Mindbody and annual memberships are arranged
+            directly with{' '}
             <button
               type="button"
               onClick={() => setAnnualEnquiryOpen(true)}
               className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
             >
-              contact the studio directly
+              the studio
             </button>
-            .
+            . Payment is processed securely through your Mindbody account.
           </p>
         </section>
 
