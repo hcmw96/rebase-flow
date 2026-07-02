@@ -10,14 +10,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { BUSINESS } from "@/lib/seo";
+import { MEMBERSHIP_PLANS } from "@/config/membershipPlans";
 
 const MEMBERSHIP_EMAIL = BUSINESS.membershipEmail;
 
 interface MembershipEnquiryDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  tierName: string;
+  tierName?: string;
   billingPeriod?: 'annual';
+  showTierSelect?: boolean;
 }
 
 const MembershipEnquiryDialog = ({
@@ -25,6 +27,7 @@ const MembershipEnquiryDialog = ({
   onOpenChange,
   tierName,
   billingPeriod,
+  showTierSelect = false,
 }: MembershipEnquiryDialogProps) => {
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -34,11 +37,15 @@ const MembershipEnquiryDialog = ({
     const email = (form.elements.namedItem("email") as HTMLInputElement).value.trim();
     const phone = (form.elements.namedItem("phone") as HTMLInputElement).value.trim();
     const message = (form.elements.namedItem("message") as HTMLTextAreaElement).value.trim();
+    const selectedTier = showTierSelect
+      ? (form.elements.namedItem("tier") as HTMLSelectElement).value.trim()
+      : tierName?.trim();
+    const resolvedTier = selectedTier || 'Membership';
 
     const subject = encodeURIComponent(
       billingPeriod === 'annual'
-        ? `Annual membership enquiry: ${tierName}`
-        : `Membership enquiry: ${tierName}`,
+        ? `Annual membership enquiry: ${resolvedTier}`
+        : `Membership enquiry: ${resolvedTier}`,
     );
     const body = encodeURIComponent(
       [
@@ -47,7 +54,7 @@ const MembershipEnquiryDialog = ({
           : message || 'I would like to enquire about membership.',
         "",
         "---",
-        `Membership tier: ${tierName}`,
+        `Membership tier: ${resolvedTier}`,
         billingPeriod === 'annual' ? 'Billing: Annual' : null,
         `Name: ${firstName} ${lastName}`.trim(),
         `Email: ${email}`,
@@ -73,7 +80,9 @@ const MembershipEnquiryDialog = ({
         <DialogHeader>
           <DialogTitle className="font-light tracking-wide text-[#F9ECD9]">
             {billingPeriod === 'annual'
-              ? `Annual ${tierName} membership`
+              ? tierName
+                ? `Annual ${tierName} membership`
+                : 'Annual membership'
               : `Enquire about ${tierName}`}
           </DialogTitle>
           <DialogDescription className="text-[#F9ECD9]/50 font-light">
@@ -90,7 +99,31 @@ const MembershipEnquiryDialog = ({
           </DialogDescription>
         </DialogHeader>
 
-        <form key={tierName} onSubmit={handleSubmit} className="space-y-4 pt-2">
+        <form key={tierName ?? 'annual'} onSubmit={handleSubmit} className="space-y-4 pt-2">
+          {showTierSelect && (
+            <div className="space-y-2">
+              <Label htmlFor="membership-tier" className="text-[#F9ECD9]/70 text-xs uppercase tracking-wider">
+                Membership tier
+              </Label>
+              <select
+                id="membership-tier"
+                name="tier"
+                required
+                defaultValue=""
+                className="flex h-10 w-full rounded-none border border-[#F9ECD9]/20 bg-white/[0.04] px-3 py-2 text-sm text-[#F9ECD9] focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#F9ECD9]/30"
+              >
+                <option value="" disabled className="bg-[#1a1a1a]">
+                  Select a tier
+                </option>
+                {MEMBERSHIP_PLANS.map((plan) => (
+                  <option key={plan.id} value={plan.name} className="bg-[#1a1a1a]">
+                    {plan.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
               <Label htmlFor="membership-firstName" className="text-[#F9ECD9]/70 text-xs uppercase tracking-wider">

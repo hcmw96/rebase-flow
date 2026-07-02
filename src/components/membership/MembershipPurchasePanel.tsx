@@ -26,8 +26,6 @@ type MembershipPurchasePanelProps = {
   needsCardOnFile: boolean;
   cardSetupRetryHint?: string | null;
   onSignIn: () => void;
-  onCreateAccount: () => void;
-  onContactStudio: () => void;
   onContinueAfterCard: () => void;
 };
 
@@ -38,8 +36,6 @@ const MembershipPurchasePanel = ({
   needsCardOnFile,
   cardSetupRetryHint = null,
   onSignIn,
-  onCreateAccount,
-  onContactStudio,
   onContinueAfterCard,
 }: MembershipPurchasePanelProps) => {
   const { isAuthenticated, isRedirecting, mbSession } = useAuth();
@@ -158,25 +154,12 @@ const MembershipPurchasePanel = ({
               Opening Mindbody…
             </>
           ) : (
-            'Sign in to subscribe monthly'
+            'Continue with Mindbody'
           )}
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="h-11 w-full rounded-none border-[#F9ECD9]/30 bg-transparent text-[#F9ECD9] hover:bg-[#F9ECD9]/10 text-xs uppercase tracking-[0.15em]"
-          onClick={onCreateAccount}
-        >
-          Create Mindbody account
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          className="h-9 w-full rounded-none text-[#F9ECD9]/50 hover:text-[#F9ECD9]/80 hover:bg-transparent text-[10px] uppercase tracking-[0.12em]"
-          onClick={onContactStudio}
-        >
-          Contact studio for annual membership
-        </Button>
+        <p className="text-center text-[10px] font-light leading-relaxed text-[#F9ECD9]/45">
+          Sign in or create your Mindbody account to subscribe monthly.
+        </p>
       </div>
     );
   }
@@ -258,15 +241,6 @@ const MembershipPurchasePanel = ({
       >
         <ExternalLink className="mr-2 h-3.5 w-3.5" aria-hidden />
         Subscribe monthly — {formatMembershipPrice(plan.monthlyPriceGbp)}
-      </Button>
-
-      <Button
-        type="button"
-        variant="outline"
-        className="h-11 w-full rounded-none border-[#F9ECD9]/30 bg-transparent text-[#F9ECD9] hover:bg-[#F9ECD9]/10 text-xs uppercase tracking-[0.15em]"
-        onClick={onContactStudio}
-      >
-        Contact studio for annual membership
       </Button>
 
       <Button

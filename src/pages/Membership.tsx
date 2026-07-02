@@ -28,10 +28,10 @@ const MEMBERSHIP_DESCRIPTION =
   'Rebase Recovery membership in Marylebone: Ultimate, Resident and Base tiers. Monthly subscriptions online; annual memberships via the studio.';
 
 const Membership = () => {
-  const { login, openMindbodySignUp, isAuthenticated, mbSession } = useAuth();
+  const { login, isAuthenticated, mbSession } = useAuth();
   const { data: membershipData, isLoading: membershipLoading, refetch: refetchMembership } =
     useClientMembership();
-  const [enquiryTier, setEnquiryTier] = useState<string | null>(null);
+  const [annualEnquiryOpen, setAnnualEnquiryOpen] = useState(false);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
 
   useEffect(() => {
@@ -166,8 +166,6 @@ const Membership = () => {
                       membershipLoading={membershipLoading}
                       needsCardOnFile={needsCardOnFile}
                       onSignIn={() => login()}
-                      onCreateAccount={openMindbodySignUp}
-                      onContactStudio={() => setEnquiryTier(plan.name)}
                       onContinueAfterCard={handleContinueAfterCard}
                     />
                   </div>
@@ -180,9 +178,22 @@ const Membership = () => {
         <section className="pb-8 px-5 sm:px-8">
           <p className="text-center text-[#F9ECD9]/45 text-xs sm:text-sm font-light max-w-xl mx-auto leading-relaxed">
             Monthly memberships are purchased through Mindbody — we open checkout once per tier, so
-            do not tap Subscribe monthly repeatedly or you may be charged more than once. Annual
-            memberships are arranged directly with the studio. Payment is processed securely through
-            your Mindbody account.
+            do not tap Subscribe monthly repeatedly or you may be charged more than once. Payment is
+            processed securely through your Mindbody account.
+          </p>
+        </section>
+
+        <section className="pb-6 px-5 sm:px-8">
+          <p className="text-center text-[#F9ECD9]/50 text-sm sm:text-base font-light max-w-xl mx-auto leading-relaxed">
+            For annual membership please{' '}
+            <button
+              type="button"
+              onClick={() => setAnnualEnquiryOpen(true)}
+              className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
+            >
+              contact the studio directly
+            </button>
+            .
           </p>
         </section>
 
@@ -201,12 +212,10 @@ const Membership = () => {
       </main>
 
       <MembershipEnquiryDialog
-        open={enquiryTier !== null}
-        onOpenChange={(open) => {
-          if (!open) setEnquiryTier(null);
-        }}
-        tierName={enquiryTier ?? ''}
+        open={annualEnquiryOpen}
+        onOpenChange={setAnnualEnquiryOpen}
         billingPeriod="annual"
+        showTierSelect
       />
 
       <Footer />
