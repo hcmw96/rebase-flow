@@ -25,7 +25,7 @@ import {
 } from '@/lib/paymentCardSetupStorage';
 
 const MEMBERSHIP_DESCRIPTION =
-  'Rebase Recovery membership in Marylebone: Ultimate, Resident and Base tiers. Monthly subscriptions online; annual memberships via the studio. Prices plus VAT.';
+  'Rebase Recovery membership in Marylebone: Ultimate, Resident and Base tiers. Monthly subscriptions online; annual memberships via the studio.';
 
 const Membership = () => {
   const { login, openMindbodySignUp, isAuthenticated, mbSession } = useAuth();
@@ -79,7 +79,7 @@ const Membership = () => {
             'Rebase Recovery Membership Plans',
             MEMBERSHIP_PLANS.map((plan) => ({
               name: `${plan.name} Membership`,
-              description: `${formatMembershipPrice(plan.monthlyPriceGbp)} per month plus VAT (subscribe online) or ${formatMembershipPrice(plan.annualPriceGbp)} per year plus VAT (contact studio)`,
+              description: `${formatMembershipPrice(plan.monthlyPriceGbp)} per month (subscribe online) or ${formatMembershipPrice(plan.annualPriceGbp)} per year (contact studio)`,
             })),
           ),
         ]}
@@ -122,18 +122,6 @@ const Membership = () => {
                   <h2 className="text-xl sm:text-2xl font-light text-[#F9ECD9] tracking-[0.2em] uppercase">
                     {plan.name}
                   </h2>
-                  <div className="mt-4 space-y-1">
-                    <p className="text-2xl sm:text-3xl font-light text-[#F9ECD9]">
-                      {formatMembershipPrice(plan.monthlyPriceGbp)}
-                      <span className="text-sm text-[#F9ECD9]/50 font-light"> / month</span>
-                    </p>
-                    <p className="text-sm text-[#F9ECD9]/55 font-light">
-                      or {formatMembershipPrice(plan.annualPriceGbp)} per year
-                    </p>
-                  </div>
-                  <p className="mt-3 text-[10px] uppercase tracking-[0.2em] text-[#F9ECD9]/45">
-                    plus VAT
-                  </p>
                 </header>
 
                 {plan.image && (
@@ -161,6 +149,15 @@ const Membership = () => {
                       </li>
                     ))}
                   </ul>
+
+                  <div className="mt-6 pt-4 border-t border-[#F9ECD9]/10 text-center space-y-0.5">
+                    <p className="text-sm font-light text-[#F9ECD9]/75">
+                      {formatMembershipPrice(plan.monthlyPriceGbp)} / month
+                    </p>
+                    <p className="text-sm font-light text-[#F9ECD9]/75">
+                      or {formatMembershipPrice(plan.annualPriceGbp)} per year
+                    </p>
+                  </div>
 
                   <div className="mt-6 pt-4 border-t border-[#F9ECD9]/10">
                     <MembershipPurchasePanel

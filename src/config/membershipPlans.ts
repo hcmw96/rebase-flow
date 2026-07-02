@@ -34,8 +34,8 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
       { label: 'Cryotherapy', value: 'Unlimited' },
       { label: 'Class Access', value: 'Unlimited' },
       { label: 'HBOT', value: '6 per month' },
-      { label: 'Private Suites', value: '6 per month' },
       { label: 'Guest Passes', value: '18 per year' },
+      { label: 'Private Suites', value: '6 per month' },
     ],
   },
   {
@@ -50,8 +50,8 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
       { label: 'Cryotherapy', value: 'Unlimited' },
       { label: 'Class Access', value: '8 per month' },
       { label: 'HBOT', value: '3 per month' },
-      { label: 'Private Suites', value: '3 per month' },
       { label: 'Guest Passes', value: '12 per year' },
+      { label: 'Private Suites', value: '3 per month' },
     ],
   },
   {
@@ -66,8 +66,8 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
       { label: 'Cryotherapy', value: '4 per month' },
       { label: 'Class Access', value: '4 per month' },
       { label: 'HBOT', value: '1 per month' },
-      { label: 'Private Suites', value: 'Additional Cost' },
       { label: 'Guest Passes', value: '6 per year' },
+      { label: 'Private Suites', value: 'Additional fee' },
     ],
   },
 ];
