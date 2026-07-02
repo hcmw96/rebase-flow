@@ -14,7 +14,6 @@ export type MembershipPlan = {
   monthlyPriceGbp: number;
   features: MembershipFeature[];
   image?: string;
-  highlighted?: boolean;
   /** Mindbody classic checkout for the monthly subscription only (stype=40). */
   monthlyCheckoutUrl?: string;
 };
@@ -45,7 +44,6 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
     annualPriceGbp: 6380,
     monthlyPriceGbp: 580,
     image: '/images/rebase-resident-membership.webp',
-    highlighted: true,
     monthlyCheckoutUrl: `https://clients.mindbodyonline.com/classic/ws?studioid=${studioId}&stype=40&prodId=101`,
     features: [
       { label: 'Communal Suite Access', value: 'Unlimited' },
@@ -73,8 +71,6 @@ export const MEMBERSHIP_PLANS: MembershipPlan[] = [
     ],
   },
 ];
-
-export const MEMBERSHIP_PERK_FOOTER = '10% off all additional treatments & bookings';
 
 export function formatMembershipPrice(amountGbp: number): string {
   return `£${amountGbp.toLocaleString('en-GB')}`;

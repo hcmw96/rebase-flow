@@ -146,11 +146,6 @@ const MembershipPurchasePanel = ({
   if (!isAuthenticated) {
     return (
       <div className="space-y-3">
-        <p className="text-xs font-light leading-relaxed text-[#F9ECD9]/70">
-          Monthly subscriptions ({formatMembershipPrice(plan.monthlyPriceGbp)}/month) are purchased
-          online via Mindbody. Sign in with your Mindbody account — we&apos;ll open Mindbody in a new
-          window, then bring you back here to start your subscription.
-        </p>
         <Button
           type="button"
           className="h-11 w-full rounded-none bg-[#F9ECD9] text-[#3B2712] hover:bg-[#F9ECD9]/90 text-xs uppercase tracking-[0.15em]"
@@ -227,11 +222,6 @@ const MembershipPurchasePanel = ({
           monthly {plan.name} subscription in the Mindbody window only. Tapping again can open another
           checkout and charge you twice.
         </p>
-        <p className="text-xs text-[#F9ECD9]/65 leading-relaxed">
-          This checkout is for the monthly plan (
-          {formatMembershipPrice(plan.monthlyPriceGbp)}/month). For annual membership (
-          {formatMembershipPrice(plan.annualPriceGbp)}/year), contact the studio.
-        </p>
         {retryCooldownMs > 0 ? (
           <p className="text-[10px] text-[#F9ECD9]/45 text-center">
             Retry available in {Math.ceil(retryCooldownMs / 1000)}s if the window didn&apos;t open
@@ -276,7 +266,7 @@ const MembershipPurchasePanel = ({
         className="h-11 w-full rounded-none border-[#F9ECD9]/30 bg-transparent text-[#F9ECD9] hover:bg-[#F9ECD9]/10 text-xs uppercase tracking-[0.15em]"
         onClick={onContactStudio}
       >
-        Contact studio for annual — {formatMembershipPrice(plan.annualPriceGbp)}
+        Contact studio for annual membership
       </Button>
 
       <Button
