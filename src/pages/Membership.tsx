@@ -105,6 +105,15 @@ const Membership = () => {
             >
               Elevate Your Recovery
             </motion.h1>
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.2 }}
+              className="mt-6 text-[#F9ECD9]/50 text-base sm:text-lg max-w-2xl mx-auto font-light leading-relaxed"
+            >
+              Choose the membership tier that aligns with your wellness goals. Each level unlocks
+              progressively greater access to our world-class recovery and performance services.
+            </motion.p>
           </div>
         </section>
 
