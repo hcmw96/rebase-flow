@@ -77,7 +77,17 @@ export function pickSaleServiceForSession(services: SaleServiceRow[]): SaleServi
     return null;
   }
 
-  const picked = [...singles].sort((a, b) => salePrice(a) - salePrice(b))[0] ?? null;
+  const cryoMatches = singles.filter((s) => /cryo/i.test(s.Name || ""));
+  const singleVisitMatches = singles.filter((s) =>
+    /single|drop|visit|session(?!.*pack)/i.test(s.Name || ""),
+  );
+  const candidates = cryoMatches.length
+    ? cryoMatches
+    : singleVisitMatches.length
+    ? singleVisitMatches
+    : singles;
+
+  const picked = [...candidates].sort((a, b) => salePrice(a) - salePrice(b))[0] ?? null;
   if (picked) {
     console.log("pickSaleServiceForSession:", {
       id: picked.Id,

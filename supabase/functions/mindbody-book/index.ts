@@ -15,6 +15,7 @@ import {
   fetchActiveClientServices,
   findJuneContrastPassRow,
   pickBookableClientServiceId,
+  pickBookableClientServiceIdForBooking,
 } from "../_shared/mindbodyClientServices.ts";
 import { isJuneContrastPassName } from "../_shared/contrastPass.ts";
 import { logJunePassClassBooking } from "../_shared/contrastPassUsageLog.ts";
@@ -167,6 +168,23 @@ async function postToMindbody(
     },
     body: JSON.stringify(body),
   });
+}
+
+/** When pass booking fails, try stored-card checkout unless the failure is non-recoverable. */
+async function shouldFallThroughToCheckout(failure: {
+  ok: false;
+  response: Response;
+}): Promise<boolean> {
+  const status = failure.response.status;
+  if (status === 503 || status === 401) return false;
+
+  try {
+    const body = await failure.response.clone().json();
+    if (body.profileNotFound || body.requiresLogin) return false;
+    return true;
+  } catch {
+    return status >= 400 && status < 500;
+  }
 }
 
 async function mindbodyPostWithRetry(
@@ -415,6 +433,7 @@ async function bookClassWithPayment(
   classId: string,
   startDateTime: string,
   locationId: number | undefined,
+  serviceName?: string,
 ): Promise<
   | {
     ok: true;
@@ -479,13 +498,22 @@ async function bookClassWithPayment(
     if (refreshed) activeSession = refreshed;
   }
 
+  const consumerServices = await fetchActiveClientServices(
+    apiKey,
+    siteId,
+    activeSession.access_token,
+    clientId,
+  );
+  const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
   const passOnFile =
-    pickBookableClientServiceId(
-      await fetchActiveClientServices(apiKey, siteId, activeSession.access_token, clientId),
-    ) ??
-    pickBookableClientServiceId(
-      await fetchActiveClientServices(apiKey, siteId, staffToken, clientId),
-    );
+    pickBookableClientServiceIdForBooking(consumerServices, {
+      bookingType: "class",
+      serviceName,
+    }) ??
+    pickBookableClientServiceIdForBooking(staffServices, {
+      bookingType: "class",
+      serviceName,
+    });
 
   if (passOnFile) {
     const booked = await mindbodyPostWithRetry(
@@ -503,7 +531,10 @@ async function bookClassWithPayment(
         clientServiceId: passOnFile,
       };
     }
-    return booked;
+    if (!(await shouldFallThroughToCheckout(booked))) {
+      return booked;
+    }
+    console.warn(`Class pass ${passOnFile} failed; trying stored-card checkout for class ${classId}`);
   }
 
   const classIdNum = parseInt(classId, 10);
@@ -645,6 +676,7 @@ async function bookAppointmentWithPayment(
   locationId: number,
   startDateTime: string,
   endDateTime?: string,
+  serviceName?: string,
 ): Promise<
   | {
     ok: true;
@@ -709,13 +741,22 @@ async function bookAppointmentWithPayment(
     if (refreshed) activeSession = refreshed;
   }
 
+  const consumerServices = await fetchActiveClientServices(
+    apiKey,
+    siteId,
+    activeSession.access_token,
+    clientId,
+  );
+  const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
   const passOnFile =
-    pickBookableClientServiceId(
-      await fetchActiveClientServices(apiKey, siteId, activeSession.access_token, clientId),
-    ) ??
-    pickBookableClientServiceId(
-      await fetchActiveClientServices(apiKey, siteId, staffToken, clientId),
-    );
+    pickBookableClientServiceIdForBooking(consumerServices, {
+      bookingType: "appointment",
+      serviceName,
+    }) ??
+    pickBookableClientServiceIdForBooking(staffServices, {
+      bookingType: "appointment",
+      serviceName,
+    });
 
   if (passOnFile) {
     const booked = await mindbodyPostWithRetry(
@@ -733,7 +774,12 @@ async function bookAppointmentWithPayment(
         clientServiceId: passOnFile,
       };
     }
-    return booked;
+    if (!(await shouldFallThroughToCheckout(booked))) {
+      return booked;
+    }
+    console.warn(
+      `Appointment pass ${passOnFile} failed; trying stored-card checkout for session ${sessionTypeId}`,
+    );
   }
 
   const sessionTypeIdNum = parseInt(sessionTypeId, 10);
@@ -1081,6 +1127,7 @@ serve(async (req) => {
         classId,
         slotStartDateTime,
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
+        serviceName,
       );
       if (!result.ok) {
         await releaseBookingClaim(supabaseAdmin, claimedBookingId);
@@ -1108,6 +1155,7 @@ serve(async (req) => {
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
         startDateTime,
         endDateTime,
+        serviceName,
       );
       if (!result.ok) {
         await releaseBookingClaim(supabaseAdmin, claimedBookingId);

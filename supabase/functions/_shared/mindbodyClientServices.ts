@@ -65,7 +65,7 @@ export function pickBookableClientServiceId(
   // because applying the whole pack would charge nothing but mark the pack as used.
   const credit = services.find((s) => {
     const name = s.Name || "";
-    if (!/contrast|communal|class|visit|session|pass|unlimited|drop/i.test(name)) return false;
+    if (!/contrast|communal|class|visit|session|pass|unlimited|drop|cryo/i.test(name)) return false;
     // If we have explicit remaining info, trust it — any remaining > 0 is usable.
     if (typeof s.Remaining === "number") return s.Remaining > 0;
     return true;
@@ -73,6 +73,50 @@ export function pickBookableClientServiceId(
 
   if (!credit) return null;
   return credit.Id != null ? Number(credit.Id) : null;
+}
+
+/**
+ * Pick a pass/credit appropriate for the service being booked.
+ * Avoids applying a contrast pass to cryotherapy (and vice versa).
+ */
+export function pickBookableClientServiceIdForBooking(
+  services: MindbodyClientServiceRow[],
+  context: { bookingType: "class" | "appointment"; serviceName?: string },
+): number | null {
+  if (!services.length) return null;
+
+  const serviceName = (context.serviceName || "").toLowerCase();
+  const isCryo = /cryo/i.test(serviceName);
+  const isContrast =
+    context.bookingType === "class" ||
+    /contrast|communal|suite|sauna|infrared|class/i.test(serviceName);
+
+  if (isCryo) {
+    const cryoCredits = services.filter((s) => /cryo/i.test(s.Name || ""));
+    return pickBookableClientServiceId(cryoCredits);
+  }
+
+  if (isContrast) {
+    const juneId = pickJuneContrastPassServiceId(services);
+    if (juneId != null) return juneId;
+    const contrastCredits = services.filter((s) =>
+      /contrast|communal|class|visit|session|pass|unlimited|drop/i.test(s.Name || "")
+    );
+    return pickBookableClientServiceId(contrastCredits);
+  }
+
+  if (serviceName) {
+    const words = serviceName.split(/\W+/).filter((w) => w.length > 3);
+    const matched = services.filter((s) => {
+      const passName = (s.Name || "").toLowerCase();
+      return words.some((w) => passName.includes(w));
+    });
+    if (matched.length) {
+      return pickBookableClientServiceId(matched);
+    }
+  }
+
+  return pickBookableClientServiceId(services);
 }
 
 export function findJuneContrastPassRow(
