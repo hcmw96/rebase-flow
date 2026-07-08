@@ -6,6 +6,7 @@ import { filterUpcomingSessions } from '../../lib/sessionTimes';
 import { buildSlotBookingIdempotencyKey } from '../../lib/bookingIdempotency';
 import { BookingCalendar } from './BookingCalendar';
 import { TimeSlotPicker } from './TimeSlotPicker';
+import { stripHtml } from '../../lib/htmlText';
 
 interface BookingModalProps {
   service: GroupedService;
@@ -184,7 +185,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                     <div className="font-medium text-[hsl(35,15%,88%)]">{variant.name}</div>
                     {variant.description && (
                       <div className="text-xs text-[hsl(35,8%,55%)] mt-1 leading-relaxed line-clamp-2">
-                        {variant.description.replace(/<[^>]*>/g, '').trim()}
+                        {stripHtml(variant.description)}
                       </div>
                     )}
                     <div className="text-sm text-[hsl(35,8%,55%)] flex items-center gap-3 mt-1">

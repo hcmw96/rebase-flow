@@ -36,6 +36,7 @@ import { stashPendingBooking, type PendingAppointmentState } from '@/lib/booking
 import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
 import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
 import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
+import { stripHtml } from '@/lib/htmlText';
 
 export interface BookingServiceData {
   title: string;
@@ -577,7 +578,7 @@ const BookingDrawer = ({
                             <div className="font-medium text-foreground">{variant.name}</div>
                             {variant.description && (
                               <div className="text-xs text-muted-foreground mt-1 leading-relaxed line-clamp-2">
-                                {variant.description.replace(/<[^>]*>/g, '').trim()}
+                                {stripHtml(variant.description)}
                               </div>
                             )}
                             {variant.isPack && variant.packSessionCount ? (

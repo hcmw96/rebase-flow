@@ -35,15 +35,11 @@ import {
   resolveDisplayName,
 } from '@/config/serviceConfig';
 import { ImageCardScrim } from '@/components/ImageTextScrim';
+import { stripHtml } from '@/lib/htmlText';
 
 interface WebsiteServicesProps {
   onSelectService: (service: BookingServiceData) => void;
 }
-
-const stripHtml = (html: string): string => {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
-};
 
 const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
   const { data: services } = useMindbodyServices();

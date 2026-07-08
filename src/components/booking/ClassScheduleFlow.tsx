@@ -36,14 +36,7 @@ import {
 } from '@/lib/paymentCardSetupStorage';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 
-const stripHtml = (html: string) => {
-  if (typeof DOMParser !== 'undefined') {
-    const doc = new DOMParser().parseFromString(html, 'text/html');
-    return doc.body.textContent || '';
-  }
-  return html.replace(/<[^>]*>?/gm, '');
-};
-
+import { stripHtml } from '@/lib/htmlText';
 const normaliseBrand = (value: string | null | undefined): string =>
   (value ?? '').replace(/re[\s-]?base/gi, 'Rebase');
 

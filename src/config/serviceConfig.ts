@@ -1,4 +1,5 @@
 import { ServiceVariant } from '@/components/ServiceCard';
+import { stripHtml } from '@/lib/htmlText';
 
 // ── Grouping patterns ──────────────────────────────────────────────
 export const serviceGroupMappings: Array<{ pattern: RegExp; groupName: string }> = [
@@ -53,7 +54,7 @@ export const hiddenGroupNames = new Set([
   'Members Wellness Event', 'Sound Bath',
   'Wellness Event', 'Saturday Buffer', 'Thursday Buffer',
   'Nutritional Therapy',
-  'Structural Fascia Therapy', 'Ozone Therapy', 'Skin Rejuvenation',
+  'Ozone Therapy', 'Skin Rejuvenation',
   'Skin Peel', 'BioStimulation', 'Myofascial Dry Needling',
   'Hyaluronic', 'Injectables', 'Neuro Regulation',
   'Midday Reset', 'The Midday Reset',
@@ -114,6 +115,7 @@ export const categoryOverrides: Record<string, string> = {
   
   'Osteopathy': 'Regen and Manual Therapies',
   'Myofascial Dry Needling': 'Regen and Manual Therapies',
+  'Structural Fascia Therapy': 'Regen and Manual Therapies',
 };
 
 export const categoryOrder = [
@@ -130,7 +132,7 @@ export const categoryOrder = [
 // ── Within-category ordering ───────────────────────────────────────
 export const serviceOrderWithinCategory: Record<string, Record<string, number>> = {
   'IV Drips': { 'IV Drip': 0, 'Blood Test': 1, 'NAD+': 2 },
-  'Regen and Manual Therapies': { 'Osteopathy': 0 },
+  'Regen and Manual Therapies': { 'Osteopathy': 0, 'Structural Fascia Therapy': 1 },
 };
 
 // ── Images ─────────────────────────────────────────────────────────
@@ -246,7 +248,7 @@ export const GENERIC_SERVICE_DESCRIPTION = 'Experience our premium wellness serv
 // Returns true when a description string is empty, whitespace-only, or our generic fallback.
 export const isPlaceholderDescription = (desc: string | null | undefined): boolean => {
   if (!desc) return true;
-  const stripped = desc.replace(/<[^>]*>/g, '').trim();
+  const stripped = stripHtml(desc);
   return stripped.length === 0 || stripped === GENERIC_SERVICE_DESCRIPTION;
 };
 
@@ -256,7 +258,7 @@ export const resolveGroupDescription = (
   baseName: string,
 ): string => {
   if (baseName === 'Communal Contrast') return COMMUNAL_CONTRAST_DESCRIPTION;
-  if (!isPlaceholderDescription(current)) return current as string;
+  if (!isPlaceholderDescription(current)) return stripHtml(current as string);
   return shortDescriptions[baseName] || GENERIC_SERVICE_DESCRIPTION;
 };
 
@@ -317,7 +319,7 @@ export const resolveVariantDescription = (
   groupName: string,
   mindbodyDesc: string | null | undefined,
 ): string => {
-  if (!isPlaceholderDescription(mindbodyDesc)) return mindbodyDesc as string;
+  if (!isPlaceholderDescription(mindbodyDesc)) return stripHtml(mindbodyDesc as string);
   const key = (variantName || '').trim().toLowerCase();
   if (normalisedVariantDescriptions[key]) return normalisedVariantDescriptions[key];
   return shortDescriptions[groupName] || GENERIC_SERVICE_DESCRIPTION;
@@ -481,6 +483,7 @@ export const staticWebsiteCatalogue: StaticServiceEntry[] = [
   { baseName: "Blood Test", category: "IV Drips", image: "/images/rebase-blood-test.jpg", shortDescription: "Comprehensive lab panels to inform your personalised wellness strategy.", fromPrice: 1000, contactOnly: false },
   { baseName: "NAD+", category: "IV Drips", image: "/images/rebase-iv-drip.jpg", shortDescription: "Cellular regeneration therapy to restore energy and vitality.", fromPrice: 350, contactOnly: false },
   { baseName: "Osteopathy", category: "Regen and Manual Therapies", image: "/images/rebase-osteopathy.jpg", shortDescription: "Manual therapy to restore movement and relieve pain.", fromPrice: 165, contactOnly: true },
+  { baseName: "Structural Fascia Therapy", category: "Regen and Manual Therapies", image: "/images/rebase-structural-fascia.jpg", shortDescription: "Hands-on fascial release for posture and pain relief.", fromPrice: 200, contactOnly: false },
   { baseName: "Athletes Performance", category: "Regen and Manual Therapies", image: "/images/rebase-athletes-performance.jpg", shortDescription: "Elite recovery and performance protocol for serious athletes.", fromPrice: 3350, contactOnly: false },
   { baseName: "Longevity", category: "Regen and Manual Therapies", image: "/images/rebase-longevity.jpg", shortDescription: "Comprehensive longevity protocol to optimise vitality and healthspan.", fromPrice: 1700, contactOnly: false },
   { baseName: "High Performance Recovery", category: "Regen and Manual Therapies", image: "/images/rebase-high-performance-recovery.jpg", shortDescription: "Multi-modal recovery package for peak performance.", fromPrice: 2950, contactOnly: false },

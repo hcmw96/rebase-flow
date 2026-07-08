@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
 import { serviceImagePositions, priceOverrides } from '@/config/serviceConfig';
+import { stripHtml } from '@/lib/htmlText';
 
 export interface ServiceVariant {
   id: string;
@@ -25,12 +26,6 @@ interface ServiceCardProps {
   image: string;
   variants: ServiceVariant[];
 }
-
-// Strip HTML tags from description
-const stripHtml = (html: string): string => {
-  const doc = new DOMParser().parseFromString(html, 'text/html');
-  return doc.body.textContent || '';
-};
 
 const ServiceCard = ({
   id,
