@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { format } from 'date-fns';
-import { motion } from 'framer-motion';
+import { formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange } from '@/lib/sessionTimes';
 import { Calendar, CheckCircle, Clock, MapPin, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resolveDisplayName } from '@/config/serviceConfig';
@@ -16,6 +15,7 @@ export interface BookingConfirmationDetails {
 
 interface BookingConfirmationSuccessProps {
   details: BookingConfirmationDetails;
+  durationMinutes?: number | null;
   onDone: () => void;
   doneLabel?: string;
   className?: string;
@@ -30,14 +30,13 @@ const normaliseBrand = (value: string | null | undefined): string =>
  */
 const BookingConfirmationSuccess = ({
   details,
+  durationMinutes,
   onDone,
   doneLabel = 'Done',
   className,
   children,
 }: BookingConfirmationSuccessProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
-  const start = new Date(details.startDateTime);
-  const end = details.endDateTime ? new Date(details.endDateTime) : null;
   const serviceLabel = resolveDisplayName(details.serviceName);
 
   useEffect(() => {
@@ -71,14 +70,16 @@ const BookingConfirmationSuccess = ({
         <p className="font-semibold text-base text-foreground">{serviceLabel}</p>
         <div className="flex items-center gap-3">
           <Calendar className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
-          <span>{format(start, 'EEEE, MMMM d, yyyy')}</span>
+          <span>{formatMindbodyDate(details.startDateTime)}</span>
         </div>
         <div className="flex items-center gap-3">
           <Clock className="h-4 w-4 text-muted-foreground shrink-0" aria-hidden />
           <span>
-            {end
-              ? `${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`
-              : format(start, 'h:mm a')}
+            {formatAppointmentTimeRange(
+              details.startDateTime,
+              details.endDateTime,
+              durationMinutes,
+            )}
           </span>
         </div>
         {details.staffName && (

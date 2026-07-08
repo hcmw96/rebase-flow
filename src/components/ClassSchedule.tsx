@@ -4,7 +4,7 @@ import { useMindbodyClasses } from '@/hooks/useMindbodyServices';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Clock, Users, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyTime, mindbodyDateKey, parseMindbodyDateTime, studioCalendarDate } from '@/lib/sessionTimes';
 import { classOfferings, resolveDisplayName } from '@/config/serviceConfig';
 import { ImageCardScrim } from '@/components/ImageTextScrim';
 import { BOOKING_DAYS_AHEAD } from '@/lib/bookingHorizon';
@@ -24,11 +24,11 @@ const ClassSchedule = () => {
     if (!classes || classes.length === 0) return new Map<string, typeof classes>();
 
     const filtered = filterUpcomingSessions(classes).filter(c => !c.isCanceled);
-    filtered.sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+    filtered.sort((a, b) => parseMindbodyDateTime(a.startDateTime).getTime() - parseMindbodyDateTime(b.startDateTime).getTime());
 
     const grouped = new Map<string, typeof classes>();
     for (const cls of filtered) {
-      const dayKey = format(new Date(cls.startDateTime), 'yyyy-MM-dd');
+      const dayKey = mindbodyDateKey(cls.startDateTime);
       if (!grouped.has(dayKey)) grouped.set(dayKey, []);
       grouped.get(dayKey)!.push(cls);
     }
@@ -96,8 +96,8 @@ const ClassSchedule = () => {
             </h3>
             <div className="space-y-2">
               {dayClasses.map((cls) => {
-                const startTime = format(new Date(cls.startDateTime), 'h:mm a');
-                const endTime = format(new Date(cls.endDateTime), 'h:mm a');
+                const startTime = formatMindbodyTime(cls.startDateTime);
+                const endTime = formatMindbodyTime(cls.endDateTime);
                 const spotsLeft = cls.availableSpots;
                 const isFull = spotsLeft <= 0;
 

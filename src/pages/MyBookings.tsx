@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { formatMindbodyDate, formatMindbodyTime, parseMindbodyDateTime } from '@/lib/sessionTimes';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,9 +25,9 @@ const MyBookings = () => {
   const cancelMutation = useCancelBooking();
 
   const bookings = bookingsData?.bookings || [];
-  const now = new Date();
-  const upcomingBookings = bookings.filter((b: any) => new Date(b.startDateTime) >= now);
-  const pastBookings = bookings.filter((b: any) => new Date(b.startDateTime) < now);
+  const now = Date.now();
+  const upcomingBookings = bookings.filter((b: any) => parseMindbodyDateTime(b.startDateTime).getTime() >= now);
+  const pastBookings = bookings.filter((b: any) => parseMindbodyDateTime(b.startDateTime).getTime() < now);
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -143,11 +143,11 @@ const MyBookings = () => {
                             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3.5 w-3.5" />
-                                {format(new Date(booking.startDateTime), 'EEE, MMM d')}
+                                {formatMindbodyDate(booking.startDateTime, 'EEE, MMM d')}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="h-3.5 w-3.5" />
-                                {format(new Date(booking.startDateTime), 'h:mm a')}
+                                {formatMindbodyTime(booking.startDateTime)}
                               </span>
                               {booking.staffName && (
                                 <span className="flex items-center gap-1">
@@ -209,7 +209,7 @@ const MyBookings = () => {
                             <div>
                               <h3 className="font-medium text-sm">{booking.serviceName}</h3>
                               <p className="text-xs text-muted-foreground">
-                                {format(new Date(booking.startDateTime), 'MMM d, yyyy')} · {format(new Date(booking.startDateTime), 'h:mm a')}
+                                {formatMindbodyDate(booking.startDateTime, 'MMM d, yyyy')} · {formatMindbodyTime(booking.startDateTime)}
                               </p>
                             </div>
                             {getStatusBadge(booking.status)}

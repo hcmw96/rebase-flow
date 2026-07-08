@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Clock, User } from 'lucide-react';
 import { AvailableItem } from '@/hooks/useMindbodyServices';
+import { formatMindbodyTime, isUpcomingSession } from '@/lib/sessionTimes';
 
 interface TimeSlotPickerProps {
   slots: AvailableItem[];
@@ -32,9 +33,7 @@ const TimeSlotPicker = ({
     );
   }
 
-  const upcomingSlots = slots.filter(
-    (slot) => new Date(slot.startDateTime).getTime() > Date.now(),
-  );
+  const upcomingSlots = slots.filter((slot) => isUpcomingSession(slot.startDateTime));
 
   if (upcomingSlots.length === 0) {
     return (
@@ -57,7 +56,7 @@ const TimeSlotPicker = ({
 
   // Group slots by time
   const groupedSlots = upcomingSlots.reduce((acc, slot) => {
-    const time = format(new Date(slot.startDateTime), 'HH:mm');
+    const time = formatMindbodyTime(slot.startDateTime, 'HH:mm');
     if (!acc[time]) {
       acc[time] = [];
     }
@@ -89,7 +88,7 @@ const TimeSlotPicker = ({
                   <div className="flex items-center gap-3 w-full">
                     <div className="text-left flex-1">
                       <div className="font-medium">
-                        {format(new Date(slot.startDateTime), 'h:mm a')}
+                        {formatMindbodyTime(slot.startDateTime)}
                       </div>
                       {slot.staffName && (
                         <div className="text-xs text-muted-foreground flex items-center gap-1 mt-1">

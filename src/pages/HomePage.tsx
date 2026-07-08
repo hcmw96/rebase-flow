@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, ChevronRight, MapPin } from 'lucide-react';
-import { format } from 'date-fns';
+import { formatMindbodyDate, formatMindbodyTime, parseMindbodyDateTime } from '@/lib/sessionTimes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -14,6 +14,7 @@ import {
   serviceImages,
   categoryImages,
   staticWebsiteCatalogue,
+  resolveVariantDuration,
 } from '@/config/serviceConfig';
 
 interface HomePageProps {
@@ -49,7 +50,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
           name: s.name,
           image: serviceImages[s.name] || categoryImages[cat] || categoryImages['default'],
           price: s.price,
-          duration: s.defaultTimeLength,
+          duration: resolveVariantDuration(s.name, s.defaultTimeLength),
           category: cat,
           description: s.onlineDescription || s.description || '',
         });
@@ -61,10 +62,10 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
   // Next upcoming booking
   const nextBooking = useMemo(() => {
     if (!bookingsData?.bookings) return null;
-    const now = new Date();
+    const now = Date.now();
     const upcoming = bookingsData.bookings
-      .filter((b: any) => new Date(b.startDateTime) >= now)
-      .sort((a: any, b: any) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+      .filter((b: any) => parseMindbodyDateTime(b.startDateTime).getTime() >= now)
+      .sort((a: any, b: any) => parseMindbodyDateTime(a.startDateTime).getTime() - parseMindbodyDateTime(b.startDateTime).getTime());
     return upcoming[0] || null;
   }, [bookingsData]);
 
@@ -84,7 +85,12 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
 
       const first = matches[0];
       const cat = first?.programName || first?.category || staticEntry?.category || 'Wellness';
-      const variants = matches.map(m => ({ id: m.id, name: m.name, duration: m.defaultTimeLength, price: m.price }));
+      const variants = matches.map(m => ({
+        id: m.id,
+        name: m.name,
+        duration: resolveVariantDuration(m.name, m.defaultTimeLength),
+        price: m.price,
+      }));
       const livePrices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
       const fromPrice = livePrices.length ? Math.min(...livePrices) : staticEntry?.fromPrice ?? null;
 
@@ -93,7 +99,7 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
         name: groupName,
         image: serviceImages[groupName] || (first ? serviceImages[first.name] : undefined) || staticEntry?.image || categoryImages[cat] || categoryImages['default'],
         price: fromPrice,
-        duration: first?.defaultTimeLength ?? null,
+        duration: first ? resolveVariantDuration(first.name, first.defaultTimeLength) : null,
         category: cat,
         description: first?.onlineDescription || first?.description || staticEntry?.shortDescription || '',
         variants,
@@ -145,11 +151,11 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  {format(new Date(nextBooking.startDateTime), 'EEE, MMM d')}
+                  {formatMindbodyDate(nextBooking.startDateTime, 'EEE, MMM d')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {format(new Date(nextBooking.startDateTime), 'h:mm a')}
+                  {formatMindbodyTime(nextBooking.startDateTime)}
                 </span>
                 {nextBooking.locationName && (
                   <span className="flex items-center gap-1">

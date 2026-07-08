@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, isSameMindbodyDay, mindbodyDateKey } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 
@@ -117,7 +117,7 @@ const BookService = () => {
     const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
     const dayKeys = new Set<string>();
     for (const it of items) {
-      dayKeys.add(format(new Date(it.startDateTime), 'yyyy-MM-dd'));
+      dayKeys.add(mindbodyDateKey(it.startDateTime));
     }
     return Array.from(dayKeys).map((k) => {
       const [y, m, d] = k.split('-').map(Number);
@@ -144,7 +144,7 @@ const BookService = () => {
   const availableSlots = useMemo(() => {
     const items = filterUpcomingSessions(availabilityData?.availableItems || []);
     if (!selectedDate) return items;
-    return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
+    return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
   }, [availabilityData, selectedDate]);
 
   const handleVariantSelect = (variant: ServiceVariant) => {
@@ -284,11 +284,11 @@ const BookService = () => {
                   <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-left">
                     <div className="flex items-center gap-3">
                       <Calendar className="h-4 w-4 text-muted-foreground" />
-                      <span>{format(new Date(selectedSlot.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
+                      <span>{formatMindbodyDate(selectedSlot.startDateTime)}</span>
                     </div>
                     <div className="flex items-center gap-3">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span>{format(new Date(selectedSlot.startDateTime), 'h:mm a')}</span>
+                      <span>{formatMindbodyTime(selectedSlot.startDateTime)}</span>
                     </div>
                     {selectedSlot.staffName && (
                       <div className="flex items-center gap-3">
@@ -516,7 +516,7 @@ const BookService = () => {
                             <div>
                               <p className="text-sm text-muted-foreground">Date</p>
                               <p className="font-medium">
-                                {format(new Date(selectedSlot.startDateTime), 'EEEE, MMMM d, yyyy')}
+                                {formatMindbodyDate(selectedSlot.startDateTime)}
                               </p>
                             </div>
                           </div>
@@ -526,7 +526,7 @@ const BookService = () => {
                             <div>
                               <p className="text-sm text-muted-foreground">Time</p>
                               <p className="font-medium">
-                                {format(new Date(selectedSlot.startDateTime), 'h:mm a')}
+                                {formatMindbodyTime(selectedSlot.startDateTime)}
                               </p>
                             </div>
                           </div>

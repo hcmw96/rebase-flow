@@ -14,6 +14,7 @@ import {
   serviceImages as sharedServiceImages,
   categoryImages as sharedCategoryImages,
   extractDurationFromName,
+  resolveVariantDuration,
   isPlaceholderDescription,
   resolveGroupDescription,
   resolveVariantDescription,
@@ -92,7 +93,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
       );
       groups.get(canonicalName)!.variants.push({
         id: service.id,
-        duration: isPack ? null : (duration ?? service.defaultTimeLength),
+        duration: isPack ? null : resolveVariantDuration(service.name, service.defaultTimeLength),
         price: isIvFirstConsult ? 0 : service.price,
         name: service.name,
         description: variantDesc,

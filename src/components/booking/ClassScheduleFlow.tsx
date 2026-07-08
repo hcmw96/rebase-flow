@@ -21,7 +21,7 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
-import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange, mindbodyDateKey, parseMindbodyDateTime, studioCalendarDate } from '@/lib/sessionTimes';
 import { bookingHorizonEndDate, BOOKING_DAYS_AHEAD } from '@/lib/bookingHorizon';
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking } from '@/lib/bookingResume';
@@ -84,7 +84,7 @@ function ClassSlotButton({ cls, onSelect }: ClassSlotButtonProps) {
         <div className="text-xs text-muted-foreground flex items-center gap-3 flex-wrap">
           <span className="flex items-center gap-1">
             <Clock className="h-3 w-3" />
-            {format(new Date(cls.startDateTime), 'h:mm a')}
+            {formatMindbodyTime(cls.startDateTime)}
           </span>
           {cls.staffName && (
             <span className="flex items-center gap-1">
@@ -187,14 +187,14 @@ const ClassScheduleFlow = ({
         (c) =>
           allowedDescriptionIds.has(Number(c.classDescriptionId)) && !c.isCanceled,
       )
-      .sort((a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime());
+      .sort((a, b) => parseMindbodyDateTime(a.startDateTime).getTime() - parseMindbodyDateTime(b.startDateTime).getTime());
   }, [classes, allowedDescriptionIds]);
 
   const availableDates = useMemo(() => {
     const seen = new Map<string, Date>();
     for (const cls of filteredClasses) {
-      const day = startOfDay(new Date(cls.startDateTime));
-      const key = format(day, 'yyyy-MM-dd');
+      const day = studioCalendarDate(cls.startDateTime);
+      const key = mindbodyDateKey(cls.startDateTime);
       if (!seen.has(key)) seen.set(key, day);
     }
     return Array.from(seen.values());
@@ -208,8 +208,8 @@ const ClassScheduleFlow = ({
     >();
 
     for (const cls of filteredClasses) {
-      const day = startOfDay(new Date(cls.startDateTime));
-      const dayKey = format(day, 'yyyy-MM-dd');
+      const day = studioCalendarDate(cls.startDateTime);
+      const dayKey = mindbodyDateKey(cls.startDateTime);
       const weekStart = startOfWeek(day, { weekStartsOn: 1 });
       const weekKey = format(weekStart, 'yyyy-MM-dd');
 
@@ -531,14 +531,16 @@ const ClassScheduleFlow = ({
                 <div className="flex items-start gap-3">
                   <Calendar className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <span className="leading-snug">
-                    {format(new Date(selectedClass.startDateTime), 'EEE, MMM d, yyyy')}
+                    {formatMindbodyDate(selectedClass.startDateTime, 'EEE, MMM d, yyyy')}
                   </span>
                 </div>
                 <div className="flex items-start gap-3">
                   <Clock className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
                   <span className="leading-snug">
-                    {format(new Date(selectedClass.startDateTime), 'h:mm a')} –{' '}
-                    {format(new Date(selectedClass.endDateTime), 'h:mm a')}
+                    {formatAppointmentTimeRange(
+                      selectedClass.startDateTime,
+                      selectedClass.endDateTime,
+                    )}
                   </span>
                 </div>
                 {selectedClass.staffName && (

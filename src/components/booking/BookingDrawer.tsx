@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import despia from 'despia-native';
 import { Button } from '@/components/ui/button';
@@ -20,7 +20,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { filterUpcomingSessions } from '@/lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, isSameMindbodyDay, mindbodyDateKey } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
@@ -250,7 +250,7 @@ const BookingDrawer = ({
   const availableSlots = useMemo(() => {
     const items = filterUpcomingSessions(availabilityData?.availableItems || []);
     if (!selectedDate) return items;
-    return items.filter((slot) => isSameDay(new Date(slot.startDateTime), selectedDate));
+    return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
   }, [availabilityData, selectedDate]);
 
   // Prefetch availability through the booking horizon so the calendar can grey out
@@ -268,7 +268,7 @@ const BookingDrawer = ({
     const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
     const dayKeys = new Set<string>();
     for (const it of items) {
-      dayKeys.add(format(new Date(it.startDateTime), 'yyyy-MM-dd'));
+      dayKeys.add(mindbodyDateKey(it.startDateTime));
     }
     return Array.from(dayKeys).map((k) => {
       const [y, m, d] = k.split('-').map(Number);
@@ -534,6 +534,7 @@ const BookingDrawer = ({
                   staffName: selectedSlot.staffName,
                   locationName: selectedSlot.locationName,
                 }}
+                durationMinutes={activeVariant?.duration}
                 onDone={onClose}
               >
                 {onSwitchService && (
@@ -672,11 +673,11 @@ const BookingDrawer = ({
                         <div className="space-y-2">
                           <div className="flex items-center gap-3">
                             <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span>{format(new Date(selectedSlot.startDateTime), 'EEEE, MMMM d, yyyy')}</span>
+                            <span>{formatMindbodyDate(selectedSlot.startDateTime)}</span>
                           </div>
                           <div className="flex items-center gap-3">
                             <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
-                            <span>{format(new Date(selectedSlot.startDateTime), 'h:mm a')}</span>
+                            <span>{formatMindbodyTime(selectedSlot.startDateTime)}</span>
                           </div>
                           {selectedSlot.staffName && (
                             <div className="flex items-center gap-3">

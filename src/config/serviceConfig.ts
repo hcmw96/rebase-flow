@@ -369,10 +369,33 @@ export const classOfferings = [
 ];
 
 // ── Helpers ────────────────────────────────────────────────────────
+/** Extract customer-facing minutes from a Mindbody service name (e.g. "60 mins", "90 minutes"). */
+export function extractMinutesFromName(name: string): number | null {
+  const match = name.match(/(\d+)\s*(?:mins?|minutes?|min|minute)\b/i);
+  return match ? parseInt(match[1], 10) : null;
+}
+
 export function extractDurationFromName(name: string): { baseName: string; duration: number | null } {
-  const match = name.match(/\((\d+)\s*(?:mins?|minutes?)\)/i);
-  if (match) return { baseName: name.replace(match[0], '').trim(), duration: parseInt(match[1], 10) };
-  return { baseName: name, duration: null };
+  const duration = extractMinutesFromName(name);
+  if (duration == null) return { baseName: name, duration: null };
+  const baseName = name
+    .replace(/\(\d+\s*(?:mins?|minutes?)\)/i, '')
+    .replace(/[-–]\s*\d+\s*(?:mins?|minutes?)\b/i, '')
+    .replace(/\b\d+\s*(?:mins?|minutes?)\s*$/i, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return { baseName, duration };
+}
+
+/** Prefer treatment length from the service name over Mindbody block length (which includes buffer). */
+export function resolveVariantDuration(
+  name: string,
+  defaultTimeLength?: number | null,
+): number | null {
+  const fromName = extractMinutesFromName(name);
+  if (fromName != null) return fromName;
+  if (defaultTimeLength == null || defaultTimeLength <= 0) return null;
+  return defaultTimeLength;
 }
 
 const legacyServiceNameAliases: Record<string, string> = {

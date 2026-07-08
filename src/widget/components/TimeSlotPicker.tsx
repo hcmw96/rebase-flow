@@ -1,4 +1,4 @@
-import { format } from 'date-fns';
+import { formatMindbodyTime } from '../../lib/sessionTimes';
 import { AvailableItem } from '../api/client';
 
 interface TimeSlotPickerProps {
@@ -13,8 +13,8 @@ export function TimeSlotPicker({ slots, selectedSlot, onSelect, isLoading }: Tim
     return (
       <div className="space-y-3">
         {[...Array(4)].map((_, i) => (
-          <div 
-            key={i} 
+          <div
+            key={i}
             className="h-16 bg-[hsl(25,10%,15%)] rounded-xl animate-pulse"
           />
         ))}
@@ -31,7 +31,6 @@ export function TimeSlotPicker({ slots, selectedSlot, onSelect, isLoading }: Tim
     );
   }
 
-  // Group slots by staff
   const slotsByStaff = slots.reduce((acc, slot) => {
     const staffKey = slot.staffName || 'Any Available';
     if (!acc[staffKey]) {
@@ -49,7 +48,7 @@ export function TimeSlotPicker({ slots, selectedSlot, onSelect, isLoading }: Tim
           <div className="grid grid-cols-3 gap-2">
             {staffSlots.map((slot) => {
               const isSelected = selectedSlot?.id === slot.id;
-              const time = format(new Date(slot.startDateTime), 'h:mm a');
+              const time = formatMindbodyTime(slot.startDateTime);
 
               return (
                 <button
@@ -57,8 +56,8 @@ export function TimeSlotPicker({ slots, selectedSlot, onSelect, isLoading }: Tim
                   onClick={() => onSelect(slot)}
                   className={`
                     py-3 px-4 rounded-xl text-sm font-medium transition-all
-                    ${isSelected 
-                      ? 'bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)]' 
+                    ${isSelected
+                      ? 'bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)]'
                       : 'bg-[hsl(25,10%,15%)] text-[hsl(35,15%,88%)] hover:bg-[hsl(25,12%,18%)] border border-[hsl(25,10%,20%)]'}
                   `}
                 >

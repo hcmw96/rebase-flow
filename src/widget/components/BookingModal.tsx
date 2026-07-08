@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { format, isSameDay } from 'date-fns';
+import { format } from 'date-fns';
 import { useWidget, GroupedService, ServiceVariant } from '../context/WidgetContext';
 import { createApiClient, AvailableItem } from '../api/client';
-import { filterUpcomingSessions } from '../../lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, isSameMindbodyDay } from '../../lib/sessionTimes';
 import { buildSlotBookingIdempotencyKey } from '../../lib/bookingIdempotency';
 import { BookingCalendar } from './BookingCalendar';
 import { TimeSlotPicker } from './TimeSlotPicker';
@@ -58,7 +58,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       .then(data => {
         const items = filterUpcomingSessions(data.availableItems || []);
         const forDay = items.filter((slot) =>
-          selectedDate ? isSameDay(new Date(slot.startDateTime), selectedDate) : true,
+          selectedDate ? isSameMindbodyDay(slot.startDateTime, selectedDate) : true,
         );
         setAvailableSlots(forDay);
         setIsLoadingSlots(false);
@@ -266,14 +266,14 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                       <line x1="8" y1="2" x2="8" y2="6" />
                       <line x1="3" y1="10" x2="21" y2="10" />
                     </svg>
-                    {format(new Date(selectedSlot.startDateTime), 'EEEE, MMMM d, yyyy')}
+                    {formatMindbodyDate(selectedSlot.startDateTime)}
                   </div>
                   <div className="flex items-center gap-3 text-sm text-[hsl(35,15%,88%)]">
                     <svg className="h-4 w-4 text-[hsl(35,8%,55%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <circle cx="12" cy="12" r="10" />
                       <polyline points="12 6 12 12 16 14" />
                     </svg>
-                    {format(new Date(selectedSlot.startDateTime), 'h:mm a')}
+                    {formatMindbodyTime(selectedSlot.startDateTime)}
                   </div>
                   {selectedSlot.staffName && (
                     <div className="flex items-center gap-3 text-sm text-[hsl(35,15%,88%)]">
@@ -352,14 +352,14 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                     <line x1="8" y1="2" x2="8" y2="6" />
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
-                  {format(new Date(selectedSlot.startDateTime), 'EEEE, MMMM d, yyyy')}
+                  {formatMindbodyDate(selectedSlot.startDateTime)}
                 </div>
                 <div className="flex items-center gap-3 text-sm text-[hsl(35,15%,88%)]">
                   <svg className="h-4 w-4 text-[hsl(35,8%,55%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <circle cx="12" cy="12" r="10" />
                     <polyline points="12 6 12 12 16 14" />
                   </svg>
-                  {format(new Date(selectedSlot.startDateTime), 'h:mm a')}
+                  {formatMindbodyTime(selectedSlot.startDateTime)}
                 </div>
                 <div className="flex items-center gap-3 text-sm text-[hsl(35,15%,88%)]">
                   <svg className="h-4 w-4 text-[hsl(35,8%,55%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">

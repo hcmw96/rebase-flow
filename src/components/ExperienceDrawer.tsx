@@ -23,6 +23,7 @@ import {
   classDescriptionIdMap,
   resolveDisplayName,
   extractDurationFromName,
+  resolveVariantDuration,
   canonicalizeServiceName,
   resolveCategory,
   resolveImage,
@@ -109,7 +110,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
       );
       groups.get(canonicalName)!.variants.push({
         id: service.id,
-        duration: isPack ? null : (duration ?? service.defaultTimeLength),
+        duration: isPack ? null : resolveVariantDuration(service.name, service.defaultTimeLength),
         price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
         name: service.name,
         description: variantDesc,
