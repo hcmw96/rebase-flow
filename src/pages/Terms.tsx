@@ -9,7 +9,7 @@ const Terms = () => {
       <SeoHead
         title={seoTitle("Terms and Conditions")}
         description={truncateDescription(
-          "Terms and conditions for using the Rebase Recovery website and booking wellness services in London, operated by Kula Recovery Limited.",
+          "Terms and conditions for using the Rebase Recovery website and booking wellness services in London, operated by Rebase Recovery Limited.",
         )}
         path="/terms"
         jsonLd={breadcrumbSchema([
@@ -20,7 +20,7 @@ const Terms = () => {
       <Navigation />
       <main id="main-content" className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
         <h1 className="text-3xl sm:text-4xl font-light tracking-wide mb-4">Terms and Conditions</h1>
-        <p className="text-[#F9ECD9]/50 text-sm mb-12">Please read these terms and conditions carefully before using this website.</p>
+        <p className="text-[#F9ECD9]/50 text-sm mb-12">Please read these terms and conditions carefully before using this website. Last updated: July 2026</p>
 
         <div className="space-y-10 text-[#F9ECD9]/80 text-[15px] leading-relaxed">
           <section>
@@ -50,11 +50,11 @@ const Terms = () => {
 
           <section>
             <h2 className="text-xl font-medium text-[#F9ECD9] mb-4">2. Who we are and how to contact us</h2>
-            <p className="mb-3"><strong>2.1</strong> We are Kula Recovery Limited.</p>
+            <p className="mb-3"><strong>2.1</strong> We are Rebase Recovery Limited.</p>
             <p className="mb-3"><strong>2.2</strong> We are a company registered in England and Wales with company number 14361244.</p>
             <p className="mb-3"><strong>2.3</strong> Our registered office is at St. Vincent Street, London, England, W1U 4DB, which is also our main trading address.</p>
             <p className="mb-3"><strong>2.4</strong> Our VAT number is 444790375.</p>
-            <p><strong>2.5</strong> To contact us, please email <a href="mailto:reception@rebaserecovery.com" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">reception@rebaserecovery.com</a> or telephone our customer service line (020) 555-5555.</p>
+            <p><strong>2.5</strong> To contact us, please email <a href="mailto:reception@rebaserecovery.com" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">reception@rebaserecovery.com</a> or telephone our customer service line <a href="tel:+442045535701" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">020 4553 5701</a>.</p>
           </section>
 
           <section>
@@ -68,8 +68,8 @@ const Terms = () => {
           <section>
             <h2 className="text-xl font-medium text-[#F9ECD9] mb-4">4. There are other terms that may apply to you</h2>
             <p className="mb-3">These terms of use refer to the following additional terms, which also apply to your use of our website:</p>
-            <p className="mb-3"><strong>4.1</strong> Our <a href="/privacy-policy" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">Privacy Policy</a>.</p>
-            <p><strong>4.2</strong> Our <a href="/cookie-policy" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">Cookie Policy</a>, which sets out information about the cookies on our site.</p>
+            <p className="mb-3"><strong>4.1</strong> Our <a href="/privacy-policy" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">Privacy Policy</a> (found on our website).</p>
+            <p><strong>4.2</strong> Our <a href="/cookie-policy" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">Cookie Policy</a> (found on our website), which sets out information about the cookies on our site.</p>
           </section>
 
           <section>

@@ -8,7 +8,7 @@ export const TWITTER_HANDLE = "@rebaserecovery";
 
 export const BUSINESS = {
   name: SITE_NAME,
-  legalName: "Kula Recovery Limited",
+  legalName: "Rebase Recovery Limited",
   description:
     "Premium wellness and recovery studio in Marylebone, London — infrared sauna, cryotherapy, hyperbaric oxygen, ice bath, contrast therapy and massage.",
   email: "reception@rebaserecovery.com",
