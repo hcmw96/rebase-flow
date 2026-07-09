@@ -9,7 +9,7 @@ const PrivacyPolicy = () => {
       <SeoHead
         title={seoTitle("Privacy Policy")}
         description={truncateDescription(
-          "Privacy policy for Rebase Recovery (Kula Recovery Limited): how we collect, use and protect your personal data at our London wellness studio.",
+          "Privacy policy for Rebase Recovery (Rebase Recovery Limited): how we collect, use and protect your personal data at our London wellness studio.",
         )}
         path="/privacy-policy"
         jsonLd={breadcrumbSchema([
@@ -20,13 +20,13 @@ const PrivacyPolicy = () => {
       <Navigation />
       <main id="main-content" className="max-w-3xl mx-auto px-5 sm:px-8 pt-32 pb-20">
         <h1 className="text-3xl sm:text-4xl font-light tracking-wide mb-4">Privacy Policy</h1>
-        <p className="text-[#F9ECD9]/50 text-sm mb-12">Last updated: May 2026</p>
+        <p className="text-[#F9ECD9]/50 text-sm mb-12">Last updated: July 2026</p>
 
         <div className="space-y-10 text-[#F9ECD9]/80 text-[15px] leading-relaxed">
           <section>
             <h2 className="text-xl font-medium text-[#F9ECD9] mb-4">1. Introduction</h2>
             <p className="mb-4">
-              This privacy policy sets out how Kula Recovery Limited (trading as Rebase) uses and protects your personal data. This is the content of this policy.
+              This privacy policy sets out how Rebase Recovery Limited (trading as Rebase) uses and protects your personal data. This is the content of this policy.
             </p>
             <ol className="list-decimal pl-6 space-y-1">
               <li>Important information and who we are (paragraph 2)</li>
@@ -47,9 +47,9 @@ const PrivacyPolicy = () => {
 
           <section>
             <h2 className="text-xl font-medium text-[#F9ECD9] mb-4">2. Important information and who we are</h2>
-            <p className="mb-3"><strong>2.1</strong> This privacy policy gives you information about how Kula Recovery Limited (trading as Rebase) collects and uses your personal data through your use of this website, including any data you may provide when you apply for membership, to register with us to enter our facilities, or to purchase a product or service.</p>
+            <p className="mb-3"><strong>2.1</strong> This privacy policy gives you information about how Rebase Recovery Limited (trading as Rebase) collects and uses your personal data through your use of this website, including any data you may provide when you apply for membership, to register with us to enter our facilities, or to purchase a product or service.</p>
             <p className="mb-3"><strong>2.2</strong> This website is not intended for children and we do not knowingly collect data relating to children.</p>
-            <p><strong>2.3</strong> Kula Recovery Limited (trading as Rebase) is the controller and is responsible for your personal data and we refer to ourselves as "we", "our" and "us" in the rest of this policy.</p>
+            <p><strong>2.3</strong> Rebase Recovery Limited (trading as Rebase) is the controller and is responsible for your personal data and we refer to ourselves as "we", "our" and "us" in the rest of this policy.</p>
           </section>
 
           <section>
@@ -65,6 +65,7 @@ const PrivacyPolicy = () => {
               <li><strong>Profile Data</strong> includes your username and password, purchases or orders made by you, your interests, preferences, feedback and survey responses.</li>
               <li><strong>Usage Data</strong> includes information about how you interact with and use our website, products and services.</li>
               <li><strong>Marketing and Communications Data</strong> includes your preferences in receiving marketing from us and our third parties and your communication preferences.</li>
+              <li><strong>Employment and Monitoring Data</strong> includes attendance records, access and entry records, CCTV footage, disciplinary and grievance records, performance management records, communications relating to employment, and information relating to the use of company systems, facilities, devices, or premises.</li>
             </ul>
             <p><strong>3.3</strong> We also collect, use and share aggregated data such as statistical or demographic data which is not personal data as it does not directly (or indirectly) reveal your identity. For example, we may aggregate individuals' Usage Data to calculate the percentage of users accessing a specific website feature in order to analyse general trends in how users are interacting with our website to help improve the website and our service offering.</p>
           </section>
@@ -83,13 +84,14 @@ const PrivacyPolicy = () => {
               <li>give us feedback or contact us.</li>
             </ul>
             <p className="mb-3"><strong>4.2</strong> Automated technologies or interactions. As you interact with our website, we will automatically collect technical data about your equipment, browsing actions and patterns. We collect this personal data by using cookies and other similar technologies.</p>
-            <p className="mb-3"><strong>4.3</strong> Technical Data is collected from the following parties:</p>
+            <p className="mb-3"><strong>4.3</strong> CCTV and monitoring systems. We operate CCTV systems and other security and operational monitoring measures within and around our premises for purposes including health and safety, security, incident investigation, prevention and detection of misconduct, operational management, attendance verification, and disciplinary or legal processes where appropriate.</p>
+            <p className="mb-3"><strong>4.4</strong> Technical Data is collected from the following parties:</p>
             <ul className="list-disc pl-6 space-y-1 mb-4">
               <li>analytics providers such as Google based outside the UK;</li>
               <li>advertising networks; and</li>
               <li>search information providers.</li>
             </ul>
-            <p><strong>4.4</strong> Contact, Financial and Transaction Data is collected from providers of technical, payment and delivery services.</p>
+            <p><strong>4.5</strong> Contact, Financial and Transaction Data is collected from providers of technical, payment and delivery services.</p>
           </section>
 
           <section>
@@ -105,7 +107,7 @@ const PrivacyPolicy = () => {
             </ul>
 
             <h3 className="text-lg font-medium text-[#F9ECD9] mb-3">5.2 Purposes for which we will use your personal data</h3>
-            <p className="mb-4">We have set out below a description of all the ways we plan to use the various categories of your personal data, and which of the legal bases we rely on to do so. We have also identified what our legitimate interests are where appropriate.</p>
+            <p className="mb-4">We have set out below, in a table format, a description of all the ways we plan to use the various categories of your personal data, and which of the legal bases we rely on to do so. We have also identified what our legitimate interests are where appropriate.</p>
 
             <div className="overflow-x-auto mb-6">
               <table className="w-full text-sm border border-[#F9ECD9]/15">
@@ -113,7 +115,7 @@ const PrivacyPolicy = () => {
                   <tr>
                     <th className="text-left p-3 border-b border-[#F9ECD9]/15 font-medium text-[#F9ECD9]">Purpose/Use</th>
                     <th className="text-left p-3 border-b border-[#F9ECD9]/15 font-medium text-[#F9ECD9]">Type of data</th>
-                    <th className="text-left p-3 border-b border-[#F9ECD9]/15 font-medium text-[#F9ECD9]">Legal basis</th>
+                    <th className="text-left p-3 border-b border-[#F9ECD9]/15 font-medium text-[#F9ECD9]">Legal basis [and retention period]</th>
                   </tr>
                 </thead>
                 <tbody className="align-top">
@@ -147,10 +149,15 @@ const PrivacyPolicy = () => {
                     <td className="p-3">(a) Identity<br />(b) Contact<br />(c) Technical<br />(d) Usage<br />(e) Profile<br />(f) Marketing and Communications</td>
                     <td className="p-3">Contract, to be able to provide you with the best facilities and services that may suit your specific requirements, and which falls within the services that are provided within our facilities by us or by third parties.<br /><br />Necessary for our legitimate interests (to carry out direct marketing, develop our products/services and grow our business).<br /><br />Consent, having obtained your prior consent to receiving direct marketing communications.</td>
                   </tr>
-                  <tr>
+                  <tr className="border-b border-[#F9ECD9]/10">
                     <td className="p-3">To carry out market research through your voluntary participation in surveys</td>
                     <td className="p-3">(a) Identity<br />(b) Contact</td>
                     <td className="p-3">Necessary for our legitimate interests (to study how customers use our products/services and to help us improve and develop our products and services).</td>
+                  </tr>
+                  <tr>
+                    <td className="p-3">To monitor and protect our premises, systems, staff, customers and business operations, including for disciplinary, investigatory, attendance-management, legal and security purposes</td>
+                    <td className="p-3">(a) Identity<br />(b) Technical<br />(c) Usage<br />(d) Employment and Monitoring Data</td>
+                    <td className="p-3">Necessary for our legitimate interests, including:<br /><br />maintaining the security and integrity of our business and premises;<br />ensuring compliance with company policies and procedures;<br />investigating misconduct or breaches of policy;<br />verifying attendance and timekeeping;<br />and protecting staff and customers.</td>
                   </tr>
                 </tbody>
               </table>
@@ -179,7 +186,7 @@ const PrivacyPolicy = () => {
 
           <section>
             <h2 className="text-xl font-medium text-[#F9ECD9] mb-4">6. Disclosures of your personal data</h2>
-            <p>We may share your personal data where necessary with staff and third party contractors who work in our premises so that we may provide the goods and services of our business. We shall only do this with third parties who are bound to us by duties of confidentiality. We do not envisage having to share your personal data with any other third party. If we do, then we shall update this policy to disclose the identities of those third parties, the personal data disclosed and the reasons for that disclosure.</p>
+            <p>We may share your personal data where necessary with staff and third party contractors who work in our premises so that we may provide the goods and services of our business. We shall only do this with third parties who are bound to us by duties of confidentiality. We do not envisage having to share your personal data with any other third party. If we do, then we shall update this policy to disclose the identities of those third parties, the personal data disclosed and the reasons for that disclosure. We may also disclose personal data where reasonably necessary for the purposes of internal investigations, disciplinary or grievance procedures, legal proceedings, regulatory obligations, insurance matters, or the establishment, exercise or defence of legal claims.</p>
           </section>
 
           <section>
@@ -204,7 +211,7 @@ const PrivacyPolicy = () => {
           <section>
             <h2 className="text-xl font-medium text-[#F9ECD9] mb-4">10. Your legal rights</h2>
             <p className="mb-3">You have a number of rights under data protection laws in relation to your personal data. You have the right to:</p>
-            <p className="mb-3"><strong>10.1</strong> Request access to your personal data (commonly known as a "subject access request"). This enables you to receive a copy of the personal data we hold about you and to check that we are lawfully processing it.</p>
+            <p className="mb-3"><strong>10.1</strong> Request access to your personal data (commonly known as a "subject access request"). This enables you to receive a copy of the personal data we hold about you and to check that we are lawfully processing it. Where requests are particularly broad, complex, repetitive, or disproportionate, we may request clarification in order to assist us in locating the specific personal data requested and responding appropriately in accordance with applicable law.</p>
             <p className="mb-3"><strong>10.2</strong> Request correction of the personal data that we hold about you. This enables you to have any incomplete or inaccurate data we hold about you corrected, though we may need to verify the accuracy of the new data you provide to us.</p>
             <p className="mb-3"><strong>10.3</strong> Request erasure of your personal data in certain circumstances. This enables you to ask us to delete or remove personal data where there is no good reason for us continuing to process it. You also have the right to ask us to delete or remove your personal data where you have successfully exercised your right to object to processing (see below), where we may have processed your information unlawfully or where we are required to erase your personal data to comply with local law. Note, however, that we may not always be able to comply with your request of erasure for specific legal reasons which will be notified to you, if applicable, at the time of your request.</p>
             <p className="mb-3"><strong>10.4</strong> Object to processing of your personal data where we are relying on a legitimate interest (or those of a third party) as the legal basis for that particular use of your data (including carrying out profiling based on our legitimate interests). In some cases, we may demonstrate that we have compelling legitimate grounds to process your information which override your right to object.</p>
@@ -228,8 +235,8 @@ const PrivacyPolicy = () => {
             <p className="mb-3">If you have any questions about this privacy policy or about the use of your personal data or you want to exercise your privacy rights, please contact us in the following ways:</p>
             <ul className="list-disc pl-6 space-y-1">
               <li>Email address: <a href="mailto:reception@rebaserecovery.com" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">reception@rebaserecovery.com</a></li>
-              <li>Postal address: St. Vincent Street, London, England, W1U 4DB</li>
-              <li>Telephone number: (020) 555-5555</li>
+              <li>Postal address: 1A St. Vincent Street, London, England, W1U 4DB</li>
+              <li>Telephone number: <a href="tel:+442045535701" className="text-[#F9ECD9] underline underline-offset-4 hover:text-white transition-colors">020 4553 5701</a></li>
             </ul>
           </section>
 
