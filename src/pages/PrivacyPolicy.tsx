@@ -132,7 +132,7 @@ const PrivacyPolicy = () => {
                   <tr className="border-b border-[#F9ECD9]/10">
                     <td className="p-3">To manage our relationship with you which will include: (a) Notifying you about changes to our terms or privacy policy (b) Dealing with your requests, complaints and queries</td>
                     <td className="p-3">(a) Identity<br />(b) Contact<br />(c) Profile<br />(d) Marketing and Communications</td>
-                    <td className="p-3">(a) Performance of a contract with you<br />(b) Necessary to comply with a legal obligation, including managing health and safety of the running of our facilities.<br />(c) Necessary for our legitimate interests (to keep our records updated and manage our relationship with you)</td>
+                    <td className="p-3">(a) Performance of a contract with you<br />(b) Necessary to comply with a legal obligation, including our managing health and safety of the running of our facilities.<br />(c) Necessary for our legitimate interests (to keep our records updated and manage our relationship with you)</td>
                   </tr>
                   <tr className="border-b border-[#F9ECD9]/10">
                     <td className="p-3">To administer and protect our business and this website (including troubleshooting, data analysis, testing, system maintenance, support, reporting and hosting of data)</td>
