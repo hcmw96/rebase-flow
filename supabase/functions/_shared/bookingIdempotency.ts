@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { parseMindbodyLocalDateTime } from "./londonTime.ts";
 
 export type BookingClaimInput = {
   idempotencyKey: string;
@@ -19,9 +20,9 @@ export type BookingClaimResult =
 
 export function normalizeBookingDateTime(value?: string | null): string {
   if (!value?.trim()) return "";
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value.trim();
-  return d.toISOString();
+  const parsed = parseMindbodyLocalDateTime(value.trim());
+  if (Number.isNaN(parsed.getTime())) return value.trim();
+  return parsed.toISOString();
 }
 
 /** Server-authoritative idempotency key — ignores any client-supplied value. */

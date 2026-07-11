@@ -1,5 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import {
+  parseMindbodyLocalDateTime,
+  studioDateKeyAddDays,
+  studioTodayKey,
+  toUtcIsoFromMindbody,
+} from "../_shared/londonTime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -53,8 +59,8 @@ serve(async (req) => {
     }
 
     // Fetch from Mindbody API - client visits
-    const today = new Date().toISOString().split("T")[0];
-    const futureDate = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const today = studioTodayKey();
+    const futureDate = studioDateKeyAddDays(today, 90);
 
     // Get upcoming appointments
     const appointmentsResponse = await fetch(
@@ -76,11 +82,12 @@ serve(async (req) => {
       appointments = (appointmentsData.Appointments || []).map((apt: any) => ({
         id: apt.Id?.toString(),
         type: "appointment",
+        bookingType: "appointment",
         serviceName: apt.SessionType?.Name || "Appointment",
         staffName: apt.Staff ? `${apt.Staff.FirstName} ${apt.Staff.LastName}` : null,
         locationName: apt.Location?.Name,
-        startTime: apt.StartDateTime,
-        endTime: apt.EndDateTime,
+        startTime: toUtcIsoFromMindbody(apt.StartDateTime),
+        endTime: toUtcIsoFromMindbody(apt.EndDateTime),
         status: apt.Status,
       }));
     }
@@ -107,19 +114,21 @@ serve(async (req) => {
         .map((visit: any) => ({
           id: visit.Id?.toString(),
           type: "class",
+          bookingType: "class",
           serviceName: visit.Name || "Class",
           staffName: visit.Staff ? `${visit.Staff.FirstName} ${visit.Staff.LastName}` : null,
           locationName: visit.Location?.Name,
-          startTime: visit.StartDateTime,
-          endTime: visit.EndDateTime,
+          startTime: toUtcIsoFromMindbody(visit.StartDateTime),
+          endTime: toUtcIsoFromMindbody(visit.EndDateTime),
           status: visit.LateCancelled ? "cancelled" : "confirmed",
           classId: visit.ClassId,
         }));
     }
 
     // Combine and sort by start time
-    const allBookings = [...appointments, ...classVisits].sort((a, b) => 
-      new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    const allBookings = [...appointments, ...classVisits].sort((a, b) =>
+      parseMindbodyLocalDateTime(a.startTime).getTime() -
+      parseMindbodyLocalDateTime(b.startTime).getTime(),
     );
 
     // Also get local bookings for any that might not be in Mindbody yet

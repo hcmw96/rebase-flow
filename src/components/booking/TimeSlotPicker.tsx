@@ -1,4 +1,3 @@
-import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Clock, User } from 'lucide-react';
@@ -44,11 +43,11 @@ const TimeSlotPicker = ({
         <p className="text-sm text-muted-foreground">
           Try selecting a different date, or contact us if you need assistance booking.
         </p>
-        <a 
-          href="/contact" 
+        <a
+          href="mailto:reception@rebaserecovery.com"
           className="inline-block text-sm text-primary hover:underline"
         >
-          Contact Support →
+          Contact reception →
         </a>
       </div>
     );

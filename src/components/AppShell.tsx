@@ -10,6 +10,7 @@ import Services from '@/pages/Services';
 import MyBookings from '@/pages/MyBookings';
 import AccountPage from '@/pages/AccountPage';
 import BookingDrawer, { BookingServiceData } from '@/components/booking/BookingDrawer';
+import type { ClassBookingOptions } from '@/components/ClassSchedule';
 import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
 import type { PendingAppointmentState } from '@/lib/bookingResume';
 import { clearPendingBooking } from '@/lib/bookingResume';
@@ -40,10 +41,14 @@ const AppShell = () => {
     }, []),
   );
 
-  const handleSelectService = useCallback((service: BookingServiceData) => {
-    setBookingService(service);
-    setDrawerOpen(true);
-  }, []);
+  const handleSelectService = useCallback(
+    (service: BookingServiceData, options?: ClassBookingOptions) => {
+      setBookingService(service);
+      setResumeClassId(options?.resumeClassId);
+      setDrawerOpen(true);
+    },
+    [],
+  );
 
   const handleCloseDrawer = useCallback(() => {
     setDrawerOpen(false);

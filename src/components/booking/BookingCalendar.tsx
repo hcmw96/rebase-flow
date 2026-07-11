@@ -1,5 +1,6 @@
 import { Calendar } from '@/components/ui/calendar';
 import { cn } from '@/lib/utils';
+import { studioCalendarDate, studioTodayKey } from '@/lib/sessionTimes';
 import { Loader2 } from 'lucide-react';
 
 interface BookingCalendarProps {
@@ -20,9 +21,7 @@ const BookingCalendar = ({
   className,
   toDate,
 }: BookingCalendarProps) => {
-  // Disable dates in the past
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
+  const today = studioCalendarDate(studioTodayKey());
 
   const availabilityLoaded = !isLoading;
 

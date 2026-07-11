@@ -1,4 +1,9 @@
-import { formatMindbodyDate, formatMindbodyTime, parseMindbodyDateTime } from '@/lib/sessionTimes';
+import {
+  formatMindbodyDate,
+  formatMindbodyTime,
+  parseBookingStartTime,
+  bookingStartDateTime,
+} from '@/lib/sessionTimes';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,8 +31,14 @@ const MyBookings = () => {
 
   const bookings = bookingsData?.bookings || [];
   const now = Date.now();
-  const upcomingBookings = bookings.filter((b: any) => parseMindbodyDateTime(b.startDateTime).getTime() >= now);
-  const pastBookings = bookings.filter((b: any) => parseMindbodyDateTime(b.startDateTime).getTime() < now);
+  const upcomingBookings = bookings.filter(
+    (b: { startTime?: string; startDateTime?: string }) =>
+      parseBookingStartTime(b).getTime() >= now,
+  );
+  const pastBookings = bookings.filter(
+    (b: { startTime?: string; startDateTime?: string }) =>
+      parseBookingStartTime(b).getTime() < now,
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
@@ -143,11 +154,11 @@ const MyBookings = () => {
                             <div className="flex flex-wrap gap-3 text-sm text-muted-foreground">
                               <span className="flex items-center gap-1">
                                 <Calendar className="h-3.5 w-3.5" />
-                                {formatMindbodyDate(booking.startDateTime, 'EEE, MMM d')}
+                                {formatMindbodyDate(bookingStartDateTime(booking), 'EEE, MMM d')}
                               </span>
                               <span className="flex items-center gap-1">
                                 <Clock className="h-3.5 w-3.5" />
-                                {formatMindbodyTime(booking.startDateTime)}
+                                {formatMindbodyTime(bookingStartDateTime(booking))}
                               </span>
                               {booking.staffName && (
                                 <span className="flex items-center gap-1">
@@ -173,7 +184,7 @@ const MyBookings = () => {
                                   <AlertDialogFooter>
                                     <AlertDialogCancel>Keep</AlertDialogCancel>
                                     <AlertDialogAction
-                                      onClick={() => handleCancel(booking.id, booking.bookingType)}
+                                      onClick={() => handleCancel(booking.id, booking.type ?? booking.bookingType)}
                                       disabled={isCancelling}
                                     >
                                       {isCancelling ? 'Cancelling...' : 'Yes, Cancel'}
@@ -209,7 +220,7 @@ const MyBookings = () => {
                             <div>
                               <h3 className="font-medium text-sm">{booking.serviceName}</h3>
                               <p className="text-xs text-muted-foreground">
-                                {formatMindbodyDate(booking.startDateTime, 'MMM d, yyyy')} · {formatMindbodyTime(booking.startDateTime)}
+                                {formatMindbodyDate(bookingStartDateTime(booking), 'MMM d, yyyy')} · {formatMindbodyTime(bookingStartDateTime(booking))}
                               </p>
                             </div>
                             {getStatusBadge(booking.status)}

@@ -4,6 +4,7 @@ Allow: /experiences
 Allow: /membership
 Allow: /contact
 Allow: /faq
+Allow: /faqs
 Allow: /privacy-policy
 Allow: /terms
 Allow: /cookie-policy

@@ -1,16 +1,16 @@
-import { addDays, format, startOfDay } from 'date-fns';
+import { addDays } from 'date-fns';
+import { studioCalendarDate, studioDateKeyAddDays, studioTodayKey } from './sessionTimes';
 
 /** How far ahead guests can book appointments and classes on the website. */
 export const BOOKING_DAYS_AHEAD = 90;
 
-export function bookingHorizonEndDate(from: Date = new Date()): Date {
-  return addDays(startOfDay(from), BOOKING_DAYS_AHEAD);
+export function bookingHorizonEndDate(fromKey: string = studioTodayKey()): Date {
+  return addDays(studioCalendarDate(fromKey), BOOKING_DAYS_AHEAD);
 }
 
-export function bookingHorizonDateRange(from: Date = new Date()) {
-  const start = startOfDay(from);
+export function bookingHorizonDateRange(fromKey: string = studioTodayKey()) {
   return {
-    startDate: format(start, 'yyyy-MM-dd'),
-    endDate: format(addDays(start, BOOKING_DAYS_AHEAD), 'yyyy-MM-dd'),
+    startDate: fromKey,
+    endDate: studioDateKeyAddDays(fromKey, BOOKING_DAYS_AHEAD),
   };
 }

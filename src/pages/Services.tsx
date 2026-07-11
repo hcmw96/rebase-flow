@@ -6,7 +6,7 @@ import { useHiddenServices } from '@/hooks/useHiddenServices';
 import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import ClassSchedule from '@/components/ClassSchedule';
+import ClassSchedule, { type ClassBookingOptions } from '@/components/ClassSchedule';
 import {
   hiddenGroupNames,
   hiddenProgramIds,
@@ -33,7 +33,7 @@ import {
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 
 interface ServicesProps {
-  onSelectService?: (service: BookingServiceData) => void;
+  onSelectService?: (service: BookingServiceData, options?: ClassBookingOptions) => void;
 }
 
 const Services = ({ onSelectService }: ServicesProps) => {
@@ -237,7 +237,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
             )}
           </>
         ) : (
-          <ClassSchedule />
+          <ClassSchedule onSelectService={onSelectService} />
         )}
       </div>
     </div>

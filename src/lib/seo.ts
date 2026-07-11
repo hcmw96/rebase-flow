@@ -210,6 +210,7 @@ export const WEBSITE_ROUTES: Array<{
   { path: "/membership", changefreq: "monthly", priority: 0.8 },
   { path: "/contact", changefreq: "monthly", priority: 0.7 },
   { path: "/faq", changefreq: "monthly", priority: 0.7 },
+  { path: "/faqs", changefreq: "monthly", priority: 0.7 },
   { path: "/privacy-policy", changefreq: "yearly", priority: 0.3 },
   { path: "/terms", changefreq: "yearly", priority: 0.3 },
   { path: "/cookie-policy", changefreq: "yearly", priority: 0.3 },

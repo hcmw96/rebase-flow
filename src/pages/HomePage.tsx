@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, ChevronRight, MapPin } from 'lucide-react';
-import { formatMindbodyDate, formatMindbodyTime, parseMindbodyDateTime } from '@/lib/sessionTimes';
+import { formatMindbodyDate, formatMindbodyTime, parseBookingStartTime, bookingStartDateTime } from '@/lib/sessionTimes';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
@@ -64,8 +64,13 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
     if (!bookingsData?.bookings) return null;
     const now = Date.now();
     const upcoming = bookingsData.bookings
-      .filter((b: any) => parseMindbodyDateTime(b.startDateTime).getTime() >= now)
-      .sort((a: any, b: any) => parseMindbodyDateTime(a.startDateTime).getTime() - parseMindbodyDateTime(b.startDateTime).getTime());
+      .filter((b: { startTime?: string; startDateTime?: string }) =>
+        parseBookingStartTime(b).getTime() >= now,
+      )
+      .sort(
+        (a: { startTime?: string; startDateTime?: string }, b: { startTime?: string; startDateTime?: string }) =>
+          parseBookingStartTime(a).getTime() - parseBookingStartTime(b).getTime(),
+      );
     return upcoming[0] || null;
   }, [bookingsData]);
 
@@ -151,11 +156,11 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
               <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
                   <Calendar className="h-3.5 w-3.5" />
-                  {formatMindbodyDate(nextBooking.startDateTime, 'EEE, MMM d')}
+                  {formatMindbodyDate(bookingStartDateTime(nextBooking), 'EEE, MMM d')}
                 </span>
                 <span className="flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {formatMindbodyTime(nextBooking.startDateTime)}
+                  {formatMindbodyTime(bookingStartDateTime(nextBooking))}
                 </span>
                 {nextBooking.locationName && (
                   <span className="flex items-center gap-1">

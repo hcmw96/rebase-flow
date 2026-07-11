@@ -1,8 +1,15 @@
-import { format } from 'date-fns';
-
 export const STUDIO_TIMEZONE = 'Europe/London';
 
-function getLondonParts(date: Date) {
+const LONDON_DATE_FORMATS: Record<string, Intl.DateTimeFormatOptions> = {
+  'h:mm a': { hour: 'numeric', minute: '2-digit', hour12: true },
+  'HH:mm': { hour: '2-digit', minute: '2-digit', hour12: false },
+  'EEEE, MMMM d, yyyy': { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' },
+  'EEE, MMM d': { weekday: 'short', month: 'short', day: 'numeric' },
+  'EEE, MMM d, yyyy': { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' },
+  'MMM d, yyyy': { month: 'short', day: 'numeric', year: 'numeric' },
+};
+
+function getLondonParts(timestamp: number) {
   const parts = Object.fromEntries(
     new Intl.DateTimeFormat('en-GB', {
       timeZone: STUDIO_TIMEZONE,
@@ -14,7 +21,7 @@ function getLondonParts(date: Date) {
       second: 'numeric',
       hour12: false,
     })
-      .formatToParts(date)
+      .formatToParts(new Date(timestamp))
       .filter((part) => part.type !== 'literal')
       .map((part) => [part.type, part.value]),
   );
@@ -28,11 +35,24 @@ function getLondonParts(date: Date) {
   };
 }
 
-/** Mindbody returns site-local datetimes without a timezone offset. */
+function formatInLondon(date: Date, pattern: string): string {
+  const options = LONDON_DATE_FORMATS[pattern];
+  if (!options) {
+    throw new Error(`Unsupported London date format: ${pattern}`);
+  }
+  return new Intl.DateTimeFormat('en-GB', {
+    timeZone: STUDIO_TIMEZONE,
+    ...options,
+  }).format(date);
+}
+
+/** Mindbody datetimes without an offset are site-local London wall times. */
 export function parseMindbodyDateTime(value: string): Date {
   if (!value) return new Date(NaN);
   const trimmed = value.trim();
-  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed)) return new Date(trimmed);
+  if (/[zZ]|[+-]\d{2}:\d{2}$/.test(trimmed)) {
+    return new Date(trimmed);
+  }
 
   const normalized = trimmed.replace(' ', 'T');
   const match = normalized.match(
@@ -40,45 +60,84 @@ export function parseMindbodyDateTime(value: string): Date {
   );
   if (!match) return new Date(trimmed);
 
-  const [, y, mo, d, h, mi, sec = '0'] = match;
   const target = {
-    year: Number(y),
-    month: Number(mo),
-    day: Number(d),
-    hour: Number(h),
-    minute: Number(mi),
-    second: Math.floor(Number(sec)),
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+    second: Math.floor(Number(match[6] ?? 0)),
   };
 
-  let guess = Date.UTC(target.year, target.month - 1, target.day, target.hour, target.minute, target.second);
-  for (let i = 0; i < 3; i++) {
-    const parts = getLondonParts(new Date(guess));
-    const diffMs =
-      ((target.year - parts.year) * 372 +
-        (target.month - parts.month) * 31 +
-        (target.day - parts.day)) *
-        86_400_000 +
-      (target.hour - parts.hour) * 3_600_000 +
-      (target.minute - parts.minute) * 60_000 +
-      (target.second - parts.second) * 1_000;
-    if (diffMs === 0) break;
-    guess -= diffMs;
+  let timestamp = Date.UTC(
+    target.year,
+    target.month - 1,
+    target.day,
+    target.hour,
+    target.minute,
+    target.second,
+  );
+
+  for (let i = 0; i < 5; i++) {
+    const parts = getLondonParts(timestamp);
+    const asUtc = Date.UTC(
+      parts.year,
+      parts.month - 1,
+      parts.day,
+      parts.hour,
+      parts.minute,
+      parts.second,
+    );
+    const wantUtc = Date.UTC(
+      target.year,
+      target.month - 1,
+      target.day,
+      target.hour,
+      target.minute,
+      target.second,
+    );
+    const diff = wantUtc - asUtc;
+    if (diff === 0) break;
+    timestamp += diff;
   }
 
-  return new Date(guess);
+  return new Date(timestamp);
 }
 
 export function mindbodyDateKey(value: string): string {
-  const date = parseMindbodyDateTime(value);
-  return new Intl.DateTimeFormat('en-CA', { timeZone: STUDIO_TIMEZONE }).format(date);
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: STUDIO_TIMEZONE,
+  }).format(parseMindbodyDateTime(value));
+}
+
+export function studioTodayKey(now: number = Date.now()): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: STUDIO_TIMEZONE,
+  }).format(new Date(now));
+}
+
+export function studioDateKeyFromCalendar(date: Date): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: STUDIO_TIMEZONE,
+  }).format(date);
+}
+
+/** Add calendar days to a YYYY-MM-DD studio date key. */
+export function studioDateKeyAddDays(dateKey: string, days: number): string {
+  const [y, m, d] = dateKey.split('-').map(Number);
+  const noonUtc = Date.UTC(y, m - 1, d, 12, 0, 0);
+  const shifted = noonUtc + days * 24 * 60 * 60 * 1000;
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: STUDIO_TIMEZONE,
+  }).format(new Date(shifted));
 }
 
 export function formatMindbodyTime(value: string, pattern = 'h:mm a'): string {
-  return format(parseMindbodyDateTime(value), pattern);
+  return formatInLondon(parseMindbodyDateTime(value), pattern);
 }
 
 export function formatMindbodyDate(value: string, pattern = 'EEEE, MMMM d, yyyy'): string {
-  return format(parseMindbodyDateTime(value), pattern);
+  return formatInLondon(parseMindbodyDateTime(value), pattern);
 }
 
 export function formatAppointmentTimeRange(
@@ -89,16 +148,17 @@ export function formatAppointmentTimeRange(
   const start = parseMindbodyDateTime(startDateTime);
   if (customerDurationMinutes && customerDurationMinutes > 0) {
     const end = new Date(start.getTime() + customerDurationMinutes * 60_000);
-    return `${format(start, 'h:mm a')} – ${format(end, 'h:mm a')}`;
+    return `${formatInLondon(start, 'h:mm a')} – ${formatInLondon(end, 'h:mm a')}`;
   }
   if (endDateTime) {
-    return `${format(start, 'h:mm a')} – ${format(parseMindbodyDateTime(endDateTime), 'h:mm a')}`;
+    const end = parseMindbodyDateTime(endDateTime);
+    return `${formatInLondon(start, 'h:mm a')} – ${formatInLondon(end, 'h:mm a')}`;
   }
-  return format(start, 'h:mm a');
+  return formatInLondon(start, 'h:mm a');
 }
 
 export function isSameMindbodyDay(value: string, selectedDate: Date): boolean {
-  return mindbodyDateKey(value) === format(selectedDate, 'yyyy-MM-dd');
+  return mindbodyDateKey(value) === studioDateKeyFromCalendar(selectedDate);
 }
 
 export function studioCalendarDate(value: string): Date {
@@ -106,6 +166,7 @@ export function studioCalendarDate(value: string): Date {
   return new Date(y, m - 1, d);
 }
 
+/** True when the session start is strictly in the future (bookable). */
 export function isUpcomingSession(
   startDateTime: string,
   now: number = Date.now(),
@@ -120,4 +181,33 @@ export function filterUpcomingSessions<T extends { startDateTime: string }>(
   now: number = Date.now(),
 ): T[] {
   return items.filter((item) => isUpcomingSession(item.startDateTime, now));
+}
+
+/** Mindbody bookings may expose `startTime` (API) or `startDateTime` (local rows). */
+export function bookingStartDateTime(
+  booking: { startTime?: string | null; startDateTime?: string | null },
+): string {
+  return (booking.startTime || booking.startDateTime || '').trim();
+}
+
+export function parseBookingStartTime(
+  booking: { startTime?: string | null; startDateTime?: string | null },
+): Date {
+  return parseMindbodyDateTime(bookingStartDateTime(booking));
+}
+
+export function formatBookingDate(
+  booking: { startTime?: string | null; startDateTime?: string | null },
+  pattern = 'EEEE, MMMM d, yyyy',
+): string {
+  const value = bookingStartDateTime(booking);
+  return value ? formatMindbodyDate(value, pattern) : '';
+}
+
+export function formatBookingTime(
+  booking: { startTime?: string | null; startDateTime?: string | null },
+  pattern = 'h:mm a',
+): string {
+  const value = bookingStartDateTime(booking);
+  return value ? formatMindbodyTime(value, pattern) : '';
 }

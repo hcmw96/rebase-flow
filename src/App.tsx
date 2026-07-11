@@ -60,6 +60,7 @@ const App = () => (
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms" element={<Terms />} />
             <Route path="/faq" element={<FAQ />} />
+            <Route path="/faqs" element={<FAQ />} />
             <Route path="/offers/2-week-unlimited-contrast-pass" element={<ContrastPassOfferPage />} />
             <Route path="/app" element={<AppShell />} />
             <Route path="/app/*" element={<AppShell />} />

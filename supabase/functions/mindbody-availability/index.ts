@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { parseMindbodyLocalDateTime, studioTodayKey } from "../_shared/londonTime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -92,8 +93,8 @@ function resolveDateRange(startDate: string, endDate?: string | null): { start: 
 function generateTimeSlots(availability: any): any[] {
   const slots: any[] = [];
   const sessionLength = availability.SessionType?.DefaultTimeLength || 60;
-  const startTime = new Date(availability.StartDateTime);
-  const bookableEndTime = new Date(
+  const startTime = parseMindbodyLocalDateTime(availability.StartDateTime);
+  const bookableEndTime = parseMindbodyLocalDateTime(
     availability.BookableEndDateTime || availability.EndDateTime,
   );
 
@@ -137,7 +138,7 @@ serve(async (req) => {
     const sessionTypeId = url.searchParams.get("sessionTypeId");
     const staffId = url.searchParams.get("staffId");
     const startDate =
-      url.searchParams.get("startDate") || new Date().toISOString().split("T")[0];
+      url.searchParams.get("startDate") || studioTodayKey();
     const endDate = url.searchParams.get("endDate");
 
     if (!sessionTypeId) {
@@ -208,7 +209,7 @@ serve(async (req) => {
     const now = Date.now();
     const rawSlots = allAvailabilities
       .flatMap(generateTimeSlots)
-      .filter((slot) => new Date(slot.startDateTime).getTime() > now);
+      .filter((slot) => parseMindbodyLocalDateTime(slot.startDateTime).getTime() > now);
 
     const dedupMap = new Map<string, any>();
     for (const slot of rawSlots) {
@@ -216,7 +217,9 @@ serve(async (req) => {
       if (!dedupMap.has(key)) dedupMap.set(key, slot);
     }
     const availableItems = Array.from(dedupMap.values()).sort(
-      (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime(),
+      (a, b) =>
+        parseMindbodyLocalDateTime(a.startDateTime).getTime() -
+        parseMindbodyLocalDateTime(b.startDateTime).getTime(),
     );
 
     console.log("Availability dedup:", {

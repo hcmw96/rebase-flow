@@ -1,8 +1,13 @@
 import { useState, useEffect, useMemo } from 'react';
 import despia from 'despia-native';
+import {
+  formatBookingDate,
+  formatBookingTime,
+  parseBookingStartTime,
+} from '@/lib/sessionTimes';
 import { format } from 'date-fns';
 import { motion } from 'framer-motion';
-import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History, CreditCard, Sparkles, Shield, FileText } from 'lucide-react';
+import { LogOut, ExternalLink, User, Mail, MessageSquare, Calendar, Clock, History, CreditCard, Sparkles, Shield, FileText, HelpCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
@@ -12,8 +17,7 @@ import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
 import { DebugMindbodySession } from '@/components/debug/DebugMindbodySession';
 
-const bookingStart = (b: { startTime?: string; startDateTime?: string }) =>
-  new Date(b.startTime || b.startDateTime || 0);
+const bookingStart = parseBookingStartTime;
 
 const AccountPage = () => {
   const {
@@ -52,14 +56,14 @@ const AccountPage = () => {
   const upcomingBookings = useMemo(
     () =>
       [...allBookings]
-        .filter((b) => bookingStart(b) >= now)
+        .filter((b) => bookingStart(b).getTime() >= now.getTime())
         .sort((a, b) => bookingStart(a).getTime() - bookingStart(b).getTime()),
     [allBookings, now],
   );
   const pastBookings = useMemo(
     () =>
       [...allBookings]
-        .filter((b) => bookingStart(b) < now)
+        .filter((b) => bookingStart(b).getTime() < now.getTime())
         .sort((a, b) => bookingStart(b).getTime() - bookingStart(a).getTime()),
     [allBookings, now],
   );
@@ -165,11 +169,11 @@ const AccountPage = () => {
                     <div className="flex items-center gap-2 text-xs text-black/40">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(bookingStart(booking), 'MMM d, yyyy')}
+                        {formatBookingDate(booking, 'MMM d, yyyy')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {format(bookingStart(booking), 'h:mm a')}
+                        {formatBookingTime(booking)}
                       </span>
                     </div>
                   </div>
@@ -182,7 +186,7 @@ const AccountPage = () => {
                 Book a class or treatment to see it here.
               </p>
               <Button asChild variant="outline" className="w-full border-black/10">
-                <Link to="/experiences">Browse experiences</Link>
+                <Link to="/app">Browse services</Link>
               </Button>
             </div>
           )}
@@ -300,11 +304,11 @@ const AccountPage = () => {
                     <div className="flex items-center gap-2 text-xs text-black/40">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3 w-3" />
-                        {format(bookingStart(booking), 'MMM d, yyyy')}
+                        {formatBookingDate(booking, 'MMM d, yyyy')}
                       </span>
                       <span className="flex items-center gap-1">
                         <Clock className="h-3 w-3" />
-                        {format(bookingStart(booking), 'h:mm a')}
+                        {formatBookingTime(booking)}
                       </span>
                     </div>
                   </div>
@@ -343,6 +347,17 @@ const AccountPage = () => {
           <span className="text-sm text-black/70 flex items-center gap-2">
             <Shield className="h-4 w-4 text-black/30" />
             Privacy Policy
+          </span>
+          <ExternalLink className="h-4 w-4 text-black/30" />
+        </Link>
+
+        <Link
+          to="/contact#faqs"
+          className="flex items-center justify-between p-4 rounded-lg border border-black/[0.06] bg-white/40 hover:bg-white/60 transition-colors"
+        >
+          <span className="text-sm text-black/70 flex items-center gap-2">
+            <HelpCircle className="h-4 w-4 text-black/30" />
+            FAQs
           </span>
           <ExternalLink className="h-4 w-4 text-black/30" />
         </Link>

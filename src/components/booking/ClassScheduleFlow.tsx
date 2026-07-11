@@ -1,11 +1,9 @@
 import { useState, useMemo, useRef, useCallback, useEffect } from 'react';
 import {
   format,
-  addDays,
-  startOfDay,
-  isSameDay,
   startOfWeek,
   addWeeks,
+  isSameDay,
 } from 'date-fns';
 import { motion } from 'framer-motion';
 import { Calendar, Clock, MapPin, User, Users, Loader2 } from 'lucide-react';
@@ -21,8 +19,8 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
-import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange, mindbodyDateKey, parseMindbodyDateTime, studioCalendarDate } from '@/lib/sessionTimes';
-import { bookingHorizonEndDate, BOOKING_DAYS_AHEAD } from '@/lib/bookingHorizon';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange, mindbodyDateKey, parseMindbodyDateTime, studioCalendarDate, studioTodayKey } from '@/lib/sessionTimes';
+import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
@@ -46,7 +44,7 @@ const STEPS = [
 ];
 
 function weekLabel(weekStart: Date): string {
-  const today = new Date();
+  const today = studioCalendarDate(studioTodayKey());
   const thisWeek = startOfWeek(today, { weekStartsOn: 1 });
   const nextWeek = addWeeks(thisWeek, 1);
   if (isSameDay(weekStart, thisWeek)) return 'This week';
@@ -55,7 +53,7 @@ function weekLabel(weekStart: Date): string {
 }
 
 function dayHeading(date: Date): string {
-  const today = startOfDay(new Date());
+  const today = studioCalendarDate(studioTodayKey());
   if (isSameDay(date, today)) return `Today — ${format(date, 'EEEE, MMM d')}`;
   return format(date, 'EEEE, MMM d');
 }
@@ -166,8 +164,7 @@ const ClassScheduleFlow = ({
     }
   }, [isAuthenticated, currentStep, checkoutSummary, mbSession?.sessionId]);
 
-  const startDate = format(new Date(), 'yyyy-MM-dd');
-  const endDate = format(addDays(new Date(), BOOKING_DAYS_AHEAD), 'yyyy-MM-dd');
+  const { startDate, endDate } = bookingHorizonDateRange();
 
   const { data: classes = [], isLoading } = useMindbodyClasses({
     startDate,
@@ -479,7 +476,7 @@ const ClassScheduleFlow = ({
                         <p
                           className={cn(
                             'text-sm font-medium',
-                            isSameDay(day.date, new Date())
+                            isSameDay(day.date, studioCalendarDate(studioTodayKey()))
                               ? 'text-primary'
                               : 'text-foreground/80',
                           )}

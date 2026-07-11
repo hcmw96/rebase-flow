@@ -1,8 +1,7 @@
 import { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { format } from 'date-fns';
-
 import { cn } from '@/lib/utils';
+import { formatMindbodyTime, parseMindbodyDateTime, studioDateKeyFromCalendar } from '@/lib/sessionTimes';
 import {
   useMindbodyServices,
   useMindbodyAvailability,
@@ -75,7 +74,7 @@ interface UpsellCardProps {
 }
 
 const UpsellCard = ({ name, serviceId, referenceEnd, onSelect }: UpsellCardProps) => {
-  const dateKey = format(referenceEnd, 'yyyy-MM-dd');
+  const dateKey = studioDateKeyFromCalendar(referenceEnd);
 
   const { data, isLoading } = useMindbodyAvailability({
     sessionTypeId: serviceId ?? '',
@@ -88,7 +87,7 @@ const UpsellCard = ({ name, serviceId, referenceEnd, onSelect }: UpsellCardProps
     if (!data?.availableItems?.length) return null;
     const windowEnd = new Date(referenceEnd.getTime() + UPSELL_WINDOW_MINUTES * 60 * 1000);
     const candidates = data.availableItems
-      .map((slot) => ({ slot, start: new Date(slot.startDateTime) }))
+      .map((slot) => ({ slot, start: parseMindbodyDateTime(slot.startDateTime) }))
       .filter(({ start }) => start >= referenceEnd && start <= windowEnd)
       .sort((a, b) => a.start.getTime() - b.start.getTime());
     return candidates[0] ?? null;
@@ -114,7 +113,7 @@ const UpsellCard = ({ name, serviceId, referenceEnd, onSelect }: UpsellCardProps
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-foreground truncate">{name}</div>
         <div className="text-xs text-muted-foreground">
-          Right after your session — {format(nextSlot.start, 'h:mm a')}
+          Right after your session — {formatMindbodyTime(nextSlot.slot.startDateTime)}
         </div>
       </div>
       <div className="shrink-0 px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-medium">
@@ -152,7 +151,7 @@ const UpsellSuggestions = ({
   const { data: services } = useMindbodyServices();
 
   const referenceEnd = useMemo(
-    () => (referenceEndDateTime ? new Date(referenceEndDateTime) : null),
+    () => (referenceEndDateTime ? parseMindbodyDateTime(referenceEndDateTime) : null),
     [referenceEndDateTime],
   );
 

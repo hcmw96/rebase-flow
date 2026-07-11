@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { parseMindbodyLocalDateTime, studioTodayKey, toUtcIsoFromMindbody } from "../_shared/londonTime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -136,7 +137,7 @@ serve(async (req) => {
     }
 
     const url = new URL(req.url);
-    const startDate = url.searchParams.get("startDate") || new Date().toISOString().split("T")[0];
+    const startDate = url.searchParams.get("startDate") || studioTodayKey();
     const endDate = url.searchParams.get("endDate");
     const classDescriptionId = url.searchParams.get("classDescriptionId");
     const programId = url.searchParams.get("programId");
@@ -186,7 +187,7 @@ serve(async (req) => {
 
     // Transform classes data (exclude sessions that have already started)
     const classes = allClasses
-      .filter((c: any) => new Date(c.StartDateTime).getTime() > now)
+      .filter((c: any) => parseMindbodyLocalDateTime(c.StartDateTime).getTime() > now)
       .map((c: any) => ({
       id: c.Id.toString(),
       classDescriptionId: c.ClassDescription?.Id,
@@ -196,8 +197,8 @@ serve(async (req) => {
         if (displayName === "Communal Contrast") return COMMUNAL_CONTRAST_DESCRIPTION;
         return c.ClassDescription?.Description || "";
       })(),
-      startDateTime: c.StartDateTime,
-      endDateTime: c.EndDateTime,
+      startDateTime: toUtcIsoFromMindbody(c.StartDateTime),
+      endDateTime: toUtcIsoFromMindbody(c.EndDateTime),
       staffId: c.Staff?.Id,
       staffName: c.Staff ? `${c.Staff.FirstName} ${c.Staff.LastName}` : null,
       locationId: c.Location?.Id,

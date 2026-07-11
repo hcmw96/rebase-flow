@@ -52,6 +52,7 @@ const WEBSITE_PATH_PREFIXES = [
   '/contact',
   '/experiences',
   '/faq',
+  '/faqs',
   '/privacy-policy',
   '/terms',
   '/cookie-policy',
