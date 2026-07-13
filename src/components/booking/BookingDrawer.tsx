@@ -233,28 +233,7 @@ const BookingDrawer = ({
 
   const activeServiceId = activeVariant?.id || '';
 
-  const dateRange = useMemo(() => {
-    if (!selectedDate) return null;
-    return {
-      startDate: format(selectedDate, 'yyyy-MM-dd'),
-    };
-  }, [selectedDate]);
-
-  const { data: availabilityData, isLoading: isLoadingSlots } = useMindbodyAvailability({
-    sessionTypeId: activeServiceId,
-    startDate: dateRange?.startDate,
-    endDate: dateRange?.endDate,
-    enabled: !!activeServiceId && !!selectedDate && !showContactMessage,
-  });
-
-  const availableSlots = useMemo(() => {
-    const items = filterUpcomingSessions(availabilityData?.availableItems || []);
-    if (!selectedDate) return items;
-    return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
-  }, [availabilityData, selectedDate]);
-
-  // Prefetch availability through the booking horizon so the calendar can grey out
-  // days with no bookable slots (no availability OR fully booked).
+  // Single availability fetch for the full booking horizon — day slots are filtered in memory.
   const monthRange = useMemo(() => bookingHorizonDateRange(), []);
 
   const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
@@ -263,6 +242,14 @@ const BookingDrawer = ({
     endDate: monthRange.endDate,
     enabled: !!activeServiceId && !showContactMessage,
   });
+
+  const availableSlots = useMemo(() => {
+    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
+    if (!selectedDate) return [];
+    return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
+  }, [monthAvailabilityData, selectedDate]);
+
+  const isLoadingSlots = isLoadingMonth && !!selectedDate;
 
   const availableDates = useMemo(() => {
     const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);

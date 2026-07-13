@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { parseMindbodyLocalDateTime, studioTodayKey } from "../_shared/londonTime.ts";
+import { getStaffToken } from "../_shared/mindbodyStaff.ts";
+import {
+  buildCacheKey,
+  CACHE_TTL,
+  getCachedJson,
+  setCachedJson,
+} from "../_shared/mindbodyResponseCache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -8,50 +15,6 @@ const corsHeaders = {
 
 const PAGE_SIZE = 200;
 const MAX_AVAILABILITY_WINDOWS = 2000;
-
-async function getStaffToken(): Promise<string> {
-  const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
-  const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
-  const username = Deno.env.get("MINDBODY_STAFF_USERNAME")?.trim();
-  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD")?.trim();
-  const sourceName = Deno.env.get("MINDBODY_SOURCE_NAME")?.trim();
-  const sourcePassword = Deno.env.get("MINDBODY_SOURCE_PASSWORD")?.trim();
-
-  if (!apiKey || !siteId || !username || !password) {
-    throw new Error("Missing Mindbody staff credentials");
-  }
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Api-Key": apiKey,
-    "SiteId": siteId,
-  };
-
-  const body: Record<string, string> = {
-    Username: username,
-    Password: password,
-  };
-
-  if (sourceName && sourcePassword) {
-    body.SourceName = sourceName;
-    body.SourcePassword = sourcePassword;
-  }
-
-  const response = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Staff token error (status", response.status, "):", errorText);
-    throw new Error(`Mindbody auth failed (${response.status}): ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.AccessToken;
-}
 
 /** Mindbody expects DateTime strings; use site-local day boundaries (London). */
 function dateOnly(value: string): string {
@@ -146,6 +109,24 @@ serve(async (req) => {
     }
 
     const { start: mindbodyStart, end: mindbodyEnd } = resolveDateRange(startDate, endDate);
+
+    const cacheKey = buildCacheKey("availability:v1", {
+      sessionTypeId,
+      staffId,
+      start: mindbodyStart,
+      end: mindbodyEnd,
+    });
+    const cached = await getCachedJson<{
+      availableItems: unknown[];
+      availableStaff: unknown[];
+    }>(cacheKey);
+    if (cached?.availableItems) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
+
     const staffToken = await getStaffToken();
 
     const allAvailabilities: any[] = [];
@@ -253,11 +234,14 @@ serve(async (req) => {
       }));
     }
 
+    const payload = {
+      availableItems,
+      availableStaff,
+    };
+    await setCachedJson(cacheKey, payload, CACHE_TTL.availability);
+
     return new Response(
-      JSON.stringify({
-        availableItems,
-        availableStaff,
-      }),
+      JSON.stringify(payload),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

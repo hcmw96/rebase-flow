@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { parseMindbodyLocalDateTime, studioTodayKey, toUtcIsoFromMindbody } from "../_shared/londonTime.ts";
+import { getStaffToken } from "../_shared/mindbodyStaff.ts";
+import {
+  buildCacheKey,
+  CACHE_TTL,
+  getCachedJson,
+  setCachedJson,
+} from "../_shared/mindbodyResponseCache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,50 +35,6 @@ function resolveDisplayName(name: string): string {
 /** Keep in sync with COMMUNAL_CONTRAST_DESCRIPTION in src/config/serviceConfig.ts */
 const COMMUNAL_CONTRAST_DESCRIPTION =
   "The Communal Contrast gives you access to several ice baths, traditional Finnish sauna, and bucket showers for independent use. Designed to foster relaxation and recovery, this shared area provides a self-guided experience for guests to enhance their well-being. Please note this is not a class, spaces are limited to availability and we limit drop-ins to one session per person per day to ensure availability for all guests. These sessions are up to 50 minutes.";
-
-async function getStaffToken(): Promise<string> {
-  const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
-  const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
-  const username = Deno.env.get("MINDBODY_STAFF_USERNAME")?.trim();
-  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD")?.trim();
-  const sourceName = Deno.env.get("MINDBODY_SOURCE_NAME")?.trim();
-  const sourcePassword = Deno.env.get("MINDBODY_SOURCE_PASSWORD")?.trim();
-
-  if (!apiKey || !siteId || !username || !password) {
-    throw new Error("Missing Mindbody staff credentials");
-  }
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Api-Key": apiKey,
-    "SiteId": siteId,
-  };
-
-  const body: Record<string, string> = {
-    Username: username,
-    Password: password,
-  };
-
-  if (sourceName && sourcePassword) {
-    body.SourceName = sourceName;
-    body.SourcePassword = sourcePassword;
-  }
-
-  const response = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Staff token error (status", response.status, "):", errorText);
-    throw new Error(`Mindbody auth failed (${response.status}): ${errorText}`);
-  }
-
-  const data = await response.json();
-  return data.AccessToken;
-}
 
 const PAGE_SIZE = 100;
 const HARD_CAP = 2000;
@@ -141,6 +104,20 @@ serve(async (req) => {
     const endDate = url.searchParams.get("endDate");
     const classDescriptionId = url.searchParams.get("classDescriptionId");
     const programId = url.searchParams.get("programId");
+
+    const cacheKey = buildCacheKey("classes:v1", {
+      startDate,
+      endDate,
+      classDescriptionId,
+      programId,
+    });
+    const cached = await getCachedJson<{ classes: unknown[] }>(cacheKey);
+    if (cached?.classes) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
+    }
 
     const staffToken = await getStaffToken();
 
@@ -213,8 +190,11 @@ serve(async (req) => {
       programName: resolveDisplayName(c.ClassDescription?.Program?.Name || ""),
     }));
 
+    const payload = { classes };
+    await setCachedJson(cacheKey, payload, CACHE_TTL.classes);
+
     return new Response(
-      JSON.stringify({ classes }),
+      JSON.stringify(payload),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

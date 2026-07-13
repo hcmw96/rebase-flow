@@ -22,16 +22,8 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import Terms from "./pages/Terms";
 import FAQ from "./pages/FAQ";
 import ContrastPassOfferPage from "./pages/ContrastPassOfferPage";
-import { fetchServices } from "@/hooks/useMindbodyServices";
 
 const queryClient = new QueryClient();
-
-// Prefetch services immediately on app load (no auth required)
-queryClient.prefetchQuery({
-  queryKey: ['mindbody-services'],
-  queryFn: fetchServices,
-  staleTime: 30 * 60 * 1000, // 30 minutes
-});
 
 const AuthOverlayMount = () => {
   const { isRedirecting } = useAuth();

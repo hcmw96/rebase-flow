@@ -1,61 +1,16 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { getStaffToken } from "../_shared/mindbodyStaff.ts";
+import {
+  buildCacheKey,
+  CACHE_TTL,
+  getCachedJson,
+  setCachedJson,
+} from "../_shared/mindbodyResponseCache.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-interface StaffCredentials {
-  TokenType: string;
-  AccessToken: string;
-  ExpiresIn: number;
-}
-
-async function getStaffToken(): Promise<string> {
-  const apiKey = Deno.env.get("MINDBODY_API_KEY")?.trim();
-  const siteId = Deno.env.get("MINDBODY_SITE_ID")?.trim();
-  const username = Deno.env.get("MINDBODY_STAFF_USERNAME")?.trim();
-  const password = Deno.env.get("MINDBODY_STAFF_PASSWORD")?.trim();
-  const sourceName = Deno.env.get("MINDBODY_SOURCE_NAME")?.trim();
-  const sourcePassword = Deno.env.get("MINDBODY_SOURCE_PASSWORD")?.trim();
-
-  if (!apiKey || !siteId || !username || !password) {
-    throw new Error("Missing Mindbody staff credentials");
-  }
-
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "Api-Key": apiKey,
-    "SiteId": siteId,
-  };
-
-  const body: Record<string, string> = {
-    Username: username,
-    Password: password,
-  };
-
-  // Include source credentials if configured
-  if (sourceName && sourcePassword) {
-    body.SourceName = sourceName;
-    body.SourcePassword = sourcePassword;
-    console.log("Using source credentials:", sourceName);
-  }
-
-  const response = await fetch("https://api.mindbodyonline.com/public/v6/usertoken/issue", {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error("Staff token error (status", response.status, "):", errorText);
-    throw new Error(`Mindbody auth failed (${response.status}): ${errorText}`);
-  }
-
-  const data: StaffCredentials = await response.json();
-  return data.AccessToken;
-}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -68,6 +23,15 @@ serve(async (req) => {
 
     if (!apiKey || !siteId) {
       throw new Error("Missing Mindbody API configuration");
+    }
+
+    const cacheKey = buildCacheKey("services:v1");
+    const cached = await getCachedJson<{ services: unknown[] }>(cacheKey);
+    if (cached?.services) {
+      return new Response(JSON.stringify(cached), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      });
     }
 
     const staffToken = await getStaffToken();
@@ -442,8 +406,11 @@ serve(async (req) => {
       console.log(`Added retail pack: ${name} -> £${price}`);
     }
 
+    const payload = { services };
+    await setCachedJson(cacheKey, payload, CACHE_TTL.services);
+
     return new Response(
-      JSON.stringify({ services }),
+      JSON.stringify(payload),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,

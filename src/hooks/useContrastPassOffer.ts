@@ -1,5 +1,4 @@
 import { useMemo } from 'react';
-import { useMemo } from 'react';
 import { CONTRAST_PASS_OFFER, isContrastPassSaleActive } from '@/config/contrastPassOffer';
 import { findContrastPassProduct } from '@/lib/mindbodyProducts';
 import { fetchServices } from '@/hooks/useMindbodyServices';
