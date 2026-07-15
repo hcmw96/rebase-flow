@@ -80,35 +80,79 @@ export function createApiClient(baseUrl: string) {
 
     async bookService(params: BookingParams): Promise<{ success: boolean; booking?: any; error?: string }> {
       const body = JSON.stringify(params);
+      const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-      for (let attempt = 0; attempt <= 6; attempt++) {
-        const response = await fetch(`${baseUrl}/functions/v1/mindbody-book`, {
+      const postBook = () =>
+        fetch(`${baseUrl}/functions/v1/mindbody-book`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body,
         });
 
-        if (response.status === 409) {
-          const retryBody = await response.json().catch(() => ({}));
-          if (retryBody?.bookingInProgress && attempt < 6) {
-            await new Promise((resolve) => setTimeout(resolve, 2000));
-            continue;
+      const waitForMatch = async (attempts: number) => {
+        for (let i = 0; i < attempts; i++) {
+          await sleep(2000);
+          try {
+            const res = await fetch(
+              `${baseUrl}/functions/v1/mindbody-my-bookings?sessionId=${encodeURIComponent(params.sessionId)}`,
+            );
+            if (!res.ok) continue;
+            const data = await res.json();
+            const bookings = data.bookings || [];
+            const match = bookings.find((b: any) => {
+              if (String(b.status || '').toLowerCase() === 'cancelled') return false;
+              if (params.bookingType === 'class') {
+                return (
+                  (params.classId &&
+                    (b.classId?.toString() === params.classId || b.id === params.classId)) ||
+                  (b.type === 'class' && b.startTime === params.startDateTime)
+                );
+              }
+              return b.type === 'appointment' && b.startTime === params.startDateTime;
+            });
+            if (match) {
+              return {
+                success: true,
+                booking: match,
+                idempotent: true,
+              };
+            }
+          } catch {
+            /* continue */
           }
-          throw new Error(
-            (typeof retryBody?.error === 'string' && retryBody.error) ||
-              'Your booking is already being processed. Please wait a moment.',
-          );
         }
+        return null;
+      };
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to book');
+      const response = await postBook();
+
+      if (response.status === 409) {
+        const retryBody = await response.json().catch(() => ({}));
+        if (retryBody?.bookingInProgress) {
+          const fromPoll = await waitForMatch(4);
+          if (fromPoll) return fromPoll;
+          const recovery = await postBook();
+          if (recovery.ok) return recovery.json();
+          if (recovery.status === 409) {
+            const after = await waitForMatch(3);
+            if (after) return after;
+          } else if (!recovery.ok) {
+            const error = await recovery.json().catch(() => ({}));
+            throw new Error(error.error || 'Failed to book');
+          }
         }
-
-        return response.json();
+        throw new Error(
+          (typeof retryBody?.error === 'string' && retryBody.error) ||
+            'Your booking is already being processed. Please wait a moment.',
+        );
       }
 
-      throw new Error('Your booking is still being processed. Please check My Bookings shortly.');
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to book');
+      }
+
+      return response.json();
     },
 
     async cancelBooking(params: {

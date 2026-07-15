@@ -125,27 +125,13 @@ const BookService = () => {
     });
   }, [monthAvailabilityData]);
 
-  // Date range for availability query
-  const dateRange = useMemo(() => {
-    if (!selectedDate) return null;
-    return {
-      startDate: format(selectedDate, 'yyyy-MM-dd'),
-    };
-  }, [selectedDate]);
-
-  // Fetch availability for selected date
-  const { data: availabilityData, isLoading: isLoadingSlots } = useMindbodyAvailability({
-    sessionTypeId: activeServiceId,
-    startDate: dateRange?.startDate,
-    endDate: dateRange?.endDate,
-    enabled: !!activeServiceId && !!selectedDate,
-  });
-
   const availableSlots = useMemo(() => {
-    const items = filterUpcomingSessions(availabilityData?.availableItems || []);
-    if (!selectedDate) return items;
+    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
+    if (!selectedDate) return [];
     return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
-  }, [availabilityData, selectedDate]);
+  }, [monthAvailabilityData, selectedDate]);
+
+  const isLoadingSlots = isLoadingMonth && !!selectedDate;
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);

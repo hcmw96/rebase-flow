@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/contexts/AuthContext';
 import { BookingMutationError } from '@/lib/bookingMutationError';
+import { parseMindbodyDateTime } from '@/lib/sessionTimes';
 import { supabaseFunctionHeaders } from '@/lib/supabaseFunctions';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -63,6 +64,74 @@ interface CancelParams {
   appointmentId?: string;
 }
 
+type BookResult = {
+  success: boolean;
+  booking?: {
+    id?: string;
+    mindbodyId?: string;
+    serviceName?: string;
+    startTime?: string;
+    status?: string;
+  };
+  payment?: { method: 'pass' | 'stored_card'; amountGbp?: number };
+  idempotent?: boolean;
+};
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function sameInstant(a?: string | null, b?: string | null): boolean {
+  if (!a || !b) return false;
+  const ta = parseMindbodyDateTime(a).getTime();
+  const tb = parseMindbodyDateTime(b).getTime();
+  return Number.isFinite(ta) && Number.isFinite(tb) && ta === tb;
+}
+
+/** After a 409, poll My Bookings instead of re-hitting mindbody-book. */
+async function waitForMatchingBooking(
+  sessionId: string,
+  params: BookingParams,
+  attempts: number,
+  delayMs: number,
+): Promise<BookResult | null> {
+  for (let i = 0; i < attempts; i++) {
+    await sleep(delayMs);
+    try {
+      const response = await fetch(
+        `${SUPABASE_URL}/functions/v1/mindbody-my-bookings?sessionId=${encodeURIComponent(sessionId)}`,
+      );
+      if (!response.ok) continue;
+      const data = await response.json();
+      const bookings: Booking[] = data.bookings || [];
+      const match = bookings.find((b) => {
+        if (String(b.status || '').toLowerCase() === 'cancelled') return false;
+        if (params.bookingType === 'class') {
+          if (params.classId && (b.classId?.toString() === params.classId || b.id === params.classId)) {
+            return true;
+          }
+          return b.type === 'class' && sameInstant(b.startTime, params.startDateTime);
+        }
+        return b.type === 'appointment' && sameInstant(b.startTime, params.startDateTime);
+      });
+      if (match) {
+        return {
+          success: true,
+          booking: {
+            id: match.id,
+            mindbodyId: match.id,
+            serviceName: match.serviceName,
+            startTime: match.startTime,
+            status: match.status,
+          },
+          idempotent: true,
+        };
+      }
+    } catch {
+      /* keep waiting */
+    }
+  }
+  return null;
+}
+
 export function useMyBookings() {
   const { mbSession, isAuthenticated, logout } = useAuth();
   const queryClient = useQueryClient();
@@ -100,13 +169,23 @@ export function useMyBookings() {
       return data;
     },
     enabled: isAuthenticated && !!mbSession?.sessionId,
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
+    refetchOnWindowFocus: false,
     retry: false,
   });
 }
 
-const IN_PROGRESS_RETRY_DELAY_MS = 2000;
-const IN_PROGRESS_MAX_RETRIES = 6;
+async function postBook(sessionId: string, params: BookingParams): Promise<Response> {
+  return fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
+    method: 'POST',
+    headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify({
+      sessionId,
+      ...params,
+    }),
+  });
+}
 
 export function useBookService() {
   const { mbSession } = useAuth();
@@ -118,53 +197,47 @@ export function useBookService() {
         throw new Error('Please sign in to book');
       }
 
-      const body = JSON.stringify({
-        sessionId: mbSession.sessionId,
-        ...params,
-      });
+      const sessionId = mbSession.sessionId;
 
-      for (let attempt = 0; attempt <= IN_PROGRESS_MAX_RETRIES; attempt++) {
-        const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-book`, {
-          method: 'POST',
-          headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
-          body,
-        });
+      const response = await postBook(sessionId, params);
 
-        if (response.status === 409) {
-          const retryBody = await response.json().catch(() => ({}));
-          if (retryBody?.bookingInProgress && attempt < IN_PROGRESS_MAX_RETRIES) {
-            await new Promise((resolve) => setTimeout(resolve, IN_PROGRESS_RETRY_DELAY_MS));
-            continue;
+      if (response.status === 409) {
+        const retryBody = await response.json().catch(() => ({}));
+        if (retryBody?.bookingInProgress) {
+          // Prefer wait/poll over re-charging Mindbody with repeated book POSTs.
+          const fromPoll = await waitForMatchingBooking(sessionId, params, 4, 2000);
+          if (fromPoll) return fromPoll;
+
+          // One recovery POST in case the first claim expired without finishing.
+          const recovery = await postBook(sessionId, params);
+          if (recovery.ok) {
+            return recovery.json() as Promise<BookResult>;
           }
+          if (recovery.status === 409) {
+            const afterRecovery = await waitForMatchingBooking(sessionId, params, 3, 2000);
+            if (afterRecovery) return afterRecovery;
+          } else if (!recovery.ok) {
+            await parseFunctionError(recovery, 'Failed to book');
+          }
+
           throw new BookingMutationError(
             (typeof retryBody?.error === 'string' && retryBody.error) ||
-              'Your booking is already being processed. Please wait a moment.',
+              'Your booking is already being processed. Please wait a moment and check My Bookings.',
             { bookingInProgress: true },
           );
         }
-
-        if (!response.ok) {
-          await parseFunctionError(response, 'Failed to book');
-        }
-
-        return response.json() as Promise<{
-          success: boolean;
-          booking?: {
-            id?: string;
-            mindbodyId?: string;
-            serviceName?: string;
-            startTime?: string;
-            status?: string;
-          };
-          payment?: { method: 'pass' | 'stored_card'; amountGbp?: number };
-          idempotent?: boolean;
-        }>;
+        throw new BookingMutationError(
+          (typeof retryBody?.error === 'string' && retryBody.error) ||
+            'Your booking is already being processed. Please wait a moment.',
+          { bookingInProgress: true },
+        );
       }
 
-      throw new BookingMutationError(
-        'Your booking is still being processed. Please wait a moment and check My Bookings.',
-        { bookingInProgress: true },
-      );
+      if (!response.ok) {
+        await parseFunctionError(response, 'Failed to book');
+      }
+
+      return response.json() as Promise<BookResult>;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['my-bookings'] });

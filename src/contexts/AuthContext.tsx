@@ -36,7 +36,8 @@ interface AuthContextType {
   /** Open Mindbody account page to add a card or manage profile. */
   openMindbodyClientAccount: () => void;
   logout: () => void;
-  refreshMbSession: () => Promise<MindbodySession | null>;
+  /** Refresh session from server. Skips network when the local token is still fresh unless `force`. */
+  refreshMbSession: (options?: { force?: boolean }) => Promise<MindbodySession | null>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -412,34 +413,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setMbSession(null);
   }, []);
 
-  const refreshMbSession = useCallback(async (): Promise<MindbodySession | null> => {
-    const stored = localStorage.getItem(MB_STORAGE_KEY);
-    if (!stored) return null;
-    try {
-      const parsed = JSON.parse(stored) as MindbodySession;
-      await fetch(`${SUPABASE_URL}/functions/v1/mindbody-refresh-token`, {
-        method: 'POST',
-        headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify({ sessionId: parsed.sessionId }),
-      }).catch(() => undefined);
+  const refreshMbSession = useCallback(
+    async (options?: { force?: boolean }): Promise<MindbodySession | null> => {
+      const stored = localStorage.getItem(MB_STORAGE_KEY);
+      if (!stored) return null;
+      try {
+        const parsed = JSON.parse(stored) as MindbodySession;
 
-      const serverSession = await fetchServerSession(parsed.sessionId);
-      if (serverSession) {
-        persistSession(serverSession);
-        setMbSession(serverSession);
-        return serverSession;
+        // Avoid stacked refresh-token calls while the client token is still valid.
+        if (!options?.force && !isSessionExpired(parsed.expiresAt)) {
+          setMbSession(parsed);
+          return parsed;
+        }
+
+        await fetch(`${SUPABASE_URL}/functions/v1/mindbody-refresh-token`, {
+          method: 'POST',
+          headers: supabaseFunctionHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ sessionId: parsed.sessionId }),
+        }).catch(() => undefined);
+
+        const serverSession = await fetchServerSession(parsed.sessionId);
+        if (serverSession) {
+          persistSession(serverSession);
+          setMbSession(serverSession);
+          return serverSession;
+        }
+        if (!isSessionExpired(parsed.expiresAt)) {
+          setMbSession(parsed);
+          return parsed;
+        }
+        localStorage.removeItem(MB_STORAGE_KEY);
+        setMbSession(null);
+        return null;
+      } catch {
+        return null;
       }
-      if (!isSessionExpired(parsed.expiresAt)) {
-        setMbSession(parsed);
-        return parsed;
-      }
-      localStorage.removeItem(MB_STORAGE_KEY);
-      setMbSession(null);
-      return null;
-    } catch {
-      return null;
-    }
-  }, []);
+    },
+    [],
+  );
 
   return (
     <AuthContext.Provider

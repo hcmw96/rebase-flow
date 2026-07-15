@@ -39,6 +39,8 @@ const Index = () => {
     setResumeClassId(undefined);
     setResumeAppointment(undefined);
     clearPendingBooking();
+    // Clear after close animation so availability queries fully disable.
+    window.setTimeout(() => setBookingService(null), 350);
   }, []);
 
   return (
@@ -64,7 +66,8 @@ const Index = () => {
         resumeAppointment={resumeAppointment}
         onSwitchService={() => {
           setDrawerOpen(false);
-          setTimeout(() => {
+          window.setTimeout(() => {
+            setBookingService(null);
             document.getElementById("services")?.scrollIntoView({ behavior: "smooth" });
           }, 300);
         }}

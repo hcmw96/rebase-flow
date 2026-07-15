@@ -23,7 +23,15 @@ import Terms from "./pages/Terms";
 import FAQ from "./pages/FAQ";
 import ContrastPassOfferPage from "./pages/ContrastPassOfferPage";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+      staleTime: 60 * 1000,
+    },
+  },
+});
 
 const AuthOverlayMount = () => {
   const { isRedirecting } = useAuth();

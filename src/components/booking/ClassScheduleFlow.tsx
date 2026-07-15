@@ -265,9 +265,8 @@ const ClassScheduleFlow = ({
     if (isAuthenticated) {
       setBookingError(null);
       setBookingErrorRequiresSignIn(false);
-      void refreshMbSession();
     }
-  }, [isAuthenticated, refreshMbSession]);
+  }, [isAuthenticated]);
 
   const idempotencyKey = useMemo(() => {
     if (!selectedClass || !mbSession?.sessionId) return undefined;

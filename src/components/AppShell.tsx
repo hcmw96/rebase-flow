@@ -55,6 +55,7 @@ const AppShell = () => {
     setResumeClassId(undefined);
     setResumeAppointment(undefined);
     clearPendingBooking();
+    window.setTimeout(() => setBookingService(null), 350);
   }, []);
 
   const renderContent = () => {
@@ -147,9 +148,10 @@ const AppShell = () => {
         service={bookingService}
         resumeClassId={resumeClassId}
         resumeAppointment={resumeAppointment}
-        onSwitchService={(serviceName) => {
+        onSwitchService={() => {
           setDrawerOpen(false);
-          setTimeout(() => {
+          window.setTimeout(() => {
+            setBookingService(null);
             setActiveTab('services');
           }, 300);
         }}

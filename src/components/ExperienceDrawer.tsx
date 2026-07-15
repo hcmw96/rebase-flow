@@ -331,6 +331,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
           setResumeClassId(undefined);
           setResumeAppointment(undefined);
           clearPendingBooking();
+          window.setTimeout(() => setBookingService(null), 350);
         }}
         service={bookingService}
         resumeClassId={resumeClassId}

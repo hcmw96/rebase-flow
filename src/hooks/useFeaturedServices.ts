@@ -80,6 +80,7 @@ export function useFeaturedServices() {
     queryKey: ['featured-services'],
     queryFn: fetchFeaturedServices,
     staleTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
   });
 }
 

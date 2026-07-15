@@ -110,7 +110,7 @@ const BookingDrawer = ({
   const restoredAppointmentRef = useRef<string | null>(null);
   const bookingInFlightRef = useRef(false);
 
-  // Reset state when drawer opens with new service
+  // Reset UI state when drawer closes — keep in-flight guard until the mutation settles.
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       onClose();
@@ -121,15 +121,23 @@ const BookingDrawer = ({
         setSelectedVariant(null);
         setBookingComplete(false);
         setIsSubmitting(false);
-        bookingInFlightRef.current = false;
         setBookingError(null);
         setBookingErrorRequiresSignIn(false);
         setNeedsCardOnFile(false);
         setCardSetupRetryHint(null);
         restoredAppointmentRef.current = null;
+        if (!bookServiceMutation.isPending) {
+          bookingInFlightRef.current = false;
+        }
       }, 300);
     }
   };
+
+  useEffect(() => {
+    if (!open && !bookServiceMutation.isPending) {
+      bookingInFlightRef.current = false;
+    }
+  }, [open, bookServiceMutation.isPending]);
 
   // Check if this is a class booking
   const isClassBooking = !!(service?.classDescriptionIds?.length);
@@ -240,7 +248,7 @@ const BookingDrawer = ({
     sessionTypeId: activeServiceId,
     startDate: monthRange.startDate,
     endDate: monthRange.endDate,
-    enabled: !!activeServiceId && !showContactMessage,
+    enabled: open && !!activeServiceId && !showContactMessage && !isClassBooking,
   });
 
   const availableSlots = useMemo(() => {
@@ -314,9 +322,8 @@ const BookingDrawer = ({
     if (isAuthenticated) {
       setBookingError(null);
       setBookingErrorRequiresSignIn(false);
-      void refreshMbSession();
     }
-  }, [isAuthenticated, refreshMbSession]);
+  }, [isAuthenticated]);
 
   const handleConfirmBooking = async () => {
     if (!selectedSlot || bookingComplete || bookingInFlightRef.current || bookServiceMutation.isPending) {
@@ -499,9 +506,9 @@ const BookingDrawer = ({
             style={{ WebkitOverflowScrolling: 'touch' }}
           >
             {/* Class booking flow */}
-            {isClassBooking ? (
+            {open && isClassBooking ? (
               <ClassScheduleFlow
-                key={`${service.classDescriptionIds!.join('-')}-${resumeClassId ?? ''}`}
+                key={service.classDescriptionIds!.join('-')}
                 classDescriptionIds={service.classDescriptionIds!}
                 className={serviceDisplayName}
                 onClose={onClose}
