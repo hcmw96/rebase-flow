@@ -17,6 +17,7 @@ import {
   releasePurchaseClaim,
   resolvePurchaseProductKey,
 } from "../_shared/purchaseIdempotency.ts";
+import { alertOnHttpFailure, sendOpsAlert } from "../_shared/opsAlertEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -324,7 +325,7 @@ serve(async (req) => {
 
     if (!checkout.ok) {
       await releasePurchaseClaim(supabaseAdmin, claimedPurchaseId);
-      return new Response(
+      const response = new Response(
         JSON.stringify({
           error: checkout.noStoredCard
             ? "No payment card is saved on your Mindbody account. Add a card using the link below, then try again."
@@ -334,6 +335,18 @@ serve(async (req) => {
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       );
+      await alertOnHttpFailure(response, {
+        category: "purchase_failed",
+        title: `Pass purchase failed — ${passService.name}`,
+        dedupeKey: `purchase:${productKey}:${clientId}`,
+        details: {
+          productName: passService.name,
+          amountGbp: passService.amount,
+          guestEmail: profile.email || session.email || null,
+          mindbodyClientId: session.mindbody_client_id,
+        },
+      });
+      return response;
     }
 
     await confirmPassPurchase(supabaseAdmin, claimedPurchaseId, passService.amount);
@@ -367,8 +380,15 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Purchase pass error:", error);
+    const message = error instanceof Error ? error.message : String(error);
+    sendOpsAlert({
+      category: "purchase_error",
+      title: "Unhandled pass purchase error",
+      summary: message,
+      dedupeKey: `purchase:unhandled:${message.slice(0, 120)}`,
+    });
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : String(error) }),
+      JSON.stringify({ error: message }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
     );
   }

@@ -44,6 +44,7 @@ import {
   clientAlreadyBookedAppointment,
   clientAlreadyBookedClass,
 } from "../_shared/mindbodyBookingGuard.ts";
+import { alertOnHttpFailure, sendOpsAlert } from "../_shared/opsAlertEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -141,6 +142,32 @@ async function resolveBookingClientId(
   const clientId = await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken, profile);
   console.log("Booking ClientId:", publicClientId, "->", clientId ?? "(unresolved)");
   return clientId;
+}
+
+async function returnBookingFailure(
+  response: Response,
+  context: {
+    session: MbSession;
+    profile?: ClientProfile;
+    bookingType: string;
+    serviceName?: string;
+    startDateTime?: string;
+  },
+): Promise<Response> {
+  await alertOnHttpFailure(response, {
+    category: "booking_failed",
+    title: `Booking failed — ${context.serviceName || "unknown service"}`,
+    dedupeKey:
+      `booking:${context.bookingType}:${context.serviceName || ""}:${context.startDateTime || ""}`,
+    details: {
+      bookingType: context.bookingType,
+      serviceName: context.serviceName || null,
+      startTime: context.startDateTime || null,
+      guestEmail: context.profile?.email || context.session.email || null,
+      mindbodyClientId: context.session.mindbody_client_id,
+    },
+  });
+  return response;
 }
 
 function extractMindbodyErrorMessage(rawText: string): string {
@@ -996,6 +1023,7 @@ serve(async (req) => {
     const sessionResult = await loadBookableSession(supabaseAdmin, sessionId);
     if (sessionResult instanceof Response) return sessionResult;
     const session = sessionResult;
+    const guestProfile = await sessionClientProfile(session, apiKey, siteId);
 
     const existingConfirmed = await findConfirmedSlotBooking(supabaseAdmin, {
       sessionId,
@@ -1145,7 +1173,13 @@ serve(async (req) => {
       );
       if (!result.ok) {
         await releaseBookingClaim(supabaseAdmin, claimedBookingId);
-        return result.response;
+        return await returnBookingFailure(result.response, {
+          session,
+          profile: guestProfile,
+          bookingType: "class",
+          serviceName,
+          startDateTime: slotStartDateTime,
+        });
       }
       mindbodySucceeded = true;
       bookingResult = result.data as Record<string, unknown>;
@@ -1173,7 +1207,13 @@ serve(async (req) => {
       );
       if (!result.ok) {
         await releaseBookingClaim(supabaseAdmin, claimedBookingId);
-        return result.response;
+        return await returnBookingFailure(result.response, {
+          session,
+          profile: guestProfile,
+          bookingType: "appointment",
+          serviceName,
+          startDateTime: slotStartDateTime,
+        });
       }
       mindbodySucceeded = true;
       bookingResult = result.data as Record<string, unknown>;
@@ -1315,8 +1355,15 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("Booking error:", error);
+    const message = error instanceof Error ? error.message : "Booking failed";
+    sendOpsAlert({
+      category: "booking_error",
+      title: "Unhandled booking error",
+      summary: message,
+      dedupeKey: `booking:unhandled:${message.slice(0, 120)}`,
+    });
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: message }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 400,
