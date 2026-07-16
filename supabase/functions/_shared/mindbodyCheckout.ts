@@ -194,7 +194,9 @@ export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
       /stored card|no card|card on file|payment method|credit card|billing|no payment instrument|does not have a payment|no default card/i
         .test(lower),
     siteScopeIssue:
-      /site id does not match|custom id|cross.?regional|invalid client|does not exist/i.test(lower),
+      /site id does not match|user token site id|custom id|cross.?regional|invalid client|does not exist/i.test(
+        lower,
+      ),
     cardDeclined:
       /declined|insufficient funds|expired|invalid card|processor|authorization failed|do not honor|unable to process payment/i
         .test(lower),
@@ -202,9 +204,10 @@ export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
 }
 
 /**
- * Try consumer OAuth checkout first, then staff when it fails.
- * Failed checkout responses are non-successful — safe to retry with staff credentials
- * (same pattern as addclienttoclass in mindbody-book).
+ * Charge stored cards using staff credentials first.
+ * Production logs show consumer OAuth checkout fails 100% of the time with
+ * "User token site id does not match" for cross-studio Mindbody accounts,
+ * while staff checkout succeeds for the same clients.
  */
 export async function checkoutWithConsumerThenStaff(
   apiKey: string,
@@ -213,15 +216,27 @@ export async function checkoutWithConsumerThenStaff(
   staffToken: string,
   runCheckout: (bearerToken: string) => Promise<CheckoutResult>,
 ): Promise<CheckoutResult> {
-  const consumer = await runCheckout(consumerToken);
-  if (consumer.ok) return consumer;
+  const staff = await runCheckout(staffToken);
+  if (staff.ok) {
+    console.log("checkoutshoppingcart ok via staff token");
+    return staff;
+  }
 
   console.warn(
-    "Consumer checkout failed; retrying with staff token:",
+    "Staff checkout failed:",
+    staff.message?.slice(0, 200) || "unknown",
+  );
+
+  const consumer = await runCheckout(consumerToken);
+  if (consumer.ok) {
+    console.log("checkoutshoppingcart ok via consumer token (staff fallback)");
+    return consumer;
+  }
+
+  console.warn(
+    "Consumer checkout also failed:",
     consumer.message?.slice(0, 200) || "unknown",
   );
-  const staff = await runCheckout(staffToken);
-  if (staff.ok) return staff;
 
   return staff.message ? staff : consumer;
 }
