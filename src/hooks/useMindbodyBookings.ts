@@ -20,6 +20,7 @@ async function parseFunctionError(response: Response, fallback: string): Promise
       siteScopeIssue: Boolean(body?.siteScopeIssue),
       noPassOnFile: Boolean(body?.noPassOnFile),
       noStoredCard: Boolean(body?.noStoredCard),
+      cardDeclined: Boolean(body?.cardDeclined),
       bookingInProgress: Boolean(body?.bookingInProgress) || response.status === 409,
     });
   } catch (e) {

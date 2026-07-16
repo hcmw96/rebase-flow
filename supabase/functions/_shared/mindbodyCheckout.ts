@@ -107,6 +107,25 @@ function headers(apiKey: string, siteId: string, bearerToken: string) {
   };
 }
 
+async function fetchSaleServices(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  params: URLSearchParams,
+  label: string,
+): Promise<SaleServiceRow[]> {
+  const res = await fetch(
+    `https://api.mindbodyonline.com/public/v6/sale/services?${params}`,
+    { method: "GET", headers: headers(apiKey, siteId, bearerToken) },
+  );
+  if (!res.ok) {
+    console.warn(`sale/services ${label} failed:`, res.status, await res.text().catch(() => ""));
+    return [];
+  }
+  const data = await res.json();
+  return (data.Services || []) as SaleServiceRow[];
+}
+
 /** Pricing options that can pay for a specific class (Mindbody sale/services). */
 export async function fetchSaleServicesForClass(
   apiKey: string,
@@ -115,22 +134,15 @@ export async function fetchSaleServicesForClass(
   classId: number,
   locationId?: number,
 ): Promise<SaleServiceRow[]> {
-  const params = new URLSearchParams({
-    ClassId: String(classId),
-    SellOnline: "true",
-  });
-  if (locationId != null) params.set("LocationId", String(locationId));
+  const base = new URLSearchParams({ ClassId: String(classId) });
+  if (locationId != null) base.set("LocationId", String(locationId));
 
-  const res = await fetch(
-    `https://api.mindbodyonline.com/public/v6/sale/services?${params}`,
-    { method: "GET", headers: headers(apiKey, siteId, bearerToken) },
-  );
-  if (!res.ok) {
-    console.warn("sale/services for class failed:", classId, res.status, await res.text().catch(() => ""));
-    return [];
-  }
-  const data = await res.json();
-  return (data.Services || []) as SaleServiceRow[];
+  const onlineParams = new URLSearchParams(base);
+  onlineParams.set("SellOnline", "true");
+  const online = await fetchSaleServices(apiKey, siteId, bearerToken, onlineParams, `class:${classId}:online`);
+  if (online.length) return online;
+
+  return await fetchSaleServices(apiKey, siteId, bearerToken, base, `class:${classId}:all`);
 }
 
 /** Pricing options for a session type (appointments / suites). */
@@ -164,13 +176,35 @@ export async function fetchSaleServicesForSessionType(
   return (data.Services || []) as SaleServiceRow[];
 }
 
+export type CheckoutFailureFlags = {
+  noStoredCard?: boolean;
+  siteScopeIssue?: boolean;
+  cardDeclined?: boolean;
+};
+
 export type CheckoutResult =
   | { ok: true; data: Record<string, unknown> }
-  | { ok: false; message: string; noStoredCard?: boolean };
+  | ({ ok: false; message: string } & CheckoutFailureFlags);
+
+/** Classify Mindbody checkout error text for user messaging and UI routing. */
+export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
+  const lower = message.toLowerCase();
+  return {
+    noStoredCard:
+      /stored card|no card|card on file|payment method|credit card|billing|no payment instrument|does not have a payment|no default card/i
+        .test(lower),
+    siteScopeIssue:
+      /site id does not match|custom id|cross.?regional|invalid client|does not exist/i.test(lower),
+    cardDeclined:
+      /declined|insufficient funds|expired|invalid card|processor|authorization failed|do not honor|unable to process payment/i
+        .test(lower),
+  };
+}
 
 /**
- * Try consumer token first; only fall back to staff when the card is missing.
- * Never retry after an ambiguous failure — the consumer call may have charged.
+ * Try consumer OAuth checkout first, then staff when it fails.
+ * Failed checkout responses are non-successful — safe to retry with staff credentials
+ * (same pattern as addclienttoclass in mindbody-book).
  */
 export async function checkoutWithConsumerThenStaff(
   apiKey: string,
@@ -181,26 +215,28 @@ export async function checkoutWithConsumerThenStaff(
 ): Promise<CheckoutResult> {
   const consumer = await runCheckout(consumerToken);
   if (consumer.ok) return consumer;
-  if (consumer.noStoredCard) {
-    return await runCheckout(staffToken);
-  }
-  return consumer;
+
+  console.warn(
+    "Consumer checkout failed; retrying with staff token:",
+    consumer.message?.slice(0, 200) || "unknown",
+  );
+  const staff = await runCheckout(staffToken);
+  if (staff.ok) return staff;
+
+  return staff.message ? staff : consumer;
 }
 
 function parseCheckoutFailure(
   res: Response,
   raw: string,
   data: Record<string, unknown>,
-): { message: string; noStoredCard: boolean } {
+): { message: string } & CheckoutFailureFlags {
   const message =
     (data as { Error?: { Message?: string } }).Error?.Message ||
     (data as { Message?: string }).Message ||
     raw.slice(0, 400) ||
     `Checkout failed (${res.status})`;
-  const lower = message.toLowerCase();
-  const noStoredCard =
-    /stored card|no card|card on file|payment method|credit card|billing/i.test(lower);
-  return { message, noStoredCard };
+  return { message, ...classifyCheckoutFailure(message) };
 }
 
 /**
@@ -234,8 +270,9 @@ export async function checkoutWithStoredCard(
     item.AppointmentBookingRequests = opts.appointmentBookingRequests;
   }
 
+  const clientIdNum = parseInt(opts.clientId, 10);
   const body = {
-    ClientId: opts.clientId,
+    ClientId: Number.isFinite(clientIdNum) ? clientIdNum : opts.clientId,
     LocationId: opts.locationId,
     InStore: false,
     SendEmail: true,
@@ -267,9 +304,9 @@ export async function checkoutWithStoredCard(
     return { ok: true, data };
   }
 
-  const { message, noStoredCard } = parseCheckoutFailure(res, raw, data);
-  console.warn("checkoutshoppingcart failed:", res.status, message.slice(0, 300));
-  return { ok: false, message, noStoredCard };
+  const failure = parseCheckoutFailure(res, raw, data);
+  console.warn("checkoutshoppingcart failed:", res.status, failure.message.slice(0, 300));
+  return { ok: false, ...failure };
 }
 
 /** Charge stored card and book the class in one checkout. */

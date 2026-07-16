@@ -38,6 +38,7 @@ import {
   isMultiSessionPack,
   pickSaleServiceForClass,
   pickSaleServiceForSession,
+  type CheckoutResult,
 } from "../_shared/mindbodyCheckout.ts";
 import {
   clientAlreadyBookedAppointment,
@@ -185,6 +186,73 @@ async function shouldFallThroughToCheckout(failure: {
   } catch {
     return status >= 400 && status < 500;
   }
+}
+
+function checkoutFailureResponse(
+  checkout: Extract<CheckoutResult, { ok: false }>,
+): { ok: false; response: Response } {
+  console.error("Stored-card checkout failed:", checkout.message);
+
+  if (checkout.noStoredCard) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "No payment card is saved on your Mindbody account. Add a card using the link on this page, then confirm again.",
+          paymentRequired: true,
+          noStoredCard: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  if (checkout.siteScopeIssue) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't complete this booking in Mindbody. Add a payment card to your Mindbody account if you don't have one on file, then tap Confirm again — or email reception@rebaserecovery.com and we'll book you in.",
+          paymentRequired: true,
+          siteScopeIssue: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  if (checkout.cardDeclined) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "Your card on file couldn't be charged. Update your card in your Mindbody account, then tap Confirm again — or email reception@rebaserecovery.com.",
+          paymentRequired: true,
+          cardDeclined: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  return {
+    ok: false,
+    response: new Response(
+      JSON.stringify({
+        error:
+          "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
+        paymentRequired: true,
+        noPassOnFile: true,
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+    ),
+  };
 }
 
 async function mindbodyPostWithRetry(
@@ -635,34 +703,7 @@ async function bookClassWithPayment(
     };
   }
 
-  if (checkout.noStoredCard) {
-    return {
-      ok: false,
-      response: new Response(
-        JSON.stringify({
-          error:
-            "No payment card is saved on your Mindbody account. Add a card using the link on this page, then confirm again.",
-          paymentRequired: true,
-          noStoredCard: true,
-          noPassOnFile: true,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-      ),
-    };
-  }
-
-  return {
-    ok: false,
-    response: new Response(
-      JSON.stringify({
-        error:
-          "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
-        paymentRequired: true,
-        noPassOnFile: true,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-    ),
-  };
+  return checkoutFailureResponse(checkout);
 }
 
 /** Book an appointment: use pass credit, or charge stored card + book via checkout when none on file. */
@@ -897,34 +938,7 @@ async function bookAppointmentWithPayment(
     };
   }
 
-  if (checkout.noStoredCard) {
-    return {
-      ok: false,
-      response: new Response(
-        JSON.stringify({
-          error:
-            "No payment card is saved on your Mindbody account. Add a card using the link on this page, then confirm again.",
-          paymentRequired: true,
-          noStoredCard: true,
-          noPassOnFile: true,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-      ),
-    };
-  }
-
-  return {
-    ok: false,
-    response: new Response(
-      JSON.stringify({
-        error:
-          "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
-        paymentRequired: true,
-        noPassOnFile: true,
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-    ),
-  };
+  return checkoutFailureResponse(checkout);
 }
 
 serve(async (req) => {

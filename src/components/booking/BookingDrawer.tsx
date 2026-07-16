@@ -373,7 +373,11 @@ const BookingDrawer = ({
       bookingInFlightRef.current = false;
       setIsSubmitting(false);
       if (error instanceof BookingMutationError) {
-        if (error.flags.noStoredCard || (error.flags.siteScopeIssue && error.flags.paymentRequired)) {
+        if (
+          error.flags.noStoredCard ||
+          error.flags.cardDeclined ||
+          (error.flags.siteScopeIssue && error.flags.paymentRequired)
+        ) {
           if (mbSession?.sessionId) {
             markSessionNeedsPaymentCard(mbSession.sessionId);
           }
