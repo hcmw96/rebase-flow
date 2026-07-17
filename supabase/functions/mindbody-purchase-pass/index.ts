@@ -324,16 +324,27 @@ serve(async (req) => {
     );
 
     if (!checkout.ok) {
-      await releasePurchaseClaim(supabaseAdmin, claimedPurchaseId);
+      const definitiveFailure = Boolean(
+        checkout.noStoredCard || checkout.cardDeclined || checkout.siteScopeIssue,
+      );
+      if (definitiveFailure) {
+        await releasePurchaseClaim(supabaseAdmin, claimedPurchaseId);
+      }
       const response = new Response(
         JSON.stringify({
           error: checkout.noStoredCard
             ? "No payment card is saved on your Mindbody account. Add a card using the link below, then try again."
-            : checkout.message,
+            : definitiveFailure
+            ? checkout.message
+            : "Mindbody couldn't confirm this purchase after processing it. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.",
           paymentRequired: true,
           noStoredCard: checkout.noStoredCard,
+          purchaseOutcomeUncertain: !definitiveFailure,
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: definitiveFailure ? 400 : 409,
+        },
       );
       await alertOnHttpFailure(response, {
         category: "purchase_failed",

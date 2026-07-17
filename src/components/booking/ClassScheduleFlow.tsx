@@ -138,6 +138,7 @@ const ClassScheduleFlow = ({
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
+  const [bookingOutcomeUncertain, setBookingOutcomeUncertain] = useState(false);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
   const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
 
@@ -248,6 +249,7 @@ const ClassScheduleFlow = ({
   const handleClassSelect = (cls: MindbodyClass) => {
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     setSelectedClass(cls);
     setCurrentStep(2);
   };
@@ -265,6 +267,7 @@ const ClassScheduleFlow = ({
     if (isAuthenticated) {
       setBookingError(null);
       setBookingErrorRequiresSignIn(false);
+      setBookingOutcomeUncertain(false);
     }
   }, [isAuthenticated]);
 
@@ -287,6 +290,7 @@ const ClassScheduleFlow = ({
     }
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     logout();
     login({ clearSession: true });
   };
@@ -300,6 +304,7 @@ const ClassScheduleFlow = ({
     }
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     const url = mindbodySignUpUrl || resolveMindbodySignUpUrl();
     openMindbodyExternalUrl(url);
   };
@@ -320,6 +325,7 @@ const ClassScheduleFlow = ({
     setIsSubmitting(true);
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     setCardSetupRetryHint(null);
     if (!needsCardOnFile) {
       setNeedsCardOnFile(false);
@@ -356,6 +362,7 @@ const ClassScheduleFlow = ({
           setNeedsCardOnFile(true);
           setBookingError(null);
           setBookingErrorRequiresSignIn(false);
+          setBookingOutcomeUncertain(false);
           if (needsCardOnFile) {
             setCardSetupRetryHint(
               "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
@@ -368,6 +375,7 @@ const ClassScheduleFlow = ({
         clearSessionNeedsPaymentCard();
         setBookingError(error.message);
         setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
+        setBookingOutcomeUncertain(Boolean(error.flags.bookingOutcomeUncertain));
         return;
       }
       const classified = classifyBookingError(
@@ -375,6 +383,7 @@ const ClassScheduleFlow = ({
       );
       setBookingError(classified.message);
       setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
+      setBookingOutcomeUncertain(false);
     }
   };
 
@@ -570,6 +579,7 @@ const ClassScheduleFlow = ({
               onChangeTime={() => {
                 setBookingError(null);
                 setBookingErrorRequiresSignIn(false);
+                setBookingOutcomeUncertain(false);
                 setNeedsCardOnFile(false);
                 setCardSetupRetryHint(null);
                 setSelectedClass(null);
@@ -585,6 +595,7 @@ const ClassScheduleFlow = ({
               changeTimeLabel="Change session"
               bookingError={bookingError}
               bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
+              bookingOutcomeUncertain={bookingOutcomeUncertain}
               checkoutSummary={checkoutSummary}
               onCreateAccount={() => startCreateAccount(selectedClass)}
               needsCardOnFile={needsCardOnFile}

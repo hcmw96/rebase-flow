@@ -11,6 +11,10 @@ export type BookingFailureFlags = {
   bookingInProgress?: boolean;
   /** Pass purchase request still processing */
   purchaseInProgress?: boolean;
+  /** Mindbody may have charged/booked before returning an error — do not retry */
+  bookingOutcomeUncertain?: boolean;
+  /** Pass purchase may have charged before returning an error — do not retry */
+  purchaseOutcomeUncertain?: boolean;
 };
 
 export class BookingMutationError extends Error {

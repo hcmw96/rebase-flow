@@ -180,6 +180,7 @@ export type CheckoutFailureFlags = {
   noStoredCard?: boolean;
   siteScopeIssue?: boolean;
   cardDeclined?: boolean;
+  bookingConflict?: boolean;
 };
 
 export type CheckoutResult =
@@ -198,21 +199,25 @@ export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
         lower,
       ),
     cardDeclined:
-      /declined|insufficient funds|expired|invalid card|processor|authorization failed|do not honor|unable to process payment/i
+      /\bdeclined\b|insufficient funds|card expired|expired card|invalid card|do not honor|authorization failed|card was declined/i
+        .test(lower),
+    bookingConflict:
+      /time is not available|already scheduled|scheduling restriction|maximum number of sessions/i
         .test(lower),
   };
 }
 
 /**
- * Charge stored cards using staff credentials first.
+ * Charge stored cards using staff credentials only.
  * Production logs show consumer OAuth checkout fails 100% of the time with
- * "User token site id does not match" for cross-studio Mindbody accounts,
- * while staff checkout succeeds for the same clients.
+ * "User token site id does not match" for cross-studio Mindbody accounts.
+ * Never retry a failed checkout with another token: Mindbody may have charged
+ * or created the booking before returning an error.
  */
 export async function checkoutWithConsumerThenStaff(
-  apiKey: string,
-  siteId: string,
-  consumerToken: string,
+  _apiKey: string,
+  _siteId: string,
+  _consumerToken: string,
   staffToken: string,
   runCheckout: (bearerToken: string) => Promise<CheckoutResult>,
 ): Promise<CheckoutResult> {
@@ -226,19 +231,7 @@ export async function checkoutWithConsumerThenStaff(
     "Staff checkout failed:",
     staff.message?.slice(0, 200) || "unknown",
   );
-
-  const consumer = await runCheckout(consumerToken);
-  if (consumer.ok) {
-    console.log("checkoutshoppingcart ok via consumer token (staff fallback)");
-    return consumer;
-  }
-
-  console.warn(
-    "Consumer checkout also failed:",
-    consumer.message?.slice(0, 200) || "unknown",
-  );
-
-  return staff.message ? staff : consumer;
+  return staff;
 }
 
 function parseCheckoutFailure(

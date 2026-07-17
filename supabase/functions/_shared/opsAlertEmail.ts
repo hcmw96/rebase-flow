@@ -111,7 +111,7 @@ export async function alertOnHttpFailure(
     details?: Record<string, string | number | boolean | null | undefined>;
   },
 ): Promise<void> {
-  if (response.status < 400 || response.status === 409) return;
+  if (response.status < 400) return;
 
   let body: Record<string, unknown> = {};
   try {
@@ -121,6 +121,11 @@ export async function alertOnHttpFailure(
   }
 
   if (response.status === 401 && body.requiresLogin) return;
+  if (
+    response.status === 409 &&
+    !body.bookingOutcomeUncertain &&
+    !body.purchaseOutcomeUncertain
+  ) return;
 
   const errorMessage =
     (typeof body.error === "string" && body.error) ||
@@ -139,6 +144,8 @@ export async function alertOnHttpFailure(
       noStoredCard: Boolean(body.noStoredCard),
       cardDeclined: Boolean(body.cardDeclined),
       siteScopeIssue: Boolean(body.siteScopeIssue),
+      bookingOutcomeUncertain: Boolean(body.bookingOutcomeUncertain),
+      purchaseOutcomeUncertain: Boolean(body.purchaseOutcomeUncertain),
       profileNotFound: Boolean(body.profileNotFound),
       requiresLogin: Boolean(body.requiresLogin),
     },

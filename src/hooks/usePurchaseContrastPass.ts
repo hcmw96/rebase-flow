@@ -64,6 +64,13 @@ export function usePurchaseContrastPass() {
 
       if (response.status === 409) {
         const retryBody = await response.json().catch(() => ({}));
+        if (retryBody?.purchaseOutcomeUncertain) {
+          throw new BookingMutationError(
+            (typeof retryBody?.error === 'string' && retryBody.error) ||
+              "Mindbody couldn't confirm this purchase after processing it. Please do not retry — email reception@rebaserecovery.com.",
+            { purchaseOutcomeUncertain: true },
+          );
+        }
         if (retryBody?.purchaseInProgress) {
           const fromPoll = await waitForPassOnMembership(session.sessionId);
           if (fromPoll) return fromPoll;
@@ -114,6 +121,7 @@ export function usePurchaseContrastPass() {
           paymentRequired: Boolean(retryBody.paymentRequired),
           requiresLogin: Boolean(retryBody.requiresLogin),
           noStoredCard: Boolean(retryBody.noStoredCard),
+          purchaseOutcomeUncertain: Boolean(retryBody.purchaseOutcomeUncertain),
         });
       }
 

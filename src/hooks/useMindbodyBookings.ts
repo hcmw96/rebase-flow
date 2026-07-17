@@ -21,7 +21,8 @@ async function parseFunctionError(response: Response, fallback: string): Promise
       noPassOnFile: Boolean(body?.noPassOnFile),
       noStoredCard: Boolean(body?.noStoredCard),
       cardDeclined: Boolean(body?.cardDeclined),
-      bookingInProgress: Boolean(body?.bookingInProgress) || response.status === 409,
+      bookingInProgress: Boolean(body?.bookingInProgress),
+      bookingOutcomeUncertain: Boolean(body?.bookingOutcomeUncertain),
     });
   } catch (e) {
     if (e instanceof BookingMutationError) throw e;
@@ -204,6 +205,13 @@ export function useBookService() {
 
       if (response.status === 409) {
         const retryBody = await response.json().catch(() => ({}));
+        if (retryBody?.bookingOutcomeUncertain) {
+          throw new BookingMutationError(
+            (typeof retryBody?.error === 'string' && retryBody.error) ||
+              "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com.",
+            { bookingOutcomeUncertain: true },
+          );
+        }
         if (retryBody?.bookingInProgress) {
           // Prefer wait/poll over re-charging Mindbody with repeated book POSTs.
           const fromPoll = await waitForMatchingBooking(sessionId, params, 4, 2000);

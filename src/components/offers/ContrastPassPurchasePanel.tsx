@@ -14,6 +14,7 @@ type ContrastPassPurchasePanelProps = {
   isPurchasing: boolean;
   purchaseComplete: boolean;
   error: string | null;
+  purchaseOutcomeUncertain?: boolean;
   needsCardOnFile: boolean;
   cardSetupRetryHint?: string | null;
   onSignIn: () => void;
@@ -29,6 +30,7 @@ const ContrastPassPurchasePanel = ({
   isPurchasing,
   purchaseComplete,
   error,
+  purchaseOutcomeUncertain = false,
   needsCardOnFile,
   cardSetupRetryHint = null,
   onSignIn,
@@ -41,13 +43,13 @@ const ContrastPassPurchasePanel = ({
   const purchaseLockedRef = useRef(false);
 
   const handlePurchaseClick = useCallback(() => {
-    if (isPurchasing || purchaseLockedRef.current) return;
+    if (isPurchasing || purchaseOutcomeUncertain || purchaseLockedRef.current) return;
     purchaseLockedRef.current = true;
     onPurchase();
     window.setTimeout(() => {
       purchaseLockedRef.current = false;
     }, 5000);
-  }, [isPurchasing, onPurchase]);
+  }, [isPurchasing, purchaseOutcomeUncertain, onPurchase]);
 
   if (purchaseComplete) {
     return (
@@ -180,7 +182,13 @@ const ContrastPassPurchasePanel = ({
         <Button
           type="button"
           className="h-12 flex-1 rounded-none bg-[#F9ECD9] px-8 text-[#3B2712] hover:bg-[#F9ECD9]/90"
-          disabled={isLoadingProduct || isPurchasing || !productName || purchaseLockedRef.current}
+          disabled={
+            isLoadingProduct ||
+            isPurchasing ||
+            !productName ||
+            purchaseLockedRef.current ||
+            purchaseOutcomeUncertain
+          }
           onClick={handlePurchaseClick}
         >
           {isPurchasing ? (

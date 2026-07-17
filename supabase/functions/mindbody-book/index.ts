@@ -204,14 +204,31 @@ async function shouldFallThroughToCheckout(failure: {
   response: Response;
 }): Promise<boolean> {
   const status = failure.response.status;
-  if (status === 503 || status === 401) return false;
+  if (status === 503 || status === 401 || status === 409) return false;
 
   try {
     const body = await failure.response.clone().json();
     if (body.profileNotFound || body.requiresLogin) return false;
+    if (body.bookingOutcomeUncertain) return false;
     return true;
   } catch {
     return status >= 400 && status < 500;
+  }
+}
+
+/**
+ * Only release the retry lock when Mindbody definitively did not charge.
+ * Generic checkout and booking-conflict errors are ambiguous: Mindbody can
+ * create a sale or appointment before returning the error.
+ */
+async function shouldReleaseClaimAfterFailure(response: Response): Promise<boolean> {
+  try {
+    const body = await response.clone().json();
+    if (body.bookingOutcomeUncertain) return false;
+    if (!body.checkoutAttempted) return true;
+    return Boolean(body.noStoredCard || body.cardDeclined || body.siteScopeIssue);
+  } catch {
+    return false;
   }
 }
 
@@ -227,6 +244,7 @@ function checkoutFailureResponse(
         JSON.stringify({
           error:
             "No payment card is saved on your Mindbody account. Add a card using the link on this page, then confirm again.",
+          checkoutAttempted: true,
           paymentRequired: true,
           noStoredCard: true,
           noPassOnFile: true,
@@ -243,6 +261,7 @@ function checkoutFailureResponse(
         JSON.stringify({
           error:
             "We couldn't complete this booking in Mindbody. Add a payment card to your Mindbody account if you don't have one on file, then tap Confirm again — or email reception@rebaserecovery.com and we'll book you in.",
+          checkoutAttempted: true,
           paymentRequired: true,
           siteScopeIssue: true,
           noPassOnFile: true,
@@ -259,6 +278,7 @@ function checkoutFailureResponse(
         JSON.stringify({
           error:
             "Your card on file couldn't be charged. Update your card in your Mindbody account, then tap Confirm again — or email reception@rebaserecovery.com.",
+          checkoutAttempted: true,
           paymentRequired: true,
           cardDeclined: true,
           noPassOnFile: true,
@@ -268,12 +288,30 @@ function checkoutFailureResponse(
     };
   }
 
+  if (checkout.bookingConflict) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.",
+          checkoutAttempted: true,
+          bookingOutcomeUncertain: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+      ),
+    };
+  }
+
   return {
     ok: false,
     response: new Response(
       JSON.stringify({
         error:
-          "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
+          "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.",
+        checkoutAttempted: true,
+        bookingOutcomeUncertain: true,
         paymentRequired: true,
         noPassOnFile: true,
       }),
@@ -393,14 +431,18 @@ async function mindbodyPostWithRetry(
     return { ok: response.ok, status: response.status, message, data };
   };
 
+  // Keep this narrow — "time is not available" must NOT match as a payment error.
   const isPaymentError = (message: string) =>
-    /pricing option|payment|package|sessions remaining|insufficient|does not have a valid|unable to apply|no .*available|not paid|does not have/i
+    /pricing option|payment required|package|sessions remaining|insufficient credit|does not have a valid|unable to apply|not paid|no payment|no sessions remaining/i
       .test(message.toLowerCase());
 
   const isClientIdRetryable = (message: string) =>
     /site id does not match|custom id|does not exist|invalid client|cross.?regional/i.test(
       message.toLowerCase(),
     );
+  const isBookingConflict = (message: string) =>
+    /time is not available|already scheduled|scheduling restriction|maximum number of sessions/i
+      .test(message.toLowerCase());
 
   const consumerClientIds = [...new Set([clientId, publicClientId].filter(Boolean))];
 
@@ -474,6 +516,7 @@ async function mindbodyPostWithRetry(
     const { message, status } = bookResult ?? { message: "Booking failed", status: 400 };
     const paymentIssue = isPaymentError(message);
     const siteScopeIssue = /site id does not match/i.test(message.toLowerCase());
+    const bookingConflict = isBookingConflict(message);
 
     const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
     const hasPass = pickBookableClientServiceId(staffServices) != null;
@@ -497,6 +540,9 @@ async function mindbodyPostWithRetry(
     if (siteScopeIssue) {
       userMessage =
         "We couldn't complete this booking in Mindbody. Add a payment card to your Mindbody account if you don't have one on file, then tap Confirm again — or email reception@rebaserecovery.com and we'll book you in.";
+    } else if (bookingConflict) {
+      userMessage =
+        "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.";
     } else if (paymentIssue || !hasPass) {
       userMessage =
         "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.";
@@ -509,9 +555,10 @@ async function mindbodyPostWithRetry(
           error: userMessage,
           paymentRequired: paymentIssue || !hasPass,
           siteScopeIssue,
+          bookingOutcomeUncertain: bookingConflict,
           noPassOnFile: !hasPass,
         }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: bookingConflict ? 409 : 400 },
       ),
     };
   }
@@ -626,6 +673,25 @@ async function bookClassWithPayment(
         clientServiceId: passOnFile,
       };
     }
+    if (
+      await clientAlreadyBookedClass(
+        apiKey,
+        siteId,
+        staffToken,
+        clientId,
+        classId,
+        startDateTime,
+      )
+    ) {
+      console.warn(`Class ${classId} exists after pass booking error; treating as booked`);
+      return {
+        ok: true,
+        data: { Class: { Id: parseInt(classId, 10), StartDateTime: startDateTime } },
+        clientId,
+        payment: { method: "pass" as const },
+        clientServiceId: passOnFile,
+      };
+    }
     if (!(await shouldFallThroughToCheckout(booked))) {
       return booked;
     }
@@ -640,12 +706,12 @@ async function bookClassWithPayment(
       apiKey,
       siteId,
       staffToken,
-      publicClientId,
+      clientId,
       classId,
       startDateTime,
     )
   ) {
-    console.log(`Class ${classId} already booked in Mindbody for client ${publicClientId}`);
+    console.log(`Class ${classId} already booked in Mindbody for client ${clientId}`);
     return {
       ok: true,
       data: { Class: { Id: classIdNum, StartDateTime: startDateTime } },
@@ -727,6 +793,25 @@ async function bookClassWithPayment(
       data: checkout.data,
       clientId,
       payment: { method: "stored_card", amountGbp: amount },
+    };
+  }
+
+  if (
+    await clientAlreadyBookedClass(
+      apiKey,
+      siteId,
+      staffToken,
+      clientId,
+      classId,
+      startDateTime,
+    )
+  ) {
+    console.warn(`Class ${classId} exists despite checkout error; treating as booked`);
+    return {
+      ok: true,
+      data: { Class: { Id: classIdNum, StartDateTime: startDateTime } },
+      clientId,
+      payment: { method: "stored_card" as const, amountGbp: amount },
     };
   }
 
@@ -842,6 +927,28 @@ async function bookAppointmentWithPayment(
         clientServiceId: passOnFile,
       };
     }
+    if (
+      await clientAlreadyBookedAppointment(
+        apiKey,
+        siteId,
+        staffToken,
+        clientId,
+        sessionTypeId,
+        staffId,
+        startDateTime,
+      )
+    ) {
+      console.warn(
+        `Appointment ${sessionTypeId} exists after pass booking error; treating as booked`,
+      );
+      return {
+        ok: true,
+        data: { Appointment: { StartDateTime: startDateTime } },
+        clientId,
+        payment: { method: "pass" as const },
+        clientServiceId: passOnFile,
+      };
+    }
     if (!(await shouldFallThroughToCheckout(booked))) {
       return booked;
     }
@@ -859,14 +966,14 @@ async function bookAppointmentWithPayment(
       apiKey,
       siteId,
       staffToken,
-      publicClientId,
+      clientId,
       sessionTypeId,
       staffId,
       startDateTime,
     )
   ) {
     console.log(
-      `Appointment ${sessionTypeId} at ${startDateTime} already booked in Mindbody for client ${publicClientId}`,
+      `Appointment ${sessionTypeId} at ${startDateTime} already booked in Mindbody for client ${clientId}`,
     );
     return {
       ok: true,
@@ -962,6 +1069,28 @@ async function bookAppointmentWithPayment(
       data: checkout.data,
       clientId,
       payment: { method: "stored_card", amountGbp: amount },
+    };
+  }
+
+  if (
+    await clientAlreadyBookedAppointment(
+      apiKey,
+      siteId,
+      staffToken,
+      clientId,
+      sessionTypeId,
+      staffId,
+      startDateTime,
+    )
+  ) {
+    console.warn(
+      `Appointment ${sessionTypeId} exists despite checkout error; treating as booked`,
+    );
+    return {
+      ok: true,
+      data: { Appointment: { StartDateTime: startDateTime } },
+      clientId,
+      payment: { method: "stored_card" as const, amountGbp: amount },
     };
   }
 
@@ -1075,7 +1204,7 @@ serve(async (req) => {
             apiKey,
             siteId,
             staffToken,
-            session.mindbody_client_id,
+            siteClientId || session.mindbody_client_id,
             classId,
             slotStartDateTime,
           );
@@ -1084,7 +1213,7 @@ serve(async (req) => {
             apiKey,
             siteId,
             staffToken,
-            session.mindbody_client_id,
+            siteClientId || session.mindbody_client_id,
             sessionTypeId,
             staffId,
             slotStartDateTime,
@@ -1172,7 +1301,9 @@ serve(async (req) => {
         serviceName,
       );
       if (!result.ok) {
-        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+        if (await shouldReleaseClaimAfterFailure(result.response)) {
+          await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+        }
         return await returnBookingFailure(result.response, {
           session,
           profile: guestProfile,
@@ -1206,7 +1337,9 @@ serve(async (req) => {
         serviceName,
       );
       if (!result.ok) {
-        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+        if (await shouldReleaseClaimAfterFailure(result.response)) {
+          await releaseBookingClaim(supabaseAdmin, claimedBookingId);
+        }
         return await returnBookingFailure(result.response, {
           session,
           profile: guestProfile,
@@ -1348,9 +1481,8 @@ serve(async (req) => {
       }
     );
     } catch (bookingErr) {
-      if (claimedBookingId && !mindbodySucceeded) {
-        await releaseBookingClaim(supabaseAdmin, claimedBookingId);
-      }
+      // Do not release the claim on unexpected errors after entering Mindbody.
+      // A network/runtime failure may happen after Mindbody has charged or booked.
       throw bookingErr;
     }
   } catch (error) {

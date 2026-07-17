@@ -12,8 +12,6 @@ import { formatMembershipPrice } from '@/config/membershipPlans';
 import {
   getActiveMembershipCheckoutLock,
   getMembershipCheckoutLock,
-  msUntilCheckoutRetryAllowed,
-  clearMembershipCheckoutLock,
   tryClaimMembershipCheckout,
 } from '@/lib/membershipCheckoutGuard';
 import { ownsMembershipPlan } from '@/lib/membershipOwnership';
@@ -42,51 +40,30 @@ const MembershipPurchasePanel = ({
   const accountUrl = mindbodyClientAccountUrl();
   const checkoutInFlightRef = useRef(false);
   const [checkoutOpened, setCheckoutOpened] = useState(false);
-  const [retryCooldownMs, setRetryCooldownMs] = useState(0);
 
   const sessionId = mbSession?.sessionId;
   const alreadyOwnsPlan = ownsMembershipPlan(membershipData, plan.id);
 
-  const syncLockState = useCallback(() => {
+  useEffect(() => {
     if (!sessionId) return;
-    const lock = getMembershipCheckoutLock(sessionId, plan.id);
-    setCheckoutOpened(Boolean(lock));
-    setRetryCooldownMs(msUntilCheckoutRetryAllowed(lock));
+    setCheckoutOpened(Boolean(getMembershipCheckoutLock(sessionId, plan.id)));
   }, [sessionId, plan.id]);
 
-  useEffect(() => {
-    syncLockState();
-  }, [syncLockState]);
-
-  useEffect(() => {
-    if (!checkoutOpened || retryCooldownMs <= 0) return;
-    const timer = window.setInterval(() => {
-      if (!sessionId) return;
-      const lock = getMembershipCheckoutLock(sessionId, plan.id);
-      setRetryCooldownMs(msUntilCheckoutRetryAllowed(lock));
-    }, 1000);
-    return () => window.clearInterval(timer);
-  }, [checkoutOpened, retryCooldownMs, sessionId, plan.id]);
-
   const openCheckoutOnce = useCallback(
-    (options?: { forceRetry?: boolean }) => {
+    () => {
       if (!plan.monthlyCheckoutUrl || !sessionId) return false;
       if (checkoutInFlightRef.current) return false;
       if (alreadyOwnsPlan) return false;
 
-      if (options?.forceRetry) {
-        clearMembershipCheckoutLock(sessionId, plan.id);
-      } else {
-        const existing = getMembershipCheckoutLock(sessionId, plan.id);
-        if (existing) {
-          setCheckoutOpened(true);
-          return false;
-        }
+      const existing = getMembershipCheckoutLock(sessionId, plan.id);
+      if (existing) {
+        setCheckoutOpened(true);
+        return false;
+      }
 
-        const global = getActiveMembershipCheckoutLock(sessionId);
-        if (global && global.planId !== plan.id) {
-          return false;
-        }
+      const global = getActiveMembershipCheckoutLock(sessionId);
+      if (global && global.planId !== plan.id) {
+        return false;
       }
 
       checkoutInFlightRef.current = true;
@@ -99,7 +76,6 @@ const MembershipPurchasePanel = ({
 
       openMindbodyExternalUrl(plan.monthlyCheckoutUrl);
       setCheckoutOpened(true);
-      setRetryCooldownMs(msUntilCheckoutRetryAllowed(getMembershipCheckoutLock(sessionId, plan.id)));
 
       window.setTimeout(() => {
         checkoutInFlightRef.current = false;
@@ -205,21 +181,9 @@ const MembershipPurchasePanel = ({
           monthly {plan.name} subscription in the Mindbody window only. Tapping again can open another
           checkout and charge you twice.
         </p>
-        {retryCooldownMs > 0 ? (
-          <p className="text-[10px] text-[#F9ECD9]/45 text-center">
-            Retry available in {Math.ceil(retryCooldownMs / 1000)}s if the window didn&apos;t open
-          </p>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            className="h-9 w-full rounded-none border-[#F9ECD9]/20 bg-transparent text-[#F9ECD9]/70 hover:bg-[#F9ECD9]/5 text-[10px] uppercase tracking-[0.12em]"
-            disabled={checkoutInFlightRef.current}
-            onClick={() => openCheckoutOnce({ forceRetry: true })}
-          >
-            Checkout didn&apos;t open? Try once more
-          </Button>
-        )}
+        <p className="text-[10px] text-[#F9ECD9]/45 text-center">
+          If the checkout did not open, contact reception before trying again.
+        </p>
       </div>
     );
   }

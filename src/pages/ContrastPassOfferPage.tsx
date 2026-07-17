@@ -28,6 +28,7 @@ const ContrastPassOfferPage = () => {
 
   const [purchaseComplete, setPurchaseComplete] = useState(false);
   const [purchaseError, setPurchaseError] = useState<string | null>(null);
+  const [purchaseOutcomeUncertain, setPurchaseOutcomeUncertain] = useState(false);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
   const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
 
@@ -38,7 +39,13 @@ const ContrastPassOfferPage = () => {
   }, [isAuthenticated, mbSession?.sessionId]);
 
   const handlePurchase = async () => {
-    if (!product?.id || purchaseComplete || purchaseInFlightRef.current || purchaseMutation.isPending) {
+    if (
+      !product?.id ||
+      purchaseComplete ||
+      purchaseOutcomeUncertain ||
+      purchaseInFlightRef.current ||
+      purchaseMutation.isPending
+    ) {
       if (!product?.id) {
         toast.error('Pass is not available right now. Please try again shortly.');
       }
@@ -48,6 +55,7 @@ const ContrastPassOfferPage = () => {
     purchaseInFlightRef.current = true;
 
     setPurchaseError(null);
+    setPurchaseOutcomeUncertain(false);
     setCardSetupRetryHint(null);
     if (!needsCardOnFile) {
       setNeedsCardOnFile(false);
@@ -68,6 +76,7 @@ const ContrastPassOfferPage = () => {
           }
           setNeedsCardOnFile(true);
           setPurchaseError(null);
+          setPurchaseOutcomeUncertain(false);
           if (needsCardOnFile) {
             setCardSetupRetryHint(
               "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
@@ -82,12 +91,14 @@ const ContrastPassOfferPage = () => {
         setCardSetupRetryHint(null);
         clearSessionNeedsPaymentCard();
         setPurchaseError(error.message);
+        setPurchaseOutcomeUncertain(Boolean(error.flags.purchaseOutcomeUncertain));
         if (error.flags.requiresLogin) {
           login();
         }
         return;
       }
       setPurchaseError(error instanceof Error ? error.message : 'Purchase failed. Please try again.');
+      setPurchaseOutcomeUncertain(false);
     }
   };
 
@@ -158,6 +169,7 @@ const ContrastPassOfferPage = () => {
                   isPurchasing={purchaseMutation.isPending}
                   purchaseComplete={purchaseComplete}
                   error={purchaseError}
+                  purchaseOutcomeUncertain={purchaseOutcomeUncertain}
                   needsCardOnFile={needsCardOnFile}
                   cardSetupRetryHint={cardSetupRetryHint}
                   onSignIn={() => login()}

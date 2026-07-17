@@ -95,6 +95,7 @@ const BookingDrawer = ({
   const { isAuthenticated, login, logout, refreshMbSession, mindbodySignUpUrl, mbSession } = useAuth();
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
+  const [bookingOutcomeUncertain, setBookingOutcomeUncertain] = useState(false);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
   const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
   const accountUrl = mindbodyClientAccountUrl();
@@ -123,6 +124,7 @@ const BookingDrawer = ({
         setIsSubmitting(false);
         setBookingError(null);
         setBookingErrorRequiresSignIn(false);
+        setBookingOutcomeUncertain(false);
         setNeedsCardOnFile(false);
         setCardSetupRetryHint(null);
         restoredAppointmentRef.current = null;
@@ -197,12 +199,14 @@ const BookingDrawer = ({
     setCurrentStep(resumeAppointment.currentStep);
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
   }, [open, resumeAppointment, isClassBooking, service]);
 
   const startSignInForBooking = () => {
     stashBookingProgress();
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     logout();
     login({ clearSession: true });
   };
@@ -211,6 +215,7 @@ const BookingDrawer = ({
     stashBookingProgress();
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     const url = mindbodySignUpUrl || resolveMindbodySignUpUrl();
     openMindbodyExternalUrl(url);
   };
@@ -322,6 +327,7 @@ const BookingDrawer = ({
     if (isAuthenticated) {
       setBookingError(null);
       setBookingErrorRequiresSignIn(false);
+      setBookingOutcomeUncertain(false);
     }
   }, [isAuthenticated]);
 
@@ -345,6 +351,7 @@ const BookingDrawer = ({
     setIsSubmitting(true);
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
     setCardSetupRetryHint(null);
     if (!needsCardOnFile) {
       setNeedsCardOnFile(false);
@@ -384,6 +391,7 @@ const BookingDrawer = ({
           setNeedsCardOnFile(true);
           setBookingError(null);
           setBookingErrorRequiresSignIn(false);
+          setBookingOutcomeUncertain(false);
           if (needsCardOnFile) {
             setCardSetupRetryHint(
               "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
@@ -396,6 +404,7 @@ const BookingDrawer = ({
         clearSessionNeedsPaymentCard();
         setBookingError(error.message);
         setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
+        setBookingOutcomeUncertain(Boolean(error.flags.bookingOutcomeUncertain));
         return;
       }
       const classified = classifyBookingError(
@@ -403,6 +412,7 @@ const BookingDrawer = ({
       );
       setBookingError(classified.message);
       setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
+      setBookingOutcomeUncertain(false);
       if (classified.kind === 'slot_taken') {
         queryClient.invalidateQueries({ queryKey: ['mindbody-availability'] });
         setSelectedSlot(null);
@@ -706,6 +716,7 @@ const BookingDrawer = ({
                         onChangeTime={() => {
                           setBookingError(null);
                           setBookingErrorRequiresSignIn(false);
+                          setBookingOutcomeUncertain(false);
                           setNeedsCardOnFile(false);
                           setCardSetupRetryHint(null);
                           setCurrentStep(timeStep);
@@ -719,6 +730,7 @@ const BookingDrawer = ({
                         isPending={isBooking}
                         bookingError={bookingError}
                         bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
+                        bookingOutcomeUncertain={bookingOutcomeUncertain}
                         onCreateAccount={startCreateAccountForBooking}
                         needsCardOnFile={needsCardOnFile}
                         accountUrl={accountUrl}

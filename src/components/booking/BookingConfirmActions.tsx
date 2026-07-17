@@ -15,6 +15,8 @@ interface BookingConfirmActionsProps {
   changeTimeLabel?: string;
   bookingError?: string | null;
   bookingErrorRequiresSignIn?: boolean;
+  /** Mindbody may have charged — hide Confirm retry */
+  bookingOutcomeUncertain?: boolean;
   checkoutSummary?: BookingCheckoutSummary | null;
   onCreateAccount?: () => void;
   needsCardOnFile?: boolean;
@@ -31,6 +33,7 @@ const BookingConfirmActions = ({
   changeTimeLabel = 'Change Time',
   bookingError,
   bookingErrorRequiresSignIn = false,
+  bookingOutcomeUncertain = false,
   checkoutSummary = null,
   onCreateAccount,
   needsCardOnFile = false,
@@ -110,14 +113,30 @@ const BookingConfirmActions = ({
 
       {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !showCardSetup && (
         <p className="text-sm text-muted-foreground">
-          Tap <span className="font-medium text-foreground">{confirmLabel}</span> to try again, or email{' '}
-          <a
-            href="mailto:reception@rebaserecovery.com"
-            className="font-medium text-foreground underline underline-offset-2"
-          >
-            reception@rebaserecovery.com
-          </a>
-          .
+          {bookingOutcomeUncertain ? (
+            <>
+              Please do not tap Confirm again. Email{' '}
+              <a
+                href="mailto:reception@rebaserecovery.com"
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                reception@rebaserecovery.com
+              </a>{' '}
+              so we can check whether payment already went through.
+            </>
+          ) : (
+            <>
+              Tap <span className="font-medium text-foreground">{confirmLabel}</span> to try again, or
+              email{' '}
+              <a
+                href="mailto:reception@rebaserecovery.com"
+                className="font-medium text-foreground underline underline-offset-2"
+              >
+                reception@rebaserecovery.com
+              </a>
+              .
+            </>
+          )}
         </p>
       )}
 
@@ -134,7 +153,7 @@ const BookingConfirmActions = ({
           <Button
             type="button"
             onClick={handleConfirmClick}
-            disabled={isPending}
+            disabled={isPending || bookingOutcomeUncertain}
             aria-busy={isPending}
             className="w-full sm:flex-1 min-h-11"
           >
