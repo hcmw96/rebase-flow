@@ -178,6 +178,13 @@ export async function fetchSaleServicesForSessionType(
 
 export type CheckoutFailureFlags = {
   noStoredCard?: boolean;
+  /**
+   * Mindbody could not locate the client's saved card *right now*. This is a
+   * pre-charge validation error (no payment is attempted), and for cross-studio
+   * "roaming" clients it is often transient — the same checkout succeeds minutes
+   * later. Safe to retry without any double-charge risk.
+   */
+  storedCardUnavailable?: boolean;
   siteScopeIssue?: boolean;
   cardDeclined?: boolean;
   bookingConflict?: boolean;
@@ -187,13 +194,25 @@ export type CheckoutResult =
   | { ok: true; data: Record<string, unknown> }
   | ({ ok: false; message: string } & CheckoutFailureFlags);
 
+/**
+ * The exact Mindbody message when the stored-card lookup misses. Kept narrow so
+ * we only auto-retry the pre-charge case (Mindbody never attempts payment when
+ * it can't find a card, so retrying cannot double-charge).
+ */
+const STORED_CARD_UNAVAILABLE = /stored card can\s?not be found|stored card cannot be found|no stored card (?:on file|found)/i;
+
 /** Classify Mindbody checkout error text for user messaging and UI routing. */
 export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
   const lower = message.toLowerCase();
+  const storedCardUnavailable = STORED_CARD_UNAVAILABLE.test(lower);
   return {
+    // A card-holding client hitting the transient lookup miss must NOT be told
+    // "no card on file"; keep that reserved for genuine missing-payment phrasing.
     noStoredCard:
-      /stored card|no card|card on file|payment method|credit card|billing|no payment instrument|does not have a payment|no default card/i
+      !storedCardUnavailable &&
+      /no card|card on file|payment method|credit card|billing|no payment instrument|does not have a payment|no default card/i
         .test(lower),
+    storedCardUnavailable,
     siteScopeIssue:
       /site id does not match|user token site id|custom id|cross.?regional|invalid client|does not exist/i.test(
         lower,
@@ -294,27 +313,50 @@ export async function checkoutWithStoredCard(
     ],
   };
 
-  const res = await fetch("https://api.mindbodyonline.com/public/v6/sale/checkoutshoppingcart", {
-    method: "POST",
-    headers: headers(apiKey, siteId, bearerToken),
-    body: JSON.stringify(body),
-  });
+  // The stored-card lookup miss is a pre-charge validation error and is often
+  // transient for cross-studio clients, so retry it a few times in-request.
+  // Any other failure returns immediately (never retried — could double-charge).
+  const MAX_ATTEMPTS = 3;
+  let lastFailure: ({ message: string } & CheckoutFailureFlags) | null = null;
 
-  const raw = await res.text();
-  let data: Record<string, unknown> = {};
-  try {
-    data = raw ? JSON.parse(raw) : {};
-  } catch {
-    /* ignore */
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const res = await fetch("https://api.mindbodyonline.com/public/v6/sale/checkoutshoppingcart", {
+      method: "POST",
+      headers: headers(apiKey, siteId, bearerToken),
+      body: JSON.stringify(body),
+    });
+
+    const raw = await res.text();
+    let data: Record<string, unknown> = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      /* ignore */
+    }
+
+    if (res.ok) {
+      return { ok: true, data };
+    }
+
+    lastFailure = parseCheckoutFailure(res, raw, data);
+
+    if (lastFailure.storedCardUnavailable && attempt < MAX_ATTEMPTS) {
+      console.warn(
+        `checkoutshoppingcart stored-card lookup miss (attempt ${attempt}/${MAX_ATTEMPTS}); retrying`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
+      continue;
+    }
+
+    console.warn("checkoutshoppingcart failed:", res.status, lastFailure.message.slice(0, 300));
+    return { ok: false, ...lastFailure };
   }
 
-  if (res.ok) {
-    return { ok: true, data };
-  }
-
-  const failure = parseCheckoutFailure(res, raw, data);
-  console.warn("checkoutshoppingcart failed:", res.status, failure.message.slice(0, 300));
-  return { ok: false, ...failure };
+  return {
+    ok: false,
+    message: lastFailure?.message ?? "Checkout failed",
+    ...(lastFailure ?? {}),
+  };
 }
 
 /** Charge stored card and book the class in one checkout. */

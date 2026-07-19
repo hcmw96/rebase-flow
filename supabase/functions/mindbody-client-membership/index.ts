@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { resolveSiteClientId } from "../_shared/mindbodyClientResolve.ts";
+import { resolveSiteClientId, type ClientProfile } from "../_shared/mindbodyClientResolve.ts";
+import { fetchMindbodyClientProfile, fetchOidcUserInfo } from "../_shared/mindbodyClientProfile.ts";
 import { getStaffToken } from "../_shared/mindbodyStaff.ts";
 
 const corsHeaders = {
@@ -37,7 +38,9 @@ serve(async (req) => {
 
     const { data: session, error: sessionError } = await supabase
       .from("mb_sessions")
-      .select("id, mindbody_client_id")
+      .select(
+        "id, mindbody_client_id, mindbody_site_client_id, access_token, email, first_name, last_name",
+      )
       .eq("id", sessionId)
       .single();
 
@@ -69,8 +72,43 @@ serve(async (req) => {
     const publicClientId = session.mindbody_client_id;
     const now = new Date();
 
-    let clientId =
-      (await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken)) ?? publicClientId;
+    // Build the client profile (email drives resolution) so cross-regional
+    // members resolve to their numeric site id — otherwise every lookup below
+    // 400s on the raw OAuth id and the member wrongly appears to have no pass.
+    let email = (session.email as string | null) ?? undefined;
+    let firstName = (session.first_name as string | null) ?? undefined;
+    let lastName = (session.last_name as string | null) ?? undefined;
+    const accessToken = session.access_token as string | null;
+    if ((!email || !firstName) && accessToken) {
+      const oidc = await fetchOidcUserInfo(accessToken);
+      if (oidc) {
+        email = email ?? oidc.email;
+        firstName = firstName ?? oidc.given_name;
+        lastName = lastName ?? oidc.family_name;
+      }
+      const fetched = await fetchMindbodyClientProfile(publicClientId, accessToken, apiKey, siteId);
+      if (fetched) {
+        email = email ?? fetched.email;
+        firstName = firstName ?? fetched.firstName;
+        lastName = lastName ?? fetched.lastName;
+      }
+    }
+    const profile: ClientProfile = { email, firstName, lastName };
+
+    const cachedSiteClientId =
+      (session.mindbody_site_client_id as string | null)?.trim() || null;
+    const resolvedSiteClientId = cachedSiteClientId ??
+      (await resolveSiteClientId(publicClientId, apiKey, siteId, staffToken, profile));
+    if (resolvedSiteClientId && resolvedSiteClientId !== cachedSiteClientId) {
+      await supabase
+        .from("mb_sessions")
+        .update({
+          mindbody_site_client_id: resolvedSiteClientId,
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", session.id);
+    }
+    let clientId = resolvedSiteClientId ?? publicClientId;
     let membershipIcon: number | null = null;
     try {
       const r = await fetch(

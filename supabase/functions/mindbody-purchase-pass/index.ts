@@ -324,21 +324,29 @@ serve(async (req) => {
     );
 
     if (!checkout.ok) {
+      // storedCardUnavailable is a pre-charge lookup miss (no payment attempted),
+      // so it is safe to release the claim and let the guest retry.
       const definitiveFailure = Boolean(
-        checkout.noStoredCard || checkout.cardDeclined || checkout.siteScopeIssue,
+        checkout.noStoredCard ||
+          checkout.storedCardUnavailable ||
+          checkout.cardDeclined ||
+          checkout.siteScopeIssue,
       );
       if (definitiveFailure) {
         await releasePurchaseClaim(supabaseAdmin, claimedPurchaseId);
       }
       const response = new Response(
         JSON.stringify({
-          error: checkout.noStoredCard
+          error: checkout.storedCardUnavailable
+            ? "We couldn't reach your saved card just now — no payment was taken. If you have a card on your Mindbody account, wait a moment and tap again. If you haven't added one yet, use the card link below first. Still stuck? Email reception@rebaserecovery.com."
+            : checkout.noStoredCard
             ? "No payment card is saved on your Mindbody account. Add a card using the link below, then try again."
             : definitiveFailure
             ? checkout.message
             : "Mindbody couldn't confirm this purchase after processing it. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.",
           paymentRequired: true,
           noStoredCard: checkout.noStoredCard,
+          storedCardUnavailable: checkout.storedCardUnavailable,
           purchaseOutcomeUncertain: !definitiveFailure,
         }),
         {

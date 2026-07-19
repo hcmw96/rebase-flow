@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
 import { formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange } from '@/lib/sessionTimes';
 import { Calendar, CheckCircle, Clock, MapPin, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';

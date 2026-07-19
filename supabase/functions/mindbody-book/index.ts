@@ -226,7 +226,12 @@ async function shouldReleaseClaimAfterFailure(response: Response): Promise<boole
     const body = await response.clone().json();
     if (body.bookingOutcomeUncertain) return false;
     if (!body.checkoutAttempted) return true;
-    return Boolean(body.noStoredCard || body.cardDeclined || body.siteScopeIssue);
+    return Boolean(
+      body.noStoredCard ||
+        body.storedCardUnavailable ||
+        body.cardDeclined ||
+        body.siteScopeIssue,
+    );
   } catch {
     return false;
   }
@@ -236,6 +241,23 @@ function checkoutFailureResponse(
   checkout: Extract<CheckoutResult, { ok: false }>,
 ): { ok: false; response: Response } {
   console.error("Stored-card checkout failed:", checkout.message);
+
+  if (checkout.storedCardUnavailable) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't reach your saved card just now — no payment was taken. If you have a card on your Mindbody account, wait a moment and tap Confirm again. If you haven't added one yet, use the card link on this page first. Still stuck? Email reception@rebaserecovery.com and we'll book you in.",
+          checkoutAttempted: true,
+          paymentRequired: true,
+          storedCardUnavailable: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
 
   if (checkout.noStoredCard) {
     return {
