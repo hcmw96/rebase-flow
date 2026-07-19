@@ -15,7 +15,7 @@ import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Loader2, Check, Mail } from 'lucide-react';
-import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
+import { useMindbodyAvailability, AvailableItem, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useQueryClient } from '@tanstack/react-query';
@@ -54,6 +54,7 @@ interface BookingDrawerProps {
   service: BookingServiceData | null;
   onSwitchService?: (serviceName: string) => void;
   resumeClassId?: string;
+  resumeClass?: MindbodyClass;
   resumeAppointment?: PendingAppointmentState;
 }
 
@@ -90,6 +91,7 @@ const BookingDrawer = ({
   service,
   onSwitchService,
   resumeClassId,
+  resumeClass,
   resumeAppointment,
 }: BookingDrawerProps) => {
   const { isAuthenticated, login, logout, refreshMbSession, mindbodySignUpUrl, mbSession } = useAuth();
@@ -527,6 +529,7 @@ const BookingDrawer = ({
                 className={serviceDisplayName}
                 onClose={onClose}
                 resumeClassId={resumeClassId}
+                resumeClass={resumeClass}
                 bookingService={service}
               />
             ) : isFullContactOnly && !hasVariants ? (

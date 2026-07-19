@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { useResumePendingBooking } from "@/hooks/useResumePendingBooking";
 import type { PendingAppointmentState } from "@/lib/bookingResume";
 import { clearPendingBooking } from "@/lib/bookingResume";
+import type { MindbodyClass } from "@/hooks/useMindbodyServices";
 import Navigation from "@/components/Navigation";
 import Footer from "@/components/Footer";
 import Hero from "@/components/Hero";
@@ -18,18 +19,23 @@ const Index = () => {
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+  const [resumeClass, setResumeClass] = useState<MindbodyClass | undefined>();
   const [resumeAppointment, setResumeAppointment] = useState<PendingAppointmentState | undefined>();
 
   useResumePendingBooking(
     useCallback((pending) => {
       setBookingService(pending.service);
       setResumeClassId(pending.selectedClassId);
+      setResumeClass(pending.selectedClass);
       setResumeAppointment(pending.appointment);
       setDrawerOpen(true);
     }, []),
   );
 
   const handleSelectService = useCallback((service: BookingServiceData) => {
+    setResumeClassId(undefined);
+    setResumeClass(undefined);
+    setResumeAppointment(undefined);
     setBookingService(service);
     setDrawerOpen(true);
   }, []);
@@ -37,6 +43,7 @@ const Index = () => {
   const handleCloseDrawer = useCallback(() => {
     setDrawerOpen(false);
     setResumeClassId(undefined);
+    setResumeClass(undefined);
     setResumeAppointment(undefined);
     clearPendingBooking();
     // Clear after close animation so availability queries fully disable.
@@ -63,6 +70,7 @@ const Index = () => {
         onClose={handleCloseDrawer}
         service={bookingService}
         resumeClassId={resumeClassId}
+        resumeClass={resumeClass}
         resumeAppointment={resumeAppointment}
         onSwitchService={() => {
           setDrawerOpen(false);

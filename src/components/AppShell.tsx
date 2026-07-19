@@ -14,6 +14,7 @@ import type { ClassBookingOptions } from '@/components/ClassSchedule';
 import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
 import type { PendingAppointmentState } from '@/lib/bookingResume';
 import { clearPendingBooking } from '@/lib/bookingResume';
+import type { MindbodyClass } from '@/hooks/useMindbodyServices';
 
 type Tab = 'home' | 'services' | 'bookings' | 'account';
 
@@ -30,12 +31,14 @@ const AppShell = () => {
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+  const [resumeClass, setResumeClass] = useState<MindbodyClass | undefined>();
   const [resumeAppointment, setResumeAppointment] = useState<PendingAppointmentState | undefined>();
 
   useResumePendingBooking(
     useCallback((pending) => {
       setBookingService(pending.service);
       setResumeClassId(pending.selectedClassId);
+      setResumeClass(pending.selectedClass);
       setResumeAppointment(pending.appointment);
       setDrawerOpen(true);
     }, []),
@@ -45,6 +48,7 @@ const AppShell = () => {
     (service: BookingServiceData, options?: ClassBookingOptions) => {
       setBookingService(service);
       setResumeClassId(options?.resumeClassId);
+      setResumeClass(undefined);
       setDrawerOpen(true);
     },
     [],
@@ -53,6 +57,7 @@ const AppShell = () => {
   const handleCloseDrawer = useCallback(() => {
     setDrawerOpen(false);
     setResumeClassId(undefined);
+    setResumeClass(undefined);
     setResumeAppointment(undefined);
     clearPendingBooking();
     window.setTimeout(() => setBookingService(null), 350);
@@ -147,6 +152,7 @@ const AppShell = () => {
         onClose={handleCloseDrawer}
         service={bookingService}
         resumeClassId={resumeClassId}
+        resumeClass={resumeClass}
         resumeAppointment={resumeAppointment}
         onSwitchService={() => {
           setDrawerOpen(false);

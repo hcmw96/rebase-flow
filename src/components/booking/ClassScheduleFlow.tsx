@@ -116,6 +116,7 @@ interface ClassScheduleFlowProps {
   className: string;
   onClose: () => void;
   resumeClassId?: string;
+  resumeClass?: MindbodyClass;
   bookingService?: BookingServiceData;
 }
 
@@ -124,6 +125,7 @@ const ClassScheduleFlow = ({
   className: clsName,
   onClose,
   resumeClassId,
+  resumeClass,
   bookingService,
 }: ClassScheduleFlowProps) => {
   const { isAuthenticated, login, logout, refreshMbSession, mbSession, mindbodySignUpUrl } = useAuth();
@@ -254,14 +256,27 @@ const ClassScheduleFlow = ({
     setCurrentStep(2);
   };
 
+  const resumeAppliedRef = useRef(false);
   useEffect(() => {
+    if (resumeAppliedRef.current) return;
+
+    // Prefer the stashed class snapshot so sign-in returns straight to Confirm
+    // without waiting for (or depending on) the live class list to reload.
+    if (resumeClass && (!resumeClassId || resumeClass.id === resumeClassId)) {
+      resumeAppliedRef.current = true;
+      setSelectedClass(resumeClass);
+      setCurrentStep(2);
+      return;
+    }
+
     if (!resumeClassId || filteredClasses.length === 0) return;
     const match = filteredClasses.find((c) => c.id === resumeClassId);
     if (match) {
+      resumeAppliedRef.current = true;
       setSelectedClass(match);
       setCurrentStep(2);
     }
-  }, [resumeClassId, filteredClasses]);
+  }, [resumeClass, resumeClassId, filteredClasses]);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -286,6 +301,7 @@ const ClassScheduleFlow = ({
     if (bookingService) {
       stashPendingBooking(bookingService, {
         selectedClassId: target?.id,
+        selectedClass: target ?? undefined,
       });
     }
     setBookingError(null);
@@ -300,6 +316,7 @@ const ClassScheduleFlow = ({
     if (bookingService) {
       stashPendingBooking(bookingService, {
         selectedClassId: target?.id,
+        selectedClass: target ?? undefined,
       });
     }
     setBookingError(null);

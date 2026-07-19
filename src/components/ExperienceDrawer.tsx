@@ -2,6 +2,7 @@ import { useMemo, useState, useCallback } from 'react';
 import { useResumePendingBooking } from '@/hooks/useResumePendingBooking';
 import type { PendingBooking, PendingAppointmentState } from '@/lib/bookingResume';
 import { clearPendingBooking } from '@/lib/bookingResume';
+import type { MindbodyClass } from '@/hooks/useMindbodyServices';
 import { ImageCardScrim, ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { motion } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Clock } from 'lucide-react';
@@ -54,11 +55,13 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [bookingOpen, setBookingOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();
+  const [resumeClass, setResumeClass] = useState<MindbodyClass | undefined>();
   const [resumeAppointment, setResumeAppointment] = useState<PendingAppointmentState | undefined>();
 
   const handleResumeBooking = useCallback((pending: PendingBooking) => {
     setBookingService(pending.service);
     setResumeClassId(pending.selectedClassId);
+    setResumeClass(pending.selectedClass);
     setResumeAppointment(pending.appointment);
     setBookingOpen(true);
   }, []);
@@ -170,6 +173,9 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   };
 
   const handleSelectService = (service: GroupedService) => {
+    setResumeClassId(undefined);
+    setResumeClass(undefined);
+    setResumeAppointment(undefined);
     const displayName = resolveDisplayName(service.baseName);
     setBookingService({
       title: displayName,
@@ -184,6 +190,9 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   };
 
   const handleSelectClass = (cls: typeof classOfferings[0]) => {
+    setResumeClassId(undefined);
+    setResumeClass(undefined);
+    setResumeAppointment(undefined);
     setBookingService({
       title: resolveDisplayName(cls.name),
       description: cls.description,
@@ -329,12 +338,14 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
         onClose={() => {
           setBookingOpen(false);
           setResumeClassId(undefined);
+          setResumeClass(undefined);
           setResumeAppointment(undefined);
           clearPendingBooking();
           window.setTimeout(() => setBookingService(null), 350);
         }}
         service={bookingService}
         resumeClassId={resumeClassId}
+        resumeClass={resumeClass}
         resumeAppointment={resumeAppointment}
       />
     </>

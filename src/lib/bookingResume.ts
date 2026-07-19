@@ -1,5 +1,5 @@
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
-import type { AvailableItem } from '@/hooks/useMindbodyServices';
+import type { AvailableItem, MindbodyClass } from '@/hooks/useMindbodyServices';
 
 const STORAGE_KEY = 'rebase_pending_booking';
 const LOCAL_BACKUP_KEY = 'rebase_pending_booking_backup';
@@ -21,6 +21,8 @@ export interface PendingBooking {
   hash: string;
   service: BookingServiceData;
   selectedClassId?: string;
+  /** Full snapshot of the chosen class so sign-in returns straight to Confirm. */
+  selectedClass?: MindbodyClass;
   appointment?: PendingAppointmentState;
 }
 
@@ -93,6 +95,7 @@ export function stashPendingBooking(
   service: BookingServiceData,
   options?: {
     selectedClassId?: string;
+    selectedClass?: MindbodyClass;
     appointment?: PendingAppointmentState;
     pathname?: string;
     hash?: string;
@@ -104,6 +107,7 @@ export function stashPendingBooking(
     hash: options?.hash ?? window.location.hash,
     service,
     selectedClassId: options?.selectedClassId,
+    selectedClass: options?.selectedClass,
     appointment: options?.appointment,
   };
   try {
