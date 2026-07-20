@@ -53,6 +53,15 @@ function resolveDateRange(startDate: string, endDate?: string | null): { start: 
   return { start, end: toMindbodyEnd(endDate) };
 }
 
+/** How often a booking can start within a free window (studio books in 15-min steps). */
+const SLOT_START_INTERVAL_MINUTES = 15;
+
+/**
+ * Slice a Mindbody availability window into discrete bookable starts.
+ * Session length still decides how long each booking occupies; starts advance
+ * every 15 minutes so a free afternoon after a 75-min HBOT isn't thinned to
+ * one option every 75 minutes.
+ */
 function generateTimeSlots(availability: any): any[] {
   const slots: any[] = [];
   const sessionLength = availability.SessionType?.DefaultTimeLength || 60;
@@ -60,10 +69,12 @@ function generateTimeSlots(availability: any): any[] {
   const bookableEndTime = parseMindbodyLocalDateTime(
     availability.BookableEndDateTime || availability.EndDateTime,
   );
+  const stepMs = SLOT_START_INTERVAL_MINUTES * 60 * 1000;
+  const sessionMs = sessionLength * 60 * 1000;
 
   let slotStart = new Date(startTime);
   while (slotStart < bookableEndTime) {
-    const slotEnd = new Date(slotStart.getTime() + sessionLength * 60 * 1000);
+    const slotEnd = new Date(slotStart.getTime() + sessionMs);
     if (slotEnd <= bookableEndTime) {
       slots.push({
         id: `${availability.Id}-${slotStart.toISOString()}`,
@@ -79,7 +90,7 @@ function generateTimeSlots(availability: any): any[] {
         endDateTime: slotEnd.toISOString(),
       });
     }
-    slotStart = slotEnd;
+    slotStart = new Date(slotStart.getTime() + stepMs);
   }
   return slots;
 }
