@@ -122,12 +122,12 @@ const AccountPage = () => {
           <Button
             type="button"
             variant="outline"
-            className="w-full border-black/10 text-black/70 hover:bg-white/60"
+            className="w-full border-black/15 bg-white text-black/80 hover:bg-black/[0.04] hover:text-black hover:border-black/25"
             onClick={openMindbodyClientAccount}
           >
-            <CreditCard className="h-4 w-4 mr-2 shrink-0" aria-hidden />
+            <CreditCard className="h-4 w-4 mr-2 shrink-0 text-black/60" aria-hidden />
             Payment & profile on Mindbody
-            <ExternalLink className="h-4 w-4 ml-auto shrink-0 text-black/30" aria-hidden />
+            <ExternalLink className="h-4 w-4 ml-auto shrink-0 text-black/40" aria-hidden />
           </Button>
         </div>
       </motion.div>
