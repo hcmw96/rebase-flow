@@ -185,6 +185,8 @@ export type CheckoutFailureFlags = {
    * later. Safe to retry without any double-charge risk.
    */
   storedCardUnavailable?: boolean;
+  /** Listed price didn't match Mindbody cart total (e.g. member discount). Pre-charge. */
+  paymentAmountMismatch?: boolean;
   siteScopeIssue?: boolean;
   cardDeclined?: boolean;
   bookingConflict?: boolean;
@@ -213,6 +215,9 @@ export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
       /no card|card on file|payment method|credit card|billing|no payment instrument|does not have a payment|no default card/i
         .test(lower),
     storedCardUnavailable,
+    paymentAmountMismatch:
+      /payment total.*does not match the calculated total|does not match the calculated total/i
+        .test(lower),
     siteScopeIssue:
       /site id does not match|user token site id|custom id|cross.?regional|invalid client|does not exist/i.test(
         lower,
@@ -266,6 +271,20 @@ function parseCheckoutFailure(
   return { message, ...classifyCheckoutFailure(message) };
 }
 
+function parseCalculatedCartTotal(message: string): number | null {
+  const match = message.match(
+    /calculated total\s*\((\d+(?:\.\d+)?)\)/i,
+  );
+  if (!match) return null;
+  const amount = Number(match[1]);
+  return Number.isFinite(amount) && amount > 0 ? amount : null;
+}
+
+function isPaymentAmountMismatch(message: string): boolean {
+  return /payment total.*does not match the calculated total|does not match the calculated total/i
+    .test(message);
+}
+
 /**
  * Charge stored card via Mindbody checkout (pricing option / pass purchase or class + payment).
  * @see https://api.mindbodyonline.com/public/v6/sale/checkoutshoppingcart
@@ -298,28 +317,31 @@ export async function checkoutWithStoredCard(
   }
 
   const clientIdNum = parseInt(opts.clientId, 10);
-  const body = {
-    ClientId: Number.isFinite(clientIdNum) ? clientIdNum : opts.clientId,
-    LocationId: opts.locationId,
-    InStore: false,
-    SendEmail: true,
-    Test: false,
-    Items: [item],
-    Payments: [
-      {
-        Type: "StoredCard",
-        Metadata: { Amount: opts.amount },
-      },
-    ],
-  };
+  let chargeAmount = opts.amount;
 
-  // The stored-card lookup miss is a pre-charge validation error and is often
-  // transient for cross-studio clients, so retry it a few times in-request.
-  // Any other failure returns immediately (never retried — could double-charge).
+  // Stored-card lookup miss is a pre-charge validation error and is often
+  // transient for cross-studio clients. Amount mismatches (member discounts)
+  // are also pre-charge — retry once with Mindbody's calculated total.
   const MAX_ATTEMPTS = 3;
   let lastFailure: ({ message: string } & CheckoutFailureFlags) | null = null;
+  let amountMismatchRetried = false;
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    const body = {
+      ClientId: Number.isFinite(clientIdNum) ? clientIdNum : opts.clientId,
+      LocationId: opts.locationId,
+      InStore: false,
+      SendEmail: true,
+      Test: false,
+      Items: [item],
+      Payments: [
+        {
+          Type: "StoredCard",
+          Metadata: { Amount: chargeAmount },
+        },
+      ],
+    };
+
     const res = await fetch("https://api.mindbodyonline.com/public/v6/sale/checkoutshoppingcart", {
       method: "POST",
       headers: headers(apiKey, siteId, bearerToken),
@@ -335,6 +357,11 @@ export async function checkoutWithStoredCard(
     }
 
     if (res.ok) {
+      if (chargeAmount !== opts.amount) {
+        console.log(
+          `checkoutshoppingcart ok with adjusted amount ${chargeAmount} (listed ${opts.amount})`,
+        );
+      }
       return { ok: true, data };
     }
 
@@ -346,6 +373,21 @@ export async function checkoutWithStoredCard(
       );
       await new Promise((resolve) => setTimeout(resolve, 1200 * attempt));
       continue;
+    }
+
+    if (
+      !amountMismatchRetried &&
+      isPaymentAmountMismatch(lastFailure.message)
+    ) {
+      const calculated = parseCalculatedCartTotal(lastFailure.message);
+      if (calculated != null && calculated !== chargeAmount) {
+        console.warn(
+          `checkoutshoppingcart amount mismatch: sent ${chargeAmount}, Mindbody expects ${calculated}; retrying`,
+        );
+        chargeAmount = calculated;
+        amountMismatchRetried = true;
+        continue;
+      }
     }
 
     console.warn("checkoutshoppingcart failed:", res.status, lastFailure.message.slice(0, 300));

@@ -229,6 +229,7 @@ async function shouldReleaseClaimAfterFailure(response: Response): Promise<boole
     return Boolean(
       body.noStoredCard ||
         body.storedCardUnavailable ||
+        body.paymentAmountMismatch ||
         body.cardDeclined ||
         body.siteScopeIssue,
     );
@@ -252,6 +253,23 @@ function checkoutFailureResponse(
           checkoutAttempted: true,
           paymentRequired: true,
           storedCardUnavailable: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+
+  if (checkout.paymentAmountMismatch) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "The price on your account didn't match Mindbody's total (often a member discount) — no payment was taken. Tap Confirm again, or email reception@rebaserecovery.com.",
+          checkoutAttempted: true,
+          paymentRequired: true,
+          paymentAmountMismatch: true,
           noPassOnFile: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },

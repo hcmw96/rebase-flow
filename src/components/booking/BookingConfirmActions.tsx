@@ -155,7 +155,7 @@ const BookingConfirmActions = ({
             onClick={handleConfirmClick}
             disabled={isPending || bookingOutcomeUncertain}
             aria-busy={isPending}
-            className="w-full sm:flex-1 min-h-11"
+            className="w-full sm:flex-1 min-h-11 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {isPending ? (
               <>
