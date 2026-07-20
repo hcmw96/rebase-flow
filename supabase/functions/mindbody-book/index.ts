@@ -249,11 +249,12 @@ function checkoutFailureResponse(
       response: new Response(
         JSON.stringify({
           error:
-            "We couldn't reach your saved card just now — no payment was taken. If you have a card on your Mindbody account, wait a moment and tap Confirm again. If you haven't added one yet, use the card link on this page first. Still stuck? Email reception@rebaserecovery.com and we'll book you in.",
+            "We couldn't charge a saved card — no payment was taken. Use Pay in Mindbody on the confirm screen to enter a new card or Apple Pay, or email reception@rebaserecovery.com.",
           checkoutAttempted: true,
           paymentRequired: true,
           storedCardUnavailable: true,
           noPassOnFile: true,
+          useMindbodyCheckout: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
@@ -283,11 +284,12 @@ function checkoutFailureResponse(
       response: new Response(
         JSON.stringify({
           error:
-            "No payment card is saved on your Mindbody account. Add a card using the link on this page, then confirm again.",
+            "No payment card is saved on your Mindbody account — no payment was taken. Use Pay in Mindbody to enter a new card or Apple Pay.",
           checkoutAttempted: true,
           paymentRequired: true,
           noStoredCard: true,
           noPassOnFile: true,
+          useMindbodyCheckout: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
@@ -630,7 +632,7 @@ async function bookClassWithPayment(
     ok: true;
     data: unknown;
     clientId: string;
-    payment?: { method: "pass" | "stored_card"; amountGbp?: number };
+    payment?: { method: "pass" | "stored_card"; amountGbp?: number; listPriceGbp?: number };
     clientServiceId?: number;
   }
   | { ok: false; response: Response }
@@ -841,7 +843,11 @@ async function bookClassWithPayment(
       ok: true,
       data: checkout.data,
       clientId,
-      payment: { method: "stored_card", amountGbp: amount },
+      payment: {
+        method: "stored_card",
+        amountGbp: checkout.amountCharged,
+        listPriceGbp: amount !== checkout.amountCharged ? amount : undefined,
+      },
     };
   }
 
@@ -884,7 +890,7 @@ async function bookAppointmentWithPayment(
     ok: true;
     data: unknown;
     clientId: string;
-    payment?: { method: "pass" | "stored_card"; amountGbp?: number };
+    payment?: { method: "pass" | "stored_card"; amountGbp?: number; listPriceGbp?: number };
     clientServiceId?: number;
   }
   | { ok: false; response: Response }
@@ -1117,7 +1123,11 @@ async function bookAppointmentWithPayment(
       ok: true,
       data: checkout.data,
       clientId,
-      payment: { method: "stored_card", amountGbp: amount },
+      payment: {
+        method: "stored_card",
+        amountGbp: checkout.amountCharged,
+        listPriceGbp: amount !== checkout.amountCharged ? amount : undefined,
+      },
     };
   }
 
@@ -1330,7 +1340,7 @@ serve(async (req) => {
     let bookingResult: Record<string, unknown>;
     let mindbodyId: string | undefined;
     let bookedClientId: string | undefined;
-    let paymentMeta: { method: "pass" | "stored_card"; amountGbp?: number } | undefined;
+    let paymentMeta: { method: "pass" | "stored_card"; amountGbp?: number; listPriceGbp?: number } | undefined;
     let bookedClientServiceId: number | undefined;
 
     if (bookingType === "class") {

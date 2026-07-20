@@ -193,7 +193,7 @@ export type CheckoutFailureFlags = {
 };
 
 export type CheckoutResult =
-  | { ok: true; data: Record<string, unknown> }
+  | { ok: true; data: Record<string, unknown>; amountCharged: number }
   | ({ ok: false; message: string } & CheckoutFailureFlags);
 
 /**
@@ -362,7 +362,7 @@ export async function checkoutWithStoredCard(
           `checkoutshoppingcart ok with adjusted amount ${chargeAmount} (listed ${opts.amount})`,
         );
       }
-      return { ok: true, data };
+      return { ok: true, data, amountCharged: chargeAmount };
     }
 
     lastFailure = parseCheckoutFailure(res, raw, data);

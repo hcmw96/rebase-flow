@@ -46,6 +46,8 @@ const AppShell = () => {
 
   const handleSelectService = useCallback(
     (service: BookingServiceData, options?: ClassBookingOptions) => {
+      clearPendingBooking();
+      setResumeAppointment(undefined);
       setBookingService(service);
       setResumeClassId(options?.resumeClassId);
       setResumeClass(undefined);
@@ -154,6 +156,10 @@ const AppShell = () => {
         resumeClassId={resumeClassId}
         resumeClass={resumeClass}
         resumeAppointment={resumeAppointment}
+        onViewBookings={() => {
+          handleCloseDrawer();
+          setActiveTab('bookings');
+        }}
         onSwitchService={() => {
           setDrawerOpen(false);
           window.setTimeout(() => {

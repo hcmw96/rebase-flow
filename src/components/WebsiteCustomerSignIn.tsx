@@ -44,7 +44,8 @@ const WebsiteCustomerSignIn = () => {
       </div>
 
       <p className="mt-4 text-xs text-[#3B2712]/45 leading-relaxed">
-        After registering, return to this page and use &ldquo;Sign in with Mindbody&rdquo; to book.
+        New here? Create account opens Mindbody so you can register — then we bring you back signed
+        in to book.
       </p>
 
       <Link

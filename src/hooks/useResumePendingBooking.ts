@@ -33,11 +33,12 @@ export function useResumePendingBooking(onResume: (pending: PendingBooking) => v
 
   useEffect(() => {
     const onPageShow = (event: PageTransitionEvent) => {
-      if (event.persisted) {
-        completedRef.current = false;
-        guestPromptKeyRef.current = null;
-        setPageShowTick((n) => n + 1);
-      }
+      // Only re-run resume when bfcache restore still has something to resume.
+      if (!event.persisted) return;
+      if (!peekPendingBooking()) return;
+      completedRef.current = false;
+      guestPromptKeyRef.current = null;
+      setPageShowTick((n) => n + 1);
     };
     window.addEventListener('pageshow', onPageShow);
     return () => window.removeEventListener('pageshow', onPageShow);
@@ -71,13 +72,8 @@ export function useResumePendingBooking(onResume: (pending: PendingBooking) => v
 
     if (completedRef.current) return;
 
-    if (consumeOAuthUsedPopup()) {
-      clearPendingBooking();
-      completedRef.current = true;
-      guestPromptKeyRef.current = null;
-      return;
-    }
-
+    // Popup OAuth: restore the booking too — the drawer may have closed while Mindbody was open.
+    consumeOAuthUsedPopup();
     clearPendingBooking();
     completedRef.current = true;
     guestPromptKeyRef.current = null;

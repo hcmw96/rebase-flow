@@ -14,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, isSameMindbodyDay, mindbodyDateKey } from '@/lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 
@@ -105,33 +105,37 @@ const BookService = () => {
   const activeServiceId = selectedVariant?.id || serviceId || '';
 
   const monthRange = useMemo(() => bookingHorizonDateRange(), []);
+  const selectedDayKey = selectedDate ? localCalendarDayKey(selectedDate) : '';
 
-  const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
+  const { data: daysAvailabilityData, isLoading: isLoadingDays } = useMindbodyAvailability({
     sessionTypeId: activeServiceId,
     startDate: monthRange.startDate,
     endDate: monthRange.endDate,
+    view: 'days',
     enabled: !!activeServiceId,
   });
 
+  const { data: daySlotsData, isLoading: isLoadingDaySlots } = useMindbodyAvailability({
+    sessionTypeId: activeServiceId,
+    startDate: selectedDayKey,
+    endDate: selectedDayKey,
+    view: 'slots',
+    enabled: !!activeServiceId && !!selectedDayKey,
+  });
+
   const availableDates = useMemo(() => {
-    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
-    const dayKeys = new Set<string>();
-    for (const it of items) {
-      dayKeys.add(mindbodyDateKey(it.startDateTime));
-    }
-    return Array.from(dayKeys).map((k) => {
+    const keys = daysAvailabilityData?.availableDays || [];
+    return keys.map((k) => {
       const [y, m, d] = k.split('-').map(Number);
       return new Date(y, m - 1, d);
     });
-  }, [monthAvailabilityData]);
+  }, [daysAvailabilityData]);
 
   const availableSlots = useMemo(() => {
-    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
-    if (!selectedDate) return [];
-    return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
-  }, [monthAvailabilityData, selectedDate]);
+    return filterUpcomingSessions(daySlotsData?.availableItems || []);
+  }, [daySlotsData]);
 
-  const isLoadingSlots = isLoadingMonth && !!selectedDate;
+  const isLoadingSlots = isLoadingDaySlots && !!selectedDate;
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
@@ -432,7 +436,7 @@ const BookService = () => {
                           selectedDate={selectedDate}
                           onSelect={handleDateSelect}
                           availableDates={availableDates}
-                          isLoading={isLoadingMonth}
+                          isLoading={isLoadingDays}
                           toDate={bookingHorizonEndDate()}
                         />
                       </div>

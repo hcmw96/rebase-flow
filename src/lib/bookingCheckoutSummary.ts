@@ -15,9 +15,11 @@ export function findCommunalContrastPass(
   if (!clientServices?.length) return null;
   const june = findJuneContrastPass(clientServices);
   if (june) return june;
+  // Keep this tight — membership rows like "Unlimited Cryotherapy" must not
+  // look like a Communal Contrast pass (that blocked Mindbody checkout for new accounts).
   return (
     clientServices.find((s) => {
-      if (!/contrast|communal|members?\s*suite|off\s*peak|pass|unlimited|visit/i.test(s.name)) {
+      if (!/communal\s*contrast|contrast\s*pass|off\s*peak|members?\s*suite/i.test(s.name)) {
         return false;
       }
       return s.remaining === undefined || s.remaining > 0;
@@ -51,5 +53,6 @@ export function buildCommunalContrastCheckoutSummary(
     priceGbp: priceOverrides['Communal Contrast'] ?? 65,
     needsCardOnFile: options?.needsCardOnFile,
     accountUrl: resolveMindbodyClientAccountUrl(),
+    payInMindbody: true,
   };
 }

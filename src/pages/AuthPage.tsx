@@ -49,7 +49,8 @@ const AuthPage = () => {
           </div>
 
           <p className="text-xs text-white/45 leading-relaxed px-2">
-            New here? Create your Mindbody account first, then sign in to book.
+            New here? Tap create account — you can register on the Mindbody screen, then we&apos;ll
+            bring you back signed in.
           </p>
         </motion.div>
       </div>

@@ -400,8 +400,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const openMindbodySignUp = useCallback(() => {
-    openMindbodyExternalUrl(mindbodySignUpUrl || resolveMindbodySignUpUrl());
-  }, [mindbodySignUpUrl]);
+    // Mindbody registration lives on their IdP — use the same OAuth round-trip as
+    // sign-in so users come back to Rebase (and any stashed booking) authenticated.
+    // The authorize screen includes create-account for new clients.
+    void login({ clearSession: true });
+  }, [login]);
 
   const openMindbodyClientAccountPage = useCallback(() => {
     openMindbodyExternalUrl(resolveMindbodyClientAccountUrl(mindbodyAccountUrl));

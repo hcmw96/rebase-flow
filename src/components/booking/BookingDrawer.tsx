@@ -13,28 +13,27 @@ import BookingSteps from '@/components/booking/BookingSteps';
 import UpsellSuggestions, { serviceInfo } from '@/components/booking/UpsellSuggestions';
 import ClassScheduleFlow from '@/components/booking/ClassScheduleFlow';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
-import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
+import BookingConfirmationSuccess, {
+  type BookingConfirmationPayment,
+} from '@/components/booking/BookingConfirmationSuccess';
 import { ChevronLeft, Calendar, Clock, MapPin, User, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
-import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, isSameMindbodyDay, mindbodyDateKey } from '@/lib/sessionTimes';
+import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
-import { classifyBookingError } from '@/lib/bookingErrors';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
-import { BookingMutationError } from '@/lib/bookingMutationError';
-import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import {
-  clearSessionNeedsPaymentCard,
-  markSessionNeedsPaymentCard,
-} from '@/lib/paymentCardSetupStorage';
-import { stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
-import { resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
-import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
+  clearMindbodyCheckoutHandoff,
+  mindbodyAppointmentBookAndPayUrl,
+  openMindbodyBookAndPay,
+  stashMindbodyCheckoutHandoff,
+} from '@/lib/mindbodyCheckoutUrls';
+import { clearPendingBooking, stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
 import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { stripHtml } from '@/lib/htmlText';
 
@@ -56,6 +55,8 @@ interface BookingDrawerProps {
   resumeClassId?: string;
   resumeClass?: MindbodyClass;
   resumeAppointment?: PendingAppointmentState;
+  /** After Mindbody pay handoff — open My Bookings. */
+  onViewBookings?: () => void;
 }
 
 const ContactReceptionMessage = ({ serviceName }: { serviceName: string }) => (
@@ -93,14 +94,14 @@ const BookingDrawer = ({
   resumeClassId,
   resumeClass,
   resumeAppointment,
+  onViewBookings,
 }: BookingDrawerProps) => {
-  const { isAuthenticated, login, logout, refreshMbSession, mindbodySignUpUrl, mbSession } = useAuth();
+  const { isAuthenticated, login, logout, mbSession } = useAuth();
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
   const [bookingOutcomeUncertain, setBookingOutcomeUncertain] = useState(false);
-  const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
-  const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
-  const accountUrl = mindbodyClientAccountUrl();
+  const [mindbodyCheckoutOpened, setMindbodyCheckoutOpened] = useState(false);
+  const [mindbodyCheckoutChecking, setMindbodyCheckoutChecking] = useState(false);
   const bookServiceMutation = useBookService();
   const queryClient = useQueryClient();
 
@@ -109,31 +110,53 @@ const BookingDrawer = ({
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [confirmedPayment, setConfirmedPayment] = useState<BookingConfirmationPayment | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const restoredAppointmentRef = useRef<string | null>(null);
   const bookingInFlightRef = useRef(false);
+  const wasOpenRef = useRef(false);
+  const [flowEpoch, setFlowEpoch] = useState(0);
 
-  // Reset UI state when drawer closes — keep in-flight guard until the mutation settles.
+  const resetBookingUi = useCallback((opts?: { keepInFlight?: boolean }) => {
+    setCurrentStep(1);
+    setSelectedDate(undefined);
+    setSelectedSlot(null);
+    setSelectedVariant(null);
+    setBookingComplete(false);
+    setConfirmedPayment(null);
+    setIsSubmitting(false);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
+    setMindbodyCheckoutOpened(false);
+    setMindbodyCheckoutChecking(false);
+    restoredAppointmentRef.current = null;
+    if (!opts?.keepInFlight) {
+      bookingInFlightRef.current = false;
+    }
+  }, []);
+
+  // Clear stale "Booking confirmed" when reopening. On close, defer wipe so the
+  // success screen doesn't flash back to the form mid-animation.
+  useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      resetBookingUi({ keepInFlight: bookServiceMutation.isPending });
+      setFlowEpoch((n) => n + 1);
+      wasOpenRef.current = true;
+      return;
+    }
+    if (!open && wasOpenRef.current) {
+      wasOpenRef.current = false;
+      const t = window.setTimeout(() => {
+        resetBookingUi({ keepInFlight: bookServiceMutation.isPending });
+      }, 320);
+      return () => window.clearTimeout(t);
+    }
+  }, [open, resetBookingUi, bookServiceMutation.isPending]);
+
   const handleOpenChange = (isOpen: boolean) => {
     if (!isOpen) {
       onClose();
-      setTimeout(() => {
-        setCurrentStep(1);
-        setSelectedDate(undefined);
-        setSelectedSlot(null);
-        setSelectedVariant(null);
-        setBookingComplete(false);
-        setIsSubmitting(false);
-        setBookingError(null);
-        setBookingErrorRequiresSignIn(false);
-        setBookingOutcomeUncertain(false);
-        setNeedsCardOnFile(false);
-        setCardSetupRetryHint(null);
-        restoredAppointmentRef.current = null;
-        if (!bookServiceMutation.isPending) {
-          bookingInFlightRef.current = false;
-        }
-      }, 300);
     }
   };
 
@@ -218,8 +241,8 @@ const BookingDrawer = ({
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
     setBookingOutcomeUncertain(false);
-    const url = mindbodySignUpUrl || resolveMindbodySignUpUrl();
-    openMindbodyExternalUrl(url);
+    logout();
+    login({ clearSession: true });
   };
 
   // Check if the selected variant is contact-only
@@ -248,35 +271,45 @@ const BookingDrawer = ({
 
   const activeServiceId = activeVariant?.id || '';
 
-  // Single availability fetch for the full booking horizon — day slots are filtered in memory.
+  // Light calendar payload (date keys only) — Premium Suite slots alone are ~1.3MB / 90 days.
   const monthRange = useMemo(() => bookingHorizonDateRange(), []);
+  const selectedDayKey = selectedDate ? localCalendarDayKey(selectedDate) : '';
 
-  const { data: monthAvailabilityData, isLoading: isLoadingMonth } = useMindbodyAvailability({
+  const { data: daysAvailabilityData, isLoading: isLoadingDays, isError: isDaysError } =
+    useMindbodyAvailability({
+      sessionTypeId: activeServiceId,
+      startDate: monthRange.startDate,
+      endDate: monthRange.endDate,
+      view: 'days',
+      enabled: open && !!activeServiceId && !showContactMessage && !isClassBooking,
+    });
+
+  const { data: daySlotsData, isLoading: isLoadingDaySlots } = useMindbodyAvailability({
     sessionTypeId: activeServiceId,
-    startDate: monthRange.startDate,
-    endDate: monthRange.endDate,
-    enabled: open && !!activeServiceId && !showContactMessage && !isClassBooking,
+    startDate: selectedDayKey,
+    endDate: selectedDayKey,
+    view: 'slots',
+    enabled:
+      open &&
+      !!activeServiceId &&
+      !!selectedDayKey &&
+      !showContactMessage &&
+      !isClassBooking,
   });
 
   const availableSlots = useMemo(() => {
-    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
-    if (!selectedDate) return [];
-    return items.filter((slot) => isSameMindbodyDay(slot.startDateTime, selectedDate));
-  }, [monthAvailabilityData, selectedDate]);
+    return filterUpcomingSessions(daySlotsData?.availableItems || []);
+  }, [daySlotsData]);
 
-  const isLoadingSlots = isLoadingMonth && !!selectedDate;
+  const isLoadingSlots = isLoadingDaySlots && !!selectedDate;
 
   const availableDates = useMemo(() => {
-    const items = filterUpcomingSessions(monthAvailabilityData?.availableItems || []);
-    const dayKeys = new Set<string>();
-    for (const it of items) {
-      dayKeys.add(mindbodyDateKey(it.startDateTime));
-    }
-    return Array.from(dayKeys).map((k) => {
+    const keys = daysAvailabilityData?.availableDays || [];
+    return keys.map((k) => {
       const [y, m, d] = k.split('-').map(Number);
       return new Date(y, m - 1, d);
     });
-  }, [monthAvailabilityData]);
+  }, [daysAvailabilityData]);
 
   const handleUpsellSelect = (serviceName: string) => {
     if (onSwitchService) onSwitchService(serviceName);
@@ -333,6 +366,52 @@ const BookingDrawer = ({
     }
   }, [isAuthenticated]);
 
+  const appointmentListPriceGbp = useMemo(() => {
+    if (activeVariant?.price != null) return activeVariant.price;
+    if (serviceDisplayName && priceOverrides[serviceDisplayName] !== undefined) {
+      return priceOverrides[serviceDisplayName];
+    }
+    return null;
+  }, [activeVariant?.price, serviceDisplayName]);
+
+  const appointmentCheckoutSummary = useMemo(() => {
+    return {
+      priceGbp: appointmentListPriceGbp ?? 0,
+      payInMindbody: true as const,
+    };
+  }, [appointmentListPriceGbp]);
+
+  const mindbodyAppointmentCheckoutUrl = useMemo(
+    () => mindbodyAppointmentBookAndPayUrl(),
+    [],
+  );
+
+  const openMindbodyAppointmentCheckout = () => {
+    if (!selectedSlot) return;
+    stashMindbodyCheckoutHandoff({
+      kind: 'appointment',
+      serviceName: activeVariant?.name || service?.title || 'Appointment',
+      startDateTime: selectedSlot.startDateTime,
+      checkoutUrl: mindbodyAppointmentCheckoutUrl,
+    });
+    setMindbodyCheckoutOpened(true);
+    setBookingError(null);
+    openMindbodyBookAndPay(mindbodyAppointmentCheckoutUrl);
+  };
+
+  const finishMindbodyAppointmentCheckout = async () => {
+    setMindbodyCheckoutChecking(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      clearMindbodyCheckoutHandoff();
+      clearPendingBooking();
+      if (onViewBookings) onViewBookings();
+      else onClose();
+    } finally {
+      setMindbodyCheckoutChecking(false);
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!selectedSlot || bookingComplete || bookingInFlightRef.current || bookServiceMutation.isPending) {
       return;
@@ -342,89 +421,8 @@ const BookingDrawer = ({
       return;
     }
 
-    const activeSession = await refreshMbSession();
-    if (!activeSession?.sessionId) {
-      setBookingError('Your sign-in expired. Please sign in again.');
-      setBookingErrorRequiresSignIn(true);
-      return;
-    }
-
-    bookingInFlightRef.current = true;
-    setIsSubmitting(true);
-    setBookingError(null);
-    setBookingErrorRequiresSignIn(false);
-    setBookingOutcomeUncertain(false);
-    setCardSetupRetryHint(null);
-    if (!needsCardOnFile) {
-      setNeedsCardOnFile(false);
-    }
-
-    try {
-      await bookServiceMutation.mutateAsync({
-        bookingType: 'appointment',
-        sessionTypeId: selectedSlot.sessionTypeId.toString(),
-        staffId: selectedSlot.staffId.toString(),
-        staffName: selectedSlot.staffName,
-        locationId: selectedSlot.locationId,
-        locationName: selectedSlot.locationName,
-        startDateTime: selectedSlot.startDateTime,
-        endDateTime: selectedSlot.endDateTime,
-        serviceName: activeVariant?.name || service?.title,
-        idempotencyKey,
-      });
-      setBookingComplete(true);
-      setNeedsCardOnFile(false);
-      clearSessionNeedsPaymentCard();
-      if (navigator.userAgent.includes('despia')) {
-        despia('successhaptic://');
-      }
-    } catch (error: unknown) {
-      bookingInFlightRef.current = false;
-      setIsSubmitting(false);
-      if (error instanceof BookingMutationError) {
-        if (
-          error.flags.noStoredCard ||
-          error.flags.cardDeclined ||
-          (error.flags.siteScopeIssue && error.flags.paymentRequired)
-        ) {
-          if (mbSession?.sessionId) {
-            markSessionNeedsPaymentCard(mbSession.sessionId);
-          }
-          setNeedsCardOnFile(true);
-          setBookingError(null);
-          setBookingErrorRequiresSignIn(false);
-          setBookingOutcomeUncertain(false);
-          if (needsCardOnFile) {
-            setCardSetupRetryHint(
-              "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
-            );
-          }
-          return;
-        }
-        setNeedsCardOnFile(false);
-        setCardSetupRetryHint(null);
-        clearSessionNeedsPaymentCard();
-        setBookingError(error.message);
-        setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
-        setBookingOutcomeUncertain(Boolean(error.flags.bookingOutcomeUncertain));
-        return;
-      }
-      const classified = classifyBookingError(
-        error instanceof Error ? error.message : undefined,
-      );
-      setBookingError(classified.message);
-      setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
-      setBookingOutcomeUncertain(false);
-      if (classified.kind === 'slot_taken') {
-        queryClient.invalidateQueries({ queryKey: ['mindbody-availability'] });
-        setSelectedSlot(null);
-        setCurrentStep(timeStep);
-      }
-
-      if (navigator.userAgent.includes('despia')) {
-        despia('errorhaptic://');
-      }
-    }
+    // Paid appointments → Mindbody consumer checkout (new card / Apple Pay).
+    openMindbodyAppointmentCheckout();
   };
 
 
@@ -524,13 +522,14 @@ const BookingDrawer = ({
             {/* Class booking flow */}
             {open && isClassBooking ? (
               <ClassScheduleFlow
-                key={service.classDescriptionIds!.join('-')}
+                key={`${service.classDescriptionIds!.join('-')}-${flowEpoch}`}
                 classDescriptionIds={service.classDescriptionIds!}
                 className={serviceDisplayName}
                 onClose={onClose}
                 resumeClassId={resumeClassId}
                 resumeClass={resumeClass}
                 bookingService={service}
+                onViewBookings={onViewBookings}
               />
             ) : isFullContactOnly && !hasVariants ? (
               <ContactReceptionMessage serviceName={serviceDisplayName} />
@@ -545,8 +544,13 @@ const BookingDrawer = ({
                   staffName: selectedSlot.staffName,
                   locationName: selectedSlot.locationName,
                 }}
+                payment={confirmedPayment}
                 durationMinutes={activeVariant?.duration}
-                onDone={onClose}
+                onDone={() => {
+                  resetBookingUi();
+                  clearPendingBooking();
+                  onClose();
+                }}
               >
                 {onSwitchService && (
                   <UpsellSuggestions
@@ -636,9 +640,15 @@ const BookingDrawer = ({
                           selectedDate={selectedDate}
                           onSelect={handleDateSelect}
                           availableDates={availableDates}
-                          isLoading={isLoadingMonth}
+                          isLoading={isLoadingDays}
                           toDate={bookingHorizonEndDate()}
                         />
+                        {isDaysError && !isLoadingDays && (
+                          <p className="mt-3 text-sm text-amber-200/90 text-center">
+                            Couldn&apos;t load availability. Close and try again, or email
+                            reception@rebaserecovery.com.
+                          </p>
+                        )}
                       </div>
                     </motion.div>
                   )}
@@ -720,8 +730,8 @@ const BookingDrawer = ({
                           setBookingError(null);
                           setBookingErrorRequiresSignIn(false);
                           setBookingOutcomeUncertain(false);
-                          setNeedsCardOnFile(false);
-                          setCardSetupRetryHint(null);
+                          setMindbodyCheckoutOpened(false);
+                          setMindbodyCheckoutChecking(false);
                           setCurrentStep(timeStep);
                         }}
                         onConfirm={
@@ -735,10 +745,12 @@ const BookingDrawer = ({
                         bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
                         bookingOutcomeUncertain={bookingOutcomeUncertain}
                         onCreateAccount={startCreateAccountForBooking}
-                        needsCardOnFile={needsCardOnFile}
-                        accountUrl={accountUrl}
-                        onContinueAfterCard={handleConfirmBooking}
-                        cardSetupRetryHint={cardSetupRetryHint}
+                        checkoutSummary={appointmentCheckoutSummary}
+                        mindbodyCheckoutUrl={mindbodyAppointmentCheckoutUrl}
+                        mindbodyCheckoutOpened={mindbodyCheckoutOpened}
+                        onOpenMindbodyCheckout={openMindbodyAppointmentCheckout}
+                        onMindbodyCheckoutFinished={() => void finishMindbodyAppointmentCheckout()}
+                        mindbodyCheckoutChecking={mindbodyCheckoutChecking}
                       />
 
                       {onSwitchService && (

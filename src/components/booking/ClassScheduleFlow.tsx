@@ -17,22 +17,27 @@ import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import BookingSteps from '@/components/booking/BookingSteps';
 import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
-import BookingConfirmationSuccess from '@/components/booking/BookingConfirmationSuccess';
+import BookingConfirmationSuccess, {
+  type BookingConfirmationPayment,
+} from '@/components/booking/BookingConfirmationSuccess';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange, mindbodyDateKey, parseMindbodyDateTime, studioCalendarDate, studioTodayKey } from '@/lib/sessionTimes';
 import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
-import { stashPendingBooking } from '@/lib/bookingResume';
+import { stashPendingBooking, clearPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
 import { BookingMutationError } from '@/lib/bookingMutationError';
-import { mindbodyClientAccountUrl, resolveMindbodySignUpUrl } from '@/lib/mindbodyAuth';
-import { openMindbodyExternalUrl } from '@/lib/mobileBrowser';
+import {
+  clearMindbodyCheckoutHandoff,
+  mindbodyClassBookAndPayUrl,
+  openMindbodyBookAndPay,
+  stashMindbodyCheckoutHandoff,
+} from '@/lib/mindbodyCheckoutUrls';
 import {
   clearSessionNeedsPaymentCard,
-  markSessionNeedsPaymentCard,
-  sessionNeedsPaymentCard,
 } from '@/lib/paymentCardSetupStorage';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
+import { useQueryClient } from '@tanstack/react-query';
 
 import { stripHtml } from '@/lib/htmlText';
 const normaliseBrand = (value: string | null | undefined): string =>
@@ -118,6 +123,8 @@ interface ClassScheduleFlowProps {
   resumeClassId?: string;
   resumeClass?: MindbodyClass;
   bookingService?: BookingServiceData;
+  /** After Mindbody pay — open My Bookings. */
+  onViewBookings?: () => void;
 }
 
 const ClassScheduleFlow = ({
@@ -127,45 +134,43 @@ const ClassScheduleFlow = ({
   resumeClassId,
   resumeClass,
   bookingService,
+  onViewBookings,
 }: ClassScheduleFlowProps) => {
-  const { isAuthenticated, login, logout, refreshMbSession, mbSession, mindbodySignUpUrl } = useAuth();
+  const { isAuthenticated, login, logout, refreshMbSession, mbSession } = useAuth();
   const bookMutation = useBookService();
+  const queryClient = useQueryClient();
   const scheduleRef = useRef<HTMLDivElement>(null);
   const bookingInFlightRef = useRef(false);
 
   const [currentStep, setCurrentStep] = useState(1);
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [confirmedPayment, setConfirmedPayment] = useState<BookingConfirmationPayment | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
   const [bookingErrorRequiresSignIn, setBookingErrorRequiresSignIn] = useState(false);
   const [bookingOutcomeUncertain, setBookingOutcomeUncertain] = useState(false);
-  const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
-  const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
+  const [mindbodyCheckoutOpened, setMindbodyCheckoutOpened] = useState(false);
+  const [mindbodyCheckoutChecking, setMindbodyCheckoutChecking] = useState(false);
 
   const serviceLabel = resolveDisplayName(bookingService?.title ?? clsName);
   const { data: membershipData, refetch: refetchMembership } = useClientMembership();
-  const accountUrl = mindbodyClientAccountUrl();
 
   const checkoutSummary =
     isAuthenticated && currentStep === 2
-      ? buildCommunalContrastCheckoutSummary(serviceLabel, membershipData?.clientServices, {
-          needsCardOnFile,
-        })
+      ? buildCommunalContrastCheckoutSummary(serviceLabel, membershipData?.clientServices)
       : null;
 
-  useEffect(() => {
-    if (
-      isAuthenticated &&
-      currentStep === 2 &&
-      checkoutSummary &&
-      !checkoutSummary.pass &&
-      sessionNeedsPaymentCard(mbSession?.sessionId)
-    ) {
-      setNeedsCardOnFile(true);
-    }
-  }, [isAuthenticated, currentStep, checkoutSummary, mbSession?.sessionId]);
+  const mindbodyCheckoutUrl = useMemo(() => {
+    if (!selectedClass || checkoutSummary?.pass) return null;
+    return mindbodyClassBookAndPayUrl({
+      classId: selectedClass.id,
+      startDateTime: selectedClass.startDateTime,
+      locationId: selectedClass.locationId,
+      programId: selectedClass.programId,
+    });
+  }, [selectedClass, checkoutSummary?.pass]);
 
   const { startDate, endDate } = bookingHorizonDateRange();
 
@@ -322,12 +327,47 @@ const ClassScheduleFlow = ({
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
     setBookingOutcomeUncertain(false);
-    const url = mindbodySignUpUrl || resolveMindbodySignUpUrl();
-    openMindbodyExternalUrl(url);
+    logout();
+    login({ clearSession: true });
   };
 
+  const openMindbodyCheckout = () => {
+    if (!selectedClass || !mindbodyCheckoutUrl) return;
+    stashMindbodyCheckoutHandoff({
+      kind: 'class',
+      serviceName: selectedClass.name,
+      startDateTime: selectedClass.startDateTime,
+      classId: selectedClass.id,
+      checkoutUrl: mindbodyCheckoutUrl,
+    });
+    setMindbodyCheckoutOpened(true);
+    setBookingError(null);
+    openMindbodyBookAndPay(mindbodyCheckoutUrl);
+  };
+
+  const finishMindbodyCheckout = async () => {
+    setMindbodyCheckoutChecking(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      clearMindbodyCheckoutHandoff();
+      clearPendingBooking();
+      if (onViewBookings) {
+        onViewBookings();
+      } else {
+        onClose();
+      }
+    } finally {
+      setMindbodyCheckoutChecking(false);
+    }
+  };
+
+  /** Pass/credit bookings stay on Rebase. Card payments go through Mindbody checkout. */
   const handleBook = async () => {
     if (!selectedClass || bookingComplete || bookingInFlightRef.current || bookMutation.isPending) {
+      return;
+    }
+    if (!checkoutSummary?.pass) {
+      openMindbodyCheckout();
       return;
     }
 
@@ -343,14 +383,10 @@ const ClassScheduleFlow = ({
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
     setBookingOutcomeUncertain(false);
-    setCardSetupRetryHint(null);
-    if (!needsCardOnFile) {
-      setNeedsCardOnFile(false);
-    }
 
     try {
       await refetchMembership();
-      await bookMutation.mutateAsync({
+      const result = await bookMutation.mutateAsync({
         bookingType: 'class',
         classId: selectedClass.id,
         locationId: selectedClass.locationId,
@@ -361,8 +397,17 @@ const ClassScheduleFlow = ({
         staffName: selectedClass.staffName,
         idempotencyKey,
       });
+      clearPendingBooking();
+      const listPriceGbp = checkoutSummary?.priceGbp ?? null;
+      const paid = result.payment;
+      const usedPass = paid?.method === 'pass' || Boolean(checkoutSummary?.pass);
+      setConfirmedPayment({
+        method: usedPass ? 'pass' : paid?.method ?? null,
+        amountGbp: usedPass ? 0 : paid?.amountGbp ?? listPriceGbp,
+        listPriceGbp: usedPass && listPriceGbp != null ? listPriceGbp : paid?.listPriceGbp ?? null,
+        passName: usedPass ? checkoutSummary?.pass?.name ?? 'Session pass / credit' : null,
+      });
       setBookingComplete(true);
-      setNeedsCardOnFile(false);
       clearSessionNeedsPaymentCard();
     } catch (error: unknown) {
       bookingInFlightRef.current = false;
@@ -371,24 +416,13 @@ const ClassScheduleFlow = ({
         if (
           error.flags.noStoredCard ||
           error.flags.cardDeclined ||
+          error.flags.storedCardUnavailable ||
           (error.flags.siteScopeIssue && error.flags.paymentRequired)
         ) {
-          if (mbSession?.sessionId) {
-            markSessionNeedsPaymentCard(mbSession.sessionId);
-          }
-          setNeedsCardOnFile(true);
-          setBookingError(null);
-          setBookingErrorRequiresSignIn(false);
-          setBookingOutcomeUncertain(false);
-          if (needsCardOnFile) {
-            setCardSetupRetryHint(
-              "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
-            );
-          }
+          // Fall through to Mindbody consumer checkout (new card / Apple Pay).
+          openMindbodyCheckout();
           return;
         }
-        setNeedsCardOnFile(false);
-        setCardSetupRetryHint(null);
         clearSessionNeedsPaymentCard();
         setBookingError(error.message);
         setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
@@ -410,6 +444,10 @@ const ClassScheduleFlow = ({
       startSignIn(selectedClass);
       return;
     }
+    if (!checkoutSummary?.pass) {
+      openMindbodyCheckout();
+      return;
+    }
     void handleBook();
   };
 
@@ -423,7 +461,15 @@ const ClassScheduleFlow = ({
           staffName: selectedClass.staffName,
           locationName: selectedClass.locationName,
         }}
-        onDone={onClose}
+        payment={confirmedPayment}
+        onDone={() => {
+          clearPendingBooking();
+          setBookingComplete(false);
+          setConfirmedPayment(null);
+          setSelectedClass(null);
+          setCurrentStep(1);
+          onClose();
+        }}
       />
     );
   }
@@ -597,8 +643,7 @@ const ClassScheduleFlow = ({
                 setBookingError(null);
                 setBookingErrorRequiresSignIn(false);
                 setBookingOutcomeUncertain(false);
-                setNeedsCardOnFile(false);
-                setCardSetupRetryHint(null);
+                setMindbodyCheckoutOpened(false);
                 setSelectedClass(null);
                 setCurrentStep(1);
               }}
@@ -615,10 +660,11 @@ const ClassScheduleFlow = ({
               bookingOutcomeUncertain={bookingOutcomeUncertain}
               checkoutSummary={checkoutSummary}
               onCreateAccount={() => startCreateAccount(selectedClass)}
-              needsCardOnFile={needsCardOnFile}
-              accountUrl={accountUrl}
-              onContinueAfterCard={handleBook}
-              cardSetupRetryHint={cardSetupRetryHint}
+              mindbodyCheckoutUrl={mindbodyCheckoutUrl}
+              mindbodyCheckoutOpened={mindbodyCheckoutOpened}
+              onOpenMindbodyCheckout={openMindbodyCheckout}
+              onMindbodyCheckoutFinished={finishMindbodyCheckout}
+              mindbodyCheckoutChecking={mindbodyCheckoutChecking}
             />
           </div>
         </div>

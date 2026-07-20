@@ -80,6 +80,7 @@ const UpsellCard = ({ name, serviceId, referenceEnd, onSelect }: UpsellCardProps
     sessionTypeId: serviceId ?? '',
     startDate: dateKey,
     endDate: dateKey,
+    view: 'slots',
     enabled: !!serviceId,
   });
 

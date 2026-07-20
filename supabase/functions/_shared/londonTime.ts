@@ -94,6 +94,13 @@ export function studioTodayKey(now: number = Date.now()): string {
   }).format(new Date(now));
 }
 
+/** London Y-M-D for an absolute instant. */
+export function studioDateKeyFromInstant(date: Date): string {
+  return new Intl.DateTimeFormat("en-CA", {
+    timeZone: STUDIO_TIMEZONE,
+  }).format(date);
+}
+
 /** Add calendar days to a YYYY-MM-DD studio date key. */
 export function studioDateKeyAddDays(dateKey: string, days: number): string {
   const [y, m, d] = dateKey.split("-").map(Number);

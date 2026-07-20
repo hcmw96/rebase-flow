@@ -90,20 +90,20 @@ const Footer = () => {
     <footer className="bg-background text-foreground border-t border-foreground/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {/* Brand */}
+          {/* Brand — logo asset has large vertical padding; object-cover crops to the wordmark */}
           <div className="space-y-4">
             <Link
               to="/"
-              className="inline-block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
+              className="inline-flex h-7 items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-sm"
               aria-label="Rebase Recovery home"
             >
               <img
                 src="/lovable-uploads/6a377d49-6c42-49f6-a599-537d4243c812.png"
                 alt="Rebase Recovery — premium wellness studio London"
-                className="h-12 w-auto"
+                className="h-7 w-[174px] object-cover object-center"
                 loading="lazy"
-                width={120}
-                height={48}
+                width={174}
+                height={28}
               />
             </Link>
             <p className="text-foreground/70 text-sm leading-relaxed">
@@ -114,7 +114,7 @@ const Footer = () => {
 
           {/* Quick Links */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-foreground">Quick Links</h3>
+            <h3 className="text-lg font-medium leading-7 text-foreground">Quick Links</h3>
             <ul className="space-y-2">
               {quickLinks.map((link) => (
                 <li key={`${link.href}-${link.label}`}>
@@ -128,7 +128,7 @@ const Footer = () => {
 
           {/* Services */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-foreground">Services</h3>
+            <h3 className="text-lg font-medium leading-7 text-foreground">Services</h3>
             <ul className="space-y-2">
               {services.map((service) => (
                 <li key={service}>
@@ -145,7 +145,7 @@ const Footer = () => {
 
           {/* Contact Info */}
           <div className="space-y-4">
-            <h3 className="text-lg font-medium text-foreground">Contact</h3>
+            <h3 className="text-lg font-medium leading-7 text-foreground">Contact</h3>
             <div className="space-y-3">
               <a
                 href={MAPS_URL}

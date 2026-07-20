@@ -16,6 +16,8 @@ export type BookingCheckoutSummary = {
   /** Card on file could not be charged — rare fallback only */
   needsCardOnFile?: boolean;
   accountUrl?: string;
+  /** Pay via Mindbody consumer checkout (new card / Apple Pay), not StoredCard on Rebase. */
+  payInMindbody?: boolean;
 };
 
 interface BookingConfirmCheckoutProps {
@@ -24,10 +26,10 @@ interface BookingConfirmCheckoutProps {
 }
 
 /**
- * Explains how payment works on the Rebase confirm step (no redirect to Mindbody pricing).
+ * Explains how payment works on the Rebase confirm step.
  */
 const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutProps) => {
-  const { priceGbp, pass } = summary;
+  const { priceGbp, pass, payInMindbody } = summary;
 
   if (pass) {
     const usageLine =
@@ -63,6 +65,39 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
             )}
           </div>
         </div>
+      </div>
+    );
+  }
+
+  if (payInMindbody) {
+    return (
+      <div className={cn('rounded-lg border border-border bg-secondary/40 px-4 py-3.5 space-y-2', className)}>
+        <div className="flex items-start gap-2.5">
+          <CreditCard className="h-4 w-4 text-foreground/70 shrink-0 mt-0.5" aria-hidden />
+          <div className="space-y-1 text-sm">
+            <p className="font-medium text-foreground">Pay in Mindbody</p>
+            <p className="text-muted-foreground leading-relaxed">
+              Next you&apos;ll open Mindbody&apos;s checkout
+              {priceGbp > 0 ? (
+                <>
+                  {' '}
+                  for <span className="font-medium text-foreground">£{priceGbp}</span>
+                </>
+              ) : null}{' '}
+              — enter a new card, use Apple Pay, or pick a saved method. Same flow as the Rebase Mindbody
+              app.
+            </p>
+          </div>
+        </div>
+        {isContrastPassSaleActive() && (
+          <p className="text-xs text-muted-foreground pl-6 border-t border-border/60 pt-2">
+            Visiting often?{' '}
+            <Link to={CONTRAST_PASS_OFFER.path} className="font-medium text-foreground underline underline-offset-2">
+              View our 2-week unlimited pass offer
+            </Link>
+            .
+          </p>
+        )}
       </div>
     );
   }

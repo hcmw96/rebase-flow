@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 import AuthRedirectOverlay from "./components/AuthRedirectOverlay";
 import ScrollToTop from "./components/ScrollToTop";
+import EnsureExternalLinksNewTab from "./components/EnsureExternalLinksNewTab";
 import AppShell from "./components/AppShell";
 import NotFound from "./pages/NotFound";
 import CookieConsent from "./components/CookieConsent";
@@ -47,6 +48,7 @@ const App = () => (
         <BrowserRouter>
           {!navigator.userAgent.includes('despia') && <CookieConsent />}
           <ScrollToTop />
+          <EnsureExternalLinksNewTab />
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/website" element={<Navigate to="/" replace />} />

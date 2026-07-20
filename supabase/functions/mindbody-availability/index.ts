@@ -1,6 +1,11 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { parseMindbodyLocalDateTime, studioTodayKey } from "../_shared/londonTime.ts";
+import {
+  parseMindbodyLocalDateTime,
+  studioDateKeyFromInstant,
+  studioTodayKey,
+} from "../_shared/londonTime.ts";
 import { getStaffToken } from "../_shared/mindbodyStaff.ts";
+import { resolveBookableSessionMinutes } from "../_shared/sessionDuration.ts";
 import {
   buildCacheKey,
   CACHE_TTL,
@@ -56,26 +61,51 @@ function resolveDateRange(startDate: string, endDate?: string | null): { start: 
 /** How often a booking can start within a free window (studio books in 15-min steps). */
 const SLOT_START_INTERVAL_MINUTES = 15;
 
+type AvailabilityWindow = {
+  Id?: string | number;
+  StartDateTime?: string;
+  EndDateTime?: string;
+  BookableEndDateTime?: string;
+  Staff?: { Id?: number; FirstName?: string; LastName?: string };
+  Location?: { Id?: number; Name?: string };
+  SessionType?: { Id?: number; Name?: string; DefaultTimeLength?: number };
+};
+
+function resolveWindowEnd(availability: AvailabilityWindow, sessionLength: number): Date | null {
+  const defaultTimeLength = availability.SessionType?.DefaultTimeLength;
+  if (availability.EndDateTime) {
+    return parseMindbodyLocalDateTime(availability.EndDateTime);
+  }
+  if (availability.BookableEndDateTime) {
+    const bookableEnd = parseMindbodyLocalDateTime(availability.BookableEndDateTime);
+    const bufferMinutes = Math.max(0, (defaultTimeLength || sessionLength) - sessionLength);
+    return new Date(bookableEnd.getTime() + bufferMinutes * 60 * 1000);
+  }
+  return null;
+}
+
 /**
  * Slice a Mindbody availability window into discrete bookable starts.
- * Session length still decides how long each booking occupies; starts advance
- * every 15 minutes so a free afternoon after a 75-min HBOT isn't thinned to
- * one option every 75 minutes.
+ * Prefer customer-facing name duration over DefaultTimeLength (prep buffer).
  */
-function generateTimeSlots(availability: any): any[] {
-  const slots: any[] = [];
-  const sessionLength = availability.SessionType?.DefaultTimeLength || 60;
+function generateTimeSlots(availability: AvailabilityWindow): Record<string, unknown>[] {
+  const slots: Record<string, unknown>[] = [];
+  const sessionTypeName = availability.SessionType?.Name;
+  const defaultTimeLength = availability.SessionType?.DefaultTimeLength;
+  const sessionLength = resolveBookableSessionMinutes(sessionTypeName, defaultTimeLength);
+  if (!availability.StartDateTime) return slots;
+
   const startTime = parseMindbodyLocalDateTime(availability.StartDateTime);
-  const bookableEndTime = parseMindbodyLocalDateTime(
-    availability.BookableEndDateTime || availability.EndDateTime,
-  );
+  const windowEnd = resolveWindowEnd(availability, sessionLength);
+  if (!windowEnd) return slots;
+
   const stepMs = SLOT_START_INTERVAL_MINUTES * 60 * 1000;
   const sessionMs = sessionLength * 60 * 1000;
 
   let slotStart = new Date(startTime);
-  while (slotStart < bookableEndTime) {
+  while (slotStart < windowEnd) {
     const slotEnd = new Date(slotStart.getTime() + sessionMs);
-    if (slotEnd <= bookableEndTime) {
+    if (slotEnd <= windowEnd) {
       slots.push({
         id: `${availability.Id}-${slotStart.toISOString()}`,
         staffId: availability.Staff?.Id,
@@ -88,12 +118,44 @@ function generateTimeSlots(availability: any): any[] {
         sessionTypeName: availability.SessionType?.Name,
         startDateTime: slotStart.toISOString(),
         endDateTime: slotEnd.toISOString(),
+        sessionLengthMinutes: sessionLength,
       });
     }
     slotStart = new Date(slotStart.getTime() + stepMs);
   }
   return slots;
 }
+
+/** Mark London calendar days that have at least one bookable start (no heavy slot payload). */
+function collectAvailableDayKeys(availability: AvailabilityWindow, nowMs: number): string[] {
+  const sessionTypeName = availability.SessionType?.Name;
+  const defaultTimeLength = availability.SessionType?.DefaultTimeLength;
+  const sessionLength = resolveBookableSessionMinutes(sessionTypeName, defaultTimeLength);
+  if (!availability.StartDateTime) return [];
+
+  const startTime = parseMindbodyLocalDateTime(availability.StartDateTime);
+  const windowEnd = resolveWindowEnd(availability, sessionLength);
+  if (!windowEnd) return [];
+
+  const stepMs = SLOT_START_INTERVAL_MINUTES * 60 * 1000;
+  const sessionMs = sessionLength * 60 * 1000;
+  const keys = new Set<string>();
+
+  let slotStart = new Date(startTime);
+  while (slotStart.getTime() + sessionMs <= windowEnd.getTime()) {
+    if (slotStart.getTime() > nowMs) {
+      keys.add(studioDateKeyFromInstant(slotStart));
+    }
+    slotStart = new Date(slotStart.getTime() + stepMs);
+  }
+  return Array.from(keys);
+}
+
+type AvailabilityPayload = {
+  availableItems: unknown[];
+  availableDays: string[];
+  availableStaff: unknown[];
+};
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -114,6 +176,8 @@ serve(async (req) => {
     const startDate =
       url.searchParams.get("startDate") || studioTodayKey();
     const endDate = url.searchParams.get("endDate");
+    const viewParam = (url.searchParams.get("view") || "slots").toLowerCase();
+    const view: "days" | "slots" = viewParam === "days" ? "days" : "slots";
 
     if (!sessionTypeId) {
       throw new Error("sessionTypeId is required");
@@ -121,17 +185,15 @@ serve(async (req) => {
 
     const { start: mindbodyStart, end: mindbodyEnd } = resolveDateRange(startDate, endDate);
 
-    const cacheKey = buildCacheKey("availability:v1", {
+    const cacheKey = buildCacheKey("availability:v3", {
       sessionTypeId,
       staffId,
       start: mindbodyStart,
       end: mindbodyEnd,
+      view,
     });
-    const cached = await getCachedJson<{
-      availableItems: unknown[];
-      availableStaff: unknown[];
-    }>(cacheKey);
-    if (cached?.availableItems) {
+    const cached = await getCachedJson<AvailabilityPayload>(cacheKey);
+    if (cached && Array.isArray(cached.availableItems) && Array.isArray(cached.availableDays)) {
       return new Response(JSON.stringify(cached), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 200,
@@ -140,7 +202,7 @@ serve(async (req) => {
 
     const staffToken = await getStaffToken();
 
-    const allAvailabilities: any[] = [];
+    const allAvailabilities: AvailabilityWindow[] = [];
     let offset = 0;
 
     while (offset < MAX_AVAILABILITY_WINDOWS) {
@@ -182,6 +244,7 @@ serve(async (req) => {
         offset,
         batchSize: batch.length,
         total,
+        view,
       });
 
       if (batch.length === 0) break;
@@ -195,58 +258,93 @@ serve(async (req) => {
       staffId,
       mindbodyStart,
       mindbodyEnd,
+      view,
       availabilitiesCount: allAvailabilities.length,
     }));
 
     const now = Date.now();
-    const rawSlots = allAvailabilities
-      .flatMap(generateTimeSlots)
-      .filter((slot) => parseMindbodyLocalDateTime(slot.startDateTime).getTime() > now);
+    let availableItems: Record<string, unknown>[] = [];
+    let availableDays: string[] = [];
 
-    const dedupMap = new Map<string, any>();
-    for (const slot of rawSlots) {
-      const key = `${slot.staffId ?? ""}|${slot.locationId ?? ""}|${slot.sessionTypeId ?? ""}|${slot.startDateTime}`;
-      if (!dedupMap.has(key)) dedupMap.set(key, slot);
+    if (view === "days") {
+      const dayKeys = new Set<string>();
+      for (const window of allAvailabilities) {
+        for (const key of collectAvailableDayKeys(window, now)) {
+          dayKeys.add(key);
+        }
+      }
+      availableDays = Array.from(dayKeys).sort();
+    } else {
+      const rawSlots = allAvailabilities
+        .flatMap(generateTimeSlots)
+        .filter((slot) => {
+          const start = slot.startDateTime;
+          if (typeof start !== "string") return false;
+          return parseMindbodyLocalDateTime(start).getTime() > now;
+        });
+
+      const dedupMap = new Map<string, Record<string, unknown>>();
+      for (const slot of rawSlots) {
+        const key = `${slot.staffId ?? ""}|${slot.locationId ?? ""}|${slot.sessionTypeId ?? ""}|${slot.startDateTime}`;
+        if (!dedupMap.has(key)) dedupMap.set(key, slot);
+      }
+      availableItems = Array.from(dedupMap.values()).sort((a, b) => {
+        const aStart = parseMindbodyLocalDateTime(String(a.startDateTime)).getTime();
+        const bStart = parseMindbodyLocalDateTime(String(b.startDateTime)).getTime();
+        return aStart - bStart;
+      });
+      availableDays = Array.from(
+        new Set(
+          availableItems.map((slot) =>
+            studioDateKeyFromInstant(parseMindbodyLocalDateTime(String(slot.startDateTime))),
+          ),
+        ),
+      ).sort();
+
+      console.log("Availability dedup:", {
+        sessionTypeId,
+        rawCount: rawSlots.length,
+        dedupedCount: availableItems.length,
+        removed: rawSlots.length - availableItems.length,
+      });
     }
-    const availableItems = Array.from(dedupMap.values()).sort(
-      (a, b) =>
-        parseMindbodyLocalDateTime(a.startDateTime).getTime() -
-        parseMindbodyLocalDateTime(b.startDateTime).getTime(),
-    );
 
-    console.log("Availability dedup:", {
-      sessionTypeId,
-      rawCount: rawSlots.length,
-      dedupedCount: availableItems.length,
-      removed: rawSlots.length - availableItems.length,
-    });
-
-    const staffResponse = await fetch(
-      `https://api.mindbodyonline.com/public/v6/appointment/schedulableitems?SessionTypeIds=${sessionTypeId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Key": apiKey,
-          "SiteId": siteId,
-          "Authorization": `Bearer ${staffToken}`,
+    // Staff list only needed for slot detail views; skip on calendar-days to keep responses tiny.
+    let availableStaff: unknown[] = [];
+    if (view === "slots") {
+      const staffResponse = await fetch(
+        `https://api.mindbodyonline.com/public/v6/appointment/schedulableitems?SessionTypeIds=${sessionTypeId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "SiteId": siteId,
+            "Authorization": `Bearer ${staffToken}`,
+          },
         },
-      },
-    );
+      );
 
-    let availableStaff = [];
-    if (staffResponse.ok) {
-      const staffData = await staffResponse.json();
-      availableStaff = (staffData.StaffMembers || []).map((s: any) => ({
-        id: s.Id,
-        name: `${s.FirstName} ${s.LastName}`,
-        imageUrl: s.ImageUrl,
-        bio: s.Bio,
-      }));
+      if (staffResponse.ok) {
+        const staffData = await staffResponse.json();
+        availableStaff = (staffData.StaffMembers || []).map((s: {
+          Id: number;
+          FirstName: string;
+          LastName: string;
+          ImageUrl?: string;
+          Bio?: string;
+        }) => ({
+          id: s.Id,
+          name: `${s.FirstName} ${s.LastName}`,
+          imageUrl: s.ImageUrl,
+          bio: s.Bio,
+        }));
+      }
     }
 
-    const payload = {
+    const payload: AvailabilityPayload = {
       availableItems,
+      availableDays,
       availableStaff,
     };
     await setCachedJson(cacheKey, payload, CACHE_TTL.availability);
@@ -261,7 +359,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Availability fetch error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: error instanceof Error ? error.message : "Unknown error" }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
         status: 500,

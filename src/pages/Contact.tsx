@@ -160,6 +160,9 @@ const Contact = () => {
                     {info.href ? (
                       <a 
                         href={info.href}
+                        {...(info.href.startsWith('http')
+                          ? { target: '_blank', rel: 'noopener noreferrer' }
+                          : {})}
                         className="text-foreground/70 hover:text-primary transition-colors whitespace-pre-line"
                       >
                         {info.content}

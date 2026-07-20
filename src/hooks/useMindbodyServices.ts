@@ -95,12 +95,15 @@ async function fetchAvailability(params: {
   staffId?: string;
   startDate?: string;
   endDate?: string;
-}): Promise<{ availableItems: AvailableItem[]; availableStaff: Staff[] }> {
+  /** `days` = light calendar keys only; `slots` = full bookable starts (use for one day). */
+  view?: 'days' | 'slots';
+}): Promise<{ availableItems: AvailableItem[]; availableDays: string[]; availableStaff: Staff[] }> {
   const searchParams = new URLSearchParams();
   searchParams.set('sessionTypeId', params.sessionTypeId);
   if (params.staffId) searchParams.set('staffId', params.staffId);
   if (params.startDate) searchParams.set('startDate', params.startDate);
   if (params.endDate) searchParams.set('endDate', params.endDate);
+  if (params.view) searchParams.set('view', params.view);
 
   const response = await fetch(
     `${SUPABASE_URL}/functions/v1/mindbody-availability?${searchParams.toString()}`
@@ -108,7 +111,12 @@ async function fetchAvailability(params: {
   if (!response.ok) {
     throw new Error('Failed to fetch availability');
   }
-  return response.json();
+  const data = await response.json();
+  return {
+    availableItems: data.availableItems ?? [],
+    availableDays: data.availableDays ?? [],
+    availableStaff: data.availableStaff ?? [],
+  };
 }
 
 export function useMindbodyServices() {
@@ -142,6 +150,7 @@ export function useMindbodyAvailability(params: {
   staffId?: string;
   startDate?: string;
   endDate?: string;
+  view?: 'days' | 'slots';
   enabled?: boolean;
 }) {
   return useQuery({

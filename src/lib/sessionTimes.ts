@@ -122,6 +122,14 @@ export function studioDateKeyFromCalendar(date: Date): string {
   }).format(date);
 }
 
+/** Local Y-M-D from a DayPicker date (studio day encoded as local calendar components). */
+export function localCalendarDayKey(date: Date): string {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 /** Add calendar days to a YYYY-MM-DD studio date key. */
 export function studioDateKeyAddDays(dateKey: string, days: number): string {
   const [y, m, d] = dateKey.split('-').map(Number);
@@ -158,7 +166,9 @@ export function formatAppointmentTimeRange(
 }
 
 export function isSameMindbodyDay(value: string, selectedDate: Date): boolean {
-  return mindbodyDateKey(value) === studioDateKeyFromCalendar(selectedDate);
+  // DayPicker values are local Y-M-D stand-ins for studio calendar days — do not
+  // re-format midnight through London or far timezones shift the day.
+  return mindbodyDateKey(value) === localCalendarDayKey(selectedDate);
 }
 
 export function studioCalendarDate(value: string): Date {

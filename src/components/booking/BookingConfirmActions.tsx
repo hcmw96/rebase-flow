@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { useAuth } from '@/contexts/AuthContext';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import BookingConfirmCheckout from '@/components/booking/BookingConfirmCheckout';
-import PaymentCardSetupStep from '@/components/payment/PaymentCardSetupStep';
+import MindbodyCheckoutHandoffStep from '@/components/payment/MindbodyCheckoutHandoffStep';
 import { cn } from '@/lib/utils';
 
 interface BookingConfirmActionsProps {
@@ -19,10 +19,12 @@ interface BookingConfirmActionsProps {
   bookingOutcomeUncertain?: boolean;
   checkoutSummary?: BookingCheckoutSummary | null;
   onCreateAccount?: () => void;
-  needsCardOnFile?: boolean;
-  accountUrl?: string;
-  onContinueAfterCard?: () => void;
-  cardSetupRetryHint?: string | null;
+  /** Pay via Mindbody consumer checkout instead of StoredCard on Rebase. */
+  mindbodyCheckoutUrl?: string | null;
+  mindbodyCheckoutOpened?: boolean;
+  onOpenMindbodyCheckout?: () => void;
+  onMindbodyCheckoutFinished?: () => void;
+  mindbodyCheckoutChecking?: boolean;
 }
 
 const BookingConfirmActions = ({
@@ -36,12 +38,13 @@ const BookingConfirmActions = ({
   bookingOutcomeUncertain = false,
   checkoutSummary = null,
   onCreateAccount,
-  needsCardOnFile = false,
-  accountUrl,
-  onContinueAfterCard,
-  cardSetupRetryHint = null,
+  mindbodyCheckoutUrl = null,
+  mindbodyCheckoutOpened = false,
+  onOpenMindbodyCheckout,
+  onMindbodyCheckoutFinished,
+  mindbodyCheckoutChecking = false,
 }: BookingConfirmActionsProps) => {
-  const { openMindbodySignUp, mindbodySignUpUrl } = useAuth();
+  const { openMindbodySignUp } = useAuth();
   const confirmLockedRef = useRef(false);
 
   const handleCreateAccount = () => {
@@ -53,38 +56,58 @@ const BookingConfirmActions = ({
   };
 
   const showGuestActions = !isAuthenticated;
-  const showCardSetup =
-    isAuthenticated && needsCardOnFile && Boolean(accountUrl) && Boolean(onContinueAfterCard);
+  // Any paid booking with a Mindbody checkout handoff — never StoredCard on Rebase.
+  const useMindbodyPay =
+    isAuthenticated && Boolean(onOpenMindbodyCheckout) && !checkoutSummary?.pass;
+
   const confirmLabel =
-    checkoutSummary && !checkoutSummary.pass
-      ? `Confirm & pay £${checkoutSummary.priceGbp}`
-      : 'Confirm booking';
+    useMindbodyPay
+      ? checkoutSummary && checkoutSummary.priceGbp > 0
+        ? `Pay £${checkoutSummary.priceGbp} in Mindbody`
+        : 'Pay in Mindbody'
+      : checkoutSummary && !checkoutSummary.pass
+        ? `Confirm & pay £${checkoutSummary.priceGbp}`
+        : 'Confirm booking';
 
   const handleConfirmClick = useCallback(() => {
     if (isPending || confirmLockedRef.current) return;
     confirmLockedRef.current = true;
-    onConfirm();
+    if (useMindbodyPay && onOpenMindbodyCheckout) {
+      onOpenMindbodyCheckout();
+    } else {
+      onConfirm();
+    }
     window.setTimeout(() => {
       confirmLockedRef.current = false;
     }, 3000);
-  }, [isPending, onConfirm]);
+  }, [isPending, onConfirm, onOpenMindbodyCheckout, useMindbodyPay]);
 
   return (
     <div className="space-y-3">
-      {isAuthenticated && checkoutSummary && !bookingErrorRequiresSignIn && !showCardSetup && (
+      {isAuthenticated && checkoutSummary && !bookingErrorRequiresSignIn && !useMindbodyPay && (
         <BookingConfirmCheckout summary={checkoutSummary} />
       )}
 
-      {showCardSetup && accountUrl && onContinueAfterCard && (
-        <PaymentCardSetupStep
-          accountUrl={accountUrl}
-          onContinue={onContinueAfterCard}
-          isRetrying={isPending}
-          retryHint={cardSetupRetryHint}
+      {useMindbodyPay && onOpenMindbodyCheckout && onMindbodyCheckoutFinished && mindbodyCheckoutOpened ? (
+        <MindbodyCheckoutHandoffStep
+          priceGbp={checkoutSummary?.priceGbp}
+          checkoutOpened
+          onOpenCheckout={onOpenMindbodyCheckout}
+          onFinished={onMindbodyCheckoutFinished}
+          isChecking={mindbodyCheckoutChecking}
+        />
+      ) : null}
+
+      {useMindbodyPay && !mindbodyCheckoutOpened && (
+        <BookingConfirmCheckout
+          summary={{
+            priceGbp: checkoutSummary?.priceGbp ?? 0,
+            payInMindbody: true,
+          }}
         />
       )}
 
-      {bookingError && !showCardSetup && (
+      {bookingError && !useMindbodyPay && (
         <p
           className={cn(
             'text-sm rounded-lg px-3 py-2.5 leading-relaxed',
@@ -100,18 +123,13 @@ const BookingConfirmActions = ({
       {showGuestActions && (
         <div className="space-y-2 text-sm text-muted-foreground leading-relaxed">
           <p>
-            Sign in with your Mindbody account to book here — we&apos;ll open Mindbody in a new window,
-            then bring you back to confirm your session on Rebase.
-          </p>
-          <p>
-            <span className="font-medium text-foreground">New to Rebase?</span>{' '}
-            Create a free Mindbody account first, then return and tap{' '}
-            <span className="font-medium text-foreground">Sign in to book</span>.
+            Sign in or create a Mindbody account to book — we&apos;ll open Mindbody briefly, then bring
+            you straight back here to finish this booking.
           </p>
         </div>
       )}
 
-      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !showCardSetup && (
+      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !useMindbodyPay && (
         <p className="text-sm text-muted-foreground">
           {bookingOutcomeUncertain ? (
             <>
@@ -145,11 +163,11 @@ const BookingConfirmActions = ({
           variant="outline"
           onClick={onChangeTime}
           className="w-full sm:flex-1 min-h-11"
-          disabled={isPending}
+          disabled={isPending || mindbodyCheckoutChecking}
         >
           {changeTimeLabel}
         </Button>
-        {!showCardSetup && (
+        {!useMindbodyPay && (
           <Button
             type="button"
             onClick={handleConfirmClick}
@@ -169,6 +187,16 @@ const BookingConfirmActions = ({
             )}
           </Button>
         )}
+        {useMindbodyPay && !mindbodyCheckoutOpened && (
+          <Button
+            type="button"
+            onClick={handleConfirmClick}
+            disabled={isPending}
+            className="w-full sm:flex-1 min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+          >
+            {confirmLabel}
+          </Button>
+        )}
       </div>
 
       {showGuestActions && (
@@ -179,13 +207,14 @@ const BookingConfirmActions = ({
           disabled={isPending}
           className="w-full min-h-11"
         >
-          Create Mindbody account
+          Create account &amp; return here
         </Button>
       )}
 
-      {showGuestActions && mindbodySignUpUrl && (
+      {showGuestActions && (
         <p className="text-xs text-muted-foreground text-center leading-relaxed">
-          Account creation opens Mindbody in a new tab. Booking and payment stay on Rebase.
+          New to Rebase? Choose create account on the Mindbody screen — we&apos;ll bring you back to
+          this booking when you&apos;re done.
         </p>
       )}
     </div>

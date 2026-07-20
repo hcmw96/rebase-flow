@@ -30,7 +30,7 @@ import Footer from '@/components/Footer';
 import { useAuth } from '@/contexts/AuthContext';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useClientMembership, type Membership } from '@/hooks/useMindbodyMembership';
-import { resolveTier, MEMBER_PERKS, type TierConfig } from '@/lib/membershipTiers';
+import { resolveTier, MEMBER_PERKS, clampMembershipAllowanceRemaining, type TierConfig } from '@/lib/membershipTiers';
 
 const SITE_URL = 'https://rebase-flow.lovable.app';
 
@@ -173,7 +173,7 @@ const Allowances = ({
     if (a.monthly === 'unlimited') {
       return { label: a.label, used: 0, total: 0, unlimited: true, remaining: matched?.remaining };
     }
-    const remaining = matched?.remaining ?? a.monthly;
+    const remaining = clampMembershipAllowanceRemaining(matched?.remaining, a.monthly);
     const used = Math.max(0, a.monthly - remaining);
     return { label: a.label, used, total: a.monthly, unlimited: false, remaining };
   });
@@ -202,7 +202,7 @@ const Allowances = ({
                 style={{
                   width: r.unlimited
                     ? '100%'
-                    : `${Math.max(4, ((r.total - r.used) / Math.max(r.total, 1)) * 100)}%`,
+                    : `${Math.min(100, Math.max(4, (r.remaining / Math.max(r.total, 1)) * 100))}%`,
                   opacity: r.unlimited ? 0.15 : 1,
                 }}
               />

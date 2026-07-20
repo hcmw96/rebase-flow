@@ -65,6 +65,23 @@ export function resolveTier(membershipName: string | undefined | null): TierConf
   return null;
 }
 
+/**
+ * Mindbody often returns Remaining ≈ 99999 (or similarly huge) for unlimited /
+ * unset counts. Cap against the marketed monthly allotment so the dashboard
+ * never shows e.g. "99988 of 3 left".
+ */
+export function clampMembershipAllowanceRemaining(
+  remaining: number | null | undefined,
+  monthly: number,
+): number {
+  if (remaining == null || !Number.isFinite(remaining) || remaining < 0) {
+    return monthly;
+  }
+  // Sentinel / unlimited-style values from Mindbody
+  if (remaining >= 9000) return monthly;
+  return Math.min(Math.floor(remaining), monthly);
+}
+
 export const MEMBER_PERKS: { title: string; description: string; soon?: boolean }[] = [
   { title: '10% off all treatments', description: 'Applied automatically at checkout on every additional booking.' },
   { title: 'Guest passes', description: 'Bring friends and family to experience Rebase with you.' },

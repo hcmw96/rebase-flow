@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import { formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange } from '@/lib/sessionTimes';
-import { Calendar, CheckCircle, Clock, MapPin, User } from 'lucide-react';
+import { formatMindbodyDate, formatAppointmentTimeRange } from '@/lib/sessionTimes';
+import { Calendar, CheckCircle, Clock, CreditCard, MapPin, Ticket, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resolveDisplayName } from '@/config/serviceConfig';
 import { cn } from '@/lib/utils';
@@ -14,8 +14,20 @@ export interface BookingConfirmationDetails {
   locationName?: string | null;
 }
 
+/** How the booking was paid — from mindbody-book `payment` + local list price. */
+export type BookingConfirmationPayment = {
+  method?: 'pass' | 'stored_card' | null;
+  /** Amount charged (or £0 when a pass covered it). */
+  amountGbp?: number | null;
+  /** Catalogue / pre-discount price when higher than amount charged. */
+  listPriceGbp?: number | null;
+  /** Pass/credit name when method is pass. */
+  passName?: string | null;
+};
+
 interface BookingConfirmationSuccessProps {
   details: BookingConfirmationDetails;
+  payment?: BookingConfirmationPayment | null;
   durationMinutes?: number | null;
   onDone: () => void;
   doneLabel?: string;
@@ -26,11 +38,85 @@ interface BookingConfirmationSuccessProps {
 const normaliseBrand = (value: string | null | undefined): string =>
   (value ?? '').replace(/re[\s-]?base/gi, 'Rebase');
 
+function formatGbp(amount: number): string {
+  const rounded = Math.round(amount * 100) / 100;
+  return Number.isInteger(rounded) ? `£${rounded}` : `£${rounded.toFixed(2)}`;
+}
+
+function PaymentSummary({ payment }: { payment: BookingConfirmationPayment }) {
+  const method = payment.method;
+  const amount =
+    typeof payment.amountGbp === 'number' && Number.isFinite(payment.amountGbp)
+      ? payment.amountGbp
+      : null;
+  const list =
+    typeof payment.listPriceGbp === 'number' && Number.isFinite(payment.listPriceGbp)
+      ? payment.listPriceGbp
+      : null;
+  const discounted =
+    amount != null && list != null && list > amount + 0.009;
+
+  if (method === 'pass') {
+    return (
+      <div className="flex items-start gap-3 pt-3 border-t border-border">
+        <Ticket className="h-4 w-4 text-primary shrink-0 mt-0.5" aria-hidden />
+        <div className="min-w-0 flex-1 space-y-1">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="font-medium text-foreground">Covered by pass</span>
+            <span className="font-semibold text-foreground tabular-nums">£0</span>
+          </div>
+          {payment.passName && (
+            <p className="text-muted-foreground text-xs leading-relaxed truncate">
+              {payment.passName}
+            </p>
+          )}
+          {list != null && list > 0 && (
+            <div className="flex items-baseline justify-between gap-3 text-xs">
+              <span className="text-muted-foreground">Usual price</span>
+              <span className="text-muted-foreground line-through tabular-nums">{formatGbp(list)}</span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  if (amount == null && list == null) return null;
+
+  const charged = amount ?? list!;
+
+  return (
+    <div className="flex items-start gap-3 pt-3 border-t border-border">
+      <CreditCard className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" aria-hidden />
+      <div className="min-w-0 flex-1 space-y-1">
+        <div className="flex items-baseline justify-between gap-3">
+          <span className="text-muted-foreground">
+            {method === 'stored_card' ? 'Charged' : 'Price'}
+          </span>
+          <span className="font-semibold text-foreground tabular-nums">{formatGbp(charged)}</span>
+        </div>
+        {discounted && (
+          <div className="flex items-baseline justify-between gap-3 text-xs">
+            <span className="text-muted-foreground">Member discount applied</span>
+            <span className="text-muted-foreground tabular-nums">
+              <span className="line-through mr-1.5">{formatGbp(list!)}</span>
+              <span className="text-primary font-medium">
+                −{formatGbp(list! - charged)}
+              </span>
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 /**
  * Full-screen replacement after a successful mindbody-book response.
  */
 const BookingConfirmationSuccess = ({
   details,
+  payment,
   durationMinutes,
   onDone,
   doneLabel = 'Done',
@@ -95,6 +181,7 @@ const BookingConfirmationSuccess = ({
             <span>{normaliseBrand(details.locationName)}</span>
           </div>
         )}
+        {payment && <PaymentSummary payment={payment} />}
       </div>
 
       <p className="text-sm text-muted-foreground leading-relaxed px-2">
