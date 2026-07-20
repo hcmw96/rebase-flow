@@ -105,18 +105,35 @@ async function fetchAvailability(params: {
   if (params.endDate) searchParams.set('endDate', params.endDate);
   if (params.view) searchParams.set('view', params.view);
 
-  const response = await fetch(
-    `${SUPABASE_URL}/functions/v1/mindbody-availability?${searchParams.toString()}`
-  );
-  if (!response.ok) {
-    throw new Error('Failed to fetch availability');
+  const url = `${SUPABASE_URL}/functions/v1/mindbody-availability?${searchParams.toString()}`;
+  const maxAttempts = 3;
+  let lastError: Error | null = null;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      const response = await fetch(url);
+      // Transient edge/Mindbody failures — retry rather than show an empty calendar.
+      if (response.status === 502 || response.status === 503 || response.status === 504) {
+        throw new Error(`Availability temporarily unavailable (${response.status})`);
+      }
+      if (!response.ok) {
+        throw new Error('Failed to fetch availability');
+      }
+      const data = await response.json();
+      return {
+        availableItems: data.availableItems ?? [],
+        availableDays: data.availableDays ?? [],
+        availableStaff: data.availableStaff ?? [],
+      };
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error('Failed to fetch availability');
+      if (attempt < maxAttempts) {
+        await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
+      }
+    }
   }
-  const data = await response.json();
-  return {
-    availableItems: data.availableItems ?? [],
-    availableDays: data.availableDays ?? [],
-    availableStaff: data.availableStaff ?? [],
-  };
+
+  throw lastError ?? new Error('Failed to fetch availability');
 }
 
 export function useMindbodyServices() {
@@ -159,5 +176,7 @@ export function useMindbodyAvailability(params: {
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: false,
     enabled: params.enabled !== false && !!params.sessionTypeId,
+    retry: 2,
+    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
   });
 }

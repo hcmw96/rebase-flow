@@ -205,40 +205,63 @@ serve(async (req) => {
     const allAvailabilities: AvailabilityWindow[] = [];
     let offset = 0;
 
-    while (offset < MAX_AVAILABILITY_WINDOWS) {
+    async function fetchBookablePage(pageOffset: number): Promise<{
+      batch: AvailabilityWindow[];
+      total: number | undefined;
+    }> {
       const params = new URLSearchParams();
-      params.set("SessionTypeIds", sessionTypeId);
+      params.set("SessionTypeIds", sessionTypeId!);
       params.set("StartDate", mindbodyStart);
       params.set("EndDate", mindbodyEnd);
       params.set("IgnoreDefaultSessionLength", "true");
       params.set("Limit", String(PAGE_SIZE));
-      params.set("Offset", String(offset));
+      params.set("Offset", String(pageOffset));
       if (staffId) params.set("StaffIds", staffId);
 
-      const response = await fetch(
-        `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?${params.toString()}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Api-Key": apiKey,
-            "SiteId": siteId,
-            "Authorization": `Bearer ${staffToken}`,
+      const maxAttempts = 3;
+      let lastErrorText = "";
+      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+        const response = await fetch(
+          `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?${params.toString()}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+              "Api-Key": apiKey!,
+              "SiteId": siteId!,
+              "Authorization": `Bearer ${staffToken}`,
+            },
           },
-        },
-      );
+        );
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error("Availability fetch error:", errorText);
-        throw new Error("Failed to fetch availability");
+        if (response.ok) {
+          const data = await response.json();
+          return {
+            batch: data.Availabilities || [],
+            total: data.PaginationResponse?.TotalResults,
+          };
+        }
+
+        lastErrorText = await response.text();
+        const retryable = response.status === 502 || response.status === 503 ||
+          response.status === 504 || response.status === 429;
+        console.error("Availability fetch error:", {
+          status: response.status,
+          attempt,
+          retryable,
+          body: lastErrorText.slice(0, 400),
+        });
+        if (!retryable || attempt === maxAttempts) break;
+        await new Promise((r) => setTimeout(r, 300 * attempt));
       }
 
-      const data = await response.json();
-      const batch = data.Availabilities || [];
+      throw new Error("Failed to fetch availability");
+    }
+
+    while (offset < MAX_AVAILABILITY_WINDOWS) {
+      const { batch, total } = await fetchBookablePage(offset);
       allAvailabilities.push(...batch);
 
-      const total = data.PaginationResponse?.TotalResults;
       console.log("Mindbody bookableitems page:", {
         sessionTypeId,
         offset,

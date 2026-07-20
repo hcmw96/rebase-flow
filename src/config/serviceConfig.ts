@@ -78,6 +78,9 @@ export const hiddenServiceNamePatterns: RegExp[] = [
   /\bcorporate\b/i,
   /indian\s*head/i,
   /destress.*(head|neck|shoulder)/i,
+  // Standalone IV add-ons are not bookable online (0 availability).
+  /^iv\s*add[\s-]*on/i,
+  /\badd[\s-]*on\b.*paracetamol/i,
 ];
 
 export function isHiddenServiceName(name: string): boolean {
@@ -176,7 +179,7 @@ export const categoryImages: Record<string, string> = {
 };
 
 // ── Contact-only groups ────────────────────────────────────────────
-export const contactOnlyGroups = new Set(['Osteopathy']);
+export const contactOnlyGroups = new Set(['Osteopathy', 'Core Radiance']);
 
 // ── Package groups (append "Package" to title, hide duration) ─────
 export const packageGroups = new Set([
@@ -510,5 +513,5 @@ export const staticWebsiteCatalogue: StaticServiceEntry[] = [
   { baseName: "Athletes Performance", category: "Regen and Manual Therapies", image: "/images/rebase-athletes-performance.jpg", shortDescription: "Elite recovery and performance protocol for serious athletes.", fromPrice: 3350, contactOnly: false },
   { baseName: "Longevity", category: "Regen and Manual Therapies", image: "/images/rebase-longevity.jpg", shortDescription: "Comprehensive longevity protocol to optimise vitality and healthspan.", fromPrice: 1700, contactOnly: false },
   { baseName: "High Performance Recovery", category: "Regen and Manual Therapies", image: "/images/rebase-high-performance-recovery.jpg", shortDescription: "Multi-modal recovery package for peak performance.", fromPrice: 2950, contactOnly: false },
-  { baseName: "Core Radiance", category: "Regen and Manual Therapies", image: "/images/rebase-core-radiance.jpg", shortDescription: "Women's health and radiance protocol.", fromPrice: 1950, contactOnly: false },
+  { baseName: "Core Radiance", category: "Regen and Manual Therapies", image: "/images/rebase-core-radiance.jpg", shortDescription: "Women's health and radiance protocol.", fromPrice: 1950, contactOnly: true },
 ];
