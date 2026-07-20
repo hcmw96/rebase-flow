@@ -25,6 +25,7 @@ interface BookingConfirmActionsProps {
   onOpenMindbodyCheckout?: () => void;
   onMindbodyCheckoutFinished?: () => void;
   mindbodyCheckoutChecking?: boolean;
+  mindbodyCheckoutKind?: 'class' | 'appointment';
 }
 
 const BookingConfirmActions = ({
@@ -43,6 +44,7 @@ const BookingConfirmActions = ({
   onOpenMindbodyCheckout,
   onMindbodyCheckoutFinished,
   mindbodyCheckoutChecking = false,
+  mindbodyCheckoutKind = 'class',
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp } = useAuth();
   const confirmLockedRef = useRef(false);
@@ -58,7 +60,10 @@ const BookingConfirmActions = ({
   const showGuestActions = !isAuthenticated;
   // Any paid booking with a Mindbody checkout handoff — never StoredCard on Rebase.
   const useMindbodyPay =
-    isAuthenticated && Boolean(onOpenMindbodyCheckout) && !checkoutSummary?.pass;
+    isAuthenticated &&
+    Boolean(onOpenMindbodyCheckout) &&
+    Boolean(mindbodyCheckoutUrl) &&
+    !checkoutSummary?.pass;
 
   const confirmLabel =
     useMindbodyPay
@@ -95,6 +100,7 @@ const BookingConfirmActions = ({
           onOpenCheckout={onOpenMindbodyCheckout}
           onFinished={onMindbodyCheckoutFinished}
           isChecking={mindbodyCheckoutChecking}
+          kind={mindbodyCheckoutKind}
         />
       ) : null}
 
@@ -103,6 +109,7 @@ const BookingConfirmActions = ({
           summary={{
             priceGbp: checkoutSummary?.priceGbp ?? 0,
             payInMindbody: true,
+            payInMindbodyKind: mindbodyCheckoutKind,
           }}
         />
       )}

@@ -378,16 +378,21 @@ const BookingDrawer = ({
     return {
       priceGbp: appointmentListPriceGbp ?? 0,
       payInMindbody: true as const,
+      payInMindbodyKind: 'appointment' as const,
     };
   }, [appointmentListPriceGbp]);
 
-  const mindbodyAppointmentCheckoutUrl = useMemo(
-    () => mindbodyAppointmentBookAndPayUrl(),
-    [],
-  );
+  const mindbodyAppointmentCheckoutUrl = useMemo(() => {
+    if (!selectedSlot?.sessionTypeId) return null;
+    return mindbodyAppointmentBookAndPayUrl({
+      sessionTypeId: selectedSlot.sessionTypeId,
+      startDateTime: selectedSlot.startDateTime,
+      locationId: selectedSlot.locationId,
+    });
+  }, [selectedSlot]);
 
   const openMindbodyAppointmentCheckout = () => {
-    if (!selectedSlot) return;
+    if (!selectedSlot || !mindbodyAppointmentCheckoutUrl) return;
     stashMindbodyCheckoutHandoff({
       kind: 'appointment',
       serviceName: activeVariant?.name || service?.title || 'Appointment',
@@ -751,6 +756,7 @@ const BookingDrawer = ({
                         onOpenMindbodyCheckout={openMindbodyAppointmentCheckout}
                         onMindbodyCheckoutFinished={() => void finishMindbodyAppointmentCheckout()}
                         mindbodyCheckoutChecking={mindbodyCheckoutChecking}
+                        mindbodyCheckoutKind="appointment"
                       />
 
                       {onSwitchService && (

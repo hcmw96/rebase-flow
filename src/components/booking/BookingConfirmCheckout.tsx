@@ -18,6 +18,8 @@ export type BookingCheckoutSummary = {
   accountUrl?: string;
   /** Pay via Mindbody consumer checkout (new card / Apple Pay), not StoredCard on Rebase. */
   payInMindbody?: boolean;
+  /** Appointments open that service’s Mindbody day view; classes deep-link nearer to checkout. */
+  payInMindbodyKind?: 'class' | 'appointment';
 };
 
 interface BookingConfirmCheckoutProps {
@@ -29,7 +31,7 @@ interface BookingConfirmCheckoutProps {
  * Explains how payment works on the Rebase confirm step.
  */
 const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutProps) => {
-  const { priceGbp, pass, payInMindbody } = summary;
+  const { priceGbp, pass, payInMindbody, payInMindbodyKind = 'class' } = summary;
 
   if (pass) {
     const usageLine =
@@ -70,6 +72,7 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
   }
 
   if (payInMindbody) {
+    const isAppointment = payInMindbodyKind === 'appointment';
     return (
       <div className={cn('rounded-lg border border-border bg-secondary/40 px-4 py-3.5 space-y-2', className)}>
         <div className="flex items-start gap-2.5">
@@ -77,15 +80,30 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
           <div className="space-y-1 text-sm">
             <p className="font-medium text-foreground">Pay in Mindbody</p>
             <p className="text-muted-foreground leading-relaxed">
-              Next you&apos;ll open Mindbody&apos;s checkout
-              {priceGbp > 0 ? (
+              {isAppointment ? (
                 <>
-                  {' '}
-                  for <span className="font-medium text-foreground">£{priceGbp}</span>
+                  Next you&apos;ll open this treatment in Mindbody to confirm the time and pay
+                  {priceGbp > 0 ? (
+                    <>
+                      {' '}
+                      <span className="font-medium text-foreground">£{priceGbp}</span>
+                    </>
+                  ) : null}{' '}
+                  — new card, Apple Pay, or a saved method.
                 </>
-              ) : null}{' '}
-              — enter a new card, use Apple Pay, or pick a saved method. Same flow as the Rebase Mindbody
-              app.
+              ) : (
+                <>
+                  Next you&apos;ll open Mindbody&apos;s checkout
+                  {priceGbp > 0 ? (
+                    <>
+                      {' '}
+                      for <span className="font-medium text-foreground">£{priceGbp}</span>
+                    </>
+                  ) : null}{' '}
+                  — enter a new card, use Apple Pay, or pick a saved method. Same flow as the Rebase
+                  Mindbody app.
+                </>
+              )}
             </p>
           </div>
         </div>

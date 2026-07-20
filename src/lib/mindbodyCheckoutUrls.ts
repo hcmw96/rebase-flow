@@ -46,12 +46,37 @@ export function mindbodyClassBookAndPayUrl(opts: {
 }
 
 /**
- * Mindbody consumer appointments — supports new card + Apple Pay (Safari / branded web).
- * @see https://support.mindbodyonline.com/s/article/How-to-create-and-use-Mindbody-Marketing-Links
+ * Mindbody consumer appointment booking for a specific session type (card / Apple Pay).
+ *
+ * Do NOT use the branded-web `/appointments/{site}/services` marketing link — that opens the
+ * full service catalogue (Corporate Services first) and cold deep-links to `/schedule` redirect
+ * back there. Classic `stype={sessionTypeId}` opens that treatment’s day view instead.
+ *
+ * @see https://support.mindbodyonline.com/s/article/206614247-Links-How-to-create-links-to-appointments
  */
-export function mindbodyAppointmentBookAndPayUrl(opts?: { siteId?: string }): string {
-  const site = encodeURIComponent(resolveSiteId(opts?.siteId));
-  return `https://go.mindbodyonline.com/book/app/appointments/${site}/services`;
+export function mindbodyAppointmentBookAndPayUrl(opts: {
+  sessionTypeId: string | number;
+  startDateTime?: string;
+  locationId?: number | null;
+  siteId?: string;
+}): string {
+  const sessionTypeId = Number(opts.sessionTypeId);
+  if (!Number.isFinite(sessionTypeId) || sessionTypeId <= 0) {
+    throw new Error('mindbodyAppointmentBookAndPayUrl requires a positive sessionTypeId');
+  }
+
+  const params = new URLSearchParams({
+    studioid: resolveSiteId(opts.siteId),
+    stype: String(sessionTypeId),
+    sView: 'day',
+  });
+  if (opts.startDateTime) {
+    params.set('sDate', mindbodyClassicDate(opts.startDateTime));
+  }
+  if (opts.locationId != null && Number(opts.locationId) > 0) {
+    params.set('sLoc', String(opts.locationId));
+  }
+  return `https://clients.mindbodyonline.com/classic/ws?${params.toString()}`;
 }
 
 export function openMindbodyBookAndPay(url: string): void {
