@@ -262,11 +262,11 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
                       whileTap={{ scale: 0.965 }}
                       className="group text-left rounded-lg overflow-hidden bg-white/[0.03] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors"
                     >
-                      <div className="relative h-36 overflow-hidden">
+                      <div className="relative h-36 overflow-hidden bg-black/40">
                         <img
                           src={cls.image}
                           alt={cls.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                          className="absolute inset-0 h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                           loading="lazy"
                         />
                         <ImageCardScrim />

@@ -242,11 +242,11 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
                         className="group text-left rounded-lg overflow-hidden bg-[hsl(25,15%,14%)] border border-[#F9ECD9]/8 hover:border-[#F9ECD9]/20 transition-colors cursor-pointer"
                         aria-label={`Book ${cls.name}`}
                       >
-                        <div className="relative h-48 overflow-hidden">
+                        <div className="relative h-48 overflow-hidden bg-[hsl(25,15%,10%)]">
                           <img
                             src={cls.image}
                             alt={`${cls.name} at Rebase Recovery, London`}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                            className="absolute inset-0 h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-700"
                             loading="lazy"
                           />
                           <ImageCardScrim />

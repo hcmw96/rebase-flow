@@ -119,8 +119,13 @@ const ClassSchedule = ({ onSelectService }: ClassScheduleProps) => {
               onClick={() => openClassType(cls)}
               className="rounded-xl overflow-hidden border border-border/30 bg-black/[0.03] text-left transition-colors hover:border-primary/30"
             >
-              <div className="relative h-24 overflow-hidden">
-                <img src={cls.image} alt={cls.name} className="w-full h-full object-cover" loading="lazy" />
+              <div className="relative h-24 overflow-hidden bg-black/40">
+                <img
+                  src={cls.image}
+                  alt={cls.name}
+                  className="absolute inset-0 h-full w-full object-cover object-center"
+                  loading="lazy"
+                />
                 <ImageCardScrim />
                 <h4 className="absolute bottom-2 left-3 right-3 z-10 text-[#F9ECD9] text-xs font-medium drop-shadow-sm">
                   {resolveDisplayName(cls.name)}
@@ -146,8 +151,13 @@ const ClassSchedule = ({ onSelectService }: ClassScheduleProps) => {
             onClick={() => openClassType(cls)}
             className="rounded-xl overflow-hidden border border-border/30 bg-black/[0.03] text-left transition-colors hover:border-primary/30"
           >
-            <div className="relative h-24 overflow-hidden">
-              <img src={cls.image} alt={cls.name} className="w-full h-full object-cover" loading="lazy" />
+            <div className="relative h-24 overflow-hidden bg-black/40">
+              <img
+                src={cls.image}
+                alt={cls.name}
+                className="absolute inset-0 h-full w-full object-cover object-center"
+                loading="lazy"
+              />
               <ImageCardScrim />
               <h4 className="absolute bottom-2 left-3 right-3 z-10 text-[#F9ECD9] text-xs font-medium drop-shadow-sm">
                 {resolveDisplayName(cls.name)}
