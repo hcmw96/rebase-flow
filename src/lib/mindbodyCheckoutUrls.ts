@@ -19,12 +19,12 @@ function mindbodyClassicDate(startDateTime: string): string {
 
 /**
  * Deep-link into Mindbody consumer class booking (card / Apple Pay checkout).
- * Same surface the white-label app uses for book-and-pay.
+ * `classScheduleId` must be Mindbody ClassScheduleId (not the per-occurrence Class.Id).
  *
  * @see https://support.mindbodyonline.com/s/article/206613877-Links-Creating-a-link-to-a-specific-class
  */
 export function mindbodyClassBookAndPayUrl(opts: {
-  classId: string;
+  classScheduleId: string;
   startDateTime: string;
   locationId?: number | null;
   programId?: number | null;
@@ -33,7 +33,7 @@ export function mindbodyClassBookAndPayUrl(opts: {
   const params = new URLSearchParams({
     studioid: resolveSiteId(opts.siteId),
     stype: '-7',
-    sclassid: String(opts.classId),
+    sclassid: String(opts.classScheduleId),
     sDate: mindbodyClassicDate(opts.startDateTime),
   });
   if (opts.locationId != null && Number(opts.locationId) > 0) {
@@ -41,40 +41,6 @@ export function mindbodyClassBookAndPayUrl(opts: {
   }
   if (opts.programId != null && Number(opts.programId) > 0) {
     params.set('sTG', String(opts.programId));
-  }
-  return `https://clients.mindbodyonline.com/classic/ws?${params.toString()}`;
-}
-
-/**
- * Mindbody consumer appointment booking for a specific session type (card / Apple Pay).
- *
- * Do NOT use the branded-web `/appointments/{site}/services` marketing link — that opens the
- * full service catalogue (Corporate Services first) and cold deep-links to `/schedule` redirect
- * back there. Classic `stype={sessionTypeId}` opens that treatment’s day view instead.
- *
- * @see https://support.mindbodyonline.com/s/article/206614247-Links-How-to-create-links-to-appointments
- */
-export function mindbodyAppointmentBookAndPayUrl(opts: {
-  sessionTypeId: string | number;
-  startDateTime?: string;
-  locationId?: number | null;
-  siteId?: string;
-}): string {
-  const sessionTypeId = Number(opts.sessionTypeId);
-  if (!Number.isFinite(sessionTypeId) || sessionTypeId <= 0) {
-    throw new Error('mindbodyAppointmentBookAndPayUrl requires a positive sessionTypeId');
-  }
-
-  const params = new URLSearchParams({
-    studioid: resolveSiteId(opts.siteId),
-    stype: String(sessionTypeId),
-    sView: 'day',
-  });
-  if (opts.startDateTime) {
-    params.set('sDate', mindbodyClassicDate(opts.startDateTime));
-  }
-  if (opts.locationId != null && Number(opts.locationId) > 0) {
-    params.set('sLoc', String(opts.locationId));
   }
   return `https://clients.mindbodyonline.com/classic/ws?${params.toString()}`;
 }

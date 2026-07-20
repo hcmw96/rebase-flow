@@ -21,6 +21,8 @@ export interface MindbodyService {
 
 export interface MindbodyClass {
   id: string;
+  /** Recurring schedule id for Mindbody consumer deep links (`sclassid`). */
+  classScheduleId?: string | null;
   classDescriptionId: number;
   name: string;
   description: string;
@@ -119,10 +121,21 @@ async function fetchAvailability(params: {
       if (!response.ok) {
         throw new Error('Failed to fetch availability');
       }
-      const data = await response.json();
+  const data = await response.json();
+      const availableItems: AvailableItem[] = data.availableItems ?? [];
+      let availableDays: string[] = data.availableDays ?? [];
+      // Older edge builds omitted availableDays — derive so calendars never go blank.
+      if (!availableDays.length && availableItems.length) {
+        const keys = new Set<string>();
+        for (const item of availableItems) {
+          const raw = item.startDateTime?.slice(0, 10);
+          if (raw) keys.add(raw);
+        }
+        availableDays = Array.from(keys).sort();
+      }
       return {
-        availableItems: data.availableItems ?? [],
-        availableDays: data.availableDays ?? [],
+        availableItems,
+        availableDays,
         availableStaff: data.availableStaff ?? [],
       };
     } catch (error) {

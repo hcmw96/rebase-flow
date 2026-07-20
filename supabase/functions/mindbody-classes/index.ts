@@ -105,7 +105,7 @@ serve(async (req) => {
     const classDescriptionId = url.searchParams.get("classDescriptionId");
     const programId = url.searchParams.get("programId");
 
-    const cacheKey = buildCacheKey("classes:v1", {
+    const cacheKey = buildCacheKey("classes:v2", {
       startDate,
       endDate,
       classDescriptionId,
@@ -166,7 +166,13 @@ serve(async (req) => {
     const classes = allClasses
       .filter((c: any) => parseMindbodyLocalDateTime(c.StartDateTime).getTime() > now)
       .map((c: any) => ({
+      // Instance id — required by Public API AddClientToClass / checkout ClassIds
       id: c.Id.toString(),
+      // Recurring schedule id — required by classic consumer deep links (sclassid)
+      classScheduleId:
+        c.ClassScheduleId != null && Number(c.ClassScheduleId) > 0
+          ? String(c.ClassScheduleId)
+          : null,
       classDescriptionId: c.ClassDescription?.Id,
       name: resolveDisplayName(c.ClassDescription?.Name || "Class"),
       description: (() => {

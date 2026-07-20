@@ -164,13 +164,17 @@ const ClassScheduleFlow = ({
 
   const mindbodyCheckoutUrl = useMemo(() => {
     if (!selectedClass || checkoutSummary?.pass) return null;
+    const scheduleId = selectedClass.classScheduleId?.trim();
+    if (!scheduleId) return null;
     return mindbodyClassBookAndPayUrl({
-      classId: selectedClass.id,
+      classScheduleId: scheduleId,
       startDateTime: selectedClass.startDateTime,
       locationId: selectedClass.locationId,
       programId: selectedClass.programId,
     });
   }, [selectedClass, checkoutSummary?.pass]);
+
+  const [needsMindbodyPay, setNeedsMindbodyPay] = useState(false);
 
   const { startDate, endDate } = bookingHorizonDateRange();
 
@@ -333,6 +337,7 @@ const ClassScheduleFlow = ({
 
   const openMindbodyCheckout = () => {
     if (!selectedClass || !mindbodyCheckoutUrl) return;
+    setNeedsMindbodyPay(true);
     stashMindbodyCheckoutHandoff({
       kind: 'class',
       serviceName: selectedClass.name,
@@ -361,13 +366,9 @@ const ClassScheduleFlow = ({
     }
   };
 
-  /** Pass/credit bookings stay on Rebase. Card payments go through Mindbody checkout. */
+  /** Book the selected class on Rebase (pass or StoredCard). Mindbody pay only if no card. */
   const handleBook = async () => {
     if (!selectedClass || bookingComplete || bookingInFlightRef.current || bookMutation.isPending) {
-      return;
-    }
-    if (!checkoutSummary?.pass) {
-      openMindbodyCheckout();
       return;
     }
 
@@ -408,6 +409,7 @@ const ClassScheduleFlow = ({
         passName: usedPass ? checkoutSummary?.pass?.name ?? 'Session pass / credit' : null,
       });
       setBookingComplete(true);
+      setNeedsMindbodyPay(false);
       clearSessionNeedsPaymentCard();
     } catch (error: unknown) {
       bookingInFlightRef.current = false;
@@ -419,8 +421,13 @@ const ClassScheduleFlow = ({
           error.flags.storedCardUnavailable ||
           (error.flags.siteScopeIssue && error.flags.paymentRequired)
         ) {
-          // Fall through to Mindbody consumer checkout (new card / Apple Pay).
-          openMindbodyCheckout();
+          if (mindbodyCheckoutUrl) {
+            openMindbodyCheckout();
+            return;
+          }
+          setBookingError(
+            'Add a payment card on your Mindbody account (Account → Payment & profile), then try again.',
+          );
           return;
         }
         clearSessionNeedsPaymentCard();
@@ -442,10 +449,6 @@ const ClassScheduleFlow = ({
     if (!selectedClass || bookingComplete || isSubmitting || bookMutation.isPending) return;
     if (!isAuthenticated) {
       startSignIn(selectedClass);
-      return;
-    }
-    if (!checkoutSummary?.pass) {
-      openMindbodyCheckout();
       return;
     }
     void handleBook();
@@ -644,6 +647,7 @@ const ClassScheduleFlow = ({
                 setBookingErrorRequiresSignIn(false);
                 setBookingOutcomeUncertain(false);
                 setMindbodyCheckoutOpened(false);
+                setNeedsMindbodyPay(false);
                 setSelectedClass(null);
                 setCurrentStep(1);
               }}
@@ -660,9 +664,13 @@ const ClassScheduleFlow = ({
               bookingOutcomeUncertain={bookingOutcomeUncertain}
               checkoutSummary={checkoutSummary}
               onCreateAccount={() => startCreateAccount(selectedClass)}
-              mindbodyCheckoutUrl={mindbodyCheckoutUrl}
+              mindbodyCheckoutUrl={
+                needsMindbodyPay || mindbodyCheckoutOpened ? mindbodyCheckoutUrl : null
+              }
               mindbodyCheckoutOpened={mindbodyCheckoutOpened}
-              onOpenMindbodyCheckout={openMindbodyCheckout}
+              onOpenMindbodyCheckout={
+                needsMindbodyPay || mindbodyCheckoutOpened ? openMindbodyCheckout : undefined
+              }
               onMindbodyCheckoutFinished={finishMindbodyCheckout}
               mindbodyCheckoutChecking={mindbodyCheckoutChecking}
             />

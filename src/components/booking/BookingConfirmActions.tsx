@@ -5,6 +5,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import BookingConfirmCheckout from '@/components/booking/BookingConfirmCheckout';
 import MindbodyCheckoutHandoffStep from '@/components/payment/MindbodyCheckoutHandoffStep';
+import PaymentCardSetupStep from '@/components/payment/PaymentCardSetupStep';
 import { cn } from '@/lib/utils';
 
 interface BookingConfirmActionsProps {
@@ -19,13 +20,17 @@ interface BookingConfirmActionsProps {
   bookingOutcomeUncertain?: boolean;
   checkoutSummary?: BookingCheckoutSummary | null;
   onCreateAccount?: () => void;
-  /** Pay via Mindbody consumer checkout instead of StoredCard on Rebase. */
+  /** Appointments: add card on Mindbody, then charge the selected slot on Rebase. */
+  needsCardOnFile?: boolean;
+  accountUrl?: string;
+  onContinueAfterCard?: () => void;
+  cardSetupRetryHint?: string | null;
+  /** Classes: pay via Mindbody consumer checkout instead of StoredCard on Rebase. */
   mindbodyCheckoutUrl?: string | null;
   mindbodyCheckoutOpened?: boolean;
   onOpenMindbodyCheckout?: () => void;
   onMindbodyCheckoutFinished?: () => void;
   mindbodyCheckoutChecking?: boolean;
-  mindbodyCheckoutKind?: 'class' | 'appointment';
 }
 
 const BookingConfirmActions = ({
@@ -39,12 +44,15 @@ const BookingConfirmActions = ({
   bookingOutcomeUncertain = false,
   checkoutSummary = null,
   onCreateAccount,
+  needsCardOnFile = false,
+  accountUrl,
+  onContinueAfterCard,
+  cardSetupRetryHint = null,
   mindbodyCheckoutUrl = null,
   mindbodyCheckoutOpened = false,
   onOpenMindbodyCheckout,
   onMindbodyCheckoutFinished,
   mindbodyCheckoutChecking = false,
-  mindbodyCheckoutKind = 'class',
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp } = useAuth();
   const confirmLockedRef = useRef(false);
@@ -58,9 +66,12 @@ const BookingConfirmActions = ({
   };
 
   const showGuestActions = !isAuthenticated;
-  // Any paid booking with a Mindbody checkout handoff — never StoredCard on Rebase.
+  const showCardSetup =
+    isAuthenticated && needsCardOnFile && Boolean(accountUrl) && Boolean(onContinueAfterCard);
+  // Class bookings only — appointments keep the selected slot and charge on Rebase.
   const useMindbodyPay =
     isAuthenticated &&
+    !showCardSetup &&
     Boolean(onOpenMindbodyCheckout) &&
     Boolean(mindbodyCheckoutUrl) &&
     !checkoutSummary?.pass;
@@ -89,8 +100,21 @@ const BookingConfirmActions = ({
 
   return (
     <div className="space-y-3">
-      {isAuthenticated && checkoutSummary && !bookingErrorRequiresSignIn && !useMindbodyPay && (
-        <BookingConfirmCheckout summary={checkoutSummary} />
+      {isAuthenticated &&
+        checkoutSummary &&
+        !bookingErrorRequiresSignIn &&
+        !showCardSetup &&
+        !useMindbodyPay && (
+          <BookingConfirmCheckout summary={checkoutSummary} />
+        )}
+
+      {showCardSetup && accountUrl && onContinueAfterCard && (
+        <PaymentCardSetupStep
+          accountUrl={accountUrl}
+          onContinue={onContinueAfterCard}
+          isRetrying={isPending}
+          retryHint={cardSetupRetryHint}
+        />
       )}
 
       {useMindbodyPay && onOpenMindbodyCheckout && onMindbodyCheckoutFinished && mindbodyCheckoutOpened ? (
@@ -100,7 +124,6 @@ const BookingConfirmActions = ({
           onOpenCheckout={onOpenMindbodyCheckout}
           onFinished={onMindbodyCheckoutFinished}
           isChecking={mindbodyCheckoutChecking}
-          kind={mindbodyCheckoutKind}
         />
       ) : null}
 
@@ -109,12 +132,11 @@ const BookingConfirmActions = ({
           summary={{
             priceGbp: checkoutSummary?.priceGbp ?? 0,
             payInMindbody: true,
-            payInMindbodyKind: mindbodyCheckoutKind,
           }}
         />
       )}
 
-      {bookingError && !useMindbodyPay && (
+      {bookingError && !showCardSetup && !useMindbodyPay && (
         <p
           className={cn(
             'text-sm rounded-lg px-3 py-2.5 leading-relaxed',
@@ -136,7 +158,7 @@ const BookingConfirmActions = ({
         </div>
       )}
 
-      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !useMindbodyPay && (
+      {isAuthenticated && bookingError && !bookingErrorRequiresSignIn && !showCardSetup && !useMindbodyPay && (
         <p className="text-sm text-muted-foreground">
           {bookingOutcomeUncertain ? (
             <>
@@ -174,7 +196,7 @@ const BookingConfirmActions = ({
         >
           {changeTimeLabel}
         </Button>
-        {!useMindbodyPay && (
+        {!showCardSetup && !useMindbodyPay && (
           <Button
             type="button"
             onClick={handleConfirmClick}
