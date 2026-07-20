@@ -496,7 +496,9 @@ async function mindbodyPostWithRetry(
   }
 
   // 2) Consumer + explicit pass/credit (ClientServiceId) when the account has one.
+  // Prefer the ClientServiceId already chosen by the caller (service-matched).
   if (bookResult && !bookResult.ok && !isPaymentError(bookResult.message)) {
+    const requestedServiceId = Number(body.ClientServiceId);
     for (const cid of [clientId, publicClientId]) {
       const services = await fetchActiveClientServices(
         apiKey,
@@ -504,7 +506,9 @@ async function mindbodyPostWithRetry(
         activeSession.access_token,
         cid,
       );
-      const clientServiceId = pickBookableClientServiceId(services);
+      const clientServiceId = Number.isFinite(requestedServiceId) && requestedServiceId > 0
+        ? requestedServiceId
+        : pickBookableClientServiceId(services);
       if (!clientServiceId) continue;
 
       bookResult = await attemptBook(
@@ -518,9 +522,13 @@ async function mindbodyPostWithRetry(
   }
 
   // 3) Staff fallback when the consumer OAuth token is scoped to another site (Places You Go).
+  // Only apply a pass when the caller already selected one — never invent a class/membership
+  // credit for a paid appointment (massage, etc.).
   if (bookResult && !bookResult.ok && isClientIdRetryable(bookResult.message)) {
-    const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
-    const clientServiceId = pickBookableClientServiceId(staffServices);
+    const requestedServiceId = Number(body.ClientServiceId);
+    const clientServiceId = Number.isFinite(requestedServiceId) && requestedServiceId > 0
+      ? requestedServiceId
+      : null;
 
     if (clientServiceId) {
       console.warn(
@@ -530,6 +538,7 @@ async function mindbodyPostWithRetry(
       bookResult = await attemptBook(staffToken, `staff:pass:${clientServiceId}`, clientId, {
         ClientServiceId: clientServiceId,
         RequirePayment: body.RequirePayment ?? true,
+        ApplyPayment: body.ApplyPayment ?? true,
       });
     }
   }

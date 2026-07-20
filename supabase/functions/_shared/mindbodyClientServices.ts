@@ -77,7 +77,7 @@ export function pickBookableClientServiceId(
 
 /**
  * Pick a pass/credit appropriate for the service being booked.
- * Avoids applying a contrast pass to cryotherapy (and vice versa).
+ * Avoids applying a contrast/class membership pass to massage (and vice versa).
  */
 export function pickBookableClientServiceIdForBooking(
   services: MindbodyClientServiceRow[],
@@ -105,6 +105,9 @@ export function pickBookableClientServiceIdForBooking(
     return pickBookableClientServiceId(contrastCredits);
   }
 
+  // Appointments like massage only use a credit when the pass name clearly matches
+  // the service (e.g. a "Sports Massage" pack). Never fall through to a generic
+  // class/membership pass — that books paid treatments for free.
   if (serviceName) {
     const words = serviceName.split(/\W+/).filter((w) => w.length > 3);
     const matched = services.filter((s) => {
@@ -114,6 +117,10 @@ export function pickBookableClientServiceIdForBooking(
     if (matched.length) {
       return pickBookableClientServiceId(matched);
     }
+  }
+
+  if (context.bookingType === "appointment") {
+    return null;
   }
 
   return pickBookableClientServiceId(services);
