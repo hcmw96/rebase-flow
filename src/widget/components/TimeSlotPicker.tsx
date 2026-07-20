@@ -11,13 +11,9 @@ interface TimeSlotPickerProps {
 export function TimeSlotPicker({ slots, selectedSlot, onSelect, isLoading }: TimeSlotPickerProps) {
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {[...Array(4)].map((_, i) => (
-          <div
-            key={i}
-            className="h-16 bg-[hsl(25,10%,15%)] rounded-xl animate-pulse"
-          />
-        ))}
+      <div className="space-y-2">
+        <div className="h-12 bg-[hsl(25,10%,15%)] rounded-xl animate-pulse" />
+        <div className="h-4 w-36 bg-[hsl(25,10%,15%)] rounded animate-pulse" />
       </div>
     );
   }
@@ -31,43 +27,41 @@ export function TimeSlotPicker({ slots, selectedSlot, onSelect, isLoading }: Tim
     );
   }
 
-  const slotsByStaff = slots.reduce((acc, slot) => {
-    const staffKey = slot.staffName || 'Any Available';
-    if (!acc[staffKey]) {
-      acc[staffKey] = [];
-    }
-    acc[staffKey].push(slot);
-    return acc;
-  }, {} as Record<string, AvailableItem[]>);
+  const sorted = [...slots].sort(
+    (a, b) => new Date(a.startDateTime).getTime() - new Date(b.startDateTime).getTime(),
+  );
+
+  const staffNames = new Set(sorted.map((s) => s.staffName?.trim()).filter(Boolean));
+  const showStaff = staffNames.size > 1;
 
   return (
-    <div className="space-y-4">
-      {Object.entries(slotsByStaff).map(([staffName, staffSlots]) => (
-        <div key={staffName}>
-          <h4 className="text-sm font-medium text-[hsl(35,8%,55%)] mb-2">{staffName}</h4>
-          <div className="grid grid-cols-3 gap-2">
-            {staffSlots.map((slot) => {
-              const isSelected = selectedSlot?.id === slot.id;
-              const time = formatMindbodyTime(slot.startDateTime);
-
-              return (
-                <button
-                  key={slot.id}
-                  onClick={() => onSelect(slot)}
-                  className={`
-                    py-3 px-4 rounded-xl text-sm font-medium transition-all
-                    ${isSelected
-                      ? 'bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)]'
-                      : 'bg-[hsl(25,10%,15%)] text-[hsl(35,15%,88%)] hover:bg-[hsl(25,12%,18%)] border border-[hsl(25,10%,20%)]'}
-                  `}
-                >
-                  {time}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      ))}
+    <div className="space-y-2">
+      <p className="text-sm text-[hsl(35,8%,55%)]">
+        {sorted.length} start time{sorted.length === 1 ? '' : 's'} available
+      </p>
+      <select
+        aria-label="Choose a start time"
+        className="w-full h-12 rounded-xl bg-[hsl(25,10%,15%)] text-[hsl(35,15%,88%)] border border-[hsl(25,10%,20%)] px-4 text-base appearance-none"
+        value={selectedSlot?.id ?? ''}
+        onChange={(event) => {
+          const match = sorted.find((slot) => slot.id === event.target.value);
+          if (match) onSelect(match);
+        }}
+      >
+        <option value="" disabled>
+          Choose a start time
+        </option>
+        {sorted.map((slot) => {
+          const time = formatMindbodyTime(slot.startDateTime);
+          const label =
+            showStaff && slot.staffName ? `${time} · ${slot.staffName}` : time;
+          return (
+            <option key={slot.id} value={slot.id}>
+              {label}
+            </option>
+          );
+        })}
+      </select>
     </div>
   );
 }
