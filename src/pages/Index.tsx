@@ -54,7 +54,7 @@ const Index = () => {
   }, []);
 
   return (
-    <div className="min-h-screen overflow-y-auto" style={{ position: "fixed", inset: 0, overflowY: "auto" }}>
+    <div className="dark min-h-screen overflow-y-auto" style={{ position: "fixed", inset: 0, overflowY: "auto" }}>
       <SeoHead
         title={seoTitle("Premium Wellness & Recovery Studio")}
         description={truncateDescription(HOME_DESCRIPTION)}

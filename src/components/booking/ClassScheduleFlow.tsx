@@ -78,8 +78,8 @@ function ClassSlotButton({ cls, onSelect }: ClassSlotButtonProps) {
       className={cn(
         'w-full flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3.5 sm:p-4 rounded-xl border-2 transition-all text-left',
         isFull
-          ? 'border-border/40 opacity-60 cursor-not-allowed'
-          : 'border-border hover:border-primary/50',
+          ? 'border-border/40 bg-muted/30 opacity-60 cursor-not-allowed'
+          : 'border-border/70 bg-secondary/60 hover:border-primary/50 hover:bg-secondary',
       )}
     >
       <div className="space-y-1">

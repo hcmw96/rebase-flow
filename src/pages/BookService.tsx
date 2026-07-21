@@ -299,7 +299,7 @@ const BookService = () => {
 
   if (!service) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="dark min-h-screen bg-background">
         <main className="pt-12 pb-16">
           <div className="container mx-auto px-4 flex items-center justify-center min-h-[60vh]">
             <Card className="max-w-md w-full">
@@ -319,7 +319,7 @@ const BookService = () => {
 
   if (bookingComplete && selectedSlot) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="dark min-h-screen bg-background">
         <main className="pt-12 pb-16">
           <div className="container mx-auto px-4 flex items-center justify-center min-h-[60vh]">
             <motion.div
@@ -380,7 +380,7 @@ const BookService = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background dark">
       <main className="pt-6 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}

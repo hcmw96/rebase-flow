@@ -104,7 +104,7 @@ const ContrastPassOfferPage = () => {
 
   return (
     <div
-      className="min-h-screen bg-[#1a1a1a]"
+      className="dark min-h-screen bg-[#1a1a1a]"
       style={{ position: 'fixed', inset: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
     >
       <SeoHead

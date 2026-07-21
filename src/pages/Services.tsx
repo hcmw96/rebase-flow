@@ -189,15 +189,15 @@ const Services = ({ onSelectService }: ServicesProps) => {
   return (
     <div className="min-h-full">
       {/* Search bar + Tabs */}
-      <div className="sticky top-0 z-20 bg-background/80 backdrop-blur-md border-b border-white/10 px-4 py-3 space-y-3">
+      <div className="sticky top-0 z-20 bg-[#F3EEE6]/95 backdrop-blur-md border-b border-black/10 px-4 py-3 space-y-3">
         <div className="relative max-w-lg mx-auto">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-white/50" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-black/40" />
           <Input
             type="text"
             placeholder="Search services..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="h-10 w-full pl-10 text-sm text-white placeholder:text-white/40 bg-white/[0.06] border-white/10 rounded-md focus-visible:ring-white/20"
+            className="h-10 w-full pl-10 text-sm text-black/80 placeholder:text-black/35 bg-white/70 border-black/10 rounded-md focus-visible:ring-black/20"
           />
         </div>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="max-w-lg mx-auto">

@@ -5,7 +5,7 @@ import { breadcrumbSchema, seoTitle, truncateDescription } from "@/lib/seo";
 
 const Terms = () => {
   return (
-    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1A1A1A] text-[#F9ECD9]">
+    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="dark bg-[#1A1A1A] text-[#F9ECD9]">
       <SeoHead
         title={seoTitle("Terms and Conditions")}
         description={truncateDescription(

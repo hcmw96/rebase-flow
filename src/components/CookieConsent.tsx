@@ -58,7 +58,7 @@ const CookieConsent = () => {
         animate={{ y: 0, opacity: 1 }}
         exit={{ y: 40, opacity: 0 }}
         transition={{ duration: 0.4, ease: [0.4, 0, 0.2, 1] }}
-        className="fixed bottom-4 left-4 z-50 w-[min(400px,calc(100vw-2rem))] rounded-xl border border-[#F9ECD9]/10 bg-[#1A1A1A] p-5 shadow-2xl"
+        className="dark fixed bottom-4 left-4 z-50 w-[min(400px,calc(100vw-2rem))] rounded-xl border border-[#F9ECD9]/10 bg-[#1A1A1A] p-5 shadow-2xl"
       >
         <button
           onClick={rejectAll}

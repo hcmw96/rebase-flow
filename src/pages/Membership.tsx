@@ -63,7 +63,7 @@ const Membership = () => {
   return (
     <div
       style={{ position: 'fixed', inset: 0, overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}
-      className="bg-[#1a1a1a]"
+      className="dark bg-[#1a1a1a]"
     >
       <SeoHead
         title={seoTitle('Membership Plans')}

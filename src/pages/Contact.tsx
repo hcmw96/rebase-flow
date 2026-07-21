@@ -104,7 +104,7 @@ const Contact = () => {
   ];
 
   return (
-    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="bg-[#1a1a1a]">
+    <div style={{ position: "fixed", inset: 0, overflowY: "auto", WebkitOverflowScrolling: "touch" }} className="dark bg-[#1a1a1a]">
       <SeoHead
         title={seoTitle("Contact Us")}
         description={truncateDescription(CONTACT_DESCRIPTION)}

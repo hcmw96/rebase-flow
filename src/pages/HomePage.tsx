@@ -184,7 +184,11 @@ const HomePage = ({ onNavigate, onSelectService }: HomePageProps) => {
                 <p className="text-sm text-black/70 mt-1">No sessions scheduled</p>
                 <p className="text-[11px] text-black/35 mt-0.5">Book a moment of restoration</p>
               </div>
-              <Button variant="outline" size="sm" className="shrink-0 border-black/10 text-black/50 hover:bg-black/5 bg-transparent">
+              <Button
+                variant="outline"
+                size="sm"
+                className="shrink-0 border-black/15 text-black/70 hover:bg-black/5 hover:text-black bg-white/50"
+              >
                 Book
                 <ChevronRight className="h-3.5 w-3.5 ml-1" />
               </Button>

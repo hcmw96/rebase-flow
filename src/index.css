@@ -17,99 +17,127 @@ All colors MUST be HSL.
 
 @layer base {
   :root {
-    /* Dark luxury theme - warm and elegant */
-    --background: 25 18% 12%;                    /* Earthy dark brown */
-    --foreground: 35 15% 88%;                  /* Warm cream white */
+    /* App shell — cream canvas (#F3EEE6). Dark marketing/drawer use .dark */
+    --background: 40 33% 94%;
+    --foreground: 25 22% 14%;
 
-    --card: 25 12% 12%;                        /* Dark brown card background */
-    --card-foreground: 35 15% 88%;             /* Warm cream text */
+    --card: 40 30% 97%;
+    --card-foreground: 25 22% 14%;
 
-    --popover: 25 12% 12%;
-    --popover-foreground: 35 15% 88%;
+    --popover: 40 30% 98%;
+    --popover-foreground: 25 22% 14%;
 
-    /* Warm neutral primary instead of gold */
-    --primary: 35 15% 75%;                     /* Warm cream/beige */
-    --primary-foreground: 25 8% 8%;            /* Dark background for contrast */
+    --primary: 25 18% 18%;
+    --primary-foreground: 40 33% 94%;
 
-    /* Warm neutral secondary */
-    --secondary: 25 15% 18%;                   /* Slightly lighter brown */
-    --secondary-foreground: 35 15% 88%;        /* Warm cream */
+    --secondary: 35 18% 90%;
+    --secondary-foreground: 25 22% 14%;
 
-    --muted: 25 10% 15%;                       /* Muted dark brown */
-    --muted-foreground: 35 8% 55%;             /* Muted warm gray */
+    --muted: 35 14% 88%;
+    --muted-foreground: 25 10% 38%;
 
-    --accent: 30 25% 22%;                      /* Warm brown accent */
-    --accent-foreground: 35 15% 88%;
+    --accent: 35 16% 88%;
+    --accent-foreground: 25 22% 14%;
 
-    --destructive: 0 84% 60%;                  /* Red for errors */
-    --destructive-foreground: 35 15% 88%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 40 33% 96%;
 
-    --border: 25 10% 20%;                      /* Subtle border */
-    --input: 25 12% 15%;                       /* Input background */
-    --ring: 35 15% 75%;                        /* Warm cream focus ring */
+    --border: 30 12% 78%;
+    --input: 30 12% 82%;
+    --ring: 25 18% 28%;
 
-    /* Luxury design tokens */
-    --gold: 36 85% 55%;                        /* Primary gold */
-    --gold-light: 40 90% 65%;                  /* Lighter gold for hover */
-    --gold-dark: 32 80% 45%;                   /* Darker gold */
-    
-    --warm-gray: 35 8% 55%;                    /* Warm gray text */
-    --warm-gray-light: 35 10% 65%;             /* Lighter warm gray */
-    
-    /* Detailing color - warm taupe brown */
-    --detail: 25 10% 55%;                      /* Warm taupe for detailing */
-    --detail-light: 25 15% 65%;                /* Lighter detail color */
-    --detail-dark: 25 8% 45%;                  /* Darker detail color */
-    
-    /* Gradients */
-    --gradient-primary: linear-gradient(135deg, hsl(36, 85%, 55%), hsl(40, 90%, 65%));
-    --gradient-dark: linear-gradient(135deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
-    --gradient-warm: linear-gradient(180deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
-    
-    /* Champagne / bronze glow tokens */
-    --champagne: 38 45% 70%;
-    --champagne-glow: 0 0 18px 2px hsl(38 45% 70% / 0.12);
-    --champagne-glow-strong: 0 0 28px 4px hsl(38 45% 70% / 0.18);
-    --champagne-border: 38 45% 70%;
+    --gold: 36 85% 45%;
+    --gold-light: 40 90% 55%;
+    --gold-dark: 32 80% 38%;
 
-    /* Shadows */
-    --shadow-luxury: 0 25px 50px -12px hsl(25 8% 8% / 0.7);
-    --shadow-gold: 0 10px 30px -10px hsl(36 85% 55% / 0.3);
-    --shadow-soft: 0 4px 20px -4px hsl(25 8% 8% / 0.4);
-    
-    /* Animation tokens */
+    --warm-gray: 25 10% 40%;
+    --warm-gray-light: 25 8% 32%;
+
+    --detail: 25 12% 42%;
+    --detail-light: 25 14% 52%;
+    --detail-dark: 25 10% 32%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(25, 18%, 18%), hsl(25, 14%, 28%));
+    --gradient-dark: linear-gradient(135deg, hsl(25, 18%, 14%), hsl(25, 12%, 10%));
+    --gradient-warm: linear-gradient(180deg, hsl(40, 33%, 94%), hsl(40, 28%, 90%));
+
+    --champagne: 38 45% 45%;
+    --champagne-glow: 0 0 18px 2px hsl(38 45% 45% / 0.12);
+    --champagne-glow-strong: 0 0 28px 4px hsl(38 45% 45% / 0.18);
+    --champagne-border: 38 45% 45%;
+
+    --shadow-luxury: 0 25px 50px -12px hsl(25 8% 8% / 0.15);
+    --shadow-gold: 0 10px 30px -10px hsl(36 85% 45% / 0.2);
+    --shadow-soft: 0 4px 20px -4px hsl(25 8% 8% / 0.12);
+
     --transition-smooth: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-fast: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 
     --radius: 0.5rem;
 
     --sidebar-background: 0 0% 98%;
-
     --sidebar-foreground: 240 5.3% 26.1%;
-
     --sidebar-primary: 240 5.9% 10%;
-
     --sidebar-primary-foreground: 0 0% 98%;
-
     --sidebar-accent: 240 4.8% 95.9%;
-
     --sidebar-accent-foreground: 240 5.9% 10%;
-
     --sidebar-border: 220 13% 91%;
-
     --sidebar-ring: 217.2 91.2% 59.8%;
   }
 
-  .light {
-    /* Light mode (optional fallback) - keeping dark as default */
-    --background: 35 15% 96%;
-    --foreground: 25 8% 8%;
-    --card: 35 15% 98%;
-    --card-foreground: 25 8% 8%;
-    --primary: 36 85% 45%;
-    --primary-foreground: 35 15% 96%;
-    --secondary: 35 10% 90%;
-    --secondary-foreground: 25 8% 8%;
+  .dark {
+    /* Dark luxury — marketing site + booking drawer */
+    --background: 25 18% 12%;
+    --foreground: 35 15% 88%;
+
+    --card: 25 12% 12%;
+    --card-foreground: 35 15% 88%;
+
+    --popover: 25 12% 12%;
+    --popover-foreground: 35 15% 88%;
+
+    --primary: 35 15% 75%;
+    --primary-foreground: 25 8% 8%;
+
+    --secondary: 25 15% 18%;
+    --secondary-foreground: 35 15% 88%;
+
+    --muted: 25 10% 15%;
+    --muted-foreground: 35 8% 55%;
+
+    --accent: 30 25% 22%;
+    --accent-foreground: 35 15% 88%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 35 15% 88%;
+
+    --border: 25 10% 20%;
+    --input: 25 12% 15%;
+    --ring: 35 15% 75%;
+
+    --gold: 36 85% 55%;
+    --gold-light: 40 90% 65%;
+    --gold-dark: 32 80% 45%;
+
+    --warm-gray: 35 8% 55%;
+    --warm-gray-light: 35 10% 65%;
+
+    --detail: 25 10% 55%;
+    --detail-light: 25 15% 65%;
+    --detail-dark: 25 8% 45%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(36, 85%, 55%), hsl(40, 90%, 65%));
+    --gradient-dark: linear-gradient(135deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
+    --gradient-warm: linear-gradient(180deg, hsl(25, 12%, 12%), hsl(25, 8%, 8%));
+
+    --champagne: 38 45% 70%;
+    --champagne-glow: 0 0 18px 2px hsl(38 45% 70% / 0.12);
+    --champagne-glow-strong: 0 0 28px 4px hsl(38 45% 70% / 0.18);
+    --champagne-border: 38 45% 70%;
+
+    --shadow-luxury: 0 25px 50px -12px hsl(25 8% 8% / 0.7);
+    --shadow-gold: 0 10px 30px -10px hsl(36 85% 55% / 0.3);
+    --shadow-soft: 0 4px 20px -4px hsl(25 8% 8% / 0.4);
   }
 }
 

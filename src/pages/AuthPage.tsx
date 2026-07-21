@@ -8,7 +8,7 @@ const AuthPage = () => {
   const { login, authError, isRedirecting, openMindbodySignUp } = useAuth();
 
   return (
-    <div className="relative min-h-screen flex items-center justify-center overflow-hidden">
+    <div className="dark relative min-h-screen flex items-center justify-center overflow-hidden">
       <BackgroundVideo overlayClassName="bg-black/50" />
 
       {/* Auth Form */}
