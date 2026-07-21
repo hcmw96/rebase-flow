@@ -73,7 +73,8 @@ function isCryoService(serviceName: string): boolean {
 }
 
 function isPrivateSuiteService(serviceName: string): boolean {
-  return /premium\s*suite|infrared\s*suite|private\s*suite/i.test(serviceName);
+  // Mindbody consumer names use both "Infrared Suite" and "Infrared Sauna/Ice bath".
+  return /premium\s*suite|infrared\s*suite|infrared\s*sauna|private\s*suite/i.test(serviceName);
 }
 
 function isHbotService(serviceName: string): boolean {
@@ -152,7 +153,7 @@ export function pickBookableClientServiceIdForBooking(
         if (/communal|contrast|class\s*pass|members?\s*suite|member'?s\s*suite/i.test(n)) {
           return false;
         }
-        return /private\s*suite|premium\s*suite|infrared\s*suite/i.test(n);
+        return /private\s*suite|premium\s*suite|infrared\s*suite|infrared\s*sauna/i.test(n);
       }),
     );
   }

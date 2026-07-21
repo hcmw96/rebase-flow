@@ -150,10 +150,18 @@ const BookService = () => {
     enabled: !!activeServiceId && !!selectedDayKey,
   });
 
-  const isLoadingDays = isLoadingNearDays && !nearDaysData;
-  const isExtendingDays = !!nearDaysData && isLoadingFullDays && !fullDaysData;
+  const nearDayCount = nearDaysData?.availableDays?.length ?? 0;
+  const fullDayCount = fullDaysData?.availableDays?.length ?? 0;
+  const hasAnyDays = nearDayCount + fullDayCount > 0;
+  const isLoadingDays =
+    (!hasAnyDays && (isLoadingNearDays || isLoadingFullDays)) ||
+    (isLoadingNearDays && !nearDaysData);
+  const isExtendingDays = hasAnyDays && isLoadingFullDays && !fullDaysData;
   const isDaysError =
-    isNearDaysError && !nearDaysData && (isFullDaysError || !fullDaysData) && !isLoadingFullDays;
+    !hasAnyDays &&
+    !isLoadingDays &&
+    isNearDaysError &&
+    (isFullDaysError || Boolean(fullDaysData));
 
   const availableDates = useMemo(() => {
     const keys = new Set<string>([
