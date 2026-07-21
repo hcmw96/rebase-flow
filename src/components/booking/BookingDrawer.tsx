@@ -126,6 +126,7 @@ const BookingDrawer = ({
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [confirmedPayment, setConfirmedPayment] = useState<BookingConfirmationPayment | null>(null);
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const restoredAppointmentRef = useRef<string | null>(null);
   const bookingInFlightRef = useRef(false);
@@ -139,6 +140,7 @@ const BookingDrawer = ({
     setSelectedVariant(null);
     setBookingComplete(false);
     setConfirmedPayment(null);
+    setConfirmationEmailSent(null);
     setIsSubmitting(false);
     setBookingError(null);
     setBookingErrorRequiresSignIn(false);
@@ -526,6 +528,9 @@ const BookingDrawer = ({
         listPriceGbp: paid?.listPriceGbp ?? listPriceGbp,
         passName: null,
       });
+      setConfirmationEmailSent(
+        typeof result.confirmationEmailSent === 'boolean' ? result.confirmationEmailSent : null,
+      );
       setBookingComplete(true);
       setNeedsCardOnFile(false);
       setNeedsMindbodyPay(false);
@@ -709,6 +714,7 @@ const BookingDrawer = ({
                   locationName: selectedSlot.locationName,
                 }}
                 payment={confirmedPayment}
+                confirmationEmailSent={confirmationEmailSent}
                 durationMinutes={activeVariant?.duration}
                 onDone={() => {
                   resetBookingUi();

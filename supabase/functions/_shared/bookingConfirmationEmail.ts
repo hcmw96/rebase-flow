@@ -64,13 +64,22 @@ export async function sendRebaseBookingConfirmation(
 ): Promise<boolean> {
   const to = details.to?.trim();
   if (!to) {
-    console.warn("Booking confirmation email skipped: no recipient address");
+    console.error(
+      "Booking confirmation email skipped: no recipient address",
+      details.serviceName,
+      details.startTime ?? "",
+    );
     return false;
   }
 
   const resendKey = Deno.env.get("RESEND_API_KEY")?.trim();
   if (!resendKey) {
-    console.warn("RESEND_API_KEY not set — skipping Rebase booking confirmation email");
+    console.error(
+      "RESEND_API_KEY not set — skipping Rebase booking confirmation email for",
+      to,
+      details.serviceName,
+      details.startTime ?? "",
+    );
     return false;
   }
 

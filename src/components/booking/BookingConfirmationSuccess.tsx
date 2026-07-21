@@ -28,6 +28,8 @@ export type BookingConfirmationPayment = {
 interface BookingConfirmationSuccessProps {
   details: BookingConfirmationDetails;
   payment?: BookingConfirmationPayment | null;
+  /** From mindbody-book when known; omit when older responses don't include it. */
+  confirmationEmailSent?: boolean | null;
   durationMinutes?: number | null;
   onDone: () => void;
   doneLabel?: string;
@@ -117,6 +119,7 @@ function PaymentSummary({ payment }: { payment: BookingConfirmationPayment }) {
 const BookingConfirmationSuccess = ({
   details,
   payment,
+  confirmationEmailSent,
   durationMinutes,
   onDone,
   doneLabel = 'Done',
@@ -185,7 +188,9 @@ const BookingConfirmationSuccess = ({
       </div>
 
       <p className="text-sm text-muted-foreground leading-relaxed px-2">
-        A confirmation email is on its way. If you don&apos;t see it, check your spam folder.
+        {confirmationEmailSent === false
+          ? 'Your booking is confirmed in our calendar. If you need a copy emailed, contact reception@rebaserecovery.com.'
+          : "A confirmation email is on its way. If you don't see it, check your spam folder."}
       </p>
 
       <Button onClick={onDone} className="w-full min-h-11 text-base">

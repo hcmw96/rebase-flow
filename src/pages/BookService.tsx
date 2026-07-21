@@ -380,7 +380,7 @@ const BookService = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background dark">
+    <div className="dark min-h-screen bg-background">
       <main className="pt-6 pb-16">
         <div className="container mx-auto px-4">
           {/* Header */}

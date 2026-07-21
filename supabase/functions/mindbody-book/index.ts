@@ -9,7 +9,7 @@ import {
 } from "../_shared/mindbodyRefreshSession.ts";
 import {
   ensureMindbodyClientEmail,
-  sendBookingConfirmationEmails,
+  sendRebaseBookingConfirmation,
 } from "../_shared/bookingConfirmationEmail.ts";
 import {
   fetchActiveClientServices,
@@ -41,8 +41,11 @@ import {
   type CheckoutResult,
 } from "../_shared/mindbodyCheckout.ts";
 import {
+  appointmentSlotStillBookable,
   clientAlreadyBookedAppointment,
   clientAlreadyBookedClass,
+  waitUntilClientBookedAppointment,
+  waitUntilClientBookedClass,
 } from "../_shared/mindbodyBookingGuard.ts";
 import { alertOnHttpFailure, sendOpsAlert } from "../_shared/opsAlertEmail.ts";
 
@@ -104,6 +107,7 @@ async function sessionClientProfile(
   session: MbSession,
   apiKey: string,
   siteId: string,
+  staffToken?: string,
 ): Promise<ClientProfile> {
   let email = session.email ?? undefined;
   let firstName = session.first_name ?? undefined;
@@ -119,6 +123,22 @@ async function sessionClientProfile(
     const fetched = await fetchMindbodyClientProfile(
       session.mindbody_client_id,
       session.access_token,
+      apiKey,
+      siteId,
+    );
+    if (fetched) {
+      email = email ?? fetched.email;
+      firstName = firstName ?? fetched.firstName;
+      lastName = lastName ?? fetched.lastName;
+    }
+  }
+
+  // Staff token can still resolve email when the consumer OIDC profile is sparse.
+  if ((!email || !firstName) && staffToken) {
+    const siteIdForLookup = session.mindbody_site_client_id || session.mindbody_client_id;
+    const fetched = await fetchMindbodyClientProfile(
+      siteIdForLookup,
+      staffToken,
       apiKey,
       siteId,
     );
@@ -390,7 +410,7 @@ async function mindbodyPostWithRetry(
   }
 
   let clientId = session.mindbody_site_client_id?.trim() || null;
-  const profile = await sessionClientProfile(session, apiKey, siteId);
+  const profile = await sessionClientProfile(session, apiKey, siteId, staffToken);
 
   if (!clientId) {
     clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
@@ -416,9 +436,11 @@ async function mindbodyPostWithRetry(
     };
   }
 
-  ensureMindbodyClientEmail(apiKey, siteId, staffToken, clientId, profile.email).catch((e) =>
-    console.warn("ensureMindbodyClientEmail:", e)
-  );
+  try {
+    await ensureMindbodyClientEmail(apiKey, siteId, staffToken, clientId, profile.email);
+  } catch (e) {
+    console.warn("ensureMindbodyClientEmail:", e);
+  }
 
   let activeSession = session;
   if (isMindbodyTokenExpired(activeSession.token_expires_at) && activeSession.refresh_token) {
@@ -845,7 +867,7 @@ async function bookClassWithPayment(
   }
 
   if (
-    await clientAlreadyBookedClass(
+    await waitUntilClientBookedClass(
       apiKey,
       siteId,
       staffToken,
@@ -912,7 +934,7 @@ async function bookAppointmentWithPayment(
 
   const publicClientId = session.mindbody_client_id;
   let clientId = session.mindbody_site_client_id?.trim() || null;
-  const profile = await sessionClientProfile(session, apiKey, siteId);
+  const profile = await sessionClientProfile(session, apiKey, siteId, staffToken);
   if (!clientId) {
     clientId = await resolveBookingClientId(publicClientId, apiKey, siteId, staffToken, profile);
     if (clientId) {
@@ -934,6 +956,13 @@ async function bookAppointmentWithPayment(
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
     };
+  }
+
+  // Push email onto the Mindbody client before AddAppointment so SendConfirmationEmail can deliver.
+  try {
+    await ensureMindbodyClientEmail(apiKey, siteId, staffToken, clientId, profile.email);
+  } catch (e) {
+    console.warn("ensureMindbodyClientEmail (appointment):", e);
   }
 
   let activeSession = session;
@@ -1098,6 +1127,31 @@ async function bookAppointmentWithPayment(
     };
   }
 
+  // Avoid charging when the suite/slot was taken since the calendar loaded.
+  const stillBookable = await appointmentSlotStillBookable(
+    apiKey,
+    siteId,
+    staffToken,
+    sessionTypeId,
+    staffId,
+    startDateTime,
+    locId,
+  );
+  if (stillBookable === false) {
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "That time was just taken. No payment was taken — pick another slot and try again.",
+          slotUnavailable: true,
+          noPassOnFile: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+      ),
+    };
+  }
+
   const checkout = await checkoutWithConsumerThenStaff(
     apiKey,
     siteId,
@@ -1130,8 +1184,10 @@ async function bookAppointmentWithPayment(
     };
   }
 
+  // Mindbody often charges/books then returns a scheduling error. Poll before
+  // locking the guest out — if the appointment landed, treat as success.
   if (
-    await clientAlreadyBookedAppointment(
+    await waitUntilClientBookedAppointment(
       apiKey,
       siteId,
       staffToken,
@@ -1498,25 +1554,32 @@ serve(async (req) => {
       }
     }
 
+    let confirmationEmailSent = false;
     try {
-      const profile = await sessionClientProfile(session, apiKey, siteId);
-      await sendBookingConfirmationEmails(
-        {
-          to: profile.email,
-          firstName: profile.firstName,
-          serviceName: serviceName || "Booking",
-          startTime: startDateTime || classInfo?.StartDateTime,
-          endTime: endDateTime || classInfo?.EndDateTime,
-          locationName: resolvedLocationName,
-          bookingType: bookingType === "appointment" ? "appointment" : "class",
-        },
-        {
-          apiKey,
-          siteId,
-          mindbodyClientId: bookedClientId,
-          classId: bookingType === "class" ? classId : undefined,
-        },
-      );
+      let staffTokenForEmail: string | undefined;
+      try {
+        staffTokenForEmail = await getStaffToken();
+      } catch {
+        /* optional for email enrichment */
+      }
+      const profile = await sessionClientProfile(session, apiKey, siteId, staffTokenForEmail);
+      confirmationEmailSent = await sendRebaseBookingConfirmation({
+        to: profile.email,
+        firstName: profile.firstName,
+        serviceName: serviceName || "Booking",
+        startTime: startDateTime || classInfo?.StartDateTime,
+        endTime: endDateTime || classInfo?.EndDateTime,
+        locationName: resolvedLocationName,
+        bookingType: bookingType === "appointment" ? "appointment" : "class",
+      });
+      if (!confirmationEmailSent) {
+        console.error(
+          "Booking confirmed but Rebase confirmation email was not sent",
+          serviceName || "Booking",
+          startDateTime || classInfo?.StartDateTime,
+          profile.email ?? "(no email)",
+        );
+      }
     } catch (emailErr) {
       console.error("Confirmation email error (booking still confirmed):", emailErr);
     }
@@ -1532,6 +1595,7 @@ serve(async (req) => {
           status: "confirmed",
         },
         payment: paymentMeta,
+        confirmationEmailSent,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

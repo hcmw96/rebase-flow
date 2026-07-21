@@ -24,6 +24,7 @@ async function parseFunctionError(response: Response, fallback: string): Promise
       cardDeclined: Boolean(body?.cardDeclined),
       bookingInProgress: Boolean(body?.bookingInProgress),
       bookingOutcomeUncertain: Boolean(body?.bookingOutcomeUncertain),
+      slotUnavailable: Boolean(body?.slotUnavailable),
     });
   } catch (e) {
     if (e instanceof BookingMutationError) throw e;
@@ -78,6 +79,7 @@ type BookResult = {
   };
   payment?: { method: 'pass' | 'stored_card'; amountGbp?: number; listPriceGbp?: number };
   idempotent?: boolean;
+  confirmationEmailSent?: boolean;
 };
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -207,10 +209,20 @@ export function useBookService() {
       if (response.status === 409) {
         const retryBody = await response.json().catch(() => ({}));
         if (retryBody?.bookingOutcomeUncertain) {
+          // Mindbody may have booked despite the error — recover quietly.
+          const recovered = await waitForMatchingBooking(sessionId, params, 5, 1500);
+          if (recovered) return recovered;
           throw new BookingMutationError(
             (typeof retryBody?.error === 'string' && retryBody.error) ||
               "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com.",
             { bookingOutcomeUncertain: true },
+          );
+        }
+        if (retryBody?.slotUnavailable) {
+          throw new BookingMutationError(
+            (typeof retryBody?.error === 'string' && retryBody.error) ||
+              'That time was just taken. Pick another slot and try again.',
+            { slotUnavailable: true },
           );
         }
         if (retryBody?.bookingInProgress) {

@@ -162,14 +162,15 @@ const BookingConfirmActions = ({
         <p className="text-sm text-muted-foreground">
           {bookingOutcomeUncertain ? (
             <>
-              Please do not tap Confirm again. Email{' '}
+              We&apos;re not asking you to retry — that protects you from a double charge. Most of
+              the time the booking did go through; check My Bookings, or email{' '}
               <a
                 href="mailto:reception@rebaserecovery.com"
                 className="font-medium text-foreground underline underline-offset-2"
               >
                 reception@rebaserecovery.com
               </a>{' '}
-              so we can check whether payment already went through.
+              and we&apos;ll confirm within a few minutes.
             </>
           ) : (
             <>

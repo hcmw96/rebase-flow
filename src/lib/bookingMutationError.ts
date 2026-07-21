@@ -17,6 +17,8 @@ export type BookingFailureFlags = {
   bookingOutcomeUncertain?: boolean;
   /** Pass purchase may have charged before returning an error — do not retry */
   purchaseOutcomeUncertain?: boolean;
+  /** Slot taken before charge — safe to pick another time */
+  slotUnavailable?: boolean;
 };
 
 export class BookingMutationError extends Error {

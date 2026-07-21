@@ -146,6 +146,7 @@ const ClassScheduleFlow = ({
   const [selectedClass, setSelectedClass] = useState<MindbodyClass | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
   const [confirmedPayment, setConfirmedPayment] = useState<BookingConfirmationPayment | null>(null);
+  const [confirmationEmailSent, setConfirmationEmailSent] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [bookingError, setBookingError] = useState<string | null>(null);
@@ -424,6 +425,9 @@ const ClassScheduleFlow = ({
         listPriceGbp: usedPass && listPriceGbp != null ? listPriceGbp : paid?.listPriceGbp ?? null,
         passName: usedPass ? checkoutSummary?.pass?.name ?? 'Session pass / credit' : null,
       });
+      setConfirmationEmailSent(
+        typeof result.confirmationEmailSent === 'boolean' ? result.confirmationEmailSent : null,
+      );
       setBookingComplete(true);
       setNeedsMindbodyPay(false);
       clearSessionNeedsPaymentCard();
@@ -481,10 +485,12 @@ const ClassScheduleFlow = ({
           locationName: selectedClass.locationName,
         }}
         payment={confirmedPayment}
+        confirmationEmailSent={confirmationEmailSent}
         onDone={() => {
           clearPendingBooking();
           setBookingComplete(false);
           setConfirmedPayment(null);
+          setConfirmationEmailSent(null);
           setSelectedClass(null);
           setCurrentStep(1);
           onClose();
