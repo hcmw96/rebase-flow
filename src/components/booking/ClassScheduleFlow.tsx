@@ -560,16 +560,19 @@ const ClassScheduleFlow = ({
             </div>
 
             <div className="space-y-6">
-              {scheduleByWeek.map((week) => (
+              {scheduleByWeek.map((week) => {
+                const visibleDays = week.days.filter(
+                  (day) => !selectedDate || isSameDay(day.date, selectedDate),
+                );
+                // Date filter used to leave bare "WEEK OF…" headers with no sessions.
+                if (visibleDays.length === 0) return null;
+
+                return (
                 <section key={format(week.weekStart, 'yyyy-MM-dd')} className="space-y-4">
                   <h4 className="text-xs font-semibold text-foreground/80 uppercase tracking-wider sticky top-0 bg-background/95 backdrop-blur-sm py-1 z-[1]">
                     {week.label}
                   </h4>
-                  {week.days.map((day) => {
-                    const isHighlighted =
-                      !selectedDate || isSameDay(day.date, selectedDate);
-                    if (selectedDate && !isHighlighted) return null;
-
+                  {visibleDays.map((day) => {
                     return (
                       <div
                         key={day.dayKey}
@@ -599,7 +602,8 @@ const ClassScheduleFlow = ({
                     );
                   })}
                 </section>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
