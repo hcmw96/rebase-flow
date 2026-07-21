@@ -107,7 +107,7 @@ async function fetchClasses(params: {
   return data.classes || [];
 }
 
-async function fetchAvailability(params: {
+export async function fetchAvailability(params: {
   sessionTypeId: string;
   staffId?: string;
   startDate?: string;
@@ -205,7 +205,7 @@ export function useMindbodyAvailability(params: {
   return useQuery({
     queryKey: ['mindbody-availability', params],
     queryFn: () => fetchAvailability(params),
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    staleTime: 10 * 60 * 1000, // 10 minutes — calendars change slowly; matches edge days TTL
     refetchOnWindowFocus: false,
     enabled: params.enabled !== false && !!params.sessionTypeId,
     retry: 1,

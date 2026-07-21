@@ -15,7 +15,10 @@ import { localBusinessSchema, seoTitle, truncateDescription } from "@/lib/seo";
 const HOME_DESCRIPTION =
   "Luxury wellness in Marylebone, London: infrared sauna, cryotherapy, hyperbaric oxygen, ice bath & massage. Book recovery at Rebase Recovery.";
 
+import { usePrefetchPopularAvailability } from "@/hooks/usePrefetchPopularAvailability";
+
 const Index = () => {
+  usePrefetchPopularAvailability();
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [resumeClassId, setResumeClassId] = useState<string | undefined>();

@@ -151,6 +151,7 @@ const BookService = () => {
   });
 
   const isLoadingDays = isLoadingNearDays && !nearDaysData;
+  const isExtendingDays = !!nearDaysData && isLoadingFullDays && !fullDaysData;
   const isDaysError =
     isNearDaysError && !nearDaysData && (isFullDaysError || !fullDaysData) && !isLoadingFullDays;
 
@@ -504,6 +505,11 @@ const BookService = () => {
                           isError={isDaysError}
                           toDate={bookingHorizonEndDate()}
                         />
+                        {isExtendingDays && (
+                          <p className="mt-2 text-xs text-muted-foreground text-center">
+                            Loading more dates…
+                          </p>
+                        )}
                       </div>
                     </CardContent>
                   </Card>

@@ -5,10 +5,9 @@ import { studioCalendarDate, studioDateKeyAddDays, studioTodayKey } from './sess
 export const BOOKING_DAYS_AHEAD = 90;
 
 /**
- * Near window painted first on calendars. Premium Suite 90d days-view can take
- * tens of seconds cold; ~30d returns in a few seconds so dates aren't blank forever.
+ * First paint window for calendars. ~7d Premium Suite cold ≈ 2s; full 90d extends after.
  */
-export const BOOKING_NEAR_HORIZON_DAYS = 30;
+export const BOOKING_NEAR_HORIZON_DAYS = 7;
 
 export function bookingHorizonEndDate(fromKey: string = studioTodayKey()): Date {
   return addDays(studioCalendarDate(fromKey), BOOKING_DAYS_AHEAD);

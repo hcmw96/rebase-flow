@@ -341,6 +341,7 @@ const BookingDrawer = ({
 
   // Prefer near results immediately; merge full horizon when it arrives.
   const isLoadingDays = isLoadingNearDays && !nearDaysData;
+  const isExtendingDays = !!nearDaysData && isLoadingFullDays && !fullDaysData;
   const isDaysError =
     isNearDaysError && !nearDaysData && (isFullDaysError || !fullDaysData) && !isLoadingFullDays;
 
@@ -797,6 +798,11 @@ const BookingDrawer = ({
                           isError={isDaysError}
                           toDate={bookingHorizonEndDate()}
                         />
+                        {isExtendingDays && (
+                          <p className="mt-2 text-xs text-muted-foreground text-center">
+                            Loading more dates…
+                          </p>
+                        )}
                         {isDaysError && !isLoadingDays && availableDates.length === 0 && (
                           <p className="mt-3 text-sm text-amber-200/90 text-center">
                             Couldn&apos;t load availability. Close and try again, or email

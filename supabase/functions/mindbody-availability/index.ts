@@ -9,7 +9,8 @@ import { resolveBookableSessionMinutes } from "../_shared/sessionDuration.ts";
 import {
   buildCacheKey,
   CACHE_TTL,
-  getCachedJson,
+  AVAILABILITY_DAYS_MAX_STALE_SECONDS,
+  lookupCachedJson,
   setCachedJson,
 } from "../_shared/mindbodyResponseCache.ts";
 
@@ -18,11 +19,13 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+declare const EdgeRuntime: { waitUntil: (promise: Promise<unknown>) => void };
+
 const PAGE_SIZE = 200;
 const MAX_AVAILABILITY_WINDOWS = 2000;
-/** Parallel Mindbody windows for calendar-days — Premium Suite 90d was ~95s sequential. */
-const DAYS_CHUNK_DAYS = 30;
-const DAYS_FETCH_CONCURRENCY = 3;
+/** Shorter chunks + higher concurrency → ~one Mindbody RTT for most of the horizon. */
+const DAYS_CHUNK_DAYS = 14;
+const DAYS_FETCH_CONCURRENCY = 6;
 
 /** Mindbody expects DateTime strings; use site-local day boundaries (London). */
 function dateOnly(value: string): string {
@@ -196,6 +199,232 @@ type AvailabilityPayload = {
   availableStaff: unknown[];
 };
 
+function jsonPayload(payload: AvailabilityPayload, cacheStatus: string): Response {
+  return new Response(JSON.stringify(payload), {
+    headers: {
+      ...corsHeaders,
+      "Content-Type": "application/json",
+      "X-Rebase-Cache": cacheStatus,
+    },
+    status: 200,
+  });
+}
+
+async function computeAvailabilityPayload(opts: {
+  apiKey: string;
+  siteId: string;
+  sessionTypeId: string;
+  staffId: string | null;
+  mindbodyStart: string;
+  mindbodyEnd: string;
+  view: "days" | "slots";
+  cacheKey: string;
+}): Promise<AvailabilityPayload> {
+  const {
+    apiKey,
+    siteId,
+    sessionTypeId,
+    staffId,
+    mindbodyStart,
+    mindbodyEnd,
+    view,
+    cacheKey,
+  } = opts;
+
+  const staffToken = await getStaffToken();
+
+  async function fetchBookablePage(
+    rangeStart: string,
+    rangeEnd: string,
+    pageOffset: number,
+  ): Promise<{
+    batch: AvailabilityWindow[];
+    total: number | undefined;
+  }> {
+    const params = new URLSearchParams();
+    params.set("SessionTypeIds", sessionTypeId);
+    params.set("StartDate", rangeStart);
+    params.set("EndDate", rangeEnd);
+    params.set("IgnoreDefaultSessionLength", "true");
+    params.set("Limit", String(PAGE_SIZE));
+    params.set("Offset", String(pageOffset));
+    if (staffId) params.set("StaffIds", staffId);
+
+    const maxAttempts = 3;
+    let lastErrorText = "";
+    for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+      const response = await fetch(
+        `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?${params.toString()}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Api-Key": apiKey,
+            "SiteId": siteId,
+            "Authorization": `Bearer ${staffToken}`,
+          },
+        },
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        return {
+          batch: data.Availabilities || [],
+          total: data.PaginationResponse?.TotalResults,
+        };
+      }
+
+      lastErrorText = await response.text();
+      const retryable = response.status === 502 || response.status === 503 ||
+        response.status === 504 || response.status === 429;
+      console.error("Availability fetch error:", {
+        status: response.status,
+        attempt,
+        retryable,
+        body: lastErrorText.slice(0, 400),
+      });
+      if (!retryable || attempt === maxAttempts) break;
+      await new Promise((r) => setTimeout(r, 300 * attempt));
+    }
+
+    throw new Error("Failed to fetch availability");
+  }
+
+  async function fetchAllWindowsForRange(
+    rangeStart: string,
+    rangeEnd: string,
+  ): Promise<AvailabilityWindow[]> {
+    const windows: AvailabilityWindow[] = [];
+    let offset = 0;
+    while (offset < MAX_AVAILABILITY_WINDOWS) {
+      const { batch, total } = await fetchBookablePage(rangeStart, rangeEnd, offset);
+      windows.push(...batch);
+      if (batch.length === 0) break;
+      if (typeof total === "number" && windows.length >= total) break;
+      if (batch.length < PAGE_SIZE) break;
+      offset += PAGE_SIZE;
+    }
+    return windows;
+  }
+
+  let allAvailabilities: AvailabilityWindow[] = [];
+  const spanDays = inclusiveDaySpan(mindbodyStart, mindbodyEnd);
+  const useParallelChunks = view === "days" && spanDays > DAYS_CHUNK_DAYS + 2;
+
+  if (useParallelChunks) {
+    const chunks = splitRangeIntoChunks(mindbodyStart, mindbodyEnd, DAYS_CHUNK_DAYS);
+    console.log("Availability days chunks:", {
+      sessionTypeId,
+      spanDays,
+      chunkCount: chunks.length,
+      concurrency: DAYS_FETCH_CONCURRENCY,
+    });
+    for (let i = 0; i < chunks.length; i += DAYS_FETCH_CONCURRENCY) {
+      const batch = chunks.slice(i, i + DAYS_FETCH_CONCURRENCY);
+      const parts = await Promise.all(
+        batch.map((c) => fetchAllWindowsForRange(c.start, c.end)),
+      );
+      for (const part of parts) allAvailabilities.push(...part);
+    }
+  } else {
+    allAvailabilities = await fetchAllWindowsForRange(mindbodyStart, mindbodyEnd);
+  }
+
+  console.log("Mindbody bookableitems summary:", JSON.stringify({
+    sessionTypeId,
+    staffId,
+    mindbodyStart,
+    mindbodyEnd,
+    view,
+    parallelChunks: useParallelChunks,
+    availabilitiesCount: allAvailabilities.length,
+  }));
+
+  const now = Date.now();
+  let availableItems: Record<string, unknown>[] = [];
+  let availableDays: string[] = [];
+
+  if (view === "days") {
+    const dayKeys = new Set<string>();
+    for (const window of allAvailabilities) {
+      for (const key of collectAvailableDayKeys(window, now)) {
+        dayKeys.add(key);
+      }
+    }
+    availableDays = Array.from(dayKeys).sort();
+  } else {
+    const rawSlots = allAvailabilities
+      .flatMap(generateTimeSlots)
+      .filter((slot) => {
+        const start = slot.startDateTime;
+        if (typeof start !== "string") return false;
+        return parseMindbodyLocalDateTime(start).getTime() > now;
+      });
+
+    const dedupMap = new Map<string, Record<string, unknown>>();
+    for (const slot of rawSlots) {
+      const key = `${slot.staffId ?? ""}|${slot.locationId ?? ""}|${slot.sessionTypeId ?? ""}|${slot.startDateTime}`;
+      if (!dedupMap.has(key)) dedupMap.set(key, slot);
+    }
+    availableItems = Array.from(dedupMap.values()).sort((a, b) => {
+      const aStart = parseMindbodyLocalDateTime(String(a.startDateTime)).getTime();
+      const bStart = parseMindbodyLocalDateTime(String(b.startDateTime)).getTime();
+      return aStart - bStart;
+    });
+    availableDays = Array.from(
+      new Set(
+        availableItems.map((slot) =>
+          studioDateKeyFromInstant(parseMindbodyLocalDateTime(String(slot.startDateTime))),
+        ),
+      ),
+    ).sort();
+  }
+
+  let availableStaff: unknown[] = [];
+  if (view === "slots") {
+    const staffResponse = await fetch(
+      `https://api.mindbodyonline.com/public/v6/appointment/schedulableitems?SessionTypeIds=${sessionTypeId}`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Api-Key": apiKey,
+          "SiteId": siteId,
+          "Authorization": `Bearer ${staffToken}`,
+        },
+      },
+    );
+
+    if (staffResponse.ok) {
+      const staffData = await staffResponse.json();
+      availableStaff = (staffData.StaffMembers || []).map((s: {
+        Id: number;
+        FirstName: string;
+        LastName: string;
+        ImageUrl?: string;
+        Bio?: string;
+      }) => ({
+        id: s.Id,
+        name: `${s.FirstName} ${s.LastName}`,
+        imageUrl: s.ImageUrl,
+        bio: s.Bio,
+      }));
+    }
+  }
+
+  const payload: AvailabilityPayload = {
+    availableItems,
+    availableDays,
+    availableStaff,
+  };
+  await setCachedJson(
+    cacheKey,
+    payload,
+    view === "days" ? CACHE_TTL.availabilityDays : CACHE_TTL.availability,
+  );
+  return payload;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -224,236 +453,51 @@ serve(async (req) => {
 
     const { start: mindbodyStart, end: mindbodyEnd } = resolveDateRange(startDate, endDate);
 
-    const cacheKey = buildCacheKey("availability:v5", {
+    const cacheKey = buildCacheKey("availability:v6", {
       sessionTypeId,
       staffId,
       start: mindbodyStart,
       end: mindbodyEnd,
       view,
     });
-    const cached = await getCachedJson<AvailabilityPayload>(cacheKey);
-    if (cached && Array.isArray(cached.availableItems) && Array.isArray(cached.availableDays)) {
-      return new Response(JSON.stringify(cached), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      });
-    }
 
-    const staffToken = await getStaffToken();
-
-    async function fetchBookablePage(
-      rangeStart: string,
-      rangeEnd: string,
-      pageOffset: number,
-    ): Promise<{
-      batch: AvailabilityWindow[];
-      total: number | undefined;
-    }> {
-      const params = new URLSearchParams();
-      params.set("SessionTypeIds", sessionTypeId!);
-      params.set("StartDate", rangeStart);
-      params.set("EndDate", rangeEnd);
-      params.set("IgnoreDefaultSessionLength", "true");
-      params.set("Limit", String(PAGE_SIZE));
-      params.set("Offset", String(pageOffset));
-      if (staffId) params.set("StaffIds", staffId);
-
-      const maxAttempts = 3;
-      let lastErrorText = "";
-      for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-        const response = await fetch(
-          `https://api.mindbodyonline.com/public/v6/appointment/bookableitems?${params.toString()}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-              "Api-Key": apiKey!,
-              "SiteId": siteId!,
-              "Authorization": `Bearer ${staffToken}`,
-            },
-          },
+    const maxStale = view === "days" ? AVAILABILITY_DAYS_MAX_STALE_SECONDS : 0;
+    const cached = await lookupCachedJson<AvailabilityPayload>(cacheKey, maxStale);
+    if (
+      cached &&
+      Array.isArray(cached.payload.availableItems) &&
+      Array.isArray(cached.payload.availableDays)
+    ) {
+      if (!cached.fresh && view === "days") {
+        // Instant calendar from stale cache; refresh in background.
+        EdgeRuntime.waitUntil(
+          computeAvailabilityPayload({
+            apiKey,
+            siteId,
+            sessionTypeId,
+            staffId,
+            mindbodyStart,
+            mindbodyEnd,
+            view,
+            cacheKey,
+          }).catch((err) => console.error("Availability SWR refresh failed:", err)),
         );
-
-        if (response.ok) {
-          const data = await response.json();
-          return {
-            batch: data.Availabilities || [],
-            total: data.PaginationResponse?.TotalResults,
-          };
-        }
-
-        lastErrorText = await response.text();
-        const retryable = response.status === 502 || response.status === 503 ||
-          response.status === 504 || response.status === 429;
-        console.error("Availability fetch error:", {
-          status: response.status,
-          attempt,
-          retryable,
-          body: lastErrorText.slice(0, 400),
-        });
-        if (!retryable || attempt === maxAttempts) break;
-        await new Promise((r) => setTimeout(r, 300 * attempt));
+        return jsonPayload(cached.payload, "stale");
       }
-
-      throw new Error("Failed to fetch availability");
+      return jsonPayload(cached.payload, "hit");
     }
 
-    async function fetchAllWindowsForRange(
-      rangeStart: string,
-      rangeEnd: string,
-    ): Promise<AvailabilityWindow[]> {
-      const windows: AvailabilityWindow[] = [];
-      let offset = 0;
-      while (offset < MAX_AVAILABILITY_WINDOWS) {
-        const { batch, total } = await fetchBookablePage(rangeStart, rangeEnd, offset);
-        windows.push(...batch);
-        console.log("Mindbody bookableitems page:", {
-          sessionTypeId,
-          rangeStart: dateOnly(rangeStart),
-          rangeEnd: dateOnly(rangeEnd),
-          offset,
-          batchSize: batch.length,
-          total,
-          view,
-        });
-        if (batch.length === 0) break;
-        if (typeof total === "number" && windows.length >= total) break;
-        if (batch.length < PAGE_SIZE) break;
-        offset += PAGE_SIZE;
-      }
-      return windows;
-    }
-
-    let allAvailabilities: AvailabilityWindow[] = [];
-    const spanDays = inclusiveDaySpan(mindbodyStart, mindbodyEnd);
-    const useParallelChunks = view === "days" && spanDays > DAYS_CHUNK_DAYS + 2;
-
-    if (useParallelChunks) {
-      const chunks = splitRangeIntoChunks(mindbodyStart, mindbodyEnd, DAYS_CHUNK_DAYS);
-      console.log("Availability days chunks:", {
-        sessionTypeId,
-        spanDays,
-        chunkCount: chunks.length,
-      });
-      for (let i = 0; i < chunks.length; i += DAYS_FETCH_CONCURRENCY) {
-        const batch = chunks.slice(i, i + DAYS_FETCH_CONCURRENCY);
-        const parts = await Promise.all(
-          batch.map((c) => fetchAllWindowsForRange(c.start, c.end)),
-        );
-        for (const part of parts) allAvailabilities.push(...part);
-      }
-    } else {
-      allAvailabilities = await fetchAllWindowsForRange(mindbodyStart, mindbodyEnd);
-    }
-
-    console.log("Mindbody bookableitems summary:", JSON.stringify({
+    const payload = await computeAvailabilityPayload({
+      apiKey,
+      siteId,
       sessionTypeId,
       staffId,
       mindbodyStart,
       mindbodyEnd,
       view,
-      parallelChunks: useParallelChunks,
-      availabilitiesCount: allAvailabilities.length,
-    }));
-
-    const now = Date.now();
-    let availableItems: Record<string, unknown>[] = [];
-    let availableDays: string[] = [];
-
-    if (view === "days") {
-      const dayKeys = new Set<string>();
-      for (const window of allAvailabilities) {
-        for (const key of collectAvailableDayKeys(window, now)) {
-          dayKeys.add(key);
-        }
-      }
-      availableDays = Array.from(dayKeys).sort();
-    } else {
-      const rawSlots = allAvailabilities
-        .flatMap(generateTimeSlots)
-        .filter((slot) => {
-          const start = slot.startDateTime;
-          if (typeof start !== "string") return false;
-          return parseMindbodyLocalDateTime(start).getTime() > now;
-        });
-
-      const dedupMap = new Map<string, Record<string, unknown>>();
-      for (const slot of rawSlots) {
-        const key = `${slot.staffId ?? ""}|${slot.locationId ?? ""}|${slot.sessionTypeId ?? ""}|${slot.startDateTime}`;
-        if (!dedupMap.has(key)) dedupMap.set(key, slot);
-      }
-      availableItems = Array.from(dedupMap.values()).sort((a, b) => {
-        const aStart = parseMindbodyLocalDateTime(String(a.startDateTime)).getTime();
-        const bStart = parseMindbodyLocalDateTime(String(b.startDateTime)).getTime();
-        return aStart - bStart;
-      });
-      availableDays = Array.from(
-        new Set(
-          availableItems.map((slot) =>
-            studioDateKeyFromInstant(parseMindbodyLocalDateTime(String(slot.startDateTime))),
-          ),
-        ),
-      ).sort();
-
-      console.log("Availability dedup:", {
-        sessionTypeId,
-        rawCount: rawSlots.length,
-        dedupedCount: availableItems.length,
-        removed: rawSlots.length - availableItems.length,
-      });
-    }
-
-    // Staff list only needed for slot detail views; skip on calendar-days to keep responses tiny.
-    let availableStaff: unknown[] = [];
-    if (view === "slots") {
-      const staffResponse = await fetch(
-        `https://api.mindbodyonline.com/public/v6/appointment/schedulableitems?SessionTypeIds=${sessionTypeId}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "Api-Key": apiKey,
-            "SiteId": siteId,
-            "Authorization": `Bearer ${staffToken}`,
-          },
-        },
-      );
-
-      if (staffResponse.ok) {
-        const staffData = await staffResponse.json();
-        availableStaff = (staffData.StaffMembers || []).map((s: {
-          Id: number;
-          FirstName: string;
-          LastName: string;
-          ImageUrl?: string;
-          Bio?: string;
-        }) => ({
-          id: s.Id,
-          name: `${s.FirstName} ${s.LastName}`,
-          imageUrl: s.ImageUrl,
-          bio: s.Bio,
-        }));
-      }
-    }
-
-    const payload: AvailabilityPayload = {
-      availableItems,
-      availableDays,
-      availableStaff,
-    };
-    await setCachedJson(
       cacheKey,
-      payload,
-      view === "days" ? CACHE_TTL.availability * 2 : CACHE_TTL.availability,
-    );
-
-    return new Response(
-      JSON.stringify(payload),
-      {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 200,
-      },
-    );
+    });
+    return jsonPayload(payload, "miss");
   } catch (error) {
     console.error("Availability fetch error:", error);
     return new Response(

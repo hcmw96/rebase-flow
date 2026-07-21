@@ -25,8 +25,11 @@ const tabs: { id: Tab; label: string; icon: typeof Home }[] = [
   { id: 'account', label: 'Account', icon: User },
 ];
 
+import { usePrefetchPopularAvailability } from '@/hooks/usePrefetchPopularAvailability';
+
 const AppShell = () => {
   const { isAuthenticated, isLoading } = useAuth();
+  usePrefetchPopularAvailability();
   const [activeTab, setActiveTab] = useState<Tab>('home');
   const [bookingService, setBookingService] = useState<BookingServiceData | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
