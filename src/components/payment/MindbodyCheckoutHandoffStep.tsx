@@ -12,8 +12,8 @@ type MindbodyCheckoutHandoffStepProps = {
 };
 
 /**
- * Route class payment into Mindbody's consumer checkout (new card, Apple Pay, etc.)
- * instead of requiring a pre-saved StoredCard on Rebase.
+ * Route payment into Mindbody consumer checkout when StoredCard can't charge
+ * (new card / Apple Pay / roaming clients).
  */
 const MindbodyCheckoutHandoffStep = ({
   priceGbp,
@@ -37,25 +37,26 @@ const MindbodyCheckoutHandoffStep = ({
           <p className="text-muted-foreground leading-relaxed">
             {checkoutOpened ? (
               <>
-                Complete checkout there — new card, Apple Pay, or a saved method.
+                We couldn&apos;t charge a card on file from Rebase. Complete checkout in Mindbody —
+                new card, Apple Pay, or a saved method
                 {priceLabel ? (
                   <>
                     {' '}
-                    Total <span className="font-medium text-foreground">{priceLabel}</span>.
+                    (about <span className="font-medium text-foreground">{priceLabel}</span>)
                   </>
-                ) : null}{' '}
-                When you&apos;re done, return here and we&apos;ll confirm your booking.
+                ) : null}
+                . Confirm the same time if asked, then return here.
               </>
             ) : (
               <>
-                Mindbody&apos;s checkout lets you enter a new card or pay with Apple Pay
+                Mindbody checkout lets you enter a new card or pay with Apple Pay
                 {priceLabel ? (
                   <>
                     {' '}
                     (<span className="font-medium text-foreground">{priceLabel}</span>)
                   </>
                 ) : null}
-                . You won&apos;t need a card saved on file first.
+                .
               </>
             )}
           </p>

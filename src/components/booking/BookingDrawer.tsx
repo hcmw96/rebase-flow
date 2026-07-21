@@ -34,6 +34,12 @@ import {
   clearSessionNeedsPaymentCard,
   markSessionNeedsPaymentCard,
 } from '@/lib/paymentCardSetupStorage';
+import {
+  clearMindbodyCheckoutHandoff,
+  mindbodyAppointmentBookAndPayUrl,
+  openMindbodyBookAndPay,
+  stashMindbodyCheckoutHandoff,
+} from '@/lib/mindbodyCheckoutUrls';
 import { clearPendingBooking, stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
 import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { stripHtml } from '@/lib/htmlText';
@@ -103,6 +109,9 @@ const BookingDrawer = ({
   const [bookingOutcomeUncertain, setBookingOutcomeUncertain] = useState(false);
   const [needsCardOnFile, setNeedsCardOnFile] = useState(false);
   const [cardSetupRetryHint, setCardSetupRetryHint] = useState<string | null>(null);
+  const [mindbodyCheckoutOpened, setMindbodyCheckoutOpened] = useState(false);
+  const [mindbodyCheckoutChecking, setMindbodyCheckoutChecking] = useState(false);
+  const [needsMindbodyPay, setNeedsMindbodyPay] = useState(false);
   const accountUrl = mindbodyClientAccountUrl();
   const bookServiceMutation = useBookService();
   const queryClient = useQueryClient();
@@ -132,6 +141,9 @@ const BookingDrawer = ({
     setBookingOutcomeUncertain(false);
     setNeedsCardOnFile(false);
     setCardSetupRetryHint(null);
+    setMindbodyCheckoutOpened(false);
+    setMindbodyCheckoutChecking(false);
+    setNeedsMindbodyPay(false);
     restoredAppointmentRef.current = null;
     if (!opts?.keepInFlight) {
       bookingInFlightRef.current = false;
@@ -385,6 +397,44 @@ const BookingDrawer = ({
     };
   }, [appointmentListPriceGbp, needsCardOnFile, accountUrl]);
 
+  const mindbodyAppointmentCheckoutUrl = useMemo(() => {
+    if (!selectedSlot?.sessionTypeId) return null;
+    return mindbodyAppointmentBookAndPayUrl({
+      sessionTypeId: selectedSlot.sessionTypeId,
+      startDateTime: selectedSlot.startDateTime,
+      locationId: selectedSlot.locationId,
+    });
+  }, [selectedSlot]);
+
+  const openMindbodyAppointmentCheckout = () => {
+    if (!selectedSlot || !mindbodyAppointmentCheckoutUrl) return;
+    setNeedsMindbodyPay(true);
+    setNeedsCardOnFile(false);
+    setCardSetupRetryHint(null);
+    stashMindbodyCheckoutHandoff({
+      kind: 'appointment',
+      serviceName: activeVariant?.name || service?.title || 'Appointment',
+      startDateTime: selectedSlot.startDateTime,
+      checkoutUrl: mindbodyAppointmentCheckoutUrl,
+    });
+    setMindbodyCheckoutOpened(true);
+    setBookingError(null);
+    openMindbodyBookAndPay(mindbodyAppointmentCheckoutUrl);
+  };
+
+  const finishMindbodyAppointmentCheckout = async () => {
+    setMindbodyCheckoutChecking(true);
+    try {
+      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
+      clearMindbodyCheckoutHandoff();
+      clearPendingBooking();
+      if (onViewBookings) onViewBookings();
+      else onClose();
+    } finally {
+      setMindbodyCheckoutChecking(false);
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!selectedSlot || bookingComplete || bookingInFlightRef.current || bookServiceMutation.isPending) {
       return;
@@ -435,6 +485,7 @@ const BookingDrawer = ({
       });
       setBookingComplete(true);
       setNeedsCardOnFile(false);
+      setNeedsMindbodyPay(false);
       clearSessionNeedsPaymentCard();
       if (navigator.userAgent.includes('despia')) {
         despia('successhaptic://');
@@ -449,6 +500,12 @@ const BookingDrawer = ({
           error.flags.storedCardUnavailable ||
           (error.flags.siteScopeIssue && error.flags.paymentRequired)
         ) {
+          // Roaming / new clients often can't charge StoredCard — open Mindbody pay
+          // for this session type rather than dead-ending on "add card".
+          if (mindbodyAppointmentCheckoutUrl) {
+            openMindbodyAppointmentCheckout();
+            return;
+          }
           if (mbSession?.sessionId) {
             markSessionNeedsPaymentCard(mbSession.sessionId);
           }
@@ -796,6 +853,8 @@ const BookingDrawer = ({
                           setBookingOutcomeUncertain(false);
                           setNeedsCardOnFile(false);
                           setCardSetupRetryHint(null);
+                          setMindbodyCheckoutOpened(false);
+                          setNeedsMindbodyPay(false);
                           setCurrentStep(timeStep);
                         }}
                         onConfirm={
@@ -814,6 +873,19 @@ const BookingDrawer = ({
                         accountUrl={accountUrl}
                         onContinueAfterCard={handleConfirmBooking}
                         cardSetupRetryHint={cardSetupRetryHint}
+                        mindbodyCheckoutUrl={
+                          needsMindbodyPay || mindbodyCheckoutOpened
+                            ? mindbodyAppointmentCheckoutUrl
+                            : null
+                        }
+                        mindbodyCheckoutOpened={mindbodyCheckoutOpened}
+                        onOpenMindbodyCheckout={
+                          needsMindbodyPay || mindbodyCheckoutOpened
+                            ? openMindbodyAppointmentCheckout
+                            : undefined
+                        }
+                        onMindbodyCheckoutFinished={() => void finishMindbodyAppointmentCheckout()}
+                        mindbodyCheckoutChecking={mindbodyCheckoutChecking}
                       />
 
                       {onSwitchService && (

@@ -45,6 +45,34 @@ export function mindbodyClassBookAndPayUrl(opts: {
   return `https://clients.mindbodyonline.com/classic/ws?${params.toString()}`;
 }
 
+/**
+ * Mindbody classic day view for one appointment session type — fallback when StoredCard
+ * cannot charge (e.g. roaming clients). Prefer booking the selected slot on Rebase first.
+ */
+export function mindbodyAppointmentBookAndPayUrl(opts: {
+  sessionTypeId: string | number;
+  startDateTime?: string;
+  locationId?: number | null;
+  siteId?: string;
+}): string {
+  const sessionTypeId = Number(opts.sessionTypeId);
+  if (!Number.isFinite(sessionTypeId) || sessionTypeId <= 0) {
+    throw new Error('mindbodyAppointmentBookAndPayUrl requires a positive sessionTypeId');
+  }
+  const params = new URLSearchParams({
+    studioid: resolveSiteId(opts.siteId),
+    stype: String(sessionTypeId),
+    sView: 'day',
+  });
+  if (opts.startDateTime) {
+    params.set('sDate', mindbodyClassicDate(opts.startDateTime));
+  }
+  if (opts.locationId != null && Number(opts.locationId) > 0) {
+    params.set('sLoc', String(opts.locationId));
+  }
+  return `https://clients.mindbodyonline.com/classic/ws?${params.toString()}`;
+}
+
 export function openMindbodyBookAndPay(url: string): void {
   openMindbodyExternalUrl(url);
 }
