@@ -43,6 +43,49 @@ export async function fetchActiveClientServices(
   });
 }
 
+function remainingUsable(s: MindbodyClientServiceRow): boolean {
+  if (typeof s.Remaining === "number") return s.Remaining > 0;
+  return true;
+}
+
+function firstUsableId(services: MindbodyClientServiceRow[]): number | null {
+  const hit = services.find((s) => s.Id != null && remainingUsable(s));
+  return hit?.Id != null ? Number(hit.Id) : null;
+}
+
+/** Communal contrast / members' suite — NOT Premium/Infrared private suites. */
+function isCommunalContrastService(serviceName: string, bookingType: "class" | "appointment"): boolean {
+  if (/premium\s*suite|infrared\s*suite|private\s*suite/i.test(serviceName)) {
+    return false;
+  }
+  if (/communal\s*contrast|contrast\s*immersion|members?\s*suite|member'?s\s*suite/i.test(serviceName)) {
+    return true;
+  }
+  // Drop-in communal class product only — never treat every class as contrast.
+  if (bookingType === "class" && /communal|contrast\s*immersion/i.test(serviceName)) {
+    return true;
+  }
+  return false;
+}
+
+function isCryoService(serviceName: string): boolean {
+  return /cryo/i.test(serviceName);
+}
+
+function isPrivateSuiteService(serviceName: string): boolean {
+  return /premium\s*suite|infrared\s*suite|private\s*suite/i.test(serviceName);
+}
+
+function isHbotService(serviceName: string): boolean {
+  return /hyperbaric|hbot/i.test(serviceName);
+}
+
+function isMassageLikeService(serviceName: string): boolean {
+  return /massage|deep\s*tissue|body\s*alignment|facial|reflexology|lymphatic|stretch/i.test(
+    serviceName,
+  );
+}
+
 /**
  * Pick a pass/credit to pay for a class booking.
  * Only returns a service id if the client actually has a usable credit/pass.
@@ -54,21 +97,15 @@ export function pickBookableClientServiceId(
 ): number | null {
   if (!services.length) return null;
 
-  // Prefer the June unlimited pass first.
   const juneId = pickJuneContrastPassServiceId(services);
   if (juneId != null) return juneId;
 
-  // Only pick a service that looks like a genuine per-session credit or pass,
-  // not a retail multi-session pack that hasn't been consumed yet.
-  // A client service with Remaining > 0 is a pre-purchased credit — safe to use.
-  // Exclude rows where Count > 1 AND Remaining equals Count (i.e. fully unused pack)
-  // because applying the whole pack would charge nothing but mark the pack as used.
   const credit = services.find((s) => {
     const name = s.Name || "";
-    if (!/contrast|communal|class|visit|session|pass|unlimited|drop|cryo/i.test(name)) return false;
-    // If we have explicit remaining info, trust it — any remaining > 0 is usable.
-    if (typeof s.Remaining === "number") return s.Remaining > 0;
-    return true;
+    if (!/contrast|communal|class|visit|session|pass|unlimited|drop|cryo/i.test(name)) {
+      return false;
+    }
+    return remainingUsable(s);
   });
 
   if (!credit) return null;
@@ -77,7 +114,9 @@ export function pickBookableClientServiceId(
 
 /**
  * Pick a pass/credit appropriate for the service being booked.
- * Avoids applying a contrast/class membership pass to massage (and vice versa).
+ *
+ * CRITICAL: Never apply communal/class/membership credits to paid massage, private
+ * suites, etc. Loose word matching previously booked treatments for £0.
  */
 export function pickBookableClientServiceIdForBooking(
   services: MindbodyClientServiceRow[],
@@ -85,45 +124,76 @@ export function pickBookableClientServiceIdForBooking(
 ): number | null {
   if (!services.length) return null;
 
-  const serviceName = (context.serviceName || "").toLowerCase();
-  const isCryo = /cryo/i.test(serviceName);
-  const isContrast =
-    context.bookingType === "class" ||
-    /contrast|communal|suite|sauna|infrared|class/i.test(serviceName);
-
-  if (isCryo) {
-    const cryoCredits = services.filter((s) => /cryo/i.test(s.Name || ""));
-    return pickBookableClientServiceId(cryoCredits);
+  const serviceName = (context.serviceName || "").trim();
+  if (!serviceName) {
+    // Without a service name we cannot safely match — never guess a membership credit.
+    return context.bookingType === "class" ? pickBookableClientServiceId(services) : null;
   }
 
-  if (isContrast) {
+  if (isCryoService(serviceName)) {
+    return firstUsableId(services.filter((s) => /cryo/i.test(s.Name || "")));
+  }
+
+  if (isCommunalContrastService(serviceName, context.bookingType)) {
     const juneId = pickJuneContrastPassServiceId(services);
     if (juneId != null) return juneId;
-    const contrastCredits = services.filter((s) =>
-      /contrast|communal|class|visit|session|pass|unlimited|drop/i.test(s.Name || "")
+    return firstUsableId(
+      services.filter((s) =>
+        /communal|contrast|members?\s*suite|member'?s\s*suite|off\s*peak/i.test(s.Name || "")
+      ),
     );
-    return pickBookableClientServiceId(contrastCredits);
   }
 
-  // Appointments like massage only use a credit when the pass name clearly matches
-  // the service (e.g. a "Sports Massage" pack). Never fall through to a generic
-  // class/membership pass — that books paid treatments for free.
-  if (serviceName) {
-    const words = serviceName.split(/\W+/).filter((w) => w.length > 3);
-    const matched = services.filter((s) => {
-      const passName = (s.Name || "").toLowerCase();
-      return words.some((w) => passName.includes(w));
-    });
-    if (matched.length) {
-      return pickBookableClientServiceId(matched);
-    }
+  if (isPrivateSuiteService(serviceName)) {
+    // Membership "Private Suite" allowances only — never communal contrast / class packs.
+    return firstUsableId(
+      services.filter((s) => {
+        const n = s.Name || "";
+        if (/communal|contrast|class\s*pass|members?\s*suite|member'?s\s*suite/i.test(n)) {
+          return false;
+        }
+        return /private\s*suite|premium\s*suite|infrared\s*suite/i.test(n);
+      }),
+    );
   }
 
-  if (context.bookingType === "appointment") {
-    return null;
+  if (isHbotService(serviceName)) {
+    return firstUsableId(services.filter((s) => /hyperbaric|hbot/i.test(s.Name || "")));
   }
 
-  return pickBookableClientServiceId(services);
+  if (isMassageLikeService(serviceName)) {
+    // Require the credit itself to look like a massage/treatment pack — not "session",
+    // "class", "unlimited", or membership rows that merely share a short token.
+    return firstUsableId(
+      services.filter((s) => {
+        const n = s.Name || "";
+        if (/communal|contrast|class\s*pass|\bclass\b|membership|unlimited\s*cryo|private\s*suite/i.test(n)) {
+          return false;
+        }
+        return /massage|deep\s*tissue|sports\s*massage|facial|reflexology|lymphatic|stretch|alignment|deo/i
+          .test(n);
+      }),
+    );
+  }
+
+  if (context.bookingType === "class") {
+    // Yoga / Pilates / etc. — only a credit that clearly names this class family.
+    const tokens = serviceName
+      .toLowerCase()
+      .split(/\W+/)
+      .filter((w) => w.length > 4 && !/class|mins|minutes|session|guided|flow/.test(w));
+    if (!tokens.length) return null;
+    return firstUsableId(
+      services.filter((s) => {
+        const n = (s.Name || "").toLowerCase();
+        if (/communal|contrast|cryo|hyperbaric|massage|private\s*suite/i.test(n)) return false;
+        return tokens.some((t) => n.includes(t));
+      }),
+    );
+  }
+
+  // Other appointments: no free credit unless explicitly matched above.
+  return null;
 }
 
 export function findJuneContrastPassRow(

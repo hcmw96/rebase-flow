@@ -515,29 +515,22 @@ async function mindbodyPostWithRetry(
     }
   }
 
-  // 2) Consumer + explicit pass/credit (ClientServiceId) when the account has one.
-  // Prefer the ClientServiceId already chosen by the caller (service-matched).
+  // 2) Consumer + explicit pass/credit (ClientServiceId) when the caller already selected one.
+  // Never invent a membership/class credit here — that books paid treatments for £0.
   if (bookResult && !bookResult.ok && !isPaymentError(bookResult.message)) {
     const requestedServiceId = Number(body.ClientServiceId);
-    for (const cid of [clientId, publicClientId]) {
-      const services = await fetchActiveClientServices(
-        apiKey,
-        siteId,
-        activeSession.access_token,
-        cid,
-      );
-      const clientServiceId = Number.isFinite(requestedServiceId) && requestedServiceId > 0
-        ? requestedServiceId
-        : pickBookableClientServiceId(services);
-      if (!clientServiceId) continue;
-
-      bookResult = await attemptBook(
-        activeSession.access_token,
-        `consumer:pass:${clientServiceId}`,
-        cid,
-        { ClientServiceId: clientServiceId },
-      );
-      if (bookResult.ok || isPaymentError(bookResult.message)) break;
+    const clientServiceId =
+      Number.isFinite(requestedServiceId) && requestedServiceId > 0 ? requestedServiceId : null;
+    if (clientServiceId) {
+      for (const cid of [clientId, publicClientId]) {
+        bookResult = await attemptBook(
+          activeSession.access_token,
+          `consumer:pass:${clientServiceId}`,
+          cid,
+          { ClientServiceId: clientServiceId },
+        );
+        if (bookResult.ok || isPaymentError(bookResult.message)) break;
+      }
     }
   }
 
@@ -967,6 +960,9 @@ async function bookAppointmentWithPayment(
     });
 
   if (passOnFile) {
+    console.log(
+      `Applying ClientServiceId ${passOnFile} for appointment ${sessionTypeId} (${serviceName || "unnamed"})`,
+    );
     const booked = await mindbodyPostWithRetry(
       supabaseAdmin,
       activeSession,
@@ -1030,11 +1026,14 @@ async function bookAppointmentWithPayment(
     console.log(
       `Appointment ${sessionTypeId} at ${startDateTime} already booked in Mindbody for client ${clientId}`,
     );
+    // Idempotent replay — do not invent a stored_card charge we never took.
     return {
       ok: true,
       data: { Appointment: { StartDateTime: startDateTime } },
       clientId,
-      payment: { method: "stored_card" as const },
+      ...(passOnFile
+        ? { payment: { method: "pass" as const }, clientServiceId: passOnFile }
+        : {}),
     };
   }
 
