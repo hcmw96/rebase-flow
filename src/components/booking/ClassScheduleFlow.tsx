@@ -22,7 +22,7 @@ import BookingConfirmationSuccess, {
 } from '@/components/booking/BookingConfirmationSuccess';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, formatAppointmentTimeRange, mindbodyDateKey, parseMindbodyDateTime, studioCalendarDate, studioTodayKey } from '@/lib/sessionTimes';
-import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
+import { bookingHorizonDateRange, bookingHorizonEndDate, bookingNearHorizonDateRange } from '@/lib/bookingHorizon';
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking, clearPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
@@ -176,14 +176,30 @@ const ClassScheduleFlow = ({
 
   const [needsMindbodyPay, setNeedsMindbodyPay] = useState(false);
 
-  const { startDate, endDate } = bookingHorizonDateRange();
+  const nearRange = bookingNearHorizonDateRange();
+  const fullRange = bookingHorizonDateRange();
 
-  const { data: classes = [], isLoading } = useMindbodyClasses({
-    startDate,
-    endDate,
+  const {
+    data: nearClasses = [],
+    isLoading: isLoadingNear,
+    isError: isNearError,
+  } = useMindbodyClasses({
+    startDate: nearRange.startDate,
+    endDate: nearRange.endDate,
     classDescriptionId: classDescriptionIds.join(','),
     enabled: classDescriptionIds.length > 0,
   });
+
+  const { data: fullClasses = [], isLoading: isLoadingFull, isError: isFullError } = useMindbodyClasses({
+    startDate: fullRange.startDate,
+    endDate: fullRange.endDate,
+    classDescriptionId: classDescriptionIds.join(','),
+    enabled: classDescriptionIds.length > 0 && (nearClasses.length > 0 || !isLoadingNear),
+  });
+
+  const classes = fullClasses.length > 0 ? fullClasses : nearClasses;
+  const isLoading = isLoadingNear && nearClasses.length === 0;
+  const isClassesError = isNearError && isFullError && classes.length === 0;
 
   const allowedDescriptionIds = useMemo(
     () => new Set(classDescriptionIds.map((id) => Number(id))),
@@ -481,6 +497,15 @@ const ClassScheduleFlow = ({
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (isClassesError) {
+    return (
+      <div className="text-center py-12 text-muted-foreground text-sm">
+        Couldn&apos;t load the schedule for {clsName}. Close and try again, or email
+        reception@rebaserecovery.com.
       </div>
     );
   }

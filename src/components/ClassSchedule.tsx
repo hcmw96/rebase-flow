@@ -11,7 +11,7 @@ import {
   parseMindbodyDateTime,
   studioTodayKey,
 } from '@/lib/sessionTimes';
-import { bookingHorizonDateRange } from '@/lib/bookingHorizon';
+import { bookingHorizonDateRange, bookingNearHorizonDateRange } from '@/lib/bookingHorizon';
 import { classOfferings, resolveDisplayName } from '@/config/serviceConfig';
 import { ImageCardScrim } from '@/components/ImageTextScrim';
 import type { BookingServiceData } from '@/components/booking/BookingDrawer';
@@ -25,13 +25,33 @@ interface ClassScheduleProps {
 }
 
 const ClassSchedule = ({ onSelectService }: ClassScheduleProps) => {
-  const { startDate, endDate } = bookingHorizonDateRange();
+  const nearRange = bookingNearHorizonDateRange();
+  const fullRange = bookingHorizonDateRange();
 
-  const { data: classes, isLoading, error } = useMindbodyClasses({
-    startDate,
-    endDate,
+  const {
+    data: nearClasses,
+    isLoading: isLoadingNear,
+    isError: isNearError,
+  } = useMindbodyClasses({
+    startDate: nearRange.startDate,
+    endDate: nearRange.endDate,
     enabled: true,
   });
+
+  const {
+    data: fullClasses,
+    isError: isFullError,
+  } = useMindbodyClasses({
+    startDate: fullRange.startDate,
+    endDate: fullRange.endDate,
+    enabled: !!nearClasses || !isLoadingNear,
+  });
+
+  const classes = (fullClasses?.length ? fullClasses : nearClasses) ?? [];
+  const isLoading = isLoadingNear && !nearClasses;
+  const error = isNearError && isFullError && classes.length === 0
+    ? new Error('Failed to load classes')
+    : null;
 
   const classesByDay = useMemo(() => {
     if (!classes || classes.length === 0) return new Map<string, typeof classes>();

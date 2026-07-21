@@ -10,6 +10,8 @@ interface BookingCalendarProps {
   onSelect: (date: Date | undefined) => void;
   availableDates?: Date[];
   isLoading?: boolean;
+  /** True when availability request failed — never conflate with empty schedule. */
+  isError?: boolean;
   className?: string;
   /** Last selectable day (inclusive). */
   toDate?: Date;
@@ -20,6 +22,7 @@ const BookingCalendar = ({
   onSelect,
   availableDates,
   isLoading,
+  isError,
   className,
   toDate,
 }: BookingCalendarProps) => {
@@ -59,7 +62,13 @@ const BookingCalendar = ({
           <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
         </div>
       )}
-      {!isLoading && availableKeys.size === 0 && (
+      {!isLoading && isError && availableKeys.size === 0 && (
+        <p className="mb-3 text-sm text-foreground/80">
+          Couldn&apos;t load availability right now. Close and try again, or email
+          reception@rebaserecovery.com.
+        </p>
+      )}
+      {!isLoading && !isError && availableKeys.size === 0 && (
         <p className="mb-3 text-sm text-foreground/80">
           No bookable dates in the next few months for this session type. Try another type, or email
           reception@rebaserecovery.com.

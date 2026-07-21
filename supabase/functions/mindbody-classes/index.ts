@@ -131,15 +131,19 @@ serve(async (req) => {
 
     if (descriptionIds.length > 1) {
       const seen = new Set<number>();
-      for (const id of descriptionIds) {
-        const baseParams = new URLSearchParams();
-        baseParams.set("StartDateTime", startDate);
-        if (endDate) baseParams.set("EndDateTime", endDate);
-        baseParams.set("ClassDescriptionIds", id);
-        if (programId) baseParams.set("ProgramIds", programId);
-        baseParams.set("HideCanceledClasses", "true");
-
-        const pages = await fetchMindbodyClassPages(apiKey, siteId, staffToken, baseParams);
+      // Parallel per-description fetches — Communal Contrast uses 4 IDs × 90d sequentially was slow.
+      const pagesPerId = await Promise.all(
+        descriptionIds.map((id) => {
+          const baseParams = new URLSearchParams();
+          baseParams.set("StartDateTime", startDate);
+          if (endDate) baseParams.set("EndDateTime", endDate);
+          baseParams.set("ClassDescriptionIds", id);
+          if (programId) baseParams.set("ProgramIds", programId);
+          baseParams.set("HideCanceledClasses", "true");
+          return fetchMindbodyClassPages(apiKey, siteId, staffToken, baseParams);
+        }),
+      );
+      for (const pages of pagesPerId) {
         for (const cls of pages) {
           if (!seen.has(cls.Id)) {
             seen.add(cls.Id);

@@ -20,6 +20,9 @@ const corsHeaders = {
 
 const PAGE_SIZE = 200;
 const MAX_AVAILABILITY_WINDOWS = 2000;
+/** Parallel Mindbody windows for calendar-days — Premium Suite 90d was ~95s sequential. */
+const DAYS_CHUNK_DAYS = 30;
+const DAYS_FETCH_CONCURRENCY = 3;
 
 /** Mindbody expects DateTime strings; use site-local day boundaries (London). */
 function dateOnly(value: string): string {
@@ -56,6 +59,36 @@ function resolveDateRange(startDate: string, endDate?: string | null): { start: 
     return { start, end: toMindbodyEnd(startDate) };
   }
   return { start, end: toMindbodyEnd(endDate) };
+}
+
+function addCalendarDays(day: string, days: number): string {
+  const d = new Date(`${dateOnly(day)}T12:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function inclusiveDaySpan(start: string, end: string): number {
+  const s = new Date(`${dateOnly(start)}T12:00:00Z`).getTime();
+  const e = new Date(`${dateOnly(end)}T12:00:00Z`).getTime();
+  return Math.floor((e - s) / 86400000) + 1;
+}
+
+/** Split a long horizon into smaller Mindbody queries (much faster wall-clock when parallel). */
+function splitRangeIntoChunks(
+  start: string,
+  end: string,
+  chunkDays: number,
+): Array<{ start: string; end: string }> {
+  const chunks: Array<{ start: string; end: string }> = [];
+  let cursor = dateOnly(start);
+  const endDay = dateOnly(end);
+  while (cursor <= endDay) {
+    const rawEnd = addCalendarDays(cursor, chunkDays - 1);
+    const capped = rawEnd < endDay ? rawEnd : endDay;
+    chunks.push({ start: toMindbodyStart(cursor), end: toMindbodyEnd(capped) });
+    cursor = addCalendarDays(capped, 1);
+  }
+  return chunks;
 }
 
 /** How often a booking can start within a free window (studio books in 15-min steps). */
@@ -139,16 +172,22 @@ function collectAvailableDayKeys(availability: AvailabilityWindow, nowMs: number
 
   const stepMs = SLOT_START_INTERVAL_MINUTES * 60 * 1000;
   const sessionMs = sessionLength * 60 * 1000;
-  const keys = new Set<string>();
 
-  let slotStart = new Date(startTime);
-  while (slotStart.getTime() + sessionMs <= windowEnd.getTime()) {
-    if (slotStart.getTime() > nowMs) {
-      keys.add(studioDateKeyFromInstant(slotStart));
-    }
-    slotStart = new Date(slotStart.getTime() + stepMs);
+  // Advance to first start that is still bookable (future + fits in window).
+  let firstStart = startTime.getTime();
+  while (firstStart <= nowMs) firstStart += stepMs;
+  if (firstStart + sessionMs > windowEnd.getTime()) return [];
+
+  const lastStartMs = windowEnd.getTime() - sessionMs;
+  // Continuous Mindbody windows → mark each London day from first→last start (O(days), not O(15‑min slots)).
+  const keys: string[] = [];
+  let day = studioDateKeyFromInstant(new Date(firstStart));
+  const endDay = studioDateKeyFromInstant(new Date(lastStartMs));
+  while (day <= endDay) {
+    keys.push(day);
+    day = addCalendarDays(day, 1);
   }
-  return Array.from(keys);
+  return keys;
 }
 
 type AvailabilityPayload = {
@@ -185,7 +224,7 @@ serve(async (req) => {
 
     const { start: mindbodyStart, end: mindbodyEnd } = resolveDateRange(startDate, endDate);
 
-    const cacheKey = buildCacheKey("availability:v3", {
+    const cacheKey = buildCacheKey("availability:v5", {
       sessionTypeId,
       staffId,
       start: mindbodyStart,
@@ -202,17 +241,18 @@ serve(async (req) => {
 
     const staffToken = await getStaffToken();
 
-    const allAvailabilities: AvailabilityWindow[] = [];
-    let offset = 0;
-
-    async function fetchBookablePage(pageOffset: number): Promise<{
+    async function fetchBookablePage(
+      rangeStart: string,
+      rangeEnd: string,
+      pageOffset: number,
+    ): Promise<{
       batch: AvailabilityWindow[];
       total: number | undefined;
     }> {
       const params = new URLSearchParams();
       params.set("SessionTypeIds", sessionTypeId!);
-      params.set("StartDate", mindbodyStart);
-      params.set("EndDate", mindbodyEnd);
+      params.set("StartDate", rangeStart);
+      params.set("EndDate", rangeEnd);
       params.set("IgnoreDefaultSessionLength", "true");
       params.set("Limit", String(PAGE_SIZE));
       params.set("Offset", String(pageOffset));
@@ -258,22 +298,52 @@ serve(async (req) => {
       throw new Error("Failed to fetch availability");
     }
 
-    while (offset < MAX_AVAILABILITY_WINDOWS) {
-      const { batch, total } = await fetchBookablePage(offset);
-      allAvailabilities.push(...batch);
+    async function fetchAllWindowsForRange(
+      rangeStart: string,
+      rangeEnd: string,
+    ): Promise<AvailabilityWindow[]> {
+      const windows: AvailabilityWindow[] = [];
+      let offset = 0;
+      while (offset < MAX_AVAILABILITY_WINDOWS) {
+        const { batch, total } = await fetchBookablePage(rangeStart, rangeEnd, offset);
+        windows.push(...batch);
+        console.log("Mindbody bookableitems page:", {
+          sessionTypeId,
+          rangeStart: dateOnly(rangeStart),
+          rangeEnd: dateOnly(rangeEnd),
+          offset,
+          batchSize: batch.length,
+          total,
+          view,
+        });
+        if (batch.length === 0) break;
+        if (typeof total === "number" && windows.length >= total) break;
+        if (batch.length < PAGE_SIZE) break;
+        offset += PAGE_SIZE;
+      }
+      return windows;
+    }
 
-      console.log("Mindbody bookableitems page:", {
+    let allAvailabilities: AvailabilityWindow[] = [];
+    const spanDays = inclusiveDaySpan(mindbodyStart, mindbodyEnd);
+    const useParallelChunks = view === "days" && spanDays > DAYS_CHUNK_DAYS + 2;
+
+    if (useParallelChunks) {
+      const chunks = splitRangeIntoChunks(mindbodyStart, mindbodyEnd, DAYS_CHUNK_DAYS);
+      console.log("Availability days chunks:", {
         sessionTypeId,
-        offset,
-        batchSize: batch.length,
-        total,
-        view,
+        spanDays,
+        chunkCount: chunks.length,
       });
-
-      if (batch.length === 0) break;
-      if (typeof total === "number" && allAvailabilities.length >= total) break;
-      if (batch.length < PAGE_SIZE) break;
-      offset += PAGE_SIZE;
+      for (let i = 0; i < chunks.length; i += DAYS_FETCH_CONCURRENCY) {
+        const batch = chunks.slice(i, i + DAYS_FETCH_CONCURRENCY);
+        const parts = await Promise.all(
+          batch.map((c) => fetchAllWindowsForRange(c.start, c.end)),
+        );
+        for (const part of parts) allAvailabilities.push(...part);
+      }
+    } else {
+      allAvailabilities = await fetchAllWindowsForRange(mindbodyStart, mindbodyEnd);
     }
 
     console.log("Mindbody bookableitems summary:", JSON.stringify({
@@ -282,6 +352,7 @@ serve(async (req) => {
       mindbodyStart,
       mindbodyEnd,
       view,
+      parallelChunks: useParallelChunks,
       availabilitiesCount: allAvailabilities.length,
     }));
 
@@ -370,7 +441,11 @@ serve(async (req) => {
       availableDays,
       availableStaff,
     };
-    await setCachedJson(cacheKey, payload, CACHE_TTL.availability);
+    await setCachedJson(
+      cacheKey,
+      payload,
+      view === "days" ? CACHE_TTL.availability * 2 : CACHE_TTL.availability,
+    );
 
     return new Response(
       JSON.stringify(payload),

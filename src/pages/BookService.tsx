@@ -15,8 +15,18 @@ import { useBookService } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
-import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
+import {
+  bookingHorizonDateRange,
+  bookingHorizonEndDate,
+  bookingNearHorizonDateRange,
+} from '@/lib/bookingHorizon';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
+import { BookingMutationError } from '@/lib/bookingMutationError';
+import {
+  mindbodyAppointmentBookAndPayUrl,
+  openMindbodyBookAndPay,
+  stashMindbodyCheckoutHandoff,
+} from '@/lib/mindbodyCheckoutUrls';
 
 interface ServiceVariant {
   id: string;
@@ -104,15 +114,32 @@ const BookService = () => {
   // Use selected variant ID for availability
   const activeServiceId = selectedVariant?.id || serviceId || '';
 
+  const nearRange = useMemo(() => bookingNearHorizonDateRange(), []);
   const monthRange = useMemo(() => bookingHorizonDateRange(), []);
   const selectedDayKey = selectedDate ? localCalendarDayKey(selectedDate) : '';
 
-  const { data: daysAvailabilityData, isLoading: isLoadingDays } = useMindbodyAvailability({
+  const {
+    data: nearDaysData,
+    isLoading: isLoadingNearDays,
+    isError: isNearDaysError,
+  } = useMindbodyAvailability({
+    sessionTypeId: activeServiceId,
+    startDate: nearRange.startDate,
+    endDate: nearRange.endDate,
+    view: 'days',
+    enabled: !!activeServiceId,
+  });
+
+  const {
+    data: fullDaysData,
+    isLoading: isLoadingFullDays,
+    isError: isFullDaysError,
+  } = useMindbodyAvailability({
     sessionTypeId: activeServiceId,
     startDate: monthRange.startDate,
     endDate: monthRange.endDate,
     view: 'days',
-    enabled: !!activeServiceId,
+    enabled: !!activeServiceId && (!!nearDaysData || isNearDaysError),
   });
 
   const { data: daySlotsData, isLoading: isLoadingDaySlots } = useMindbodyAvailability({
@@ -123,13 +150,22 @@ const BookService = () => {
     enabled: !!activeServiceId && !!selectedDayKey,
   });
 
+  const isLoadingDays = isLoadingNearDays && !nearDaysData;
+  const isDaysError =
+    isNearDaysError && !nearDaysData && (isFullDaysError || !fullDaysData) && !isLoadingFullDays;
+
   const availableDates = useMemo(() => {
-    const keys = daysAvailabilityData?.availableDays || [];
-    return keys.map((k) => {
-      const [y, m, d] = k.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    });
-  }, [daysAvailabilityData]);
+    const keys = new Set<string>([
+      ...(nearDaysData?.availableDays || []),
+      ...(fullDaysData?.availableDays || []),
+    ]);
+    return Array.from(keys)
+      .sort()
+      .map((k) => {
+        const [y, m, d] = k.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      });
+  }, [nearDaysData, fullDaysData]);
 
   const availableSlots = useMemo(() => {
     return filterUpcomingSessions(daySlotsData?.availableItems || []);
@@ -209,6 +245,34 @@ const BookService = () => {
       toast.success('Booking confirmed!');
     } catch (error) {
       bookingInFlightRef.current = false;
+      if (error instanceof BookingMutationError) {
+        if (
+          error.flags.noStoredCard ||
+          error.flags.cardDeclined ||
+          error.flags.storedCardUnavailable ||
+          (error.flags.siteScopeIssue && error.flags.paymentRequired)
+        ) {
+          try {
+            const checkoutUrl = mindbodyAppointmentBookAndPayUrl({
+              sessionTypeId: selectedSlot.sessionTypeId,
+              locationId: selectedSlot.locationId,
+            });
+            stashMindbodyCheckoutHandoff({
+              kind: 'appointment',
+              serviceName: selectedVariant?.name || service?.title || 'Appointment',
+              startDateTime: selectedSlot.startDateTime,
+              checkoutUrl,
+            });
+            openMindbodyBookAndPay(checkoutUrl);
+            toast.message('Continue in Mindbody to pay for this session type.');
+            return;
+          } catch {
+            /* fall through */
+          }
+        }
+        toast.error(error.message);
+        return;
+      }
       toast.error('Failed to complete booking. Please try again.');
     }
   };
@@ -437,6 +501,7 @@ const BookService = () => {
                           onSelect={handleDateSelect}
                           availableDates={availableDates}
                           isLoading={isLoadingDays}
+                          isError={isDaysError}
                           toDate={bookingHorizonEndDate()}
                         />
                       </div>

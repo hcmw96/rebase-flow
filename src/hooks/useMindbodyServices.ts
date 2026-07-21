@@ -2,6 +2,10 @@ import { useQuery } from '@tanstack/react-query';
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
+/** Hard cap so a hung edge/gateway never leaves calendars spinning for minutes. */
+const AVAILABILITY_FETCH_TIMEOUT_MS = 25_000;
+const CLASSES_FETCH_TIMEOUT_MS = 25_000;
+
 export interface MindbodyService {
   id: string;
   name: string;
@@ -61,6 +65,16 @@ export interface Staff {
   bio: string | null;
 }
 
+async function fetchWithTimeout(url: string, timeoutMs: number): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { signal: controller.signal });
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 export async function fetchServices(): Promise<MindbodyService[]> {
   const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-services`);
   if (!response.ok) {
@@ -82,8 +96,9 @@ async function fetchClasses(params: {
   if (params.classDescriptionId) searchParams.set('classDescriptionId', params.classDescriptionId);
   if (params.programId) searchParams.set('programId', params.programId);
 
-  const response = await fetch(
-    `${SUPABASE_URL}/functions/v1/mindbody-classes?${searchParams.toString()}`
+  const response = await fetchWithTimeout(
+    `${SUPABASE_URL}/functions/v1/mindbody-classes?${searchParams.toString()}`,
+    CLASSES_FETCH_TIMEOUT_MS,
   );
   if (!response.ok) {
     throw new Error('Failed to fetch classes');
@@ -108,20 +123,20 @@ async function fetchAvailability(params: {
   if (params.view) searchParams.set('view', params.view);
 
   const url = `${SUPABASE_URL}/functions/v1/mindbody-availability?${searchParams.toString()}`;
-  const maxAttempts = 3;
+  // One retry only on 502/503/504 — never 3×3 a multi‑tens‑of‑seconds crawl.
+  const maxAttempts = 2;
   let lastError: Error | null = null;
 
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     try {
-      const response = await fetch(url);
-      // Transient edge/Mindbody failures — retry rather than show an empty calendar.
+      const response = await fetchWithTimeout(url, AVAILABILITY_FETCH_TIMEOUT_MS);
       if (response.status === 502 || response.status === 503 || response.status === 504) {
         throw new Error(`Availability temporarily unavailable (${response.status})`);
       }
       if (!response.ok) {
         throw new Error('Failed to fetch availability');
       }
-  const data = await response.json();
+      const data = await response.json();
       const availableItems: AvailableItem[] = data.availableItems ?? [];
       let availableDays: string[] = data.availableDays ?? [];
       // Older edge builds omitted availableDays — derive so calendars never go blank.
@@ -140,9 +155,11 @@ async function fetchAvailability(params: {
       };
     } catch (error) {
       lastError = error instanceof Error ? error : new Error('Failed to fetch availability');
-      if (attempt < maxAttempts) {
-        await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
-      }
+      const retryable =
+        lastError.name === 'AbortError' ||
+        /temporarily unavailable \(50[234]\)/.test(lastError.message);
+      if (!retryable || attempt === maxAttempts) break;
+      await new Promise((resolve) => setTimeout(resolve, 400 * attempt));
     }
   }
 
@@ -172,6 +189,8 @@ export function useMindbodyClasses(params: {
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
     enabled: params.enabled !== false,
+    retry: 1,
+    retryDelay: 800,
   });
 }
 
@@ -189,7 +208,7 @@ export function useMindbodyAvailability(params: {
     staleTime: 2 * 60 * 1000, // 2 minutes
     refetchOnWindowFocus: false,
     enabled: params.enabled !== false && !!params.sessionTypeId,
-    retry: 2,
-    retryDelay: (attempt) => Math.min(1000 * 2 ** attempt, 4000),
+    retry: 1,
+    retryDelay: 800,
   });
 }

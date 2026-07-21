@@ -23,7 +23,11 @@ import { useBookService } from '@/hooks/useMindbodyBookings';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
-import { bookingHorizonDateRange, bookingHorizonEndDate } from '@/lib/bookingHorizon';
+import {
+  bookingHorizonDateRange,
+  bookingHorizonEndDate,
+  bookingNearHorizonDateRange,
+} from '@/lib/bookingHorizon';
 import { ServiceVariant } from '@/components/ServiceCard';
 import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
@@ -285,18 +289,36 @@ const BookingDrawer = ({
 
   const activeServiceId = activeVariant?.id || '';
 
-  // Light calendar payload (date keys only) — Premium Suite slots alone are ~1.3MB / 90 days.
+  // Light calendar payload (date keys only). Near horizon paints first; full 90d extends.
+  const nearRange = useMemo(() => bookingNearHorizonDateRange(), []);
   const monthRange = useMemo(() => bookingHorizonDateRange(), []);
   const selectedDayKey = selectedDate ? localCalendarDayKey(selectedDate) : '';
+  const daysEnabled = open && !!activeServiceId && !showContactMessage && !isClassBooking;
 
-  const { data: daysAvailabilityData, isLoading: isLoadingDays, isError: isDaysError } =
-    useMindbodyAvailability({
-      sessionTypeId: activeServiceId,
-      startDate: monthRange.startDate,
-      endDate: monthRange.endDate,
-      view: 'days',
-      enabled: open && !!activeServiceId && !showContactMessage && !isClassBooking,
-    });
+  const {
+    data: nearDaysData,
+    isLoading: isLoadingNearDays,
+    isError: isNearDaysError,
+  } = useMindbodyAvailability({
+    sessionTypeId: activeServiceId,
+    startDate: nearRange.startDate,
+    endDate: nearRange.endDate,
+    view: 'days',
+    enabled: daysEnabled,
+  });
+
+  // Defer full horizon until near window has painted — avoids doubling Mindbody load on open.
+  const {
+    data: fullDaysData,
+    isLoading: isLoadingFullDays,
+    isError: isFullDaysError,
+  } = useMindbodyAvailability({
+    sessionTypeId: activeServiceId,
+    startDate: monthRange.startDate,
+    endDate: monthRange.endDate,
+    view: 'days',
+    enabled: daysEnabled && (!!nearDaysData || isNearDaysError),
+  });
 
   const { data: daySlotsData, isLoading: isLoadingDaySlots } = useMindbodyAvailability({
     sessionTypeId: activeServiceId,
@@ -317,13 +339,23 @@ const BookingDrawer = ({
 
   const isLoadingSlots = isLoadingDaySlots && !!selectedDate;
 
+  // Prefer near results immediately; merge full horizon when it arrives.
+  const isLoadingDays = isLoadingNearDays && !nearDaysData;
+  const isDaysError =
+    isNearDaysError && !nearDaysData && (isFullDaysError || !fullDaysData) && !isLoadingFullDays;
+
   const availableDates = useMemo(() => {
-    const keys = daysAvailabilityData?.availableDays || [];
-    return keys.map((k) => {
-      const [y, m, d] = k.split('-').map(Number);
-      return new Date(y, m - 1, d);
-    });
-  }, [daysAvailabilityData]);
+    const keys = new Set<string>([
+      ...(nearDaysData?.availableDays || []),
+      ...(fullDaysData?.availableDays || []),
+    ]);
+    return Array.from(keys)
+      .sort()
+      .map((k) => {
+        const [y, m, d] = k.split('-').map(Number);
+        return new Date(y, m - 1, d);
+      });
+  }, [nearDaysData, fullDaysData]);
 
   const handleUpsellSelect = (serviceName: string) => {
     if (onSwitchService) onSwitchService(serviceName);
@@ -762,9 +794,10 @@ const BookingDrawer = ({
                           onSelect={handleDateSelect}
                           availableDates={availableDates}
                           isLoading={isLoadingDays}
+                          isError={isDaysError}
                           toDate={bookingHorizonEndDate()}
                         />
-                        {isDaysError && !isLoadingDays && (
+                        {isDaysError && !isLoadingDays && availableDates.length === 0 && (
                           <p className="mt-3 text-sm text-amber-200/90 text-center">
                             Couldn&apos;t load availability. Close and try again, or email
                             reception@rebaserecovery.com.
