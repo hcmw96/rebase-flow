@@ -699,6 +699,9 @@ const ClassScheduleFlow = ({
               bookingOutcomeUncertain={bookingOutcomeUncertain}
               checkoutSummary={checkoutSummary}
               onCreateAccount={() => startCreateAccount(selectedClass)}
+              onViewBookings={onViewBookings}
+              serviceName={selectedClass.name}
+              startDateTime={selectedClass.startDateTime}
               mindbodyCheckoutUrl={
                 needsMindbodyPay || mindbodyCheckoutOpened ? mindbodyCheckoutUrl : null
               }

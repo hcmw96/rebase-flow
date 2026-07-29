@@ -109,9 +109,12 @@ const BookingConfirmCheckout = ({ summary, className }: BookingConfirmCheckoutPr
         <div className="space-y-1 text-sm">
           <p className="font-medium text-foreground">Pay &amp; book on Rebase</p>
           <p className="text-muted-foreground leading-relaxed">
-            When you confirm, we&apos;ll charge <span className="font-medium text-foreground">£{priceGbp}</span>{' '}
-            to the card saved on your Mindbody account and reserve this session — you won&apos;t leave this
-            page.
+            When you confirm, we&apos;ll charge{' '}
+            <span className="font-medium text-foreground">£{priceGbp}</span> (list price) to the card
+            saved on your Mindbody account and reserve this session — you won&apos;t leave this page.
+          </p>
+          <p className="text-xs text-muted-foreground leading-relaxed">
+            Member pricing from your Mindbody account may apply at checkout.
           </p>
         </div>
       </div>

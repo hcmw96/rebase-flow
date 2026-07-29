@@ -356,7 +356,7 @@ function checkoutFailureResponse(
       response: new Response(
         JSON.stringify({
           error:
-            "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.",
+            "We're checking your booking — please don't try to pay again. Check My Bookings, or email reception@rebaserecovery.com so we can confirm before any further payment.",
           checkoutAttempted: true,
           bookingOutcomeUncertain: true,
           noPassOnFile: true,
@@ -371,7 +371,7 @@ function checkoutFailureResponse(
     response: new Response(
       JSON.stringify({
         error:
-          "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.",
+          "We're checking your booking — please don't try to pay again. Check My Bookings, or email reception@rebaserecovery.com so we can confirm before any further payment.",
         checkoutAttempted: true,
         bookingOutcomeUncertain: true,
         paymentRequired: true,
@@ -608,7 +608,7 @@ async function mindbodyPostWithRetry(
         "We couldn't complete this booking in Mindbody. Add a payment card to your Mindbody account if you don't have one on file, then tap Confirm again — or email reception@rebaserecovery.com and we'll book you in.";
     } else if (bookingConflict) {
       userMessage =
-        "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com so we can check it before any further payment.";
+        "We're checking your booking — please don't try to pay again. Check My Bookings, or email reception@rebaserecovery.com so we can confirm before any further payment.";
     } else if (paymentIssue || !hasPass) {
       userMessage =
         "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.";
