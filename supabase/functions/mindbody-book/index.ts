@@ -71,11 +71,12 @@ async function loadBookableSession(
   supabaseAdmin: ReturnType<typeof createClient>,
   sessionId: string,
 ): Promise<MbSession | Response> {
-  let { data: session, error: sessionError } = await supabaseAdmin
+  const { data: initialSession, error: sessionError } = await supabaseAdmin
     .from("mb_sessions")
     .select("*")
     .eq("id", sessionId)
     .single();
+  let session = initialSession;
 
   if (sessionError || !session) {
     return new Response(
@@ -1409,8 +1410,6 @@ serve(async (req) => {
       return confirmedBookingResponse(claim.booking);
     }
 
-    let claimedBookingId: string | undefined;
-
     if (claim.type === "in_progress") {
       try {
         const staffToken = await getStaffToken();
@@ -1482,7 +1481,7 @@ serve(async (req) => {
       return bookingInProgressResponse();
     }
 
-    claimedBookingId = claim.bookingId;
+    const claimedBookingId = claim.bookingId;
     let mindbodySucceeded = false;
     const checkoutAttemptStartedAt = new Date();
 
@@ -1704,6 +1703,11 @@ serve(async (req) => {
     } catch (bookingErr) {
       // Do not release the claim on unexpected errors after entering Mindbody.
       // A network/runtime failure may happen after Mindbody has charged or booked.
+      console.error("Unexpected booking error after claim:", {
+        bookingId: claimedBookingId,
+        mindbodySucceeded,
+        message: bookingErr instanceof Error ? bookingErr.message : String(bookingErr),
+      });
       throw bookingErr;
     }
   } catch (error) {
