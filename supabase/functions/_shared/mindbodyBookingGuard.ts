@@ -1,4 +1,6 @@
 import { normalizeBookingDateTime } from "./bookingIdempotency.ts";
+import { parseMindbodyLocalDateTime, studioDateKeyFromInstant } from "./londonTime.ts";
+import { resolveBookableSessionMinutes } from "./sessionDuration.ts";
 
 function mbHeaders(apiKey: string, siteId: string, bearerToken: string) {
   return {
@@ -10,9 +12,38 @@ function mbHeaders(apiKey: string, siteId: string, bearerToken: string) {
 }
 
 function visitDayRange(startDateTime: string): { startDate: string; endDate: string } {
-  const normalized = normalizeBookingDateTime(startDateTime);
-  const day = normalized.split("T")[0];
+  const parsed = parseMindbodyLocalDateTime(startDateTime);
+  const day = Number.isNaN(parsed.getTime())
+    ? normalizeBookingDateTime(startDateTime).split("T")[0]
+    : studioDateKeyFromInstant(parsed);
   return { startDate: day, endDate: day };
+}
+
+/** Strip duration suffixes so "Premium Suite (60 mins)" matches "Premium Suite". */
+function normalizeServiceLabel(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/\([^)]*\)/g, " ")
+    .replace(/\b\d+\s*(?:mins?|minutes?|min|hrs?|hours?)\b/g, " ")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function purchaseMatchesService(
+  purchaseText: string,
+  serviceName: string | null | undefined,
+): boolean {
+  if (!serviceName?.trim()) return true;
+  const needle = normalizeServiceLabel(serviceName);
+  const haystack = normalizeServiceLabel(purchaseText);
+  if (!needle || !haystack) return true;
+  if (haystack.includes(needle) || needle.includes(haystack)) return true;
+
+  const needleTokens = needle.split(" ").filter((t) => t.length > 2);
+  if (!needleTokens.length) return true;
+  // Require most meaningful tokens (suite bookings: premium + suite).
+  const hits = needleTokens.filter((t) => haystack.includes(t)).length;
+  return hits >= Math.ceil(needleTokens.length * 0.6);
 }
 
 /** True if the client already has a non-cancelled class visit for this class instance. */
@@ -139,8 +170,18 @@ export async function clientAlreadyBookedAppointment(
     publicClientId,
     startDateTime,
   );
+  if (
+    appointments.some((apt) =>
+      appointmentMatchesSlot(apt, sessionTypeId, staffId, startDateTime)
+    )
+  ) {
+    return true;
+  }
+  // Suites often remap resource staff ids after booking.
   return appointments.some((apt) =>
-    appointmentMatchesSlot(apt, sessionTypeId, staffId, startDateTime)
+    appointmentMatchesSlot(apt, sessionTypeId, staffId, startDateTime, {
+      requireStaff: false,
+    })
   );
 }
 
@@ -246,9 +287,10 @@ export async function waitUntilClientHasRecentSale(
   const attempts = opts?.attempts ?? 3;
   const delayMs = opts?.delayMs ?? 1200;
   const startWindow = opts?.windowStart ?? new Date(Date.now() - 30 * 60_000);
-  const serviceNeedle = opts?.serviceName?.trim().toLowerCase() || null;
+  const serviceName = opts?.serviceName?.trim() || null;
   const expectedAmount = opts?.expectedAmount;
-  const tolerance = expectedAmount != null ? Math.max(1, expectedAmount * 0.15) : null;
+  // Member rates can be ~10–20% under list; keep a wide window so sale recovery works.
+  const tolerance = expectedAmount != null ? Math.max(5, expectedAmount * 0.3) : null;
 
   for (let i = 0; i < attempts; i++) {
     if (i > 0) {
@@ -265,8 +307,8 @@ export async function waitUntilClientHasRecentSale(
     if (!purchases.length) continue;
 
     const matched = purchases.some((purchase) => {
-      const text = `${purchase.Description || ""} ${purchase.Name || ""}`.toLowerCase();
-      const nameMatch = serviceNeedle ? text.includes(serviceNeedle) : true;
+      const text = `${purchase.Description || ""} ${purchase.Name || ""}`;
+      const nameMatch = purchaseMatchesService(text, serviceName);
       const amount = purchase.TotalAmount ?? purchase.Amount;
       const amountMatch = expectedAmount != null && tolerance != null && typeof amount === "number"
         ? Math.abs(amount - expectedAmount) <= tolerance
@@ -276,13 +318,28 @@ export async function waitUntilClientHasRecentSale(
     if (matched) {
       return true;
     }
+    // Amount-only fallback in the checkout window — suite sale names often omit duration.
+    if (expectedAmount != null && tolerance != null) {
+      const amountOnly = purchases.some((purchase) => {
+        const amount = purchase.TotalAmount ?? purchase.Amount;
+        return typeof amount === "number" && Math.abs(amount - expectedAmount) <= tolerance;
+      });
+      if (amountOnly) {
+        console.warn(
+          "Matched recent sale by amount without exact service name",
+          serviceName,
+          expectedAmount,
+        );
+        return true;
+      }
+    }
   }
   return false;
 }
 
 /**
  * Pre-charge guard: confirm the slot still appears in Mindbody bookable items.
- * Returns false if Mindbody is unreachable (do not block booking on API blips).
+ * Returns null if Mindbody is unreachable (do not block booking on API blips).
  */
 export async function appointmentSlotStillBookable(
   apiKey: string,
@@ -293,14 +350,14 @@ export async function appointmentSlotStillBookable(
   startDateTime: string,
   locationId: number,
 ): Promise<boolean | null> {
-  const day = normalizeBookingDateTime(startDateTime).split("T")[0];
+  const day = visitDayRange(startDateTime).startDate;
   const params = new URLSearchParams({
     SessionTypeIds: sessionTypeId,
-    StaffIds: staffId,
     StartDate: day,
     EndDate: day,
     IgnoreDefaultSessionLength: "true",
   });
+  // Don't hard-filter StaffIds — suite resources remap staff after booking windows load.
   if (locationId > 0) params.set("LocationIds", String(locationId));
   try {
     const res = await fetch(
@@ -317,7 +374,7 @@ export async function appointmentSlotStillBookable(
       EndDateTime?: string;
       BookableEndDateTime?: string;
       Staff?: { Id?: number | string };
-      SessionType?: { Id?: number | string; DefaultTimeLength?: number };
+      SessionType?: { Id?: number | string; Name?: string; DefaultTimeLength?: number };
     }>;
     const target = normalizeBookingDateTime(startDateTime);
     const targetMs = Date.parse(target);
@@ -325,15 +382,60 @@ export async function appointmentSlotStillBookable(
 
     for (const w of windows) {
       if (String(w.SessionType?.Id) !== String(sessionTypeId)) continue;
-      if (String(w.Staff?.Id) !== String(staffId)) continue;
       if (!w.StartDateTime) continue;
+      const sessionLength = resolveBookableSessionMinutes(
+        w.SessionType?.Name,
+        w.SessionType?.DefaultTimeLength,
+      );
       const winStart = Date.parse(normalizeBookingDateTime(w.StartDateTime));
-      const endRaw = w.BookableEndDateTime || w.EndDateTime;
-      if (!endRaw || !Number.isFinite(winStart)) continue;
-      const winEnd = Date.parse(normalizeBookingDateTime(endRaw));
-      const lengthMin = w.SessionType?.DefaultTimeLength ?? 60;
-      // Slot is bookable if start falls inside the window with enough remaining time.
-      if (targetMs >= winStart && targetMs + lengthMin * 60_000 <= winEnd + 1000) {
+      if (!Number.isFinite(winStart)) continue;
+
+      // Prefer EndDateTime (same as availability slot generation); fall back to
+      // BookableEndDateTime expanded by prep buffer.
+      let winEndMs: number | null = null;
+      if (w.EndDateTime) {
+        winEndMs = Date.parse(normalizeBookingDateTime(w.EndDateTime));
+      } else if (w.BookableEndDateTime) {
+        const bookableEnd = Date.parse(normalizeBookingDateTime(w.BookableEndDateTime));
+        const defaultLen = w.SessionType?.DefaultTimeLength || sessionLength;
+        const bufferMinutes = Math.max(0, defaultLen - sessionLength);
+        winEndMs = bookableEnd + bufferMinutes * 60_000;
+      }
+      if (winEndMs == null || !Number.isFinite(winEndMs)) continue;
+
+      const staffMatches = String(w.Staff?.Id) === String(staffId);
+      const fits =
+        targetMs >= winStart && targetMs + sessionLength * 60_000 <= winEndMs + 1000;
+      if (!fits) continue;
+      if (staffMatches) return true;
+    }
+
+    // Soft staff: same session + time window (suite resource remap).
+    for (const w of windows) {
+      if (String(w.SessionType?.Id) !== String(sessionTypeId)) continue;
+      if (!w.StartDateTime) continue;
+      const sessionLength = resolveBookableSessionMinutes(
+        w.SessionType?.Name,
+        w.SessionType?.DefaultTimeLength,
+      );
+      const winStart = Date.parse(normalizeBookingDateTime(w.StartDateTime));
+      if (!Number.isFinite(winStart)) continue;
+      let winEndMs: number | null = null;
+      if (w.EndDateTime) {
+        winEndMs = Date.parse(normalizeBookingDateTime(w.EndDateTime));
+      } else if (w.BookableEndDateTime) {
+        const bookableEnd = Date.parse(normalizeBookingDateTime(w.BookableEndDateTime));
+        const defaultLen = w.SessionType?.DefaultTimeLength || sessionLength;
+        const bufferMinutes = Math.max(0, defaultLen - sessionLength);
+        winEndMs = bookableEnd + bufferMinutes * 60_000;
+      }
+      if (winEndMs == null || !Number.isFinite(winEndMs)) continue;
+      if (targetMs >= winStart && targetMs + sessionLength * 60_000 <= winEndMs + 1000) {
+        console.warn(
+          "bookableitems preflight matched session+time without staff id",
+          sessionTypeId,
+          startDateTime,
+        );
         return true;
       }
     }

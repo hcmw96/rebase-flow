@@ -49,6 +49,7 @@ import {
   waitUntilClientBookedClass,
 } from "../_shared/mindbodyBookingGuard.ts";
 import { alertOnHttpFailure, sendOpsAlert } from "../_shared/opsAlertEmail.ts";
+import { toMindbodyLocalDateTime } from "../_shared/londonTime.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -1012,7 +1013,7 @@ async function bookAppointmentWithPayment(
     LocationId: locationId || 1,
     StaffId: parseInt(staffId, 10),
     SessionTypeId: parseInt(sessionTypeId, 10),
-    StartDateTime: startDateTime,
+    StartDateTime: toMindbodyLocalDateTime(startDateTime),
     ApplyPayment: true,
     SendConfirmationEmail: true,
   };

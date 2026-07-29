@@ -1,3 +1,5 @@
+import { toMindbodyLocalDateTime } from "./londonTime.ts";
+
 type SaleServiceRow = {
   Id?: number;
   Name?: string;
@@ -459,15 +461,17 @@ export async function checkoutAppointmentWithStoredCard(
     endDateTime?: string;
   },
 ): Promise<CheckoutResult> {
+  // Match the working AddAppointment (pass) path: send StartDateTime only.
+  // Client end times are often UTC ISO derived from name-duration slots; Mindbody
+  // suites use DefaultTimeLength buffers, and a wrong EndDateTime causes
+  // charge-then-schedule failures after CheckoutShoppingCart.
+  const startLocal = toMindbodyLocalDateTime(opts.startDateTime);
   const appointmentRequest: Record<string, unknown> = {
     StaffId: opts.staffId,
     LocationId: opts.locationId,
     SessionTypeId: opts.sessionTypeId,
-    StartDateTime: opts.startDateTime,
+    StartDateTime: startLocal,
   };
-  if (opts.endDateTime) {
-    appointmentRequest.EndDateTime = opts.endDateTime;
-  }
 
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
     clientId: opts.clientId,
@@ -481,7 +485,8 @@ export async function checkoutAppointmentWithStoredCard(
     console.log(
       "checkoutshoppingcart ok for appointment",
       opts.sessionTypeId,
-      opts.startDateTime,
+      startLocal,
+      `(client sent ${opts.startDateTime})`,
     );
   }
   return result;

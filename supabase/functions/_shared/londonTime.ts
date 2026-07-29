@@ -88,6 +88,26 @@ export function toUtcIsoFromMindbody(value: string): string {
   return parseMindbodyLocalDateTime(value).toISOString();
 }
 
+/**
+ * Format an absolute/ISO instant (or Mindbody local string) as a Mindbody
+ * site-local wall time with no offset: `YYYY-MM-DDTHH:mm:ss`.
+ *
+ * Mindbody treats bare datetimes as studio-local. Sending UTC `…Z` from our
+ * calendar slots shifts suite bookings by the BST/GMT offset and is a common
+ * cause of charge-then-schedule failures.
+ */
+export function toMindbodyLocalDateTime(value: string): string {
+  const parsed = parseMindbodyLocalDateTime(value);
+  if (Number.isNaN(parsed.getTime())) {
+    return value.trim().replace(/\.\d{3}Z$/, "").replace(/Z$/, "");
+  }
+  const parts = getLondonParts(parsed.getTime());
+  const pad = (n: number) => String(n).padStart(2, "0");
+  // Intl can report hour 24 for midnight in some locales — normalise.
+  const hour = parts.hour === 24 ? 0 : parts.hour;
+  return `${parts.year}-${pad(parts.month)}-${pad(parts.day)}T${pad(hour)}:${pad(parts.minute)}:${pad(parts.second)}`;
+}
+
 export function studioTodayKey(now: number = Date.now()): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: STUDIO_TIMEZONE,
