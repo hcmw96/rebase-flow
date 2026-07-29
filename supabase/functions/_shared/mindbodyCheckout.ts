@@ -298,14 +298,19 @@ export async function checkoutWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
     classIds?: number[];
     appointmentBookingRequests?: Array<Record<string, unknown>>;
   },
 ): Promise<CheckoutResult> {
+  const itemMetadata: Record<string, unknown> = { Id: String(opts.serviceId) };
+  if (opts.correlationId) {
+    itemMetadata.RebaseBookingKey = opts.correlationId;
+  }
   const item: Record<string, unknown> = {
     Item: {
       Type: "Service",
-      Metadata: { Id: String(opts.serviceId) },
+      Metadata: itemMetadata,
     },
     Quantity: 1,
   };
@@ -337,7 +342,15 @@ export async function checkoutWithStoredCard(
       Payments: [
         {
           Type: "StoredCard",
-          Metadata: { Amount: chargeAmount },
+          Metadata: {
+            Amount: chargeAmount,
+            ...(opts.correlationId
+              ? {
+                RebaseBookingKey: opts.correlationId,
+                Source: "rebase-web",
+              }
+              : {}),
+          },
         },
       ],
     };
@@ -412,6 +425,7 @@ export async function checkoutClassWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
   },
 ): Promise<CheckoutResult> {
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
@@ -419,6 +433,7 @@ export async function checkoutClassWithStoredCard(
     locationId: opts.locationId,
     serviceId: opts.serviceId,
     amount: opts.amount,
+    correlationId: opts.correlationId,
     classIds: [opts.classId],
   });
   if (result.ok) {
@@ -437,6 +452,7 @@ export async function checkoutAppointmentWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
     staffId: number;
     sessionTypeId: number;
     startDateTime: string;
@@ -458,6 +474,7 @@ export async function checkoutAppointmentWithStoredCard(
     locationId: opts.locationId,
     serviceId: opts.serviceId,
     amount: opts.amount,
+    correlationId: opts.correlationId,
     appointmentBookingRequests: [appointmentRequest],
   });
   if (result.ok) {
@@ -480,6 +497,7 @@ export async function checkoutServiceWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
   },
 ): Promise<CheckoutResult> {
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, opts);

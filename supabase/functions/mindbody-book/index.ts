@@ -44,6 +44,7 @@ import {
   appointmentSlotStillBookable,
   clientAlreadyBookedAppointment,
   clientAlreadyBookedClass,
+  waitUntilClientHasRecentSale,
   waitUntilClientBookedAppointment,
   waitUntilClientBookedClass,
 } from "../_shared/mindbodyBookingGuard.ts";
@@ -256,6 +257,93 @@ async function shouldReleaseClaimAfterFailure(response: Response): Promise<boole
   } catch {
     return false;
   }
+}
+
+async function reconcileAmbiguousCheckout(params: {
+  apiKey: string;
+  siteId: string;
+  staffToken: string;
+  clientId: string;
+  bookingType: "appointment" | "class";
+  classId?: string;
+  sessionTypeId?: string;
+  staffId?: string;
+  startDateTime: string;
+  serviceName?: string;
+  expectedAmount?: number;
+  attemptStartedAt: Date;
+}): Promise<boolean> {
+  const {
+    apiKey,
+    siteId,
+    staffToken,
+    clientId,
+    bookingType,
+    classId,
+    sessionTypeId,
+    staffId,
+    startDateTime,
+    serviceName,
+    expectedAmount,
+    attemptStartedAt,
+  } = params;
+
+  const booked = bookingType === "class"
+    ? classId
+      ? await waitUntilClientBookedClass(apiKey, siteId, staffToken, clientId, classId, startDateTime, {
+        attempts: 8,
+        delayMs: 1300,
+      })
+      : false
+    : sessionTypeId && staffId
+    ? await waitUntilClientBookedAppointment(
+      apiKey,
+      siteId,
+      staffToken,
+      clientId,
+      sessionTypeId,
+      staffId,
+      startDateTime,
+      { attempts: 8, delayMs: 1300 },
+    )
+    : false;
+  if (booked) return true;
+
+  const saleSeen = await waitUntilClientHasRecentSale(
+    apiKey,
+    siteId,
+    staffToken,
+    clientId,
+    {
+      serviceName,
+      expectedAmount,
+      attempts: 3,
+      delayMs: 1500,
+      windowStart: attemptStartedAt,
+    },
+  );
+  if (!saleSeen) return false;
+
+  const bookedAfterSale = bookingType === "class"
+    ? classId
+      ? await waitUntilClientBookedClass(apiKey, siteId, staffToken, clientId, classId, startDateTime, {
+        attempts: 8,
+        delayMs: 2000,
+      })
+      : false
+    : sessionTypeId && staffId
+    ? await waitUntilClientBookedAppointment(
+      apiKey,
+      siteId,
+      staffToken,
+      clientId,
+      sessionTypeId,
+      staffId,
+      startDateTime,
+      { attempts: 8, delayMs: 2000 },
+    )
+    : false;
+  return bookedAfterSale;
 }
 
 function checkoutFailureResponse(
@@ -641,6 +729,8 @@ async function bookClassWithPayment(
   classId: string,
   startDateTime: string,
   locationId: number | undefined,
+  checkoutCorrelationId: string,
+  checkoutAttemptStartedAt: Date,
   serviceName?: string,
 ): Promise<
   | {
@@ -849,6 +939,7 @@ async function bookClassWithPayment(
         locationId: locId,
         serviceId: saleService!.Id!,
         amount,
+        correlationId: checkoutCorrelationId,
       }),
   );
 
@@ -867,14 +958,18 @@ async function bookClassWithPayment(
   }
 
   if (
-    await waitUntilClientBookedClass(
+    await reconcileAmbiguousCheckout({
       apiKey,
       siteId,
       staffToken,
       clientId,
+      bookingType: "class",
       classId,
       startDateTime,
-    )
+      serviceName,
+      expectedAmount: amount,
+      attemptStartedAt: checkoutAttemptStartedAt,
+    })
   ) {
     console.warn(`Class ${classId} exists despite checkout error; treating as booked`);
     return {
@@ -899,6 +994,8 @@ async function bookAppointmentWithPayment(
   locationId: number,
   startDateTime: string,
   endDateTime?: string,
+  checkoutCorrelationId?: string,
+  checkoutAttemptStartedAt?: Date,
   serviceName?: string,
 ): Promise<
   | {
@@ -1163,6 +1260,7 @@ async function bookAppointmentWithPayment(
         locationId: locId,
         serviceId: saleService!.Id!,
         amount,
+        correlationId: checkoutCorrelationId,
         staffId: staffIdNum,
         sessionTypeId: sessionTypeIdNum,
         startDateTime,
@@ -1184,18 +1282,22 @@ async function bookAppointmentWithPayment(
     };
   }
 
-  // Mindbody often charges/books then returns a scheduling error. Poll before
-  // locking the guest out — if the appointment landed, treat as success.
+  // Mindbody sometimes charges then returns an ambiguous scheduling error.
+  // Repair by checking booking + recent sale before surfacing uncertainty.
   if (
-    await waitUntilClientBookedAppointment(
+    await reconcileAmbiguousCheckout({
       apiKey,
       siteId,
       staffToken,
       clientId,
+      bookingType: "appointment",
       sessionTypeId,
       staffId,
       startDateTime,
-    )
+      serviceName,
+      expectedAmount: amount,
+      attemptStartedAt: checkoutAttemptStartedAt ?? new Date(),
+    })
   ) {
     console.warn(
       `Appointment ${sessionTypeId} exists despite checkout error; treating as booked`,
@@ -1312,27 +1414,19 @@ serve(async (req) => {
     if (claim.type === "in_progress") {
       try {
         const staffToken = await getStaffToken();
-        let alreadyInMindbody = false;
-        if (resolvedBookingType === "class" && classId) {
-          alreadyInMindbody = await clientAlreadyBookedClass(
-            apiKey,
-            siteId,
-            staffToken,
-            siteClientId || session.mindbody_client_id,
-            classId,
-            slotStartDateTime,
-          );
-        } else if (sessionTypeId && staffId) {
-          alreadyInMindbody = await clientAlreadyBookedAppointment(
-            apiKey,
-            siteId,
-            staffToken,
-            siteClientId || session.mindbody_client_id,
-            sessionTypeId,
-            staffId,
-            slotStartDateTime,
-          );
-        }
+        const alreadyInMindbody = await reconcileAmbiguousCheckout({
+          apiKey,
+          siteId,
+          staffToken,
+          clientId: siteClientId || session.mindbody_client_id,
+          bookingType: resolvedBookingType,
+          classId: classId ?? undefined,
+          sessionTypeId: sessionTypeId ?? undefined,
+          staffId: staffId ?? undefined,
+          startDateTime: slotStartDateTime,
+          serviceName: serviceName ?? undefined,
+          attemptStartedAt: new Date(Date.now() - 5 * 60_000),
+        });
 
         if (alreadyInMindbody) {
           const { data: pending } = await supabaseAdmin
@@ -1390,6 +1484,7 @@ serve(async (req) => {
 
     claimedBookingId = claim.bookingId;
     let mindbodySucceeded = false;
+    const checkoutAttemptStartedAt = new Date();
 
     try {
     let bookingResult: Record<string, unknown>;
@@ -1412,6 +1507,8 @@ serve(async (req) => {
         classId,
         slotStartDateTime,
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
+        effectiveIdempotencyKey,
+        checkoutAttemptStartedAt,
         serviceName,
       );
       if (!result.ok) {
@@ -1448,6 +1545,8 @@ serve(async (req) => {
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
         startDateTime,
         endDateTime,
+        effectiveIdempotencyKey,
+        checkoutAttemptStartedAt,
         serviceName,
       );
       if (!result.ok) {

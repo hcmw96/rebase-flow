@@ -54,6 +54,16 @@ type AppointmentRow = {
   Staff?: { Id?: number | string };
 };
 
+type ClientPurchaseRow = {
+  SaleDateTime?: string;
+  PurchasedDateTime?: string;
+  Description?: string;
+  Name?: string;
+  SaleId?: number | string;
+  TotalAmount?: number;
+  Amount?: number;
+};
+
 async function fetchClientAppointmentsForDay(
   apiKey: string,
   siteId: string,
@@ -69,6 +79,29 @@ async function fetchClientAppointmentsForDay(
   if (!res.ok) return [];
   const data = await res.json();
   return (data.Appointments || []) as AppointmentRow[];
+}
+
+async function fetchClientPurchasesInRange(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  publicClientId: string,
+  startDateTime: string,
+  endDateTime: string,
+): Promise<ClientPurchaseRow[]> {
+  const params = new URLSearchParams({
+    "request.clientId": publicClientId,
+    "request.startDate": startDateTime,
+    "request.endDate": endDateTime,
+    "request.limit": "50",
+  });
+  const res = await fetch(
+    `https://api.mindbodyonline.com/public/v6/client/clientpurchases?${params.toString()}`,
+    { method: "GET", headers: mbHeaders(apiKey, siteId, bearerToken) },
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  return (data.Purchases || []) as ClientPurchaseRow[];
 }
 
 function appointmentMatchesSlot(
@@ -191,6 +224,56 @@ export async function waitUntilClientBookedClass(
         startDateTime,
       )
     ) {
+      return true;
+    }
+  }
+  return false;
+}
+
+export async function waitUntilClientHasRecentSale(
+  apiKey: string,
+  siteId: string,
+  bearerToken: string,
+  publicClientId: string,
+  opts?: {
+    serviceName?: string;
+    expectedAmount?: number;
+    attempts?: number;
+    delayMs?: number;
+    windowStart?: Date;
+  },
+): Promise<boolean> {
+  const attempts = opts?.attempts ?? 3;
+  const delayMs = opts?.delayMs ?? 1200;
+  const startWindow = opts?.windowStart ?? new Date(Date.now() - 30 * 60_000);
+  const serviceNeedle = opts?.serviceName?.trim().toLowerCase() || null;
+  const expectedAmount = opts?.expectedAmount;
+  const tolerance = expectedAmount != null ? Math.max(1, expectedAmount * 0.15) : null;
+
+  for (let i = 0; i < attempts; i++) {
+    if (i > 0) {
+      await new Promise((r) => setTimeout(r, delayMs * i));
+    }
+    const purchases = await fetchClientPurchasesInRange(
+      apiKey,
+      siteId,
+      bearerToken,
+      publicClientId,
+      startWindow.toISOString(),
+      new Date().toISOString(),
+    );
+    if (!purchases.length) continue;
+
+    const matched = purchases.some((purchase) => {
+      const text = `${purchase.Description || ""} ${purchase.Name || ""}`.toLowerCase();
+      const nameMatch = serviceNeedle ? text.includes(serviceNeedle) : true;
+      const amount = purchase.TotalAmount ?? purchase.Amount;
+      const amountMatch = expectedAmount != null && tolerance != null && typeof amount === "number"
+        ? Math.abs(amount - expectedAmount) <= tolerance
+        : true;
+      return nameMatch && amountMatch;
+    });
+    if (matched) {
       return true;
     }
   }
