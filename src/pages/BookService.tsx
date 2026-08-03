@@ -21,7 +21,9 @@ import {
   bookingNearHorizonDateRange,
 } from '@/lib/bookingHorizon';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
+import { pushBookingConfirmedOnce } from '@/lib/gtmDataLayer';
 import { BookingMutationError } from '@/lib/bookingMutationError';
+import { resolveDisplayName } from '@/config/serviceConfig';
 import {
   mindbodyAppointmentBookAndPayUrl,
   openMindbodyBookAndPay,
@@ -249,6 +251,21 @@ const BookService = () => {
         startDateTime: selectedSlot.startDateTime,
         serviceName: selectedVariant?.name || service?.title,
         idempotencyKey,
+      });
+      const serviceName = resolveDisplayName(selectedVariant?.name || service?.title || 'Booking');
+      const legacyPrice = service?.price
+        ? parseFloat(String(service.price).replace(/£/g, ''))
+        : NaN;
+      const pricePaid =
+        typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)
+          ? selectedVariant.price
+          : Number.isFinite(legacyPrice)
+            ? legacyPrice
+            : 0;
+      pushBookingConfirmedOnce(`drop-in:${serviceName}:${selectedSlot.startDateTime}`, {
+        bookingType: 'drop-in',
+        service: serviceName,
+        value: pricePaid,
       });
       setBookingComplete(true);
       toast.success('Booking confirmed!');

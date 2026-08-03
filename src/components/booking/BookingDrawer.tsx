@@ -716,6 +716,7 @@ const BookingDrawer = ({
                 payment={confirmedPayment}
                 confirmationEmailSent={confirmationEmailSent}
                 durationMinutes={activeVariant?.duration}
+                analyticsBookingType="drop-in"
                 onDone={() => {
                   resetBookingUi();
                   clearPendingBooking();

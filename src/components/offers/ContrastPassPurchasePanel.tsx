@@ -1,10 +1,11 @@
-import { useRef, useCallback } from 'react';
+import { useRef, useCallback, useEffect } from 'react';
 import { CreditCard, Loader2, CheckCircle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import PaymentCardSetupStep from '@/components/payment/PaymentCardSetupStep';
 import { useAuth } from '@/contexts/AuthContext';
 import { mindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
+import { pushBookingConfirmedOnce } from '@/lib/gtmDataLayer';
 import { cn } from '@/lib/utils';
 
 type ContrastPassPurchasePanelProps = {
@@ -41,6 +42,19 @@ const ContrastPassPurchasePanel = ({
   const { isAuthenticated, isRedirecting } = useAuth();
   const accountUrl = mindbodyClientAccountUrl();
   const purchaseLockedRef = useRef(false);
+  const gtmFiredRef = useRef(false);
+
+  // On-site pass purchase success (mindbody-purchase-pass) — not Mindbody handoff.
+  useEffect(() => {
+    if (!purchaseComplete || gtmFiredRef.current) return;
+    gtmFiredRef.current = true;
+    const service = productName?.trim() || '2 Week Unlimited Communal Contrast Pass';
+    pushBookingConfirmedOnce(`pass:${service}`, {
+      bookingType: 'pass',
+      service,
+      value: displayPrice,
+    });
+  }, [purchaseComplete, productName, displayPrice]);
 
   const handlePurchaseClick = useCallback(() => {
     if (isPurchasing || purchaseOutcomeUncertain || purchaseLockedRef.current) return;

@@ -211,23 +211,26 @@ async function exchangeAndSaveSession(
     }
   }
 
+  // Never write mindbody_site_client_id: null — that would wipe a previously
+  // resolved site id when login-time resolve fails (SearchText fluke, etc.).
+  const sessionRow: Record<string, unknown> = {
+    mindbody_client_id: userInfo.sub,
+    email: userInfo.email,
+    first_name: userInfo.given_name,
+    last_name: userInfo.family_name,
+    access_token: tokens.access_token,
+    // Mindbody omits refresh_token without offline_access; column may still be NOT NULL on older DBs.
+    refresh_token: tokens.refresh_token || "",
+    token_expires_at: expiresAt.toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  if (mindbodySiteClientId) {
+    sessionRow.mindbody_site_client_id = mindbodySiteClientId;
+  }
+
   const { data: session, error: sessionError } = await supabase
     .from("mb_sessions")
-    .upsert(
-      {
-        mindbody_client_id: userInfo.sub,
-        mindbody_site_client_id: mindbodySiteClientId,
-        email: userInfo.email,
-        first_name: userInfo.given_name,
-        last_name: userInfo.family_name,
-        access_token: tokens.access_token,
-        // Mindbody omits refresh_token without offline_access; column may still be NOT NULL on older DBs.
-        refresh_token: tokens.refresh_token || "",
-        token_expires_at: expiresAt.toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: "mindbody_client_id" },
-    )
+    .upsert(sessionRow, { onConflict: "mindbody_client_id" })
     .select()
     .single();
 

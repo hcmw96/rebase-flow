@@ -26,6 +26,7 @@ import { bookingHorizonDateRange, bookingHorizonEndDate, bookingNearHorizonDateR
 import { resolveDisplayName, resolveDisplayText, resolveGroupDescription } from '@/config/serviceConfig';
 import { stashPendingBooking, clearPendingBooking } from '@/lib/bookingResume';
 import { classifyBookingError } from '@/lib/bookingErrors';
+import { isCommunalContrastService } from '@/lib/bookingPaymentOptions';
 import { BookingMutationError } from '@/lib/bookingMutationError';
 import {
   clearMindbodyCheckoutHandoff,
@@ -486,6 +487,11 @@ const ClassScheduleFlow = ({
         }}
         payment={confirmedPayment}
         confirmationEmailSent={confirmationEmailSent}
+        analyticsBookingType={
+          isCommunalContrastService(selectedClass.name) || isCommunalContrastService(serviceLabel)
+            ? 'drop-in'
+            : 'class'
+        }
         onDone={() => {
           clearPendingBooking();
           setBookingComplete(false);

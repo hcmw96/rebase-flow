@@ -4,6 +4,7 @@ import { formatMindbodyDate, formatAppointmentTimeRange } from '@/lib/sessionTim
 import { Calendar, CheckCircle, Clock, CreditCard, MapPin, Ticket, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { resolveDisplayName } from '@/config/serviceConfig';
+import { pushBookingConfirmedOnce, type BookingConfirmedType } from '@/lib/gtmDataLayer';
 import { cn } from '@/lib/utils';
 
 export interface BookingConfirmationDetails {
@@ -31,6 +32,8 @@ interface BookingConfirmationSuccessProps {
   /** From mindbody-book when known; omit when older responses don't include it. */
   confirmationEmailSent?: boolean | null;
   durationMinutes?: number | null;
+  /** GTM booking_confirmed.bookingType — required so conversions are classified correctly. */
+  analyticsBookingType: BookingConfirmedType;
   onDone: () => void;
   doneLabel?: string;
   className?: string;
@@ -43,6 +46,19 @@ const normaliseBrand = (value: string | null | undefined): string =>
 function formatGbp(amount: number): string {
   const rounded = Math.round(amount * 100) / 100;
   return Number.isInteger(rounded) ? `£${rounded}` : `£${rounded.toFixed(2)}`;
+}
+
+/** Paid amount for GTM — £0 when a pass covered the session. */
+function analyticsValueGbp(payment: BookingConfirmationPayment | null | undefined): number {
+  if (!payment) return 0;
+  if (payment.method === 'pass') return 0;
+  if (typeof payment.amountGbp === 'number' && Number.isFinite(payment.amountGbp)) {
+    return payment.amountGbp;
+  }
+  if (typeof payment.listPriceGbp === 'number' && Number.isFinite(payment.listPriceGbp)) {
+    return payment.listPriceGbp;
+  }
+  return 0;
 }
 
 function PaymentSummary({ payment }: { payment: BookingConfirmationPayment }) {
@@ -115,23 +131,39 @@ function PaymentSummary({ payment }: { payment: BookingConfirmationPayment }) {
 
 /**
  * Full-screen replacement after a successful mindbody-book response.
+ * Fires GTM `booking_confirmed` once on mount (not on re-render / handoff).
  */
 const BookingConfirmationSuccess = ({
   details,
   payment,
   confirmationEmailSent,
   durationMinutes,
+  analyticsBookingType,
   onDone,
   doneLabel = 'Done',
   className,
   children,
 }: BookingConfirmationSuccessProps) => {
   const rootRef = useRef<HTMLDivElement>(null);
+  const gtmFiredRef = useRef(false);
   const serviceLabel = resolveDisplayName(details.serviceName);
 
   useEffect(() => {
     rootRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, []);
+
+  useEffect(() => {
+    if (gtmFiredRef.current) return;
+    gtmFiredRef.current = true;
+    pushBookingConfirmedOnce(
+      `${analyticsBookingType}:${serviceLabel}:${details.startDateTime}`,
+      {
+        bookingType: analyticsBookingType,
+        service: serviceLabel,
+        value: analyticsValueGbp(payment),
+      },
+    );
+  }, [analyticsBookingType, serviceLabel, payment, details.startDateTime]);
 
   return (
     <motion.div

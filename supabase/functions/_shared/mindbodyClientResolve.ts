@@ -104,24 +104,43 @@ async function lookupByUniqueId(
   return null;
 }
 
-async function lookupByEmail(
+/** Exact case-insensitive email match within a SearchText result set. */
+function findExactEmailInClients(
+  clients: MindbodyClientRow[],
+  email: string,
+): MindbodyClientRow | null {
+  const want = normalizeEmail(email);
+  return clients.find((c) => c.Id != null && c.Email && normalizeEmail(c.Email) === want) ?? null;
+}
+
+/**
+ * Find an existing site client by email (trim + lowercase). Tries both the
+ * original and normalised SearchText so Mindbody casing quirks don't hide a
+ * match. Only accepts an exact normalised email equality — never a fuzzy
+ * first-hit — so we never create a duplicate or link the wrong person.
+ */
+async function findClientByNormalizedEmail(
   email: string,
   apiKey: string,
   siteId: string,
   bearerToken: string,
-  publicClientId: string,
-  profile?: ClientProfile,
 ): Promise<MindbodyClientRow | null> {
-  const enc = encodeURIComponent(email.trim());
-  const urls = [
-    `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=50&CrossRegionalLookup=true`,
-    `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=50`,
-  ];
+  const trimmed = email.trim();
+  if (!trimmed) return null;
+  const normalized = normalizeEmail(trimmed);
+  const searchTerms = [...new Set([trimmed, normalized])];
 
-  for (const url of urls) {
-    const clients = await fetchClients(url, apiKey, siteId, bearerToken);
-    const match = pickMatchingClient(clients, publicClientId, siteId, profile);
-    if (match?.Id != null) return match;
+  for (const term of searchTerms) {
+    const enc = encodeURIComponent(term);
+    const urls = [
+      `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=50&CrossRegionalLookup=true`,
+      `https://api.mindbodyonline.com/public/v6/client/clients?SearchText=${enc}&limit=50`,
+    ];
+    for (const url of urls) {
+      const clients = await fetchClients(url, apiKey, siteId, bearerToken);
+      const match = findExactEmailInClients(clients, normalized);
+      if (match) return match;
+    }
   }
   return null;
 }
@@ -168,6 +187,25 @@ async function addClientAtSite(
   publicClientId: string,
   profile: ClientProfile,
 ): Promise<string | null> {
+  const email = profile.email?.trim();
+
+  // Main defence against duplicate studio profiles: never addClient when a
+  // case-insensitive email match already exists.
+  if (email) {
+    const existing = await findClientByNormalizedEmail(email, apiKey, siteId, staffToken);
+    if (existing?.Id != null) {
+      console.log(
+        "Linked existing Mindbody client via email pre-check (skipped addClient):",
+        publicClientId,
+        "->",
+        existing.Id,
+        "email:",
+        email,
+      );
+      return String(existing.Id);
+    }
+  }
+
   const body: Record<string, unknown> = {
     FirstName: profile.firstName?.trim() || "Guest",
     LastName: profile.lastName?.trim() || "Client",
@@ -175,7 +213,6 @@ async function addClientAtSite(
     SendAccountEmails: false,
     SendPromotionalEmails: false,
   };
-  const email = profile.email?.trim();
   if (email) body.Email = email;
 
   const res = await fetch("https://api.mindbodyonline.com/public/v6/client/addclient", {
@@ -187,9 +224,21 @@ async function addClientAtSite(
   if (!res.ok) {
     const errText = await res.text().catch(() => "");
     console.error("Mindbody addclient failed:", res.status, errText);
-    if (email && /duplicate|already exists|email/i.test(errText)) {
-      const found = await lookupByEmail(email, apiKey, siteId, staffToken, publicClientId, profile);
-      if (found?.Id != null) return String(found.Id);
+    // Duplicate (or any reject with email on file): link the existing site
+    // client rather than creating a second profile or returning null.
+    if (email) {
+      const found = await findClientByNormalizedEmail(email, apiKey, siteId, staffToken);
+      if (found?.Id != null) {
+        console.log(
+          "Linked existing Mindbody client after addclient reject:",
+          publicClientId,
+          "->",
+          found.Id,
+          "email:",
+          email,
+        );
+        return String(found.Id);
+      }
     }
     return null;
   }
@@ -199,6 +248,12 @@ async function addClientAtSite(
   if (client?.Id != null) {
     console.log("Created Mindbody client at site:", publicClientId, "->", client.Id);
     return String(client.Id);
+  }
+
+  // Rare: 200 with no Client.Id — still try email link before giving up.
+  if (email) {
+    const found = await findClientByNormalizedEmail(email, apiKey, siteId, staffToken);
+    if (found?.Id != null) return String(found.Id);
   }
   return null;
 }
@@ -219,7 +274,7 @@ export async function resolveSiteClientId(
 
   const email = profile?.email?.trim();
   if (email) {
-    const byEmail = await lookupByEmail(email, apiKey, siteId, bearerToken, pub, profile);
+    const byEmail = await findClientByNormalizedEmail(email, apiKey, siteId, bearerToken);
     if (byEmail?.Id != null) {
       const numeric = String(byEmail.Id);
       console.log("Resolved client via email:", email, "->", numeric, "UniqueId:", byEmail.UniqueId);
@@ -240,10 +295,22 @@ export async function resolveSiteClientId(
     return crossRegionalId;
   }
 
-  // Only create a net-new profile when we have no email (true first-time guest).
-  if (!email && profile && profile.firstName) {
-    const created = await addClientAtSite(apiKey, siteId, bearerToken, pub, profile);
-    if (created) return created;
+  // Create-or-link when lookups miss. addClientAtSite includes the email on
+  // create; if Mindbody rejects (duplicate email), it re-queries and links
+  // the existing site client instead of inventing a second profile.
+  if (profile?.firstName) {
+    const createdOrLinked = await addClientAtSite(apiKey, siteId, bearerToken, pub, profile);
+    if (createdOrLinked) {
+      console.log(
+        email
+          ? "Resolved client via create-or-link:"
+          : "Resolved client via addclient (no email):",
+        pub,
+        "->",
+        createdOrLinked,
+      );
+      return createdOrLinked;
+    }
   }
 
   console.warn("Could not resolve site client id for public id:", pub, "email:", email ?? "(none)");
