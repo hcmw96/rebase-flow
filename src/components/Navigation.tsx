@@ -72,6 +72,7 @@ const Navigation = ({ variant = "dark", topClassName = "top-0" }: NavigationProp
   const navItems = [
     { href: "/experiences", label: "Experiences" },
     { href: "/membership", label: "Membership" },
+    { href: "/gifting", label: "Gifting" },
     { href: "/contact", label: "Contact" },
   ];
 

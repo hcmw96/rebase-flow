@@ -24,6 +24,7 @@ const quickLinks = [
   { href: "/experiences", label: "Services", match: "/experiences" },
   { href: "/experiences", label: "Book Now", match: "/experiences" },
   { href: "/membership", label: "Membership", match: "/membership" },
+  { href: "/gifting", label: "Gifting", match: "/gifting" },
   { href: "/contact#faqs", label: "FAQ", match: "/contact", hash: "#faqs" },
   { href: "/contact", label: "Contact", match: "/contact" },
 ] as const;

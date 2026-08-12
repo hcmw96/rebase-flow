@@ -15,6 +15,7 @@ import CookieConsent from "./components/CookieConsent";
 import Index from "./pages/Index";
 import CookiePolicy from "./pages/CookiePolicy";
 import Membership from "./pages/Membership";
+import Gifting from "./pages/Gifting";
 import WebsiteAccount from "./pages/WebsiteAccount";
 import MembersPage from "./pages/MembersPage";
 import Contact from "./pages/Contact";
@@ -54,6 +55,7 @@ const App = () => (
             <Route path="/website" element={<Navigate to="/" replace />} />
             <Route path="/cookie-policy" element={<CookiePolicy />} />
             <Route path="/membership" element={<Membership />} />
+            <Route path="/gifting" element={<Gifting />} />
             <Route path="/account" element={<WebsiteAccount />} />
             <Route path="/sign-in" element={<WebsiteAccount />} />
             <Route path="/members" element={<MembersPage />} />

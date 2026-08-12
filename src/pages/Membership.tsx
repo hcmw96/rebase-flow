@@ -181,6 +181,35 @@ const Membership = () => {
                 </div>
               </motion.article>
             ))}
+
+            <motion.article
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6, delay: 0.35 }}
+              className="relative flex flex-col border border-[#F9ECD9]/10 rounded-sm overflow-hidden lg:col-span-3"
+            >
+              <header className="bg-[#F9ECD9]/[0.08] border-b border-[#F9ECD9]/10 px-6 py-5 text-center">
+                <h2 className="text-xl sm:text-2xl font-light text-[#F9ECD9] tracking-[0.2em] uppercase">
+                  Refer a Member
+                </h2>
+              </header>
+              <div className="bg-white/[0.02] px-6 py-6 text-center space-y-4">
+                <p className="text-[#F9ECD9]/75 text-sm sm:text-base font-light leading-relaxed max-w-3xl mx-auto">
+                  We want as many people as possible to experience recovery at Rebase, so for every new
+                  member you recommend, we&apos;ll gift £150 credit to your account as a thank you.
+                </p>
+                <p className="text-[#F9ECD9]/75 text-sm sm:text-base font-light leading-relaxed max-w-3xl mx-auto">
+                  Notify{' '}
+                  <a
+                    href="mailto:membership@rebaserecovery.com"
+                    className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
+                  >
+                    membership@rebaserecovery.com
+                  </a>{' '}
+                  when they sign up and we&apos;ll make the arrangements.
+                </p>
+              </div>
+            </motion.article>
           </div>
         </section>
 
@@ -208,6 +237,16 @@ const Membership = () => {
               className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
             >
               df@rebaserecovery.com
+            </a>
+            .
+          </p>
+          <p className="text-center text-[#F9ECD9]/50 text-sm sm:text-base font-light max-w-xl mx-auto leading-relaxed mt-3">
+            To book a tour,{' '}
+            <a
+              href="mailto:membership@rebaserecovery.com"
+              className="text-[#F9ECD9]/80 hover:text-[#F9ECD9] underline underline-offset-4 transition-colors"
+            >
+              click here
             </a>
             .
           </p>

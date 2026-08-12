@@ -25,6 +25,12 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://rebase.echo.london/gifting</loc>
+    <lastmod>2026-08-12</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://rebase.echo.london/contact</loc>
     <lastmod>2026-05-29</lastmod>
     <changefreq>monthly</changefreq>

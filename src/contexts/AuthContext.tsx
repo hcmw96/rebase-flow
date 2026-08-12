@@ -50,6 +50,7 @@ const WEBSITE_PATH_PREFIXES = [
   '/account',
   '/sign-in',
   '/membership',
+  '/gifting',
   '/contact',
   '/experiences',
   '/faq',

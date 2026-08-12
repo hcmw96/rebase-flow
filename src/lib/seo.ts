@@ -208,6 +208,7 @@ export const WEBSITE_ROUTES: Array<{
   { path: "/", changefreq: "weekly", priority: 1.0 },
   { path: "/experiences", changefreq: "weekly", priority: 0.9 },
   { path: "/membership", changefreq: "monthly", priority: 0.8 },
+  { path: "/gifting", changefreq: "monthly", priority: 0.8 },
   { path: "/contact", changefreq: "monthly", priority: 0.7 },
   { path: "/faq", changefreq: "monthly", priority: 0.7 },
   { path: "/faqs", changefreq: "monthly", priority: 0.7 },
