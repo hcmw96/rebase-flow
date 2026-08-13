@@ -1,3 +1,5 @@
+import { toMindbodyLocalDateTime } from "./londonTime.ts";
+
 type SaleServiceRow = {
   Id?: number;
   Name?: string;
@@ -298,14 +300,19 @@ export async function checkoutWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
     classIds?: number[];
     appointmentBookingRequests?: Array<Record<string, unknown>>;
   },
 ): Promise<CheckoutResult> {
+  const itemMetadata: Record<string, unknown> = { Id: String(opts.serviceId) };
+  if (opts.correlationId) {
+    itemMetadata.RebaseBookingKey = opts.correlationId;
+  }
   const item: Record<string, unknown> = {
     Item: {
       Type: "Service",
-      Metadata: { Id: String(opts.serviceId) },
+      Metadata: itemMetadata,
     },
     Quantity: 1,
   };
@@ -337,7 +344,15 @@ export async function checkoutWithStoredCard(
       Payments: [
         {
           Type: "StoredCard",
-          Metadata: { Amount: chargeAmount },
+          Metadata: {
+            Amount: chargeAmount,
+            ...(opts.correlationId
+              ? {
+                RebaseBookingKey: opts.correlationId,
+                Source: "rebase-web",
+              }
+              : {}),
+          },
         },
       ],
     };
@@ -412,6 +427,7 @@ export async function checkoutClassWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
   },
 ): Promise<CheckoutResult> {
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
@@ -419,6 +435,7 @@ export async function checkoutClassWithStoredCard(
     locationId: opts.locationId,
     serviceId: opts.serviceId,
     amount: opts.amount,
+    correlationId: opts.correlationId,
     classIds: [opts.classId],
   });
   if (result.ok) {
@@ -437,34 +454,39 @@ export async function checkoutAppointmentWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
     staffId: number;
     sessionTypeId: number;
     startDateTime: string;
     endDateTime?: string;
   },
 ): Promise<CheckoutResult> {
+  // Match the working AddAppointment (pass) path: send StartDateTime only.
+  // Client end times are often UTC ISO derived from name-duration slots; Mindbody
+  // suites use DefaultTimeLength buffers, and a wrong EndDateTime causes
+  // charge-then-schedule failures after CheckoutShoppingCart.
+  const startLocal = toMindbodyLocalDateTime(opts.startDateTime);
   const appointmentRequest: Record<string, unknown> = {
     StaffId: opts.staffId,
     LocationId: opts.locationId,
     SessionTypeId: opts.sessionTypeId,
-    StartDateTime: opts.startDateTime,
+    StartDateTime: startLocal,
   };
-  if (opts.endDateTime) {
-    appointmentRequest.EndDateTime = opts.endDateTime;
-  }
 
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
     clientId: opts.clientId,
     locationId: opts.locationId,
     serviceId: opts.serviceId,
     amount: opts.amount,
+    correlationId: opts.correlationId,
     appointmentBookingRequests: [appointmentRequest],
   });
   if (result.ok) {
     console.log(
       "checkoutshoppingcart ok for appointment",
       opts.sessionTypeId,
-      opts.startDateTime,
+      startLocal,
+      `(client sent ${opts.startDateTime})`,
     );
   }
   return result;
@@ -480,6 +502,7 @@ export async function checkoutServiceWithStoredCard(
     locationId: number;
     serviceId: number;
     amount: number;
+    correlationId?: string;
   },
 ): Promise<CheckoutResult> {
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, opts);

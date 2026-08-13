@@ -214,7 +214,7 @@ export function useBookService() {
           if (recovered) return recovered;
           throw new BookingMutationError(
             (typeof retryBody?.error === 'string' && retryBody.error) ||
-              "Mindbody couldn't confirm this booking after processing the request. Please do not retry — email reception@rebaserecovery.com.",
+              "We're checking your booking — please don't try to pay again. Check My Bookings, or email reception@rebaserecovery.com.",
             { bookingOutcomeUncertain: true },
           );
         }
