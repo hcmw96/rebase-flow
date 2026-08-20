@@ -77,7 +77,12 @@ type BookResult = {
     startTime?: string;
     status?: string;
   };
-  payment?: { method: 'pass' | 'stored_card'; amountGbp?: number; listPriceGbp?: number };
+  payment?: {
+    method: 'pass' | 'stored_card';
+    amountGbp?: number;
+    listPriceGbp?: number;
+    passName?: string;
+  };
   idempotent?: boolean;
   confirmationEmailSent?: boolean;
 };

@@ -419,12 +419,15 @@ const ClassScheduleFlow = ({
       clearPendingBooking();
       const listPriceGbp = checkoutSummary?.priceGbp ?? null;
       const paid = result.payment;
-      const usedPass = paid?.method === 'pass' || Boolean(checkoutSummary?.pass);
+      // Trust the server — never let a stale client-side pass summary override a charge.
+      const usedPass = paid?.method === 'pass';
       setConfirmedPayment({
         method: usedPass ? 'pass' : paid?.method ?? null,
         amountGbp: usedPass ? 0 : paid?.amountGbp ?? listPriceGbp,
         listPriceGbp: usedPass && listPriceGbp != null ? listPriceGbp : paid?.listPriceGbp ?? null,
-        passName: usedPass ? checkoutSummary?.pass?.name ?? 'Session pass / credit' : null,
+        passName: usedPass
+          ? paid?.passName ?? checkoutSummary?.pass?.name ?? 'Session pass / credit'
+          : null,
       });
       setConfirmationEmailSent(
         typeof result.confirmationEmailSent === 'boolean' ? result.confirmationEmailSent : null,

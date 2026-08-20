@@ -162,7 +162,7 @@ serve(async (req) => {
         clientServices = (data.ClientServices || [])
           .filter((s: any) => {
             if (s.ExpirationDate && new Date(s.ExpirationDate) < now) return false;
-            if (s.Remaining !== undefined && s.Remaining <= 0) return false;
+            if (typeof s.Remaining !== "number" || s.Remaining <= 0) return false;
             return true;
           })
           .map((s: any) => ({

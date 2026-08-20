@@ -4,11 +4,13 @@ const membership = [
   { Id: 1, Name: 'Unlimited Membership', Remaining: 99 },
   { Id: 2, Name: 'Class Pass 10', Remaining: 5 },
   { Id: 3, Name: 'Communal Contrast Drop-in', Remaining: 2 },
+  { Id: 4, Name: 'Communal Contrast - Drop In 1 Hour', Remaining: 1 },
   { Id: 5, Name: 'Cryotherapy 5 Pack', Remaining: 3 },
   { Id: 6, Name: 'Private Suite Allowance', Remaining: 2 },
   { Id: 7, Name: 'Massage 60min Pack', Remaining: 1 },
   { Id: 8, Name: 'Hyperbaric 5 Pack', Remaining: 2 },
   { Id: 9, Name: 'Session Credits', Remaining: 10 },
+  { Id: 15, Name: '10 Communal Contrast Pack', Remaining: 8 },
 ];
 
 const cases: Array<[
@@ -24,7 +26,13 @@ const cases: Array<[
   ['appointment', 'Hyperbaric Oxygen (60 mins)', 8],
   ['appointment', 'IV Drip - Glow', null],
   ['appointment', 'NAD+ (250MG)', null],
-  ['class', 'Communal Contrast', 3],
+  // Retail drop-in must NOT cover communal contrast for free — charge instead.
+  ['class', 'Communal Contrast', 15],
+];
+
+const dropInOnly = [
+  { Id: 20, Name: 'Communal Contrast - Drop In 1 Hour', Remaining: 1 },
+  { Id: 21, Name: 'Communal Contrast Drop-in', Remaining: 1 },
 ];
 
 const memberOnly = [
@@ -44,6 +52,17 @@ for (const [bt, name, expect] of cases) {
   const ok = got === expect;
   if (!ok) fail++;
   console.log(`${ok ? 'OK' : 'FAIL'} ${bt} "${name}" => ${got} (want ${expect})`);
+}
+
+console.log('--- retail drop-in alone must not cover communal contrast ---');
+{
+  const got = pickBookableClientServiceIdForBooking(dropInOnly, {
+    bookingType: 'class',
+    serviceName: 'Communal Contrast',
+  });
+  const ok = got === null;
+  if (!ok) fail++;
+  console.log(`${ok ? 'OK' : 'FAIL'} dropInOnly Communal Contrast => ${got} (want null)`);
 }
 
 console.log('--- memberOnly must be null for paid extras ---');

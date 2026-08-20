@@ -38,19 +38,42 @@ export async function fetchActiveClientServices(
   const now = Date.now();
   return ((data.ClientServices || []) as MindbodyClientServiceRow[]).filter((s) => {
     if (s.ExpirationDate && new Date(s.ExpirationDate).getTime() < now) return false;
-    if (typeof s.Remaining === "number" && s.Remaining <= 0) return false;
+    // Must have remaining uses — do not treat missing Remaining as bookable.
+    if (typeof s.Remaining !== "number" || s.Remaining <= 0) return false;
     return s.Id != null;
   });
 }
 
 function remainingUsable(s: MindbodyClientServiceRow): boolean {
-  if (typeof s.Remaining === "number") return s.Remaining > 0;
-  return true;
+  // Require an explicit remaining count — undefined Remaining previously let
+  // stale/unpaid retail rows look bookable and covered sessions for £0.
+  return typeof s.Remaining === "number" && s.Remaining > 0;
 }
 
 function firstUsableId(services: MindbodyClientServiceRow[]): number | null {
   const hit = services.find((s) => s.Id != null && remainingUsable(s));
   return hit?.Id != null ? Number(hit.Id) : null;
+}
+
+/**
+ * Retail single-visit pricing options (e.g. "Communal Contrast - Drop In 1 Hour").
+ * These are products you BUY at checkout — not prepaid passes. Auto-applying them
+ * via ClientServiceId books the session for £0 when Mindbody still shows Remaining.
+ */
+export function isRetailSingleVisitCredit(name: string | null | undefined): boolean {
+  const n = (name || "").trim();
+  if (!n) return false;
+  // Real packs / unlimited passes are never single-visit retail.
+  if (
+    /\bpack\b/i.test(n) ||
+    /\bunlimited\b/i.test(n) ||
+    /\d+\s*week/i.test(n) ||
+    /\d+\s*(?:session|visit)s?\b/i.test(n) ||
+    isJuneContrastPassName(n)
+  ) {
+    return false;
+  }
+  return /drop[\s-]?in|single\s*(?:visit|session|class)|\b1\s*hour\b/i.test(n);
 }
 
 /** Communal contrast / members' suite — NOT Premium/Infrared private suites. */
@@ -103,7 +126,9 @@ export function pickBookableClientServiceId(
 
   const credit = services.find((s) => {
     const name = s.Name || "";
-    if (!/contrast|communal|class|visit|session|pass|unlimited|drop|cryo/i.test(name)) {
+    if (isRetailSingleVisitCredit(name)) return false;
+    // Do not match bare "drop" — that caught retail "Drop In" products.
+    if (!/contrast|communal|class|visit|session|pass|unlimited|cryo/i.test(name)) {
       return false;
     }
     return remainingUsable(s);
@@ -139,9 +164,11 @@ export function pickBookableClientServiceIdForBooking(
     const juneId = pickJuneContrastPassServiceId(services);
     if (juneId != null) return juneId;
     return firstUsableId(
-      services.filter((s) =>
-        /communal|contrast|members?\s*suite|member'?s\s*suite|off\s*peak/i.test(s.Name || "")
-      ),
+      services.filter((s) => {
+        const n = s.Name || "";
+        if (isRetailSingleVisitCredit(n)) return false;
+        return /communal|contrast|members?\s*suite|member'?s\s*suite|off\s*peak/i.test(n);
+      }),
     );
   }
 

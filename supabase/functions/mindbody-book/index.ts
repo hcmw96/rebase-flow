@@ -647,7 +647,12 @@ async function bookClassWithPayment(
     ok: true;
     data: unknown;
     clientId: string;
-    payment?: { method: "pass" | "stored_card"; amountGbp?: number; listPriceGbp?: number };
+    payment?: {
+      method: "pass" | "stored_card";
+      amountGbp?: number;
+      listPriceGbp?: number;
+      passName?: string;
+    };
     clientServiceId?: number;
   }
   | { ok: false; response: Response }
@@ -713,6 +718,7 @@ async function bookClassWithPayment(
     clientId,
   );
   const staffServices = await fetchActiveClientServices(apiKey, siteId, staffToken, clientId);
+  const mergedServices = [...consumerServices, ...staffServices];
   const passOnFile =
     pickBookableClientServiceIdForBooking(consumerServices, {
       bookingType: "class",
@@ -722,6 +728,10 @@ async function bookClassWithPayment(
       bookingType: "class",
       serviceName,
     });
+  const passName =
+    passOnFile != null
+      ? mergedServices.find((s) => s.Id === passOnFile)?.Name ?? undefined
+      : undefined;
 
   if (passOnFile) {
     const booked = await mindbodyPostWithRetry(
@@ -735,7 +745,7 @@ async function bookClassWithPayment(
     if (booked.ok) {
       return {
         ...booked,
-        payment: { method: "pass" as const },
+        payment: { method: "pass" as const, passName },
         clientServiceId: passOnFile,
       };
     }
@@ -754,7 +764,7 @@ async function bookClassWithPayment(
         ok: true,
         data: { Class: { Id: parseInt(classId, 10), StartDateTime: startDateTime } },
         clientId,
-        payment: { method: "pass" as const },
+        payment: { method: "pass" as const, passName },
         clientServiceId: passOnFile,
       };
     }
@@ -905,7 +915,12 @@ async function bookAppointmentWithPayment(
     ok: true;
     data: unknown;
     clientId: string;
-    payment?: { method: "pass" | "stored_card"; amountGbp?: number; listPriceGbp?: number };
+    payment?: {
+      method: "pass" | "stored_card";
+      amountGbp?: number;
+      listPriceGbp?: number;
+      passName?: string;
+    };
     clientServiceId?: number;
   }
   | { ok: false; response: Response }
@@ -1395,7 +1410,12 @@ serve(async (req) => {
     let bookingResult: Record<string, unknown>;
     let mindbodyId: string | undefined;
     let bookedClientId: string | undefined;
-    let paymentMeta: { method: "pass" | "stored_card"; amountGbp?: number; listPriceGbp?: number } | undefined;
+    let paymentMeta: {
+      method: "pass" | "stored_card";
+      amountGbp?: number;
+      listPriceGbp?: number;
+      passName?: string;
+    } | undefined;
     let bookedClientServiceId: number | undefined;
 
     if (bookingType === "class") {

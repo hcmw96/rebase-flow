@@ -2,7 +2,10 @@ import { priceOverrides } from '@/config/serviceConfig';
 import { resolveMindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import type { ClientService } from '@/hooks/useMindbodyMembership';
-import { isCommunalContrastService } from '@/lib/bookingPaymentOptions';
+import {
+  isCommunalContrastService,
+  isRetailSingleVisitCredit,
+} from '@/lib/bookingPaymentOptions';
 import {
   findJuneContrastPass,
   getJunePassUsageSummary,
@@ -17,12 +20,14 @@ export function findCommunalContrastPass(
   if (june) return june;
   // Keep this tight — membership rows like "Unlimited Cryotherapy" must not
   // look like a Communal Contrast pass (that blocked Mindbody checkout for new accounts).
+  // Never treat retail "Drop In" pricing options as a prepaid pass.
   return (
     clientServices.find((s) => {
+      if (isRetailSingleVisitCredit(s.name)) return false;
       if (!/communal\s*contrast|contrast\s*pass|off\s*peak|members?\s*suite/i.test(s.name)) {
         return false;
       }
-      return s.remaining === undefined || s.remaining > 0;
+      return typeof s.remaining === 'number' && s.remaining > 0;
     }) ?? null
   );
 }
