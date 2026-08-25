@@ -10,7 +10,7 @@ import { Calendar, Clock, MapPin, User, Users, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBookService } from '@/hooks/useMindbodyBookings';
+import { useBookService, fetchKnownMatchingBookingIds } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
 import { buildCommunalContrastCheckoutSummary } from '@/lib/bookingCheckoutSummary';
 import { cn } from '@/lib/utils';
@@ -29,11 +29,11 @@ import { classifyBookingError } from '@/lib/bookingErrors';
 import { isCommunalContrastService } from '@/lib/bookingPaymentOptions';
 import { BookingMutationError } from '@/lib/bookingMutationError';
 import {
-  clearMindbodyCheckoutHandoff,
   mindbodyClassBookAndPayUrl,
   openMindbodyBookAndPay,
   stashMindbodyCheckoutHandoff,
 } from '@/lib/mindbodyCheckoutUrls';
+import { confirmHandoffBookingConversion } from '@/lib/mindbodyHandoffConversion';
 import {
   clearSessionNeedsPaymentCard,
 } from '@/lib/paymentCardSetupStorage';
@@ -353,15 +353,25 @@ const ClassScheduleFlow = ({
     login({ clearSession: true });
   };
 
-  const openMindbodyCheckout = () => {
+  const openMindbodyCheckout = async () => {
     if (!selectedClass || !mindbodyCheckoutUrl) return;
     setNeedsMindbodyPay(true);
+    const sessionId = mbSession?.sessionId;
+    const knownBookingIds = sessionId
+      ? await fetchKnownMatchingBookingIds(sessionId, {
+          bookingType: 'class',
+          classId: selectedClass.id,
+          startDateTime: selectedClass.startDateTime,
+        })
+      : [];
     stashMindbodyCheckoutHandoff({
       kind: 'class',
       serviceName: selectedClass.name,
       startDateTime: selectedClass.startDateTime,
       classId: selectedClass.id,
       checkoutUrl: mindbodyCheckoutUrl,
+      valueGbp: checkoutSummary?.priceGbp ?? null,
+      knownBookingIds,
     });
     setMindbodyCheckoutOpened(true);
     setBookingError(null);
@@ -371,8 +381,11 @@ const ClassScheduleFlow = ({
   const finishMindbodyCheckout = async () => {
     setMindbodyCheckoutChecking(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      clearMindbodyCheckoutHandoff();
+      const sessionId = mbSession?.sessionId;
+      if (sessionId) {
+        await confirmHandoffBookingConversion(sessionId);
+        await queryClient.refetchQueries({ queryKey: ['my-bookings', sessionId] });
+      }
       clearPendingBooking();
       if (onViewBookings) {
         onViewBookings();

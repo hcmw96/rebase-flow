@@ -19,7 +19,7 @@ import BookingConfirmationSuccess, {
 import { ChevronLeft, Calendar, Clock, MapPin, User, Loader2, Check, Mail } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBookService } from '@/hooks/useMindbodyBookings';
+import { useBookService, fetchKnownMatchingBookingIds } from '@/hooks/useMindbodyBookings';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
@@ -39,11 +39,11 @@ import {
   markSessionNeedsPaymentCard,
 } from '@/lib/paymentCardSetupStorage';
 import {
-  clearMindbodyCheckoutHandoff,
   mindbodyAppointmentBookAndPayUrl,
   openMindbodyBookAndPay,
   stashMindbodyCheckoutHandoff,
 } from '@/lib/mindbodyCheckoutUrls';
+import { confirmHandoffBookingConversion } from '@/lib/mindbodyHandoffConversion';
 import { clearPendingBooking, stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
 import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { stripHtml } from '@/lib/htmlText';
@@ -451,16 +451,25 @@ const BookingDrawer = ({
     });
   }, [selectedSlot]);
 
-  const openMindbodyAppointmentCheckout = () => {
+  const openMindbodyAppointmentCheckout = async () => {
     if (!selectedSlot || !mindbodyAppointmentCheckoutUrl) return;
     setNeedsMindbodyPay(true);
     setNeedsCardOnFile(false);
     setCardSetupRetryHint(null);
+    const sessionId = mbSession?.sessionId;
+    const knownBookingIds = sessionId
+      ? await fetchKnownMatchingBookingIds(sessionId, {
+          bookingType: 'appointment',
+          startDateTime: selectedSlot.startDateTime,
+        })
+      : [];
     stashMindbodyCheckoutHandoff({
       kind: 'appointment',
       serviceName: activeVariant?.name || service?.title || 'Appointment',
       startDateTime: selectedSlot.startDateTime,
       checkoutUrl: mindbodyAppointmentCheckoutUrl,
+      valueGbp: appointmentListPriceGbp,
+      knownBookingIds,
     });
     setMindbodyCheckoutOpened(true);
     setBookingError(null);
@@ -470,8 +479,11 @@ const BookingDrawer = ({
   const finishMindbodyAppointmentCheckout = async () => {
     setMindbodyCheckoutChecking(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ['my-bookings'] });
-      clearMindbodyCheckoutHandoff();
+      const sessionId = mbSession?.sessionId;
+      if (sessionId) {
+        await confirmHandoffBookingConversion(sessionId);
+        await queryClient.refetchQueries({ queryKey: ['my-bookings', sessionId] });
+      }
       clearPendingBooking();
       if (onViewBookings) onViewBookings();
       else onClose();

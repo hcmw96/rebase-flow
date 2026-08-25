@@ -47,7 +47,7 @@ export interface Booking {
   classId?: string;
 }
 
-interface BookingParams {
+export interface BookingParams {
   bookingType: 'class' | 'appointment';
   classId?: string;
   sessionTypeId?: string;
@@ -96,32 +96,48 @@ function sameInstant(a?: string | null, b?: string | null): boolean {
   return Number.isFinite(ta) && Number.isFinite(tb) && ta === tb;
 }
 
-/** After a 409, poll My Bookings instead of re-hitting mindbody-book. */
-async function waitForMatchingBooking(
+/** True when a my-bookings row matches the class/appointment slot we handed off. */
+export function bookingMatchesHandoffSlot(
+  booking: Booking,
+  params: Pick<BookingParams, 'bookingType' | 'classId' | 'startDateTime'>,
+): boolean {
+  if (String(booking.status || '').toLowerCase() === 'cancelled') return false;
+  if (params.bookingType === 'class') {
+    if (params.classId && (booking.classId?.toString() === params.classId || booking.id === params.classId)) {
+      return true;
+    }
+    return booking.type === 'class' && sameInstant(booking.startTime, params.startDateTime);
+  }
+  return booking.type === 'appointment' && sameInstant(booking.startTime, params.startDateTime);
+}
+
+/**
+ * Poll My Bookings for a slot match (409 recovery + Mindbody handoff GTM).
+ * First check is immediate; then waits `delayMs` between attempts (~10s with 5×2000).
+ * `excludeBookingIds` skips bookings already present before the handoff (blocks phantoms).
+ */
+export async function waitForMatchingBooking(
   sessionId: string,
   params: BookingParams,
   attempts: number,
   delayMs: number,
+  options?: { excludeBookingIds?: string[] },
 ): Promise<BookResult | null> {
+  const exclude = new Set((options?.excludeBookingIds ?? []).map(String));
   for (let i = 0; i < attempts; i++) {
-    await sleep(delayMs);
     try {
       const response = await fetch(
         `${SUPABASE_URL}/functions/v1/mindbody-my-bookings?sessionId=${encodeURIComponent(sessionId)}`,
       );
-      if (!response.ok) continue;
+      if (!response.ok) {
+        if (i < attempts - 1) await sleep(delayMs);
+        continue;
+      }
       const data = await response.json();
       const bookings: Booking[] = data.bookings || [];
-      const match = bookings.find((b) => {
-        if (String(b.status || '').toLowerCase() === 'cancelled') return false;
-        if (params.bookingType === 'class') {
-          if (params.classId && (b.classId?.toString() === params.classId || b.id === params.classId)) {
-            return true;
-          }
-          return b.type === 'class' && sameInstant(b.startTime, params.startDateTime);
-        }
-        return b.type === 'appointment' && sameInstant(b.startTime, params.startDateTime);
-      });
+      const match = bookings.find(
+        (b) => bookingMatchesHandoffSlot(b, params) && !exclude.has(String(b.id)),
+      );
       if (match) {
         return {
           success: true,
@@ -138,8 +154,27 @@ async function waitForMatchingBooking(
     } catch {
       /* keep waiting */
     }
+    if (i < attempts - 1) await sleep(delayMs);
   }
   return null;
+}
+
+/** Snapshot booking ids that already match this slot (call before opening Mindbody). */
+export async function fetchKnownMatchingBookingIds(
+  sessionId: string,
+  params: Pick<BookingParams, 'bookingType' | 'classId' | 'startDateTime'>,
+): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `${SUPABASE_URL}/functions/v1/mindbody-my-bookings?sessionId=${encodeURIComponent(sessionId)}`,
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    const bookings: Booking[] = data.bookings || [];
+    return bookings.filter((b) => bookingMatchesHandoffSlot(b, params)).map((b) => String(b.id));
+  } catch {
+    return [];
+  }
 }
 
 export function useMyBookings() {

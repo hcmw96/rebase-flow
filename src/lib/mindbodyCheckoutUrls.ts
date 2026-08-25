@@ -85,6 +85,13 @@ export type MindbodyCheckoutHandoff = {
   startDateTime: string;
   classId?: string;
   checkoutUrl: string;
+  /**
+   * List price (GBP) shown on Rebase when the handoff URL was built — not the amount
+   * actually paid. Wrong if Mindbody applies a promo; server-side reconciliation is the real fix.
+   */
+  valueGbp?: number | null;
+  /** Booking ids that already matched this slot before Mindbody opened (blocks phantom GTM). */
+  knownBookingIds?: string[];
   storedAt: number;
 };
 
@@ -107,8 +114,8 @@ export function peekMindbodyCheckoutHandoff(): MindbodyCheckoutHandoff | null {
     if (!raw) return null;
     const parsed = JSON.parse(raw) as MindbodyCheckoutHandoff;
     if (!parsed?.checkoutUrl || !parsed.serviceName) return null;
-    // 2h — long enough for Apple Pay / account creation in Mindbody
-    if (Date.now() - (parsed.storedAt || 0) > 2 * 60 * 60 * 1000) {
+    // 1h — discard stale handoffs so a later "I've paid" cannot fire forever
+    if (Date.now() - (parsed.storedAt || 0) > 60 * 60 * 1000) {
       sessionStorage.removeItem(HANDOFF_KEY);
       return null;
     }

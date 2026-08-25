@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import BookingCalendar from '@/components/booking/BookingCalendar';
@@ -11,7 +12,7 @@ import BookingConfirmActions from '@/components/booking/BookingConfirmActions';
 import { ChevronLeft, ChevronRight, Calendar, Clock, MapPin, User, CheckCircle, Loader2, Check } from 'lucide-react';
 import { useMindbodyAvailability, AvailableItem } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
-import { useBookService } from '@/hooks/useMindbodyBookings';
+import { useBookService, fetchKnownMatchingBookingIds } from '@/hooks/useMindbodyBookings';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
@@ -29,6 +30,7 @@ import {
   openMindbodyBookAndPay,
   stashMindbodyCheckoutHandoff,
 } from '@/lib/mindbodyCheckoutUrls';
+import { confirmHandoffBookingConversion } from '@/lib/mindbodyHandoffConversion';
 
 interface ServiceVariant {
   id: string;
@@ -57,6 +59,7 @@ const BookService = () => {
   const { serviceId } = useParams();
   const { isAuthenticated, login, mbSession } = useAuth();
   const bookServiceMutation = useBookService();
+  const queryClient = useQueryClient();
   const bookingInFlightRef = useRef(false);
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -65,6 +68,9 @@ const BookService = () => {
   const [service, setService] = useState<StoredService | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [mindbodyCheckoutOpened, setMindbodyCheckoutOpened] = useState(false);
+  const [mindbodyCheckoutChecking, setMindbodyCheckoutChecking] = useState(false);
+  const [mindbodyCheckoutUrl, setMindbodyCheckoutUrl] = useState<string | null>(null);
 
   // Determine if we have multiple variants
   const hasVariants = service?.variants && service.variants.length > 1;
@@ -231,6 +237,35 @@ const BookService = () => {
     });
   }, [selectedSlot, mbSession?.sessionId]);
 
+  const listPriceGbp = useMemo(() => {
+    if (typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)) {
+      return selectedVariant.price;
+    }
+    const legacyPrice = service?.price
+      ? parseFloat(String(service.price).replace(/£/g, ''))
+      : NaN;
+    return Number.isFinite(legacyPrice) ? legacyPrice : 0;
+  }, [selectedVariant?.price, service?.price]);
+
+  const finishMindbodyCheckout = async () => {
+    setMindbodyCheckoutChecking(true);
+    try {
+      const sessionId = mbSession?.sessionId;
+      if (sessionId) {
+        const matched = await confirmHandoffBookingConversion(sessionId);
+        await queryClient.refetchQueries({ queryKey: ['my-bookings', sessionId] });
+        if (matched) {
+          setBookingComplete(true);
+          toast.success('Booking confirmed!');
+        } else {
+          toast.message('Not seeing that booking yet — try again in a moment, or check My Bookings.');
+        }
+      }
+    } finally {
+      setMindbodyCheckoutChecking(false);
+    }
+  };
+
   const handleConfirmBooking = async () => {
     if (!selectedSlot || bookingComplete || bookingInFlightRef.current || bookServiceMutation.isPending) {
       return;
@@ -242,6 +277,9 @@ const BookService = () => {
 
     bookingInFlightRef.current = true;
 
+    const serviceName = resolveDisplayName(selectedVariant?.name || service?.title || 'Booking');
+    const pricePaid = listPriceGbp;
+
     try {
       await bookServiceMutation.mutateAsync({
         bookingType: 'appointment',
@@ -252,22 +290,13 @@ const BookService = () => {
         serviceName: selectedVariant?.name || service?.title,
         idempotencyKey,
       });
-      const serviceName = resolveDisplayName(selectedVariant?.name || service?.title || 'Booking');
-      const legacyPrice = service?.price
-        ? parseFloat(String(service.price).replace(/£/g, ''))
-        : NaN;
-      const pricePaid =
-        typeof selectedVariant?.price === 'number' && Number.isFinite(selectedVariant.price)
-          ? selectedVariant.price
-          : Number.isFinite(legacyPrice)
-            ? legacyPrice
-            : 0;
       pushBookingConfirmedOnce(`drop-in:${serviceName}:${selectedSlot.startDateTime}`, {
         bookingType: 'drop-in',
         service: serviceName,
         value: pricePaid,
       });
       setBookingComplete(true);
+      setMindbodyCheckoutOpened(false);
       toast.success('Booking confirmed!');
     } catch (error) {
       bookingInFlightRef.current = false;
@@ -282,13 +311,24 @@ const BookService = () => {
             const checkoutUrl = mindbodyAppointmentBookAndPayUrl({
               sessionTypeId: selectedSlot.sessionTypeId,
               locationId: selectedSlot.locationId,
+              startDateTime: selectedSlot.startDateTime,
             });
+            const knownBookingIds = mbSession?.sessionId
+              ? await fetchKnownMatchingBookingIds(mbSession.sessionId, {
+                  bookingType: 'appointment',
+                  startDateTime: selectedSlot.startDateTime,
+                })
+              : [];
             stashMindbodyCheckoutHandoff({
               kind: 'appointment',
               serviceName: selectedVariant?.name || service?.title || 'Appointment',
               startDateTime: selectedSlot.startDateTime,
               checkoutUrl,
+              valueGbp: pricePaid,
+              knownBookingIds,
             });
+            setMindbodyCheckoutUrl(checkoutUrl);
+            setMindbodyCheckoutOpened(true);
             openMindbodyBookAndPay(checkoutUrl);
             toast.message('Continue in Mindbody to pay for this session type.');
             return;
@@ -652,10 +692,25 @@ const BookService = () => {
 
                       <div className="pt-4">
                         <BookingConfirmActions
-                          onChangeTime={() => setCurrentStep(timeStep)}
+                          onChangeTime={() => {
+                            setMindbodyCheckoutOpened(false);
+                            setCurrentStep(timeStep);
+                          }}
                           onConfirm={handleConfirmBooking}
                           isAuthenticated={isAuthenticated}
                           isPending={isBooking}
+                          mindbodyCheckoutUrl={mindbodyCheckoutOpened ? mindbodyCheckoutUrl : null}
+                          mindbodyCheckoutOpened={mindbodyCheckoutOpened}
+                          onOpenMindbodyCheckout={() => {
+                            if (mindbodyCheckoutUrl) openMindbodyBookAndPay(mindbodyCheckoutUrl);
+                          }}
+                          onMindbodyCheckoutFinished={() => void finishMindbodyCheckout()}
+                          mindbodyCheckoutChecking={mindbodyCheckoutChecking}
+                          checkoutSummary={
+                            mindbodyCheckoutOpened
+                              ? { priceGbp: listPriceGbp, payInMindbody: true }
+                              : null
+                          }
                         />
                       </div>
                     </CardContent>
