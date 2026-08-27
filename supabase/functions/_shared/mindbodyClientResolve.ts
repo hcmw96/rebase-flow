@@ -298,8 +298,21 @@ export async function resolveSiteClientId(
   // Create-or-link when lookups miss. addClientAtSite includes the email on
   // create; if Mindbody rejects (duplicate email), it re-queries and links
   // the existing site client instead of inventing a second profile.
-  if (profile?.firstName) {
-    const createdOrLinked = await addClientAtSite(apiKey, siteId, bearerToken, pub, profile);
+  //
+  // An email on its own is enough to get here. Mindbody does not always send a
+  // name claim, and gating on firstName dead-ended every genuinely new customer
+  // at profileNotFound. Email is the dedupe key addClientAtSite pre-checks, so
+  // creating on email alone cannot attach anyone to a stranger's record.
+  if (profile?.firstName || email) {
+    if (!profile?.firstName) {
+      console.warn(
+        "No name claim from Mindbody — creating site client with addClient defaults:",
+        pub,
+        "email:",
+        email,
+      );
+    }
+    const createdOrLinked = await addClientAtSite(apiKey, siteId, bearerToken, pub, profile ?? {});
     if (createdOrLinked) {
       console.log(
         email

@@ -5,38 +5,117 @@ export interface NormalizedProfile {
   family_name?: string;
 }
 
-export function normalizeIdTokenPayload(raw: Record<string, unknown>): NormalizedProfile {
-  const sub = String(raw.sub ?? raw.client_id ?? raw.unique_name ?? "");
-  const name = typeof raw.name === "string" ? raw.name : undefined;
+/**
+ * Mindbody's IdP is IdentityServer, which does not always emit the standard
+ * OIDC name claims — some tokens carry WS-Federation / ASP.NET claim URIs
+ * instead, and the v6 client API answers in PascalCase. Read every spelling
+ * we have seen rather than assuming `given_name`.
+ */
+const SUBJECT_KEYS = [
+  "sub",
+  "client_id",
+  "unique_name",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier",
+];
 
-  let given_name = raw.given_name ?? raw.givenName ?? raw.first_name ?? raw.FirstName;
-  let family_name = raw.family_name ?? raw.familyName ?? raw.last_name ?? raw.LastName;
+const GIVEN_NAME_KEYS = [
+  "given_name",
+  "givenName",
+  "givenname",
+  "first_name",
+  "firstName",
+  "firstname",
+  "FirstName",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/givenname",
+];
 
-  if (!given_name && !family_name && name) {
-    const parts = name.trim().split(/\s+/);
-    given_name = parts[0];
-    family_name = parts.slice(1).join(" ") || undefined;
+const FAMILY_NAME_KEYS = [
+  "family_name",
+  "familyName",
+  "familyname",
+  "last_name",
+  "lastName",
+  "lastname",
+  "LastName",
+  "surname",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/surname",
+];
+
+const FULL_NAME_KEYS = [
+  "name",
+  "Name",
+  "full_name",
+  "fullName",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name",
+];
+
+const EMAIL_KEYS = [
+  "email",
+  "Email",
+  "emailaddress",
+  "email_address",
+  "http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress",
+];
+
+/** Username-shaped claims that are only usable as an email when they look like one. */
+const USERNAME_KEYS = ["preferred_username", "upn", "unique_name"];
+
+function firstClaim(raw: Record<string, unknown>, keys: string[]): string | undefined {
+  for (const key of keys) {
+    const value = raw[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+    if (typeof value === "number") return String(value);
   }
-
-  return {
-    sub,
-    email: (raw.email ?? raw.Email) as string | undefined,
-    given_name: given_name as string | undefined,
-    family_name: family_name as string | undefined,
-  };
+  return undefined;
 }
 
-export async function fetchOidcUserInfo(accessToken: string): Promise<NormalizedProfile | null> {
+export function normalizeIdTokenPayload(raw: Record<string, unknown>): NormalizedProfile {
+  const sub = firstClaim(raw, SUBJECT_KEYS) ?? "";
+
+  let given_name = firstClaim(raw, GIVEN_NAME_KEYS);
+  let family_name = firstClaim(raw, FAMILY_NAME_KEYS);
+
+  if (!given_name && !family_name) {
+    const name = firstClaim(raw, FULL_NAME_KEYS);
+    // IdentityServer often sets `name` to the login/email — that is not a person's name.
+    if (name && !name.includes("@")) {
+      const parts = name.split(/\s+/);
+      given_name = parts[0];
+      family_name = parts.slice(1).join(" ") || undefined;
+    }
+  }
+
+  let email = firstClaim(raw, EMAIL_KEYS);
+  if (!email) {
+    const username = firstClaim(raw, USERNAME_KEYS);
+    if (username?.includes("@")) email = username;
+  }
+
+  return { sub, email, given_name, family_name };
+}
+
+/** Raw /connect/userinfo claim set, so callers can log exactly what Mindbody returned. */
+export async function fetchOidcUserInfoRaw(
+  accessToken: string,
+): Promise<Record<string, unknown> | null> {
   try {
     const res = await fetch("https://signin.mindbodyonline.com/connect/userinfo", {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return normalizeIdTokenPayload(data as Record<string, unknown>);
-  } catch {
+    if (!res.ok) {
+      console.warn("Mindbody OIDC userinfo failed:", res.status, await res.text().catch(() => ""));
+      return null;
+    }
+    return await res.json() as Record<string, unknown>;
+  } catch (e) {
+    console.warn("Mindbody OIDC userinfo error:", e);
     return null;
   }
+}
+
+export async function fetchOidcUserInfo(accessToken: string): Promise<NormalizedProfile | null> {
+  const raw = await fetchOidcUserInfoRaw(accessToken);
+  return raw ? normalizeIdTokenPayload(raw) : null;
 }
 
 export async function fetchMindbodyClientProfile(

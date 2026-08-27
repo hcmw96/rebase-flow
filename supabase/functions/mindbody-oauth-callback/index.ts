@@ -2,7 +2,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import {
   fetchMindbodyClientProfile,
-  fetchOidcUserInfo,
+  fetchOidcUserInfoRaw,
   mergeProfiles,
   normalizeIdTokenPayload,
   type NormalizedProfile,
@@ -31,12 +31,19 @@ interface StatePayload {
   returnTo?: string;
 }
 
-function decodeJwtPayload(token: string): NormalizedProfile {
+/**
+ * Decode a JWT payload to its raw claim set. base64url needs re-padding
+ * (atob throws when length % 4 === 1) and the bytes are UTF-8, not Latin-1 —
+ * decoding via atob alone mangles any non-ASCII name.
+ */
+function decodeJwtClaims(token: string): Record<string, unknown> {
   const parts = token.split(".");
   if (parts.length !== 3) throw new Error("Invalid JWT format");
-  const payload = parts[1];
-  const decoded = atob(payload.replace(/-/g, "+").replace(/_/g, "/"));
-  return normalizeIdTokenPayload(JSON.parse(decoded));
+  let payload = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+  payload += "=".repeat((4 - (payload.length % 4)) % 4);
+  const binary = atob(payload);
+  const bytes = Uint8Array.from(binary, (ch) => ch.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes)) as Record<string, unknown>;
 }
 
 function parseState(stateStr: string): StatePayload {
@@ -163,15 +170,19 @@ async function exchangeAndSaveSession(
   const tokens: TokenResponse = await tokenResponse.json();
   console.log("Token exchange successful");
 
+  // Keep the raw claim sets around: if the site client fails to resolve below,
+  // they are the only record of which name claims Mindbody actually sends.
   let userInfo: NormalizedProfile = { sub: "" };
+  let idTokenClaims: Record<string, unknown> | null = null;
   if (tokens.id_token) {
-    userInfo = decodeJwtPayload(tokens.id_token);
+    idTokenClaims = decodeJwtClaims(tokens.id_token);
   } else if (idTokenHint) {
-    userInfo = decodeJwtPayload(idTokenHint);
+    idTokenClaims = decodeJwtClaims(idTokenHint);
   }
+  if (idTokenClaims) userInfo = normalizeIdTokenPayload(idTokenClaims);
 
-  const oidcInfo = await fetchOidcUserInfo(tokens.access_token);
-  userInfo = mergeProfiles(userInfo, oidcInfo);
+  const oidcClaims = await fetchOidcUserInfoRaw(tokens.access_token);
+  userInfo = mergeProfiles(userInfo, oidcClaims ? normalizeIdTokenPayload(oidcClaims) : null);
 
   const apiKey = Deno.env.get("MINDBODY_API_KEY");
   if (userInfo.sub && apiKey && (!userInfo.email || !userInfo.given_name)) {
@@ -205,6 +216,18 @@ async function exchangeAndSaveSession(
       });
       if (mindbodySiteClientId) {
         console.log("OAuth linked site client:", userInfo.sub, "->", mindbodySiteClientId);
+      } else {
+        // Pairs with resolveSiteClientId's "Could not resolve site client id"
+        // warning: dump every claim (never the raw token) so the next failure
+        // shows exactly which name claims Mindbody returned, if any.
+        console.warn(
+          "Site client unresolved at OAuth — id_token claims:",
+          JSON.stringify(idTokenClaims ?? {}),
+          "| userinfo claims:",
+          JSON.stringify(oidcClaims ?? {}),
+          "| normalized profile:",
+          JSON.stringify(userInfo),
+        );
       }
     } catch (linkErr) {
       console.warn("Site client link at OAuth (non-fatal):", linkErr);
