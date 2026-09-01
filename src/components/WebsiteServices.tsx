@@ -19,7 +19,7 @@ import {
   COMMUNAL_CONTRAST_DESCRIPTION,
   shortDescriptions,
   classOfferings,
-  priceOverrides,
+  MARKETING_DISPLAY_PRICES,
   classDescriptionIdMap,
   extractDurationFromName,
   resolveVariantDuration,
@@ -93,7 +93,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: isPack ? null : resolveVariantDuration(service.name, service.defaultTimeLength),
-        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
+        price: isIvFirstConsult ? 0 : (service.price ?? MARKETING_DISPLAY_PRICES[canonicalName] ?? null),
         name: service.name,
         description: variantDesc,
         contactOnly: isIvFirstConsult || isContactOnly || isPack,
@@ -182,7 +182,7 @@ const WebsiteServices = ({ onSelectService }: WebsiteServicesProps) => {
     if (baseName) {
       const fallback = staticWebsiteCatalogue.find(e => e.baseName === baseName)?.fromPrice;
       if (fallback != null) return fallback;
-      if (priceOverrides[baseName] !== undefined) return priceOverrides[baseName];
+      if (MARKETING_DISPLAY_PRICES[baseName] !== undefined) return MARKETING_DISPLAY_PRICES[baseName];
     }
     return null;
   };

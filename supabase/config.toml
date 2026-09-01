@@ -33,6 +33,9 @@ verify_jwt = false
 [functions.mindbody-client-membership]
 verify_jwt = false
 
+[functions.mindbody-class-price]
+verify_jwt = false
+
 [functions.mindbody-refresh-token]
 verify_jwt = false
 

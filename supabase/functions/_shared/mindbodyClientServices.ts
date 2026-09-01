@@ -1,8 +1,20 @@
 import { isJuneContrastPassName, pickJuneContrastPassServiceId } from "./contrastPass.ts";
 
-/** Active Mindbody client service (session pack / pass credit). */
+/**
+ * Active Mindbody client service (session pack / pass credit).
+ *
+ * Id and ProductId are NOT interchangeable and must not be conflated:
+ *   Id        — the purchased/granted instance, unique per purchase. This is
+ *               what checkout sends as ClientServiceId to SPEND the credit.
+ *   ProductId — the pricing option it came from, shared by every client
+ *               holding the same pass. This is the key to IDENTIFY a credit
+ *               and map it to the classes it entitles.
+ * Spending by ProductId would target the wrong row; identifying by Id would
+ * never match the entitlement table, since Id differs for every member.
+ */
 export type MindbodyClientServiceRow = {
   Id?: number;
+  ProductId?: number;
   Name?: string;
   Remaining?: number;
   ExpirationDate?: string;
@@ -50,6 +62,11 @@ function remainingUsable(s: MindbodyClientServiceRow): boolean {
   return typeof s.Remaining === "number" && s.Remaining > 0;
 }
 
+/**
+ * The instance id to spend. Correctly keyed on Id, not ProductId — see the
+ * note on MindbodyClientServiceRow. Selection of WHICH credit is a separate
+ * concern handled by the callers' filters.
+ */
 function firstUsableId(services: MindbodyClientServiceRow[]): number | null {
   const hit = services.find((s) => s.Id != null && remainingUsable(s));
   return hit?.Id != null ? Number(hit.Id) : null;

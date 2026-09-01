@@ -14,7 +14,7 @@ import {
   categoryOrder,
   serviceOrderWithinCategory,
   contactOnlyGroups,
-  priceOverrides,
+  MARKETING_DISPLAY_PRICES,
   classDescriptionIdMap,
   extractDurationFromName,
   resolveVariantDuration,
@@ -90,7 +90,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: isPack ? null : resolveVariantDuration(service.name, service.defaultTimeLength),
-        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
+        price: isIvFirstConsult ? 0 : (service.price ?? MARKETING_DISPLAY_PRICES[canonicalName] ?? null),
         name: service.name,
         description: variantDesc,
         contactOnly: isIvFirstConsult || isContactOnly || isPack,

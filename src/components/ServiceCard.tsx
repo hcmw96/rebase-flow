@@ -4,7 +4,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, ChevronDown, ChevronUp } from 'lucide-react';
-import { serviceImagePositions, priceOverrides } from '@/config/serviceConfig';
+import { serviceImagePositions, MARKETING_DISPLAY_PRICES } from '@/config/serviceConfig';
 import { stripHtml } from '@/lib/htmlText';
 
 export interface ServiceVariant {
@@ -65,7 +65,7 @@ const ServiceCard = ({
   const getFromPrice = () => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
     if (prices.length > 0) return Math.min(...prices);
-    if (priceOverrides[title] !== undefined) return priceOverrides[title];
+    if (MARKETING_DISPLAY_PRICES[title] !== undefined) return MARKETING_DISPLAY_PRICES[title];
     return null;
   };
 

@@ -33,10 +33,9 @@ import {
   checkoutAppointmentWithStoredCard,
   checkoutClassWithStoredCard,
   checkoutWithConsumerThenStaff,
-  fetchSaleServicesForClass,
   fetchSaleServicesForSessionType,
   isMultiSessionPack,
-  pickSaleServiceForClass,
+  resolveClassPrice,
   pickSaleServiceForSession,
   type CheckoutResult,
 } from "../_shared/mindbodyCheckout.ts";
@@ -642,6 +641,8 @@ async function bookClassWithPayment(
   startDateTime: string,
   locationId: number | undefined,
   serviceName?: string,
+  /** Price shown to the customer on the confirm step. Required to charge a card. */
+  expectedPriceGbp?: number | null,
 ): Promise<
   | {
     ok: true;
@@ -796,15 +797,15 @@ async function bookClassWithPayment(
     };
   }
 
-  let saleService = pickSaleServiceForClass(
-    await fetchSaleServicesForClass(apiKey, siteId, activeSession.access_token, classIdNum, locId),
+  const resolvedPrice = await resolveClassPrice(
+    apiKey,
+    siteId,
+    activeSession.access_token,
+    staffToken,
+    classIdNum,
+    locId,
   );
-  if (!saleService?.Id) {
-    saleService = pickSaleServiceForClass(
-      await fetchSaleServicesForClass(apiKey, siteId, staffToken, classIdNum, locId),
-    );
-  }
-  if (!saleService?.Id) {
+  if (!resolvedPrice) {
     console.warn(`No sale service for class ${classId}`);
     return {
       ok: false,
@@ -820,31 +821,62 @@ async function bookClassWithPayment(
     };
   }
 
-  const amount = saleService.OnlinePrice ?? saleService.Price ?? 0;
-  if (amount <= 0) {
-    return {
-      ok: false,
-      response: new Response(
-        JSON.stringify({ error: "This class is not available for online booking right now." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-      ),
-    };
-  }
+  const amount = resolvedPrice.priceGbp;
 
-  if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
-    console.error(`Refusing pack/pass checkout for class ${classId}:`, saleService.Name, amount);
+  // Never charge an amount the customer was not shown. The client must send the
+  // price it displayed; we resolve the price independently and refuse on any
+  // disagreement. Applies to every class — a missing expectedPriceGbp means the
+  // UI charged blind, which is exactly the case this guard exists to stop.
+  //
+  // Only the card-charge path reaches here: a pass/entitlement books earlier and
+  // returns above, so a £0 pass booking is never treated as a mismatch.
+  if (expectedPriceGbp == null) {
+    console.error(
+      `Refusing class ${classId} charge: no displayed price supplied by client (would charge ${amount})`,
+    );
     return {
       ok: false,
       response: new Response(
         JSON.stringify({
           error:
-            "We couldn't charge your card on file or apply a session pass. Add a card in your Mindbody account if needed, then tap Confirm again.",
-          paymentRequired: true,
-          noPassOnFile: true,
+            "We couldn't confirm the price for this session, so we haven't taken payment. Reopen the booking and try again.",
+          priceNotDisclosed: true,
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
     };
+  }
+  // Asymmetric on purpose: refuse only when the resolved charge EXCEEDS what the
+  // customer was shown. Charging less is a discount applying correctly, not a
+  // mismatch — Mindbody has member discounts wired to most sale options
+  // (ApplyMemberDiscountsOfMembershipIds), so a rate configured there would make
+  // an exact-match guard start rejecting valid bookings with no code change.
+  // Undercharging is never a customer-harm case; overcharging is the one to stop.
+  if (amount - expectedPriceGbp > 0.005) {
+    console.error(
+      `Refusing class ${classId} charge: resolved ${amount} exceeds displayed ${expectedPriceGbp} (${resolvedPrice.optionName})`,
+    );
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            `The price for this session changed to £${amount} while you were booking, so we haven't taken payment. Reopen the booking to see the current price.`,
+          priceMismatch: true,
+          displayedPriceGbp: expectedPriceGbp,
+          currentPriceGbp: amount,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+      ),
+    };
+  }
+
+  if (expectedPriceGbp - amount > 0.005) {
+    // Not a failure — surfaced so a discount that appears in the wild is visible
+    // rather than silently changing what customers pay.
+    console.log(
+      `Class ${classId} resolving below displayed price: displayed ${expectedPriceGbp}, charging ${amount} (${resolvedPrice.optionName})`,
+    );
   }
 
   const checkout = await checkoutWithConsumerThenStaff(
@@ -857,7 +889,7 @@ async function bookClassWithPayment(
         clientId,
         classId: classIdNum,
         locationId: locId,
-        serviceId: saleService!.Id!,
+        serviceId: resolvedPrice.serviceId,
         amount,
       }),
   );
@@ -1253,6 +1285,7 @@ serve(async (req) => {
       startDateTime,
       endDateTime,
       serviceName,
+      expectedPriceGbp,
     } = await req.json();
 
     if (!sessionId) {
@@ -1433,6 +1466,7 @@ serve(async (req) => {
         slotStartDateTime,
         typeof locationId === "number" ? locationId : parseInt(String(locationId || "1"), 10),
         serviceName,
+        typeof expectedPriceGbp === "number" ? expectedPriceGbp : null,
       );
       if (!result.ok) {
         if (await shouldReleaseClaimAfterFailure(result.response)) {

@@ -4,7 +4,7 @@ import { Star, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { ServiceVariant } from '@/components/ServiceCard';
-import { priceOverrides } from '@/config/serviceConfig';
+import { MARKETING_DISPLAY_PRICES } from '@/config/serviceConfig';
 
 interface FeaturedServiceData {
   id: string;
@@ -72,7 +72,7 @@ const FeaturedServices = ({ featuredServices, servicesMap }: FeaturedServicesPro
 
   const formatPrice = (price: number | null, baseName?: string) => {
     if (price !== null && price > 0) return `£${price.toFixed(0)}`;
-    if (baseName && priceOverrides[baseName] !== undefined) return `£${priceOverrides[baseName]}`;
+    if (baseName && MARKETING_DISPLAY_PRICES[baseName] !== undefined) return `£${MARKETING_DISPLAY_PRICES[baseName]}`;
     return 'Contact';
   };
 

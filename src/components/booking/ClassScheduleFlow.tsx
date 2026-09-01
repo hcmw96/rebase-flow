@@ -12,7 +12,8 @@ import { useMindbodyClasses, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService, fetchKnownMatchingBookingIds } from '@/hooks/useMindbodyBookings';
 import { useClientMembership } from '@/hooks/useMindbodyMembership';
-import { buildCommunalContrastCheckoutSummary } from '@/lib/bookingCheckoutSummary';
+import { buildClassCheckoutSummary } from '@/lib/bookingCheckoutSummary';
+import { useClassPrice } from '@/hooks/useClassPrice';
 import { cn } from '@/lib/utils';
 import BookingCalendar from '@/components/booking/BookingCalendar';
 import BookingSteps from '@/components/booking/BookingSteps';
@@ -159,10 +160,27 @@ const ClassScheduleFlow = ({
   const serviceLabel = resolveDisplayName(bookingService?.title ?? clsName);
   const { data: membershipData, refetch: refetchMembership } = useClientMembership();
 
+  // Resolved by the same server code that takes the payment — see useClassPrice.
+  const {
+    data: classPrice,
+    isLoading: classPriceLoading,
+    isError: classPriceError,
+  } = useClassPrice({
+    classId: selectedClass?.id,
+    locationId: selectedClass?.locationId,
+    serviceName: selectedClass?.name ?? serviceLabel,
+    enabled: currentStep === 2 && !!selectedClass,
+  });
+
   const checkoutSummary =
     isAuthenticated && currentStep === 2
-      ? buildCommunalContrastCheckoutSummary(serviceLabel, membershipData?.clientServices)
+      ? buildClassCheckoutSummary(serviceLabel, membershipData?.clientServices, classPrice)
       : null;
+
+  /** The exact figure shown to the customer; sent back on confirm so the server can refuse a mismatch. */
+  const displayedPriceGbp = checkoutSummary?.pass ? 0 : checkoutSummary?.priceGbp ?? null;
+  const priceUnavailable =
+    currentStep === 2 && isAuthenticated && !classPriceLoading && displayedPriceGbp == null;
 
   const mindbodyCheckoutUrl = useMemo(() => {
     if (!selectedClass || checkoutSummary?.pass) return null;
@@ -403,6 +421,15 @@ const ClassScheduleFlow = ({
       return;
     }
 
+    // Belt and braces with the server-side guard: never submit a booking whose
+    // price the customer has not been shown.
+    if (displayedPriceGbp == null) {
+      setBookingError(
+        "We couldn't confirm the price for this session, so we haven't taken payment. Please try again shortly or contact reception.",
+      );
+      return;
+    }
+
     const activeSession = await refreshMbSession();
     if (!activeSession?.sessionId) {
       setBookingError('Your sign-in expired. Please sign in again.');
@@ -428,9 +455,10 @@ const ClassScheduleFlow = ({
         locationName: selectedClass.locationName,
         staffName: selectedClass.staffName,
         idempotencyKey,
+        expectedPriceGbp: displayedPriceGbp,
       });
       clearPendingBooking();
-      const listPriceGbp = checkoutSummary?.priceGbp ?? null;
+      const listPriceGbp = displayedPriceGbp;
       const paid = result.payment;
       // Trust the server — never let a stale client-side pass summary override a charge.
       const usedPass = paid?.method === 'pass';
@@ -694,6 +722,20 @@ const ClassScheduleFlow = ({
                   </span>
                 </div>
               </div>
+              {isAuthenticated && (
+                <div className="pt-3 border-t border-border flex justify-between">
+                  <span className="text-muted-foreground">Price</span>
+                  <span className="font-semibold">
+                    {classPriceLoading
+                      ? 'Checking…'
+                      : checkoutSummary?.pass
+                      ? `Included — ${checkoutSummary.pass.name}`
+                      : displayedPriceGbp != null
+                      ? `£${displayedPriceGbp.toFixed(2)}`
+                      : 'Unavailable'}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
 
@@ -720,6 +762,8 @@ const ClassScheduleFlow = ({
               bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
               bookingOutcomeUncertain={bookingOutcomeUncertain}
               checkoutSummary={checkoutSummary}
+              priceLoading={classPriceLoading}
+              priceUnavailable={priceUnavailable || classPriceError}
               onCreateAccount={() => startCreateAccount(selectedClass)}
               mindbodyCheckoutUrl={
                 needsMindbodyPay || mindbodyCheckoutOpened ? mindbodyCheckoutUrl : null

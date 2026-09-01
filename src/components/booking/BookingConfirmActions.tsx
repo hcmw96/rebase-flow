@@ -31,6 +31,10 @@ interface BookingConfirmActionsProps {
   onOpenMindbodyCheckout?: () => void;
   onMindbodyCheckoutFinished?: () => void;
   mindbodyCheckoutChecking?: boolean;
+  /** Price still resolving — Confirm must wait rather than charge an unknown amount. */
+  priceLoading?: boolean;
+  /** No price could be resolved — Confirm must stay disabled. */
+  priceUnavailable?: boolean;
 }
 
 const BookingConfirmActions = ({
@@ -53,6 +57,8 @@ const BookingConfirmActions = ({
   onOpenMindbodyCheckout,
   onMindbodyCheckoutFinished,
   mindbodyCheckoutChecking = false,
+  priceLoading = false,
+  priceUnavailable = false,
 }: BookingConfirmActionsProps) => {
   const { openMindbodySignUp } = useAuth();
   const confirmLockedRef = useRef(false);
@@ -76,8 +82,15 @@ const BookingConfirmActions = ({
     Boolean(mindbodyCheckoutUrl) &&
     !checkoutSummary?.pass;
 
+  // Never offer to take money without a figure on screen.
+  const blockedOnPrice = priceLoading || priceUnavailable;
+
   const confirmLabel =
-    useMindbodyPay
+    priceLoading
+      ? 'Checking price…'
+      : priceUnavailable
+      ? 'Price unavailable'
+      : useMindbodyPay
       ? checkoutSummary && checkoutSummary.priceGbp > 0
         ? `Pay £${checkoutSummary.priceGbp} in Mindbody`
         : 'Pay in Mindbody'
@@ -86,7 +99,7 @@ const BookingConfirmActions = ({
         : 'Confirm booking';
 
   const handleConfirmClick = useCallback(() => {
-    if (isPending || confirmLockedRef.current) return;
+    if (isPending || confirmLockedRef.current || blockedOnPrice) return;
     confirmLockedRef.current = true;
     if (useMindbodyPay && onOpenMindbodyCheckout) {
       onOpenMindbodyCheckout();
@@ -96,7 +109,7 @@ const BookingConfirmActions = ({
     window.setTimeout(() => {
       confirmLockedRef.current = false;
     }, 3000);
-  }, [isPending, onConfirm, onOpenMindbodyCheckout, useMindbodyPay]);
+  }, [isPending, onConfirm, onOpenMindbodyCheckout, useMindbodyPay, blockedOnPrice]);
 
   return (
     <div className="space-y-3">
@@ -134,6 +147,20 @@ const BookingConfirmActions = ({
             payInMindbody: true,
           }}
         />
+      )}
+
+      {priceUnavailable && !bookingError && (
+        <p className="text-sm rounded-lg px-3 py-2.5 leading-relaxed text-foreground bg-amber-500/10 border border-amber-500/25">
+          We couldn&apos;t confirm the price for this session, so we can&apos;t take payment. Please try
+          again shortly, or email{' '}
+          <a
+            href="mailto:reception@rebaserecovery.com"
+            className="font-medium text-foreground underline underline-offset-2"
+          >
+            reception@rebaserecovery.com
+          </a>{' '}
+          and we&apos;ll book it for you.
+        </p>
       )}
 
       {bookingError && !showCardSetup && !useMindbodyPay && (
@@ -201,7 +228,7 @@ const BookingConfirmActions = ({
           <Button
             type="button"
             onClick={handleConfirmClick}
-            disabled={isPending || bookingOutcomeUncertain}
+            disabled={isPending || bookingOutcomeUncertain || blockedOnPrice}
             aria-busy={isPending}
             className="w-full sm:flex-1 min-h-11 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
@@ -221,8 +248,8 @@ const BookingConfirmActions = ({
           <Button
             type="button"
             onClick={handleConfirmClick}
-            disabled={isPending}
-            className="w-full sm:flex-1 min-h-11 bg-primary text-primary-foreground hover:bg-primary/90"
+            disabled={isPending || blockedOnPrice}
+            className="w-full sm:flex-1 min-h-11 bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
           >
             {confirmLabel}
           </Button>

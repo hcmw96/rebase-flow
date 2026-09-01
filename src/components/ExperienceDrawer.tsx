@@ -20,7 +20,7 @@ import {
   contactOnlyGroups,
   shortDescriptions,
   classOfferings,
-  priceOverrides,
+  MARKETING_DISPLAY_PRICES,
   classDescriptionIdMap,
   resolveDisplayName,
   extractDurationFromName,
@@ -114,7 +114,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
       groups.get(canonicalName)!.variants.push({
         id: service.id,
         duration: isPack ? null : resolveVariantDuration(service.name, service.defaultTimeLength),
-        price: isIvFirstConsult ? 0 : (service.price ?? priceOverrides[canonicalName] ?? null),
+        price: isIvFirstConsult ? 0 : (service.price ?? MARKETING_DISPLAY_PRICES[canonicalName] ?? null),
         name: service.name,
         description: variantDesc,
         contactOnly: isIvFirstConsult || isContactOnly || isPack,
@@ -168,7 +168,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
   const getFromPrice = (variants: ServiceVariant[], baseName?: string) => {
     const prices = variants.map(v => v.price).filter((p): p is number => p !== null && p > 0);
     if (prices.length) return Math.min(...prices);
-    if (baseName && priceOverrides[baseName] !== undefined) return priceOverrides[baseName];
+    if (baseName && MARKETING_DISPLAY_PRICES[baseName] !== undefined) return MARKETING_DISPLAY_PRICES[baseName];
     return null;
   };
 

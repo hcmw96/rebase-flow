@@ -1,4 +1,3 @@
-import { priceOverrides } from '@/config/serviceConfig';
 import { resolveMindbodyClientAccountUrl } from '@/lib/mindbodyAuth';
 import type { BookingCheckoutSummary } from '@/components/booking/BookingConfirmCheckout';
 import type { ClientService } from '@/hooks/useMindbodyMembership';
@@ -32,32 +31,49 @@ export function findCommunalContrastPass(
   );
 }
 
-export function buildCommunalContrastCheckoutSummary(
+/**
+ * Checkout summary for any class, built from the server-resolved price.
+ *
+ * `resolved` comes from mindbody-class-price, which calls the same
+ * resolveClassPrice() that mindbody-book charges with — so the "£X" on the
+ * button is the number that gets taken. Returns null when no price is known,
+ * which callers must treat as "cannot book", never as "free".
+ */
+export function buildClassCheckoutSummary(
   serviceName: string | undefined | null,
   clientServices: ClientService[] | undefined,
+  resolved: { priceGbp: number | null; pass: { name: string; remaining: number | null } | null } | undefined,
   options?: { needsCardOnFile?: boolean },
 ): BookingCheckoutSummary | null {
-  if (!isCommunalContrastService(serviceName)) return null;
+  if (!resolved) return null;
 
-  const pass = findCommunalContrastPass(clientServices);
-  if (pass) {
-    const junePass = isJuneContrastPassName(pass.name);
+  // Server says an entitlement covers this class — it books for £0.
+  if (resolved.pass) {
+    // Communal Contrast carries extra offer terms; other classes just show the credit.
+    const local = isCommunalContrastService(serviceName)
+      ? findCommunalContrastPass(clientServices)
+      : null;
+    const junePass = local ? isJuneContrastPassName(local.name) : false;
     return {
-      priceGbp: priceOverrides['Communal Contrast'] ?? 65,
+      priceGbp: 0,
       pass: {
-        name: pass.name,
-        remaining: pass.remaining ?? null,
-        ...(junePass
-          ? { usage: getJunePassUsageSummary(pass), termsReminder: true as const }
+        name: resolved.pass.name,
+        remaining: resolved.pass.remaining,
+        ...(local && junePass
+          ? { usage: getJunePassUsageSummary(local), termsReminder: true as const }
           : {}),
       },
     };
   }
 
+  if (resolved.priceGbp == null) return null;
+
   return {
-    priceGbp: priceOverrides['Communal Contrast'] ?? 65,
+    priceGbp: resolved.priceGbp,
     needsCardOnFile: options?.needsCardOnFile,
     accountUrl: resolveMindbodyClientAccountUrl(),
-    payInMindbody: true,
+    // Communal Contrast keeps the Mindbody consumer-checkout handoff; other
+    // classes charge the stored card on Rebase.
+    ...(isCommunalContrastService(serviceName) ? { payInMindbody: true as const } : {}),
   };
 }

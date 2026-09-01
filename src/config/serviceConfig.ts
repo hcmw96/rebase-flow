@@ -196,7 +196,16 @@ export const classDescriptionIdMap: Record<string, number[]> = {
 };
 
 // ── Price overrides (when Mindbody API returns null) ──────────────
-export const priceOverrides: Record<string, number> = {
+/**
+ * Display-only fallback for marketing surfaces (service cards, experience
+ * drawer, website listings) where Mindbody exposes no single-visit price —
+ * sale/services returns only the 10/20 Communal Contrast packs.
+ *
+ * NEVER read this in a booking or payment path. Prices that money is taken
+ * against come from the server (mindbody-class-price / resolveClassPrice) so
+ * the figure shown and the figure charged cannot drift apart.
+ */
+export const MARKETING_DISPLAY_PRICES: Record<string, number> = {
   'Communal Contrast': 65,
 };
 

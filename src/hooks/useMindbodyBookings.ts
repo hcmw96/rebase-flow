@@ -59,6 +59,8 @@ export interface BookingParams {
   endDateTime?: string;
   serviceName?: string;
   idempotencyKey?: string;
+  /** Price shown to the customer. Classes: the server refuses to charge anything else. */
+  expectedPriceGbp?: number | null;
 }
 
 interface CancelParams {

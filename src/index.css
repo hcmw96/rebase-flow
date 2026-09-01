@@ -103,7 +103,7 @@ All colors MUST be HSL.
     --secondary-foreground: 35 15% 88%;
 
     --muted: 25 10% 15%;
-    --muted-foreground: 35 8% 55%;
+    --muted-foreground: 35 8% 65%;
 
     --accent: 30 25% 22%;
     --accent-foreground: 35 15% 88%;
@@ -159,6 +159,17 @@ All colors MUST be HSL.
   body {
     @apply text-foreground font-sans antialiased;
     background-color: #F3EEE6;
+  }
+
+  /*
+   * body's `color` resolves var(--foreground) at <body>, which sits outside any
+   * .dark subtree — so it computes the LIGHT foreground and descendants inherit
+   * that resolved colour, not the variable. Any text inside .dark without its
+   * own colour class was therefore rendering near-black on a dark panel
+   * (~1.03:1). Re-declaring color here re-resolves the variable in dark scope.
+   */
+  .dark {
+    color: hsl(var(--foreground));
   }
 
   /* Typography enhancement */

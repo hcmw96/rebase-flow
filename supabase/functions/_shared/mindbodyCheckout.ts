@@ -145,6 +145,56 @@ export async function fetchSaleServicesForClass(
   return await fetchSaleServices(apiKey, siteId, bearerToken, base, `class:${classId}:all`);
 }
 
+/**
+ * The single source of truth for what a class costs.
+ *
+ * Both the confirm-step price lookup (mindbody-class-price) and the charge
+ * itself (mindbody-book) call this — same endpoint, same picker, same number.
+ * Do not re-implement the consumer-then-staff fallback at a call site: a
+ * second implementation is how the displayed price and the charged price
+ * drift apart.
+ */
+export type ResolvedClassPrice = {
+  serviceId: number;
+  optionName: string;
+  priceGbp: number;
+};
+
+export async function resolveClassPrice(
+  apiKey: string,
+  siteId: string,
+  consumerToken: string | null,
+  staffToken: string,
+  classId: number,
+  locationId?: number,
+): Promise<ResolvedClassPrice | null> {
+  let picked: SaleServiceRow | null = null;
+
+  if (consumerToken) {
+    picked = pickSaleServiceForClass(
+      await fetchSaleServicesForClass(apiKey, siteId, consumerToken, classId, locationId),
+    );
+  }
+  if (!picked?.Id) {
+    picked = pickSaleServiceForClass(
+      await fetchSaleServicesForClass(apiKey, siteId, staffToken, classId, locationId),
+    );
+  }
+  if (!picked?.Id) return null;
+
+  const priceGbp = salePrice(picked);
+  if (!(priceGbp > 0)) return null;
+
+  // pickSaleServiceForClass already refuses packs, but the charge path treated
+  // this as a separate hard stop — keep it here so both callers inherit it.
+  if (isMultiSessionPack(picked.Name || "", picked.Count)) {
+    console.error("resolveClassPrice: refusing pack pricing option", picked.Name, priceGbp);
+    return null;
+  }
+
+  return { serviceId: picked.Id, optionName: picked.Name || "", priceGbp };
+}
+
 /** Pricing options for a session type (appointments / suites). */
 export async function fetchSaleServicesForSessionType(
   apiKey: string,

@@ -29,7 +29,7 @@ import {
   bookingNearHorizonDateRange,
 } from '@/lib/bookingHorizon';
 import { ServiceVariant } from '@/components/ServiceCard';
-import { priceOverrides, resolveDisplayName } from '@/config/serviceConfig';
+import { resolveDisplayName } from '@/config/serviceConfig';
 import { buildSlotBookingIdempotencyKey } from '@/lib/bookingIdempotency';
 import { classifyBookingError } from '@/lib/bookingErrors';
 import { BookingMutationError } from '@/lib/bookingMutationError';
@@ -425,13 +425,10 @@ const BookingDrawer = ({
     }
   }, [isAuthenticated]);
 
-  const appointmentListPriceGbp = useMemo(() => {
-    if (activeVariant?.price != null) return activeVariant.price;
-    if (serviceDisplayName && priceOverrides[serviceDisplayName] !== undefined) {
-      return priceOverrides[serviceDisplayName];
-    }
-    return null;
-  }, [activeVariant?.price, serviceDisplayName]);
+  const appointmentListPriceGbp = useMemo(
+    () => activeVariant?.price ?? null,
+    [activeVariant?.price],
+  );
 
   const appointmentCheckoutSummary = useMemo(() => {
     return {
@@ -610,11 +607,12 @@ const BookingDrawer = ({
   const isBooking = bookServiceMutation.isPending || isSubmitting;
 
   const displayDuration = activeVariant?.duration ? `${activeVariant.duration} min` : '';
-  const displayPrice = activeVariant?.price
+  // Only ever show a price we actually have. Classes resolve theirs server-side
+  // at the confirm step (see useClassPrice), so the header stays quiet for them
+  // rather than guessing from a hardcoded map.
+  const displayPrice = activeVariant?.price != null
     ? `£${activeVariant.price.toFixed(2)}`
-    : (serviceDisplayName && priceOverrides[serviceDisplayName] !== undefined
-        ? `£${priceOverrides[serviceDisplayName].toFixed(2)}`
-        : 'Contact for pricing');
+    : null;
   const displayTitle = resolveDisplayName(activeVariant?.name || service?.title || '');
 
   if (!service) return null;
@@ -669,9 +667,6 @@ const BookingDrawer = ({
                   <p className="text-sm text-foreground/80 mt-0.5">
                     {[displayDuration, activeVariant.price ? `£${activeVariant.price}` : null].filter(Boolean).join(' · ')}
                   </p>
-                )}
-                {isClassBooking && displayPrice && (
-                  <p className="text-sm text-foreground/80 mt-0.5">{displayPrice}</p>
                 )}
               </ImageHeroCaption>
             </div>
@@ -909,7 +904,9 @@ const BookingDrawer = ({
                           )}
                           <div className="flex justify-between">
                             <span className="text-muted-foreground">Price</span>
-                            <span className="font-semibold">{displayPrice}</span>
+                            <span className="font-semibold">
+                              {displayPrice ?? 'Unavailable'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -932,6 +929,7 @@ const BookingDrawer = ({
                         }
                         isAuthenticated={isAuthenticated}
                         isPending={isBooking}
+                        priceUnavailable={appointmentListPriceGbp == null}
                         bookingError={bookingError}
                         bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
                         bookingOutcomeUncertain={bookingOutcomeUncertain}
