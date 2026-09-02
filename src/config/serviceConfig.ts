@@ -179,7 +179,19 @@ export const categoryImages: Record<string, string> = {
 };
 
 // ── Contact-only groups ────────────────────────────────────────────
-export const contactOnlyGroups = new Set(['Osteopathy', 'Core Radiance']);
+// Name-matched and consulting no Mindbody data, so it drifts silently: Osteopathy
+// sat here while Mindbody had 19 bookable days, real £165–£210 pricing options and
+// two practitioners (Innes Cooke, Emanuele Calabrese). Removed 2026-09-02.
+//
+// Core Radiance must stay. It looks like it would be covered by the isPack path,
+// but isPack is only ever set on the synthesized `pack-*` feed entries built from
+// multi-session pricing options (mindbody-services:402) — never on session types.
+// Core Radiance is session type 1191, so isPack is undefined and dropping it here
+// would put a £1950 package on sale online.
+//
+// Before adding to this set, check whether Mindbody can answer the question
+// instead.
+export const contactOnlyGroups = new Set(['Core Radiance']);
 
 // ── Package groups (append "Package" to title, hide duration) ─────
 export const packageGroups = new Set([
@@ -517,7 +529,7 @@ export const staticWebsiteCatalogue: StaticServiceEntry[] = [
   { baseName: "IV Drip", category: "IV Drips", image: "/images/rebase-iv-drip.jpg", shortDescription: "Vitamin-rich IV infusions tailored to your wellness goals.", fromPrice: 80, contactOnly: false },
   { baseName: "Blood Test", category: "IV Drips", image: "/images/rebase-blood-test.jpg", shortDescription: "Comprehensive lab panels to inform your personalised wellness strategy.", fromPrice: 1000, contactOnly: false },
   { baseName: "NAD+", category: "IV Drips", image: "/images/rebase-iv-drip.jpg", shortDescription: "Cellular regeneration therapy to restore energy and vitality.", fromPrice: 350, contactOnly: false },
-  { baseName: "Osteopathy", category: "Regen and Manual Therapies", image: "/images/rebase-osteopathy.jpg", shortDescription: "Manual therapy to restore movement and relieve pain.", fromPrice: 165, contactOnly: true },
+  { baseName: "Osteopathy", category: "Regen and Manual Therapies", image: "/images/rebase-osteopathy.jpg", shortDescription: "Manual therapy to restore movement and relieve pain.", fromPrice: 165, contactOnly: false },
   { baseName: "Structural Fascia Therapy", category: "Regen and Manual Therapies", image: "/images/rebase-structural-fascia.jpg", shortDescription: "Hands-on fascial release for posture and pain relief.", fromPrice: 200, contactOnly: false },
   { baseName: "Athletes Performance", category: "Regen and Manual Therapies", image: "/images/rebase-athletes-performance.jpg", shortDescription: "Elite recovery and performance protocol for serious athletes.", fromPrice: 3350, contactOnly: false },
   { baseName: "Longevity", category: "Regen and Manual Therapies", image: "/images/rebase-longevity.jpg", shortDescription: "Comprehensive longevity protocol to optimise vitality and healthspan.", fromPrice: 1700, contactOnly: false },
