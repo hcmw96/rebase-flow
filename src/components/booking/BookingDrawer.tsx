@@ -527,6 +527,9 @@ const BookingDrawer = ({
         endDateTime: selectedSlot.endDateTime,
         serviceName: activeVariant?.name || service?.title,
         idempotencyKey,
+        // The server refuses to charge anything above this, and refuses outright
+        // if it is missing — never send a booking without the figure on screen.
+        expectedPriceGbp: appointmentListPriceGbp,
       });
       clearPendingBooking();
       const listPriceGbp = appointmentListPriceGbp;

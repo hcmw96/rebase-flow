@@ -289,6 +289,7 @@ const BookService = () => {
         startDateTime: selectedSlot.startDateTime,
         serviceName: selectedVariant?.name || service?.title,
         idempotencyKey,
+        expectedPriceGbp: listPriceGbp,
       });
       pushBookingConfirmedOnce(`drop-in:${serviceName}:${selectedSlot.startDateTime}`, {
         bookingType: 'drop-in',

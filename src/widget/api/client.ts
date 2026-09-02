@@ -44,6 +44,9 @@ export interface BookingParams {
   endDateTime?: string;
   serviceName?: string;
   idempotencyKey?: string;
+  /** Price shown to the customer. The server refuses to charge more, and refuses
+   *  outright when absent. */
+  expectedPriceGbp?: number | null;
 }
 
 export function createApiClient(baseUrl: string) {

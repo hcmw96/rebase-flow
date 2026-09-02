@@ -938,6 +938,7 @@ async function bookAppointmentWithPayment(
   startDateTime: string,
   endDateTime?: string,
   serviceName?: string,
+  expectedPriceGbp?: number | null,
 ): Promise<
   | {
     ok: true;
@@ -1163,6 +1164,60 @@ async function bookAppointmentWithPayment(
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       ),
     };
+  }
+
+  // Never charge an amount the customer was not shown. Mirrors the class guard in
+  // bookClassWithPayment — same asymmetry, same reasoning.
+  //
+  // Asymmetric on purpose: refuse only when the resolved charge EXCEEDS the
+  // displayed price. Charging less is a discount applying correctly, and Mindbody
+  // has member discounts wired to most sale options
+  // (ApplyMemberDiscountsOfMembershipIds), so an exact-match guard would start
+  // rejecting valid bookings the moment a rate is configured there.
+  //
+  // NOTE this does NOT stop an undercharge caused by picking the wrong pricing
+  // option — e.g. session type 13 resolving "The Midday Reset - Premium Suite
+  // (60min)" at £192 against £240 displayed. That is a selection bug, not price
+  // drift, and is fixed by making option selection variant-aware. The log below
+  // is what makes it visible until then.
+  if (expectedPriceGbp == null) {
+    console.error(
+      `Refusing session type ${sessionTypeId} charge: no displayed price supplied by client (would charge ${amount})`,
+    );
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            "We couldn't confirm the price for this session, so we haven't taken payment. Reopen the booking and try again.",
+          priceNotDisclosed: true,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      ),
+    };
+  }
+  if (amount - expectedPriceGbp > 0.005) {
+    console.error(
+      `Refusing session type ${sessionTypeId} charge: resolved ${amount} exceeds displayed ${expectedPriceGbp} (${saleService.Name})`,
+    );
+    return {
+      ok: false,
+      response: new Response(
+        JSON.stringify({
+          error:
+            `The price for this session changed to £${amount} while you were booking, so we haven't taken payment. Reopen the booking to see the current price.`,
+          priceMismatch: true,
+          displayedPriceGbp: expectedPriceGbp,
+          currentPriceGbp: amount,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+      ),
+    };
+  }
+  if (expectedPriceGbp - amount > 0.005) {
+    console.error(
+      `Session type ${sessionTypeId} resolving BELOW displayed price: displayed ${expectedPriceGbp}, charging ${amount} (${saleService.Name}) — check the picked option is the right product`,
+    );
   }
 
   // Avoid charging when the suite/slot was taken since the calendar loaded.
@@ -1491,6 +1546,7 @@ serve(async (req) => {
         startDateTime,
         endDateTime,
         serviceName,
+        typeof expectedPriceGbp === "number" ? expectedPriceGbp : null,
       );
       if (!result.ok) {
         if (await shouldReleaseClaimAfterFailure(result.response)) {

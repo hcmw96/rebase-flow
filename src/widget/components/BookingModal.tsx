@@ -125,6 +125,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
         startDateTime: selectedSlot.startDateTime,
         serviceName: selectedVariant.name,
         idempotencyKey,
+        expectedPriceGbp: selectedVariant.price,
       });
       setStep('success');
     } catch (err) {
