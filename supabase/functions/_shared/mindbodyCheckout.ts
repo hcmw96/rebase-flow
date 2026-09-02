@@ -296,11 +296,12 @@ export function classifyCheckoutFailure(message: string): CheckoutFailureFlags {
  * "User token site id does not match" for cross-studio Mindbody accounts.
  * Never retry a failed checkout with another token: Mindbody may have charged
  * or created the booking before returning an error.
+ *
+ * Was named checkoutWithConsumerThenStaff and took apiKey/siteId/consumerToken.
+ * All three were unused — the consumer attempt had already been removed — so the
+ * name and signature advertised a fallback that did not exist.
  */
-export async function checkoutWithConsumerThenStaff(
-  _apiKey: string,
-  _siteId: string,
-  _consumerToken: string,
+export async function checkoutWithStaffToken(
   staffToken: string,
   runCheckout: (bearerToken: string) => Promise<CheckoutResult>,
 ): Promise<CheckoutResult> {

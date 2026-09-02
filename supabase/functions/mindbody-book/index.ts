@@ -32,7 +32,7 @@ import {
 import {
   checkoutAppointmentWithStoredCard,
   checkoutClassWithStoredCard,
-  checkoutWithConsumerThenStaff,
+  checkoutWithStaffToken,
   fetchSaleServicesForSessionType,
   isMultiSessionPack,
   resolveClassPrice,
@@ -878,10 +878,7 @@ async function bookClassWithPayment(
     );
   }
 
-  const checkout = await checkoutWithConsumerThenStaff(
-    apiKey,
-    siteId,
-    activeSession.access_token,
+  const checkout = await checkoutWithStaffToken(
     staffToken,
     (token) =>
       checkoutClassWithStoredCard(apiKey, siteId, token, {
@@ -1198,10 +1195,7 @@ async function bookAppointmentWithPayment(
     };
   }
 
-  const checkout = await checkoutWithConsumerThenStaff(
-    apiKey,
-    siteId,
-    activeSession.access_token,
+  const checkout = await checkoutWithStaffToken(
     staffToken,
     (token) =>
       checkoutAppointmentWithStoredCard(apiKey, siteId, token, {

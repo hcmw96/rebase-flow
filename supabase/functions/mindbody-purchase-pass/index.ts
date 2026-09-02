@@ -7,7 +7,7 @@ import {
   isMindbodyTokenExpired,
   refreshMindbodySessionIfNeeded,
 } from "../_shared/mindbodyRefreshSession.ts";
-import { checkoutServiceWithStoredCard, checkoutWithConsumerThenStaff } from "../_shared/mindbodyCheckout.ts";
+import { checkoutServiceWithStoredCard, checkoutWithStaffToken } from "../_shared/mindbodyCheckout.ts";
 import { isJuneContrastPassName } from "../_shared/contrastPass.ts";
 import { fetchActiveClientServices, findJuneContrastPassRow } from "../_shared/mindbodyClientServices.ts";
 import { logContrastPassPurchase } from "../_shared/contrastPassUsageLog.ts";
@@ -309,10 +309,7 @@ serve(async (req) => {
 
     const claimedPurchaseId = purchaseClaim.claimId;
 
-    const checkout = await checkoutWithConsumerThenStaff(
-      apiKey,
-      siteId,
-      session.access_token,
+    const checkout = await checkoutWithStaffToken(
       staffToken,
       (token) =>
         checkoutServiceWithStoredCard(apiKey, siteId, token, {
