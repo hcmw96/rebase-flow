@@ -150,9 +150,28 @@ export async function fetchSaleServicesForClass(
  *
  * Both the confirm-step price lookup (mindbody-class-price) and the charge
  * itself (mindbody-book) call this — same endpoint, same picker, same number.
- * Do not re-implement the consumer-then-staff fallback at a call site: a
- * second implementation is how the displayed price and the charged price
- * drift apart.
+ * Do not re-implement price resolution at a call site: a second implementation
+ * is how the displayed price and the charged price drift apart.
+ *
+ * STAFF TOKEN ONLY — do not add a consumer-token attempt back.
+ *
+ * This used to try the consumer token first and fall back to staff. The consumer
+ * attempt never once succeeded. The tokens this app stores are OAuth tokens
+ * scoped to a different site context than the SiteId we send, so sale/services
+ * answers 401 "User token site id does not match requested site" — verified
+ * 2026-09-01 against a live (unexpired) consumer token, on both the
+ * SellOnline=true and unfiltered call shapes. It is a distinct error from
+ * "Token expired", so it was not just a stale-token artifact.
+ *
+ * The cost was two failed round trips per resolution, on both the price lookup
+ * and the charge path — four per booking flow — for a result that was always
+ * discarded in favour of the staff response.
+ *
+ * Consequence worth knowing: because Mindbody never sees a consumer-scoped
+ * request here, it never applies its own membership filtering. RestrictToMembershipIds
+ * (set on £0 member-only options such as 101486 "Member's Sound Bath") is NOT
+ * enforced for us — the picker has to enforce it. Re-adding a consumer attempt
+ * would not fix that; it would only restore the wasted calls.
  */
 export type ResolvedClassPrice = {
   serviceId: number;
@@ -163,23 +182,13 @@ export type ResolvedClassPrice = {
 export async function resolveClassPrice(
   apiKey: string,
   siteId: string,
-  consumerToken: string | null,
   staffToken: string,
   classId: number,
   locationId?: number,
 ): Promise<ResolvedClassPrice | null> {
-  let picked: SaleServiceRow | null = null;
-
-  if (consumerToken) {
-    picked = pickSaleServiceForClass(
-      await fetchSaleServicesForClass(apiKey, siteId, consumerToken, classId, locationId),
-    );
-  }
-  if (!picked?.Id) {
-    picked = pickSaleServiceForClass(
-      await fetchSaleServicesForClass(apiKey, siteId, staffToken, classId, locationId),
-    );
-  }
+  const picked = pickSaleServiceForClass(
+    await fetchSaleServicesForClass(apiKey, siteId, staffToken, classId, locationId),
+  );
   if (!picked?.Id) return null;
 
   const priceGbp = salePrice(picked);

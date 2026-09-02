@@ -800,7 +800,6 @@ async function bookClassWithPayment(
   const resolvedPrice = await resolveClassPrice(
     apiKey,
     siteId,
-    activeSession.access_token,
     staffToken,
     classIdNum,
     locId,

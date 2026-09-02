@@ -98,7 +98,6 @@ serve(async (req) => {
     const resolved = await resolveClassPrice(
       apiKey,
       siteId,
-      consumerToken,
       staffToken,
       classIdNum,
       locId,
