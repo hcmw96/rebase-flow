@@ -1109,20 +1109,15 @@ async function bookAppointmentWithPayment(
     };
   }
 
-  let saleService = pickSaleServiceForSession(
-    await fetchSaleServicesForSessionType(
-      apiKey,
-      siteId,
-      activeSession.access_token,
-      sessionTypeIdNum,
-      locId,
-    ),
+  // STAFF TOKEN ONLY — do not add a consumer-token attempt back. Same reason as
+  // resolveClassPrice (see the note there): the OAuth tokens this app stores are
+  // scoped to a different site context, so sale/services answers 401 "User token
+  // site id does not match requested site". The consumer attempt here never
+  // succeeded either — it cost two failed round trips per appointment booking
+  // before falling through to the staff call that actually served it.
+  const saleService = pickSaleServiceForSession(
+    await fetchSaleServicesForSessionType(apiKey, siteId, staffToken, sessionTypeIdNum, locId),
   );
-  if (!saleService?.Id) {
-    saleService = pickSaleServiceForSession(
-      await fetchSaleServicesForSessionType(apiKey, siteId, staffToken, sessionTypeIdNum, locId),
-    );
-  }
   if (!saleService?.Id) {
     console.warn(`No sale service for session type ${sessionTypeId}`);
     return {

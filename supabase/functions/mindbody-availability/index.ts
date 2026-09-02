@@ -380,35 +380,40 @@ async function computeAvailabilityPayload(opts: {
     ).sort();
   }
 
+  /**
+   * Derived from the availability windows we already hold, not from a second
+   * request.
+   *
+   * This used to GET appointment/schedulableitems, which does not exist —
+   * Mindbody answers 404 with an HTML error page, for every session type. The
+   * response was consumed inside `if (staffResponse.ok)` with no else branch, so
+   * every appointment service returned availableStaff: [] with nothing logged.
+   * Verified against session types 20, 13, 1053 and 9.
+   *
+   * bookableitems already carries Staff.FirstName/LastName on each window (see
+   * AvailabilityWindow), so the practitioner list is free. ImageUrl and Bio are
+   * not in that payload and are returned null — nothing renders them today, and
+   * inventing a per-staff lookup to populate fields no component reads would be
+   * a worse trade than the honest null.
+   */
   let availableStaff: unknown[] = [];
   if (view === "slots") {
-    const staffResponse = await fetch(
-      `https://api.mindbodyonline.com/public/v6/appointment/schedulableitems?SessionTypeIds=${sessionTypeId}`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Api-Key": apiKey,
-          "SiteId": siteId,
-          "Authorization": `Bearer ${staffToken}`,
-        },
-      },
-    );
+    const byId = new Map<number, { id: number; name: string; imageUrl: null; bio: null }>();
+    for (const w of allAvailabilities) {
+      const id = w.Staff?.Id;
+      if (id == null || byId.has(id)) continue;
+      const name = `${w.Staff?.FirstName ?? ""} ${w.Staff?.LastName ?? ""}`.trim();
+      byId.set(id, { id, name: name || `Staff ${id}`, imageUrl: null, bio: null });
+    }
+    availableStaff = [...byId.values()];
 
-    if (staffResponse.ok) {
-      const staffData = await staffResponse.json();
-      availableStaff = (staffData.StaffMembers || []).map((s: {
-        Id: number;
-        FirstName: string;
-        LastName: string;
-        ImageUrl?: string;
-        Bio?: string;
-      }) => ({
-        id: s.Id,
-        name: `${s.FirstName} ${s.LastName}`,
-        imageUrl: s.ImageUrl,
-        bio: s.Bio,
-      }));
+    // Slots exist but no staff resolved => the payload shape changed. Loud, because
+    // silence here is exactly what hid the 404 for as long as it did.
+    if (!availableStaff.length && availableItems.length) {
+      console.error(
+        "availableStaff empty despite bookable slots — Staff missing from bookableitems payload",
+        JSON.stringify({ sessionTypeId, slots: availableItems.length }),
+      );
     }
   }
 
