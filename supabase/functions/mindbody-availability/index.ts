@@ -5,7 +5,10 @@ import {
   studioTodayKey,
 } from "../_shared/londonTime.ts";
 import { getStaffToken } from "../_shared/mindbodyStaff.ts";
-import { resolveBookableSessionMinutes } from "../_shared/sessionDuration.ts";
+import {
+  resolveBookableSessionMinutes,
+  resolveRoomBlockMinutes,
+} from "../_shared/sessionDuration.ts";
 import {
   buildCacheKey,
   CACHE_TTL,
@@ -107,14 +110,16 @@ type AvailabilityWindow = {
   SessionType?: { Id?: number; Name?: string; DefaultTimeLength?: number };
 };
 
-function resolveWindowEnd(availability: AvailabilityWindow, sessionLength: number): Date | null {
+/** Window end for fitting starts. `blockMinutes` is the room reservation length. */
+function resolveWindowEnd(availability: AvailabilityWindow, blockMinutes: number): Date | null {
   const defaultTimeLength = availability.SessionType?.DefaultTimeLength;
   if (availability.EndDateTime) {
     return parseMindbodyLocalDateTime(availability.EndDateTime);
   }
   if (availability.BookableEndDateTime) {
     const bookableEnd = parseMindbodyLocalDateTime(availability.BookableEndDateTime);
-    const bufferMinutes = Math.max(0, (defaultTimeLength || sessionLength) - sessionLength);
+    // When IgnoreDefaultSessionLength shortens BookableEndDateTime, restore changeover.
+    const bufferMinutes = Math.max(0, (defaultTimeLength || blockMinutes) - blockMinutes);
     return new Date(bookableEnd.getTime() + bufferMinutes * 60 * 1000);
   }
   return null;
@@ -122,25 +127,26 @@ function resolveWindowEnd(availability: AvailabilityWindow, sessionLength: numbe
 
 /**
  * Slice a Mindbody availability window into discrete bookable starts.
- * Prefer customer-facing name duration over DefaultTimeLength (prep buffer).
+ * Fit / EndDateTime use room block (DefaultTimeLength); guest length stays name-based.
  */
 function generateTimeSlots(availability: AvailabilityWindow): Record<string, unknown>[] {
   const slots: Record<string, unknown>[] = [];
   const sessionTypeName = availability.SessionType?.Name;
   const defaultTimeLength = availability.SessionType?.DefaultTimeLength;
-  const sessionLength = resolveBookableSessionMinutes(sessionTypeName, defaultTimeLength);
+  const guestMinutes = resolveBookableSessionMinutes(sessionTypeName, defaultTimeLength);
+  const blockMinutes = resolveRoomBlockMinutes(sessionTypeName, defaultTimeLength);
   if (!availability.StartDateTime) return slots;
 
   const startTime = parseMindbodyLocalDateTime(availability.StartDateTime);
-  const windowEnd = resolveWindowEnd(availability, sessionLength);
+  const windowEnd = resolveWindowEnd(availability, blockMinutes);
   if (!windowEnd) return slots;
 
   const stepMs = SLOT_START_INTERVAL_MINUTES * 60 * 1000;
-  const sessionMs = sessionLength * 60 * 1000;
+  const blockMs = blockMinutes * 60 * 1000;
 
   let slotStart = new Date(startTime);
   while (slotStart < windowEnd) {
-    const slotEnd = new Date(slotStart.getTime() + sessionMs);
+    const slotEnd = new Date(slotStart.getTime() + blockMs);
     if (slotEnd <= windowEnd) {
       slots.push({
         id: `${availability.Id}-${slotStart.toISOString()}`,
@@ -154,7 +160,8 @@ function generateTimeSlots(availability: AvailabilityWindow): Record<string, unk
         sessionTypeName: availability.SessionType?.Name,
         startDateTime: slotStart.toISOString(),
         endDateTime: slotEnd.toISOString(),
-        sessionLengthMinutes: sessionLength,
+        sessionLengthMinutes: guestMinutes,
+        blockLengthMinutes: blockMinutes,
       });
     }
     slotStart = new Date(slotStart.getTime() + stepMs);
@@ -166,15 +173,15 @@ function generateTimeSlots(availability: AvailabilityWindow): Record<string, unk
 function collectAvailableDayKeys(availability: AvailabilityWindow, nowMs: number): string[] {
   const sessionTypeName = availability.SessionType?.Name;
   const defaultTimeLength = availability.SessionType?.DefaultTimeLength;
-  const sessionLength = resolveBookableSessionMinutes(sessionTypeName, defaultTimeLength);
+  const blockMinutes = resolveRoomBlockMinutes(sessionTypeName, defaultTimeLength);
   if (!availability.StartDateTime) return [];
 
   const startTime = parseMindbodyLocalDateTime(availability.StartDateTime);
-  const windowEnd = resolveWindowEnd(availability, sessionLength);
+  const windowEnd = resolveWindowEnd(availability, blockMinutes);
   if (!windowEnd) return [];
 
   const stepMs = SLOT_START_INTERVAL_MINUTES * 60 * 1000;
-  const sessionMs = sessionLength * 60 * 1000;
+  const sessionMs = blockMinutes * 60 * 1000;
 
   // Advance to first start that is still bookable (future + fits in window).
   let firstStart = startTime.getTime();

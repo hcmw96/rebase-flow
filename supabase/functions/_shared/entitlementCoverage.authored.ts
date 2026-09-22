@@ -65,6 +65,8 @@ const HBOT = [6, 1123];
 const PREMIUM_SUITE = [13, 15];
 const INFRARED_SUITE = [19];
 const STRUCTURAL_FASCIA = [1053, 1054, 1055];
+/** Premium (13, 15) + Infrared (19) — what "Private Room Sessions" grants. */
+const ALL_SUITES = [...PREMIUM_SUITE, ...INFRARED_SUITE];
 
 /** Programs. 26 = Classes, 27 = Communal Contrast, 3 = Massage, 7 = IV Drip. */
 const CLASSES = [26];
@@ -119,22 +121,12 @@ export const AUTHORED_COVERAGE: Record<string, CoverageRule> = {
   // No session type is named "Private Room" anywhere in the site inventory. The
   // only suite session types are Premium Suite (13, 15) and Infrared (19).
   // Mapping to Premium Suite is an inference — CONFIRM before relying on it.
-  "100065": {
-    name: "3 Private Room Sessions",
-    sessionTypeIds: PREMIUM_SUITE,
-    needsConfirmation: '"Private Room" matches no session type; assumed Premium Suite. ' +
-      "Confirm whether it should also cover Infrared Suite (19).",
-  },
-  "101297": {
-    name: "6 Monthly Private Room Sessions",
-    sessionTypeIds: PREMIUM_SUITE,
-    needsConfirmation: 'Same as 100065 — "Private Room" is not a session type name.',
-  },
-  "100071": {
-    name: "10 Monthly Private Room Sessions",
-    sessionTypeIds: PREMIUM_SUITE,
-    needsConfirmation: 'Same as 100065 — "Private Room" is not a session type name.',
-  },
+  // CONFIRMED 2026-09-02: "Private Room Sessions" covers both suites — Premium
+  // (13, 15) and Infrared (19). No session type carries that name, so this could
+  // not have been derived.
+  "100065": { name: "3 Private Room Sessions", sessionTypeIds: ALL_SUITES },
+  "101297": { name: "6 Monthly Private Room Sessions", sessionTypeIds: ALL_SUITES },
+  "100071": { name: "10 Monthly Private Room Sessions", sessionTypeIds: ALL_SUITES },
   "101535": {
     name: "Private Suite Session",
     sessionTypeIds: PREMIUM_SUITE,

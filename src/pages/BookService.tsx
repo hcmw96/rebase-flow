@@ -33,6 +33,7 @@ import {
 import { confirmHandoffBookingConversion } from '@/lib/mindbodyHandoffConversion';
 
 interface ServiceVariant {
+  saleServiceId?: string | null;
   id: string;
   name: string;
   duration: number | null;
@@ -290,6 +291,7 @@ const BookService = () => {
         serviceName: selectedVariant?.name || service?.title,
         idempotencyKey,
         expectedPriceGbp: listPriceGbp,
+        saleServiceId: selectedVariant?.saleServiceId ?? null,
       });
       pushBookingConfirmedOnce(`drop-in:${serviceName}:${selectedSlot.startDateTime}`, {
         bookingType: 'drop-in',

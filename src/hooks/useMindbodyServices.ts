@@ -17,6 +17,9 @@ export interface MindbodyService {
   numDeducted: number;
   onlineDescription: string;
   price: number | null;
+  /** Pricing option `price` was resolved from — echoed at booking so the charged
+   *  product is the displayed product rather than a re-derived guess. */
+  saleServiceId?: string | null;
   /** Retail multi-session product from Mindbody pricing options (not a session type). */
   isPack?: boolean;
   packSessionCount?: number | null;

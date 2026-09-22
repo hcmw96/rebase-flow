@@ -1,4 +1,5 @@
 import { normalizeBookingDateTime } from "./bookingIdempotency.ts";
+import { resolveRoomBlockMinutes } from "./sessionDuration.ts";
 
 function mbHeaders(apiKey: string, siteId: string, bearerToken: string) {
   return {
@@ -234,7 +235,7 @@ export async function appointmentSlotStillBookable(
       EndDateTime?: string;
       BookableEndDateTime?: string;
       Staff?: { Id?: number | string };
-      SessionType?: { Id?: number | string; DefaultTimeLength?: number };
+      SessionType?: { Id?: number | string; Name?: string; DefaultTimeLength?: number };
     }>;
     const target = normalizeBookingDateTime(startDateTime);
     const targetMs = Date.parse(target);
@@ -248,7 +249,10 @@ export async function appointmentSlotStillBookable(
       const endRaw = w.BookableEndDateTime || w.EndDateTime;
       if (!endRaw || !Number.isFinite(winStart)) continue;
       const winEnd = Date.parse(normalizeBookingDateTime(endRaw));
-      const lengthMin = w.SessionType?.DefaultTimeLength ?? 60;
+      const lengthMin = resolveRoomBlockMinutes(
+        w.SessionType?.Name,
+        w.SessionType?.DefaultTimeLength,
+      );
       // Slot is bookable if start falls inside the window with enough remaining time.
       if (targetMs >= winStart && targetMs + lengthMin * 60_000 <= winEnd + 1000) {
         return true;

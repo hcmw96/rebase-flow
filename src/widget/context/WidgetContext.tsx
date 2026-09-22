@@ -8,6 +8,8 @@ export interface WidgetConfig {
 }
 
 export interface ServiceVariant {
+  /** Pricing option backing this variant's price. */
+  saleServiceId?: string | null;
   id: string;
   name: string;
   duration: number | null;

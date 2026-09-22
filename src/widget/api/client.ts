@@ -47,6 +47,8 @@ export interface BookingParams {
   /** Price shown to the customer. The server refuses to charge more, and refuses
    *  outright when absent. */
   expectedPriceGbp?: number | null;
+  /** The pricing option the displayed price came from. */
+  saleServiceId?: string | null;
 }
 
 export function createApiClient(baseUrl: string) {

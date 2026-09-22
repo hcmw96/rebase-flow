@@ -118,6 +118,7 @@ const ExperienceDrawer = ({ open, onClose, experience }: ExperienceDrawerProps) 
         name: service.name,
         description: variantDesc,
         contactOnly: isIvFirstConsult || isContactOnly || isPack,
+        saleServiceId: service.saleServiceId ?? null,
         isPack,
         packSessionCount: service.packSessionCount ?? null,
       });

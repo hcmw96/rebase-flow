@@ -530,6 +530,7 @@ const BookingDrawer = ({
         // The server refuses to charge anything above this, and refuses outright
         // if it is missing — never send a booking without the figure on screen.
         expectedPriceGbp: appointmentListPriceGbp,
+        saleServiceId: activeVariant?.saleServiceId ?? null,
       });
       clearPendingBooking();
       const listPriceGbp = appointmentListPriceGbp;

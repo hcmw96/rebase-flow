@@ -123,9 +123,11 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
         staffId: selectedSlot.staffId.toString(),
         locationId: selectedSlot.locationId,
         startDateTime: selectedSlot.startDateTime,
+        endDateTime: selectedSlot.endDateTime,
         serviceName: selectedVariant.name,
         idempotencyKey,
         expectedPriceGbp: selectedVariant.price,
+        saleServiceId: selectedVariant.saleServiceId ?? null,
       });
       setStep('success');
     } catch (err) {

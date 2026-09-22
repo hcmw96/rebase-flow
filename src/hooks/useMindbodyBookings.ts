@@ -61,6 +61,9 @@ export interface BookingParams {
   idempotencyKey?: string;
   /** Price shown to the customer. Classes: the server refuses to charge anything else. */
   expectedPriceGbp?: number | null;
+  /** Appointments: the pricing option the displayed price came from. The server
+   *  charges this exact option after validating it against expectedPriceGbp. */
+  saleServiceId?: string | null;
 }
 
 interface CancelParams {

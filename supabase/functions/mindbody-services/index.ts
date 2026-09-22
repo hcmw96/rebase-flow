@@ -124,13 +124,20 @@ serve(async (req) => {
     }
     console.log(`Loaded ${allSaleServices.length} sale/pricing options`);
 
-    type SaleCatalogEntry = { name: string; normalized: string; minutes: number | null; price: number };
+    type SaleCatalogEntry = {
+      id: string;
+      name: string;
+      normalized: string;
+      minutes: number | null;
+      price: number;
+    };
     const saleCatalog: SaleCatalogEntry[] = [];
     for (const service of allSaleServices) {
       const price = service.OnlinePrice ?? service.Price ?? null;
       if (price === null || price === 0) continue;
       const name = service.Name || "";
       saleCatalog.push({
+        id: String(service.Id),
         name,
         normalized: normalizeServiceName(name),
         minutes: extractMinutes(name),
@@ -140,6 +147,16 @@ serve(async (req) => {
 
     // Map to store prices by session type ID
     const priceBySessionTypeId = new Map<number, number | null>();
+    /**
+     * The pricing option each price came from, so the booking path can charge the
+     * exact product the customer was shown rather than re-deriving it. A session
+     * type can have several legitimate non-pack options at different prices (e.g.
+     * session type 13: "Premium Suite - 60 minutes" £240 and the promotional
+     * "The Midday Reset - Premium Suite (60min)" £192), and cheapest-wins silently
+     * charged the cheaper one. Kept as a parallel map so price resolution itself
+     * is unchanged.
+     */
+    const saleServiceIdBySessionTypeId = new Map<number, string>();
     
     // Batch session type IDs and query sale/services with sessionTypeIds parameter
     const BATCH_SIZE = 20; // Keep batches small to avoid URL length limits
@@ -183,6 +200,7 @@ serve(async (req) => {
               for (const stId of service.SessionTypeIds) {
                 if (batch.includes(stId) && !priceBySessionTypeId.has(stId)) {
                   priceBySessionTypeId.set(stId, price);
+                  saleServiceIdBySessionTypeId.set(stId, String(service.Id));
                   console.log(`Matched ID ${stId} -> £${price} (via SessionTypeIds)`);
                 }
               }
@@ -211,6 +229,7 @@ serve(async (req) => {
                 }
                 
                 priceBySessionTypeId.set(stId, price);
+                saleServiceIdBySessionTypeId.set(stId, String(service.Id));
                 console.log(`Matched ID ${stId} (${st.Name}) -> £${price} (via name match)`);
               }
             }
@@ -237,6 +256,8 @@ serve(async (req) => {
       // Build lookup maps including duration info - using normalized names
       const priceByNormalizedWithDuration = new Map<string, number>();
       const priceByNormalizedOnly = new Map<string, number>();
+      const idByNormalizedWithDuration = new Map<string, string>();
+      const idByNormalizedOnly = new Map<string, string>();
       const allServiceEntries = saleCatalog;
       
       for (const entry of allServiceEntries) {
@@ -245,10 +266,12 @@ serve(async (req) => {
         // Store with duration key if present (single-session retail only)
         if (entry.minutes) {
           priceByNormalizedWithDuration.set(`${entry.normalized}_${entry.minutes}`, entry.price);
+          idByNormalizedWithDuration.set(`${entry.normalized}_${entry.minutes}`, entry.id);
         }
         // Store without duration for fallback
         if (!priceByNormalizedOnly.has(entry.normalized)) {
           priceByNormalizedOnly.set(entry.normalized, entry.price);
+          idByNormalizedOnly.set(entry.normalized, entry.id);
         }
       }
       
@@ -272,13 +295,15 @@ serve(async (req) => {
           const keyWithDuration = `${normalizedSession}_${sessionMinutesForLookup}`;
           if (priceByNormalizedWithDuration.has(keyWithDuration)) {
             priceBySessionTypeId.set(stId, priceByNormalizedWithDuration.get(keyWithDuration)!);
+            const idWithDuration = idByNormalizedWithDuration.get(keyWithDuration);
+            if (idWithDuration) saleServiceIdBySessionTypeId.set(stId, idWithDuration);
             console.log(`Strategy 1: ${st.Name} (${sessionMinutesForLookup}min) -> £${priceBySessionTypeId.get(stId)}`);
             continue;
           }
         }
         
         // Strategy 2: Fuzzy name match with duration
-        let bestMatch: { price: number; score: number; name: string } | null = null;
+        let bestMatch: { id: string; price: number; score: number; name: string } | null = null;
         for (const entry of allServiceEntries) {
           if (isSessionPack(entry.name)) continue;
 
@@ -293,12 +318,13 @@ serve(async (req) => {
           const adjustedScore = (sessionMinutesInName && entry.minutes === sessionMinutesInName) ? score + 0.2 : score;
           
           if (!bestMatch || adjustedScore > bestMatch.score) {
-            bestMatch = { price: entry.price, score: adjustedScore, name: entry.name };
+            bestMatch = { id: entry.id, price: entry.price, score: adjustedScore, name: entry.name };
           }
         }
         
         if (bestMatch) {
           priceBySessionTypeId.set(stId, bestMatch.price);
+          saleServiceIdBySessionTypeId.set(stId, bestMatch.id);
           console.log(`Strategy 2: ${st.Name} -> £${bestMatch.price} (fuzzy: ${bestMatch.score.toFixed(2)} from "${bestMatch.name}")`);
           continue;
         }
@@ -306,6 +332,8 @@ serve(async (req) => {
         // Strategy 3: Normalized name only — only when session type has no duration in its name
         if (!sessionMinutesInName && priceByNormalizedOnly.has(normalizedSession)) {
           priceBySessionTypeId.set(stId, priceByNormalizedOnly.get(normalizedSession)!);
+          const idNormalizedOnly = idByNormalizedOnly.get(normalizedSession);
+          if (idNormalizedOnly) saleServiceIdBySessionTypeId.set(stId, idNormalizedOnly);
           console.log(`Strategy 3: ${st.Name} -> £${priceBySessionTypeId.get(stId)} (normalized name only)`);
           continue;
         }
@@ -329,6 +357,7 @@ serve(async (req) => {
                 if (!durationsCompatible(entry.minutes, sessionMinutesInName, normalizedSession, saleCatalog)) continue;
                 
                 priceBySessionTypeId.set(stId, entry.price);
+                saleServiceIdBySessionTypeId.set(stId, entry.id);
                 console.log(`Strategy 4: ${st.Name} -> £${entry.price} (pattern "${pattern}" -> "${entry.name}")`);
                 break;
               }
@@ -363,6 +392,8 @@ serve(async (req) => {
         numDeducted: st.NumDeducted,
         onlineDescription: st.OnlineDescription || st.Description || "",
         price: price,
+        /** Pricing option this price came from; echoed back at booking time. */
+        saleServiceId: saleServiceIdBySessionTypeId.get(st.Id) ?? null,
       };
     });
 

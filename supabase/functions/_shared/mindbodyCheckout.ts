@@ -1,19 +1,39 @@
-type SaleServiceRow = {
+export type SaleServiceRow = {
   Id?: number;
   Name?: string;
   Price?: number;
   OnlinePrice?: number;
   Count?: number;
+  /** Mindbody's own classification: "DropIn" | "Series" | "Unlimited". */
+  Type?: string;
 };
 
 function salePrice(service: SaleServiceRow): number {
   return service.OnlinePrice ?? service.Price ?? 0;
 }
 
-/** Multi-session / pass products must not be used for a single drop-in class booking. */
-export function isMultiSessionPack(name: string, count?: number): boolean {
-  const n = name.trim();
-  if (count != null && count > 1) return true;
+/**
+ * Multi-session / pass products must not be used for a single drop-in booking.
+ *
+ * Mindbody's own `Type` is authoritative: "DropIn" | "Series" | "Unlimited".
+ * Measured across all 192 catalogue options it agrees with `Count` perfectly —
+ * DropIn is exactly Count 1, Series and Unlimited are exactly Count != 1, with
+ * zero exceptions in either direction — so this is a like-for-like swap onto a
+ * self-documenting field rather than a behaviour change.
+ *
+ * The name regexes are kept only as a last resort for responses that carry
+ * neither field. They are NOT sufficient on their own: 36 genuine packs have no
+ * pack-ish word in the name, because \bpass\b does not match "Passes" and
+ * \bpack\b does not match "Package" — "Package of 10" (£1950) and
+ * "Athlete Performance Package - 10 Sessions" (£3350) among them. Relying on
+ * names alone would let one session be charged at pack price.
+ */
+export function isMultiSessionPack(
+  service: Pick<SaleServiceRow, "Name" | "Count" | "Type">,
+): boolean {
+  if (service.Type) return service.Type !== "DropIn";
+  if (service.Count != null && service.Count > 1) return true;
+  const n = (service.Name || "").trim();
   return (
     /\bpack\b/i.test(n) ||
     /\bpass\b/i.test(n) ||
@@ -34,7 +54,7 @@ export function pickSaleServiceForClass(services: SaleServiceRow[]): SaleService
   const withPrice = services.filter((s) => salePrice(s) > 0);
   const pool = withPrice.length ? withPrice : services;
 
-  const singles = pool.filter((s) => !isMultiSessionPack(s.Name || "", s.Count));
+  const singles = pool.filter((s) => !isMultiSessionPack(s));
   if (!singles.length) {
     console.warn(
       "pickSaleServiceForClass: only multi-session packs available — refusing pack checkout",
@@ -68,7 +88,7 @@ export function pickSaleServiceForSession(services: SaleServiceRow[]): SaleServi
 
   const withPrice = services.filter((s) => salePrice(s) > 0);
   const pool = withPrice.length ? withPrice : services;
-  const singles = pool.filter((s) => !isMultiSessionPack(s.Name || "", s.Count));
+  const singles = pool.filter((s) => !isMultiSessionPack(s));
   if (!singles.length) {
     console.warn(
       "pickSaleServiceForSession: only multi-session packs available — refusing pack checkout",
@@ -196,7 +216,7 @@ export async function resolveClassPrice(
 
   // pickSaleServiceForClass already refuses packs, but the charge path treated
   // this as a separate hard stop — keep it here so both callers inherit it.
-  if (isMultiSessionPack(picked.Name || "", picked.Count)) {
+  if (isMultiSessionPack(picked)) {
     console.error("resolveClassPrice: refusing pack pricing option", picked.Name, priceGbp);
     return null;
   }

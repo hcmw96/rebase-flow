@@ -8,6 +8,11 @@ import {
   refreshMindbodySessionIfNeeded,
 } from "../_shared/mindbodyRefreshSession.ts";
 import {
+  resolveEffectiveEndDateTime,
+  resolveRoomBlockMinutes,
+} from "../_shared/sessionDuration.ts";
+
+import {
   ensureMindbodyClientEmail,
   sendRebaseBookingConfirmation,
 } from "../_shared/bookingConfirmationEmail.ts";
@@ -35,6 +40,7 @@ import {
   checkoutWithStaffToken,
   fetchSaleServicesForSessionType,
   isMultiSessionPack,
+  type SaleServiceRow,
   resolveClassPrice,
   pickSaleServiceForSession,
   type CheckoutResult,
@@ -926,6 +932,47 @@ async function bookClassWithPayment(
   return checkoutFailureResponse(checkout);
 }
 
+/** Look up Mindbody session type room-block minutes (DefaultTimeLength + name floor). */
+async function fetchSessionTypeBlockMinutes(
+  apiKey: string,
+  siteId: string,
+  staffToken: string,
+  sessionTypeId: string,
+  serviceName?: string,
+): Promise<number | null> {
+  try {
+    const res = await fetch(
+      `https://api.mindbodyonline.com/public/v6/site/sessiontypes?SessionTypeIds=${encodeURIComponent(sessionTypeId)}&Limit=10`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Api-Key": apiKey,
+          SiteId: siteId,
+          Authorization: `Bearer ${staffToken}`,
+        },
+      },
+    );
+    if (!res.ok) {
+      console.warn("sessiontypes lookup failed:", res.status);
+      return null;
+    }
+    const data = await res.json();
+    const types = (data.SessionTypes || []) as Array<{
+      Id?: number | string;
+      Name?: string;
+      DefaultTimeLength?: number;
+    }>;
+    const st =
+      types.find((t) => String(t.Id) === String(sessionTypeId)) ?? types[0];
+    if (!st) return null;
+    return resolveRoomBlockMinutes(serviceName || st.Name, st.DefaultTimeLength);
+  } catch (e) {
+    console.warn("sessiontypes lookup error:", e);
+    return null;
+  }
+}
+
 /** Book an appointment: use pass credit, or charge stored card + book via checkout when none on file. */
 async function bookAppointmentWithPayment(
   supabaseAdmin: ReturnType<typeof createClient>,
@@ -939,11 +986,13 @@ async function bookAppointmentWithPayment(
   endDateTime?: string,
   serviceName?: string,
   expectedPriceGbp?: number | null,
+  requestedSaleServiceId?: string | null,
 ): Promise<
   | {
     ok: true;
     data: unknown;
     clientId: string;
+    endDateTime?: string;
     payment?: {
       method: "pass" | "stored_card";
       amountGbp?: number;
@@ -954,15 +1003,6 @@ async function bookAppointmentWithPayment(
   }
   | { ok: false; response: Response }
 > {
-  const appointmentBody = {
-    LocationId: locationId || 1,
-    StaffId: parseInt(staffId, 10),
-    SessionTypeId: parseInt(sessionTypeId, 10),
-    StartDateTime: startDateTime,
-    ApplyPayment: true,
-    SendConfirmationEmail: true,
-  };
-
   let staffToken: string;
   try {
     staffToken = await getStaffToken();
@@ -974,6 +1014,31 @@ async function bookAppointmentWithPayment(
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 503 },
       ),
     };
+  }
+
+  const blockMinutes = await fetchSessionTypeBlockMinutes(
+    apiKey,
+    siteId,
+    staffToken,
+    sessionTypeId,
+    serviceName,
+  );
+  const resolvedEndDateTime = resolveEffectiveEndDateTime(
+    startDateTime,
+    endDateTime,
+    blockMinutes,
+  );
+
+  const appointmentBody: Record<string, unknown> = {
+    LocationId: locationId || 1,
+    StaffId: parseInt(staffId, 10),
+    SessionTypeId: parseInt(sessionTypeId, 10),
+    StartDateTime: startDateTime,
+    ApplyPayment: true,
+    SendConfirmationEmail: true,
+  };
+  if (resolvedEndDateTime) {
+    appointmentBody.EndDateTime = resolvedEndDateTime;
   }
 
   const publicClientId = session.mindbody_client_id;
@@ -1047,6 +1112,7 @@ async function bookAppointmentWithPayment(
     if (booked.ok) {
       return {
         ...booked,
+        endDateTime: resolvedEndDateTime,
         payment: { method: "pass" as const },
         clientServiceId: passOnFile,
       };
@@ -1069,6 +1135,7 @@ async function bookAppointmentWithPayment(
         ok: true,
         data: { Appointment: { StartDateTime: startDateTime } },
         clientId,
+        endDateTime: resolvedEndDateTime,
         payment: { method: "pass" as const },
         clientServiceId: passOnFile,
       };
@@ -1104,6 +1171,7 @@ async function bookAppointmentWithPayment(
       ok: true,
       data: { Appointment: { StartDateTime: startDateTime } },
       clientId,
+      endDateTime: resolvedEndDateTime,
       ...(passOnFile
         ? { payment: { method: "pass" as const }, clientServiceId: passOnFile }
         : {}),
@@ -1116,9 +1184,59 @@ async function bookAppointmentWithPayment(
   // site id does not match requested site". The consumer attempt here never
   // succeeded either — it cost two failed round trips per appointment booking
   // before falling through to the staff call that actually served it.
-  const saleService = pickSaleServiceForSession(
-    await fetchSaleServicesForSessionType(apiKey, siteId, staffToken, sessionTypeIdNum, locId),
+  const sessionOptions = await fetchSaleServicesForSessionType(
+    apiKey,
+    siteId,
+    staffToken,
+    sessionTypeIdNum,
+    locId,
   );
+
+  /**
+   * Charge the option the customer was actually shown.
+   *
+   * A session type can carry several legitimate non-pack options at different
+   * prices — session type 13 has "Premium Suite - 60 minutes" at £240 and the
+   * promotional "The Midday Reset - Premium Suite (60min)" at £192 — and
+   * cheapest-wins silently charged the £192 one against £240 on screen. The
+   * client now pins the pricing option its displayed price came from.
+   *
+   * Ids are compared as strings: sale/services returns Id as a string while other
+   * Mindbody payloads use a number, so === on mixed types silently never matches.
+   *
+   * The pin is validated, never trusted: it must belong to this session type and
+   * must not be a pack. If it does not resolve we fall back to the picker rather
+   * than failing the booking, because a stale client should not block a customer —
+   * the expectedPriceGbp guard below still bounds what can be charged either way.
+   */
+  let saleService: SaleServiceRow | null = null;
+  if (requestedSaleServiceId) {
+    const pinned = sessionOptions.find((s) => String(s.Id) === requestedSaleServiceId);
+    if (!pinned) {
+      console.warn(
+        `saleServiceId ${requestedSaleServiceId} not offered for session type ${sessionTypeId} — falling back to picker`,
+      );
+    } else if (isMultiSessionPack(pinned)) {
+      console.error(
+        `Refusing pinned saleServiceId ${requestedSaleServiceId}: it is a pack (${pinned.Name})`,
+      );
+    } else {
+      saleService = pinned;
+      console.log(
+        `Charging pinned option ${pinned.Id} (${pinned.Name}) £${pinned.OnlinePrice ?? pinned.Price}`,
+      );
+    }
+  }
+  if (!saleService?.Id) {
+    saleService = pickSaleServiceForSession(sessionOptions);
+    if (saleService?.Id && sessionOptions.filter((s) => !isMultiSessionPack(s)).length > 1) {
+      // More than one chargeable option and no usable pin: this is the ambiguity
+      // that produced the £192/£240 mismatch. The price guard is the backstop.
+      console.warn(
+        `Session type ${sessionTypeId} has multiple chargeable options and no pinned saleServiceId — picked ${saleService.Id} (${saleService.Name})`,
+      );
+    }
+  }
   if (!saleService?.Id) {
     console.warn(`No sale service for session type ${sessionTypeId}`);
     return {
@@ -1146,7 +1264,7 @@ async function bookAppointmentWithPayment(
     };
   }
 
-  if (isMultiSessionPack(saleService.Name || "", saleService.Count)) {
+  if (isMultiSessionPack(saleService)) {
     console.error(
       `Refusing pack/pass checkout for session type ${sessionTypeId}:`,
       saleService.Name,
@@ -1256,7 +1374,7 @@ async function bookAppointmentWithPayment(
         staffId: staffIdNum,
         sessionTypeId: sessionTypeIdNum,
         startDateTime,
-        endDateTime,
+        endDateTime: resolvedEndDateTime,
       }),
   );
 
@@ -1266,6 +1384,7 @@ async function bookAppointmentWithPayment(
       ok: true,
       data: checkout.data,
       clientId,
+      endDateTime: resolvedEndDateTime,
       payment: {
         method: "stored_card",
         amountGbp: checkout.amountCharged,
@@ -1294,6 +1413,7 @@ async function bookAppointmentWithPayment(
       ok: true,
       data: { Appointment: { StartDateTime: startDateTime } },
       clientId,
+      endDateTime: resolvedEndDateTime,
       payment: { method: "stored_card" as const, amountGbp: amount },
     };
   }
@@ -1329,6 +1449,7 @@ serve(async (req) => {
       endDateTime,
       serviceName,
       expectedPriceGbp,
+      saleServiceId,
     } = await req.json();
 
     if (!sessionId) {
@@ -1493,6 +1614,7 @@ serve(async (req) => {
       passName?: string;
     } | undefined;
     let bookedClientServiceId: number | undefined;
+    let resolvedAppointmentEndDateTime: string | undefined = endDateTime;
 
     if (bookingType === "class") {
       if (!classId) {
@@ -1547,6 +1669,7 @@ serve(async (req) => {
         endDateTime,
         serviceName,
         typeof expectedPriceGbp === "number" ? expectedPriceGbp : null,
+        typeof saleServiceId === "string" && saleServiceId.trim() ? saleServiceId.trim() : null,
       );
       if (!result.ok) {
         if (await shouldReleaseClaimAfterFailure(result.response)) {
@@ -1570,6 +1693,9 @@ serve(async (req) => {
       bookedClientId = result.clientId;
       paymentMeta = result.payment;
       bookedClientServiceId = result.clientServiceId;
+      if (result.endDateTime) {
+        resolvedAppointmentEndDateTime = result.endDateTime;
+      }
     }
 
     // Build metadata with fallbacks to client-provided values so the row is never sparse.
@@ -1595,7 +1721,10 @@ serve(async (req) => {
       staffName: resolvedStaffName,
       locationName: resolvedLocationName,
       startDateTime: startDateTime || classInfo?.StartDateTime || slotStartDateTime,
-      endDateTime: endDateTime || classInfo?.EndDateTime,
+      endDateTime:
+        (bookingType === "appointment"
+          ? resolvedAppointmentEndDateTime
+          : endDateTime) || classInfo?.EndDateTime,
       paymentMethod: paymentMeta?.method ?? null,
       mindbodyClientServiceId: bookedClientServiceId != null
         ? String(bookedClientServiceId)
@@ -1666,7 +1795,10 @@ serve(async (req) => {
         firstName: profile.firstName,
         serviceName: serviceName || "Booking",
         startTime: startDateTime || classInfo?.StartDateTime,
-        endTime: endDateTime || classInfo?.EndDateTime,
+        endTime:
+          (bookingType === "appointment"
+            ? resolvedAppointmentEndDateTime
+            : endDateTime) || classInfo?.EndDateTime,
         locationName: resolvedLocationName,
         bookingType: bookingType === "appointment" ? "appointment" : "class",
       });

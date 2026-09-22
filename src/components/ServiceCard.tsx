@@ -8,6 +8,8 @@ import { serviceImagePositions, MARKETING_DISPLAY_PRICES } from '@/config/servic
 import { stripHtml } from '@/lib/htmlText';
 
 export interface ServiceVariant {
+  /** Pricing option backing this variant's price. */
+  saleServiceId?: string | null;
   id: string;
   duration: number | null;
   price: number | null;
