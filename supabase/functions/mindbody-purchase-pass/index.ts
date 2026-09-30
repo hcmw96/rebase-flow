@@ -7,7 +7,12 @@ import {
   isMindbodyTokenExpired,
   refreshMindbodySessionIfNeeded,
 } from "../_shared/mindbodyRefreshSession.ts";
-import { checkoutServiceWithStoredCard, checkoutWithStaffToken } from "../_shared/mindbodyCheckout.ts";
+import {
+  checkoutServiceWithStoredCard,
+  checkoutWithStaffToken,
+  isMultiSessionPack,
+  type SaleServiceRow,
+} from "../_shared/mindbodyCheckout.ts";
 import { isJuneContrastPassName } from "../_shared/contrastPass.ts";
 import { fetchActiveClientServices, findJuneContrastPassRow } from "../_shared/mindbodyClientServices.ts";
 import { logContrastPassPurchase } from "../_shared/contrastPassUsageLog.ts";
@@ -118,15 +123,17 @@ async function clientProfile(session: MbSession, apiKey: string, siteId: string)
   return { email, firstName, lastName };
 }
 
-type SaleRow = { Id?: number; Name?: string; Price?: number; OnlinePrice?: number };
+type CatalogSaleRow = SaleServiceRow & {
+  Id?: number;
+  SellOnline?: boolean;
+};
 
-async function findJunePassService(
+async function fetchAllSaleServices(
   apiKey: string,
   siteId: string,
   staffToken: string,
-  hintId: number | null,
-): Promise<{ id: number; amount: number; name: string } | null> {
-  const all: SaleRow[] = [];
+): Promise<CatalogSaleRow[]> {
+  const all: CatalogSaleRow[] = [];
   let offset = 0;
   const limit = 100;
 
@@ -145,38 +152,62 @@ async function findJunePassService(
     );
     if (!res.ok) break;
     const data = await res.json();
-    const batch = (data.Services || []) as SaleRow[];
+    const batch = (data.Services || []) as CatalogSaleRow[];
     all.push(...batch);
     if (batch.length < limit) break;
     offset += limit;
   }
+  return all;
+}
 
+function saleAmount(row: CatalogSaleRow, fallback = 0): number {
+  return row.OnlinePrice ?? row.Price ?? fallback;
+}
+
+function isJunePassProduct(name: string): boolean {
+  return isJuneContrastPassName(name) || PASS_PATTERN.test(name) || name.trim() === PASS_NAME;
+}
+
+/** Resolve a retail pack / June contrast pass from productId (`pack-{id}` or numeric). */
+function resolvePurchasablePack(
+  all: CatalogSaleRow[],
+  hintId: number | null,
+): { id: number; amount: number; name: string; isJunePass: boolean } | null {
   if (hintId != null) {
     const byId = all.find((s) => s.Id === hintId);
     if (byId?.Id != null) {
-      const amount = byId.OnlinePrice ?? byId.Price ?? 130;
-      return { id: byId.Id, amount, name: byId.Name || PASS_NAME };
+      const name = byId.Name || "";
+      const june = isJunePassProduct(name);
+      if (!june && !isMultiSessionPack(byId)) return null;
+      if (byId.SellOnline === false) return null;
+      return {
+        id: byId.Id,
+        amount: saleAmount(byId, june ? 130 : 0),
+        name: name || (june ? PASS_NAME : "Pack"),
+        isJunePass: june,
+      };
     }
   }
 
+  // Contrast-pass offer page may omit productId — fall back to name match.
   const exact = all.find((s) => (s.Name || "").trim() === PASS_NAME);
   if (exact?.Id != null) {
     return {
       id: exact.Id,
-      amount: exact.OnlinePrice ?? exact.Price ?? 130,
+      amount: saleAmount(exact, 130),
       name: exact.Name || PASS_NAME,
+      isJunePass: true,
     };
   }
-
   const pattern = all.find((s) => PASS_PATTERN.test(s.Name || ""));
   if (pattern?.Id != null) {
     return {
       id: pattern.Id,
-      amount: pattern.OnlinePrice ?? pattern.Price ?? 130,
+      amount: saleAmount(pattern, 130),
       name: pattern.Name || PASS_NAME,
+      isJunePass: true,
     };
   }
-
   return null;
 }
 
@@ -186,13 +217,6 @@ serve(async (req) => {
   }
 
   try {
-    if (!isJunePassSaleActive()) {
-      return new Response(
-        JSON.stringify({ error: "This offer is only available throughout June 2026." }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
-      );
-    }
-
     const apiKey = Deno.env.get("MINDBODY_API_KEY");
     const siteId = Deno.env.get("MINDBODY_SITE_ID");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -203,7 +227,14 @@ serve(async (req) => {
       throw new Error("Missing required configuration");
     }
 
-    const { sessionId, productId } = await req.json();
+    const body = await req.json();
+    const sessionId = body?.sessionId as string | undefined;
+    const productId = body?.productId as string | undefined;
+    const expectedPriceGbp =
+      typeof body?.expectedPriceGbp === "number" && Number.isFinite(body.expectedPriceGbp)
+        ? body.expectedPriceGbp
+        : null;
+
     if (!sessionId) {
       throw new Error("sessionId is required");
     }
@@ -245,14 +276,70 @@ serve(async (req) => {
     }
 
     const hintId = parsePackServiceId(productId);
-    const passService = await findJunePassService(apiKey, siteId, staffToken, hintId);
-    if (!passService) {
+    if (hintId == null && !productId) {
+      // Contrast-pass offer page may omit productId; name match is allowed below.
+    } else if (hintId == null) {
       return new Response(
         JSON.stringify({
-          error: `Could not find "${PASS_NAME}" in Mindbody. Please contact reception@rebaserecovery.com.`,
+          error: "This product cannot be purchased online. Please email reception@rebaserecovery.com.",
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
       );
+    }
+
+    const catalog = await fetchAllSaleServices(apiKey, siteId, staffToken);
+    const passService = resolvePurchasablePack(catalog, hintId);
+    if (!passService) {
+      return new Response(
+        JSON.stringify({
+          error: hintId != null
+            ? "This pack is not available for online purchase. Please email reception@rebaserecovery.com."
+            : `Could not find "${PASS_NAME}" in Mindbody. Please contact reception@rebaserecovery.com.`,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+
+    if (passService.isJunePass && !isJunePassSaleActive()) {
+      return new Response(
+        JSON.stringify({ error: "This offer is only available throughout June 2026." }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+      );
+    }
+
+    // Non-June packs: never charge above the price shown on the site.
+    let chargeAmount = passService.amount;
+    if (!passService.isJunePass) {
+      if (expectedPriceGbp == null || expectedPriceGbp <= 0) {
+        return new Response(
+          JSON.stringify({
+            error: "Price unavailable for this pack. Please email reception@rebaserecovery.com.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
+      if (chargeAmount <= 0) {
+        return new Response(
+          JSON.stringify({
+            error: "This pack has no online price. Please email reception@rebaserecovery.com.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 },
+        );
+      }
+      if (chargeAmount > expectedPriceGbp + 0.009) {
+        console.warn(
+          `Refusing pack ${passService.id} charge: catalog ${chargeAmount} exceeds displayed ${expectedPriceGbp}`,
+        );
+        return new Response(
+          JSON.stringify({
+            error:
+              "The pack price changed since you opened this page. Refresh and try again, or email reception@rebaserecovery.com.",
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 409 },
+        );
+      }
+      // Charge the lower of catalog vs displayed (promo / rounding).
+      chargeAmount = Math.min(chargeAmount, expectedPriceGbp);
     }
 
     const locId = Number.isFinite(defaultLocationId) ? defaultLocationId : 1;
@@ -264,18 +351,20 @@ serve(async (req) => {
       staffToken,
       clientId,
     );
-    const existingPass = findJuneContrastPassRow(activeServices);
-    if (existingPass) {
-      return new Response(
-        JSON.stringify({
-          success: true,
-          idempotent: true,
-          productName: passService.name,
-          amountGbp: passService.amount,
-          validityDays: 14,
-        }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
-      );
+    if (passService.isJunePass) {
+      const existingPass = findJuneContrastPassRow(activeServices);
+      if (existingPass) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            idempotent: true,
+            productName: passService.name,
+            amountGbp: chargeAmount,
+            validityDays: 14,
+          }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
+        );
+      }
     }
 
     const purchaseClaim = await claimPassPurchase(supabaseAdmin, {
@@ -316,7 +405,7 @@ serve(async (req) => {
           clientId,
           locationId: locId,
           serviceId: passService.id,
-          amount: passService.amount,
+          amount: chargeAmount,
         }),
     );
 
@@ -353,11 +442,11 @@ serve(async (req) => {
       );
       await alertOnHttpFailure(response, {
         category: "purchase_failed",
-        title: `Pass purchase failed — ${passService.name}`,
+        title: `Pack purchase failed — ${passService.name}`,
         dedupeKey: `purchase:${productKey}:${clientId}`,
         details: {
           productName: passService.name,
-          amountGbp: passService.amount,
+          amountGbp: chargeAmount,
           guestEmail: profile.email || session.email || null,
           mindbodyClientId: session.mindbody_client_id,
         },
@@ -365,32 +454,34 @@ serve(async (req) => {
       return response;
     }
 
-    await confirmPassPurchase(supabaseAdmin, claimedPurchaseId, passService.amount);
+    await confirmPassPurchase(supabaseAdmin, claimedPurchaseId, chargeAmount);
 
-    const refreshedServices = await fetchActiveClientServices(
-      apiKey,
-      siteId,
-      staffToken,
-      clientId,
-    );
-    const passCredit = refreshedServices.find((s) => isJuneContrastPassName(s.Name));
+    if (passService.isJunePass) {
+      const refreshedServices = await fetchActiveClientServices(
+        apiKey,
+        siteId,
+        staffToken,
+        clientId,
+      );
+      const passCredit = refreshedServices.find((s) => isJuneContrastPassName(s.Name));
 
-    await logContrastPassPurchase(supabaseAdmin, {
-      sessionId: session.id,
-      mindbodyClientId: session.mindbody_client_id,
-      mindbodySiteClientId: clientId,
-      mindbodySaleServiceId: passService.id,
-      mindbodyClientServiceId: passCredit?.Id ?? null,
-      amountGbp: passService.amount,
-      productName: passService.name,
-    });
+      await logContrastPassPurchase(supabaseAdmin, {
+        sessionId: session.id,
+        mindbodyClientId: session.mindbody_client_id,
+        mindbodySiteClientId: clientId,
+        mindbodySaleServiceId: passService.id,
+        mindbodyClientServiceId: passCredit?.Id ?? null,
+        amountGbp: chargeAmount,
+        productName: passService.name,
+      });
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
         productName: passService.name,
-        amountGbp: passService.amount,
-        validityDays: 14,
+        amountGbp: chargeAmount,
+        validityDays: passService.isJunePass ? 14 : null,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 },
     );

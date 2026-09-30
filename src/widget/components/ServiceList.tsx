@@ -97,7 +97,7 @@ export function ServiceList({ onSelectService }: ServiceListProps) {
         price: isIvFirstConsult ? 0 : service.price,
         name: service.name,
         description: variantDesc,
-        contactOnly: isIvFirstConsult || isContactOnly || isPack,
+        contactOnly: isIvFirstConsult || isContactOnly,
         saleServiceId: service.saleServiceId ?? null,
         isPack,
         packSessionCount: service.packSessionCount ?? null,

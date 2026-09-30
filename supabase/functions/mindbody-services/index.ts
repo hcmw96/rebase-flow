@@ -430,6 +430,7 @@ serve(async (req) => {
         numDeducted: saleService.Count ?? 1,
         onlineDescription: saleService.Description || "",
         price,
+        saleServiceId: String(saleService.Id),
         isPack: true,
         packSessionCount: saleService.Count ?? null,
         linkedSessionTypeId: linkedSt?.Id ?? linkedIds[0] ?? null,

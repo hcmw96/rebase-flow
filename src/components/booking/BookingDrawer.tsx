@@ -20,6 +20,7 @@ import { ChevronLeft, Calendar, Clock, MapPin, User, Loader2, Check, Mail } from
 import { useMindbodyAvailability, AvailableItem, MindbodyClass } from '@/hooks/useMindbodyServices';
 import { useAuth } from '@/contexts/AuthContext';
 import { useBookService, fetchKnownMatchingBookingIds } from '@/hooks/useMindbodyBookings';
+import { usePurchaseContrastPass } from '@/hooks/usePurchaseContrastPass';
 import { useQueryClient } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { filterUpcomingSessions, formatMindbodyDate, formatMindbodyTime, localCalendarDayKey } from '@/lib/sessionTimes';
@@ -47,6 +48,7 @@ import { confirmHandoffBookingConversion } from '@/lib/mindbodyHandoffConversion
 import { clearPendingBooking, stashPendingBooking, type PendingAppointmentState } from '@/lib/bookingResume';
 import { ImageHeroCaption, ImageTextScrim } from '@/components/ImageTextScrim';
 import { stripHtml } from '@/lib/htmlText';
+import { pushBookingConfirmedOnce } from '@/lib/gtmDataLayer';
 
 export interface BookingServiceData {
   title: string;
@@ -118,6 +120,7 @@ const BookingDrawer = ({
   const [needsMindbodyPay, setNeedsMindbodyPay] = useState(false);
   const accountUrl = mindbodyClientAccountUrl();
   const bookServiceMutation = useBookService();
+  const purchasePackMutation = usePurchaseContrastPass();
   const queryClient = useQueryClient();
 
   const [currentStep, setCurrentStep] = useState(1);
@@ -125,6 +128,7 @@ const BookingDrawer = ({
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(null);
   const [bookingComplete, setBookingComplete] = useState(false);
+  const [packPurchaseComplete, setPackPurchaseComplete] = useState(false);
   const [confirmedPayment, setConfirmedPayment] = useState<BookingConfirmationPayment | null>(null);
   const [confirmationEmailSent, setConfirmationEmailSent] = useState<boolean | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -139,6 +143,7 @@ const BookingDrawer = ({
     setSelectedSlot(null);
     setSelectedVariant(null);
     setBookingComplete(false);
+    setPackPurchaseComplete(false);
     setConfirmedPayment(null);
     setConfirmationEmailSent(null);
     setIsSubmitting(false);
@@ -268,8 +273,17 @@ const BookingDrawer = ({
   // Check if the selected variant is contact-only
   const isVariantContactOnly = activeVariant?.contactOnly === true;
   const showContactMessage = isFullContactOnly || isVariantContactOnly;
+  const isPackFlow = activeVariant?.isPack === true;
 
   const steps = useMemo(() => {
+    if (isPackFlow) {
+      return hasVariants
+        ? [
+            { id: 1, label: 'Type' },
+            { id: 2, label: 'Purchase' },
+          ]
+        : [{ id: 1, label: 'Purchase' }];
+    }
     if (hasVariants) {
       return [
         { id: 1, label: 'Type' },
@@ -283,11 +297,11 @@ const BookingDrawer = ({
       { id: 2, label: 'Time' },
       { id: 3, label: 'Confirm' },
     ];
-  }, [hasVariants]);
+  }, [hasVariants, isPackFlow]);
 
   const dateStep = hasVariants ? 2 : 1;
   const timeStep = hasVariants ? 3 : 2;
-  const confirmStep = hasVariants ? 4 : 3;
+  const confirmStep = isPackFlow ? (hasVariants ? 2 : 1) : hasVariants ? 4 : 3;
 
   const activeServiceId = activeVariant?.id || '';
 
@@ -295,7 +309,8 @@ const BookingDrawer = ({
   const nearRange = useMemo(() => bookingNearHorizonDateRange(), []);
   const monthRange = useMemo(() => bookingHorizonDateRange(), []);
   const selectedDayKey = selectedDate ? localCalendarDayKey(selectedDate) : '';
-  const daysEnabled = open && !!activeServiceId && !showContactMessage && !isClassBooking;
+  const daysEnabled =
+    open && !!activeServiceId && !showContactMessage && !isClassBooking && !isPackFlow;
 
   const {
     data: nearDaysData,
@@ -332,7 +347,8 @@ const BookingDrawer = ({
       !!activeServiceId &&
       !!selectedDayKey &&
       !showContactMessage &&
-      !isClassBooking,
+      !isClassBooking &&
+      !isPackFlow,
   });
 
   const availableSlots = useMemo(() => {
@@ -376,8 +392,9 @@ const BookingDrawer = ({
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
-    // If variant is contact-only, don't advance to date step
+    // If variant is contact-only, don't advance
     if (variant.contactOnly) return;
+    // Packs skip the calendar — Type → Purchase.
     setCurrentStep(2);
   };
 
@@ -486,6 +503,111 @@ const BookingDrawer = ({
       else onClose();
     } finally {
       setMindbodyCheckoutChecking(false);
+    }
+  };
+
+  const handleConfirmPackPurchase = async () => {
+    if (
+      !activeVariant?.isPack ||
+      packPurchaseComplete ||
+      bookingInFlightRef.current ||
+      purchasePackMutation.isPending
+    ) {
+      return;
+    }
+    if (!isAuthenticated) {
+      startSignInForBooking();
+      return;
+    }
+    if (activeVariant.price == null || activeVariant.price <= 0) {
+      setBookingError('Price unavailable for this pack. Please email reception@rebaserecovery.com.');
+      return;
+    }
+
+    const activeSession = await refreshMbSession();
+    if (!activeSession?.sessionId) {
+      setBookingError('Your sign-in expired. Please sign in again.');
+      setBookingErrorRequiresSignIn(true);
+      return;
+    }
+
+    bookingInFlightRef.current = true;
+    setIsSubmitting(true);
+    setBookingError(null);
+    setBookingErrorRequiresSignIn(false);
+    setBookingOutcomeUncertain(false);
+    setCardSetupRetryHint(null);
+    if (!needsCardOnFile) {
+      setNeedsCardOnFile(false);
+    }
+
+    try {
+      const result = await purchasePackMutation.mutateAsync({
+        productId: activeVariant.id,
+        expectedPriceGbp: activeVariant.price,
+      });
+      clearPendingBooking();
+      setConfirmedPayment({
+        method: 'stored_card',
+        amountGbp: result.amountGbp ?? activeVariant.price,
+        listPriceGbp: activeVariant.price,
+      });
+      setPackPurchaseComplete(true);
+      setIsSubmitting(false);
+      pushBookingConfirmedOnce(`pack:${activeVariant.name}`, {
+        bookingType: 'pass',
+        service: resolveDisplayName(activeVariant.name),
+        value: activeVariant.price,
+      });
+      clearSessionNeedsPaymentCard(activeSession.sessionId);
+      if (navigator.userAgent.includes('despia')) {
+        despia('successhaptic://');
+      }
+    } catch (error: unknown) {
+      bookingInFlightRef.current = false;
+      setIsSubmitting(false);
+      if (error instanceof BookingMutationError) {
+        if (
+          error.flags.noStoredCard ||
+          error.flags.cardDeclined ||
+          error.flags.storedCardUnavailable ||
+          (error.flags.siteScopeIssue && error.flags.paymentRequired)
+        ) {
+          if (activeSession.sessionId) {
+            markSessionNeedsPaymentCard(activeSession.sessionId);
+          }
+          setNeedsCardOnFile(true);
+          setBookingError(null);
+          setBookingErrorRequiresSignIn(false);
+          setBookingOutcomeUncertain(false);
+          if (error.flags.storedCardUnavailable || needsCardOnFile) {
+            setCardSetupRetryHint(
+              error.flags.storedCardUnavailable
+                ? error.message
+                : "We still couldn't find a card on your account. Add one in Mindbody, then tap continue again.",
+            );
+          }
+          return;
+        }
+        setNeedsCardOnFile(false);
+        setCardSetupRetryHint(null);
+        clearSessionNeedsPaymentCard();
+        setBookingError(error.message);
+        setBookingErrorRequiresSignIn(Boolean(error.flags.requiresLogin));
+        setBookingOutcomeUncertain(
+          Boolean(error.flags.purchaseOutcomeUncertain || error.flags.bookingOutcomeUncertain),
+        );
+        return;
+      }
+      const classified = classifyBookingError(
+        error instanceof Error ? error.message : undefined,
+      );
+      setBookingError(classified.message);
+      setBookingErrorRequiresSignIn(classified.kind === 'session_expired');
+      setBookingOutcomeUncertain(false);
+      if (navigator.userAgent.includes('despia')) {
+        despia('errorhaptic://');
+      }
     }
   };
 
@@ -608,7 +730,8 @@ const BookingDrawer = ({
   };
 
 
-  const isBooking = bookServiceMutation.isPending || isSubmitting;
+  const isBooking =
+    bookServiceMutation.isPending || purchasePackMutation.isPending || isSubmitting;
 
   const displayDuration = activeVariant?.duration ? `${activeVariant.duration} min` : '';
   // Only ever show a price we actually have. Classes resolve theirs server-side
@@ -621,7 +744,7 @@ const BookingDrawer = ({
 
   if (!service) return null;
 
-  const showHeroImage = !bookingComplete && !showContactMessage;
+  const showHeroImage = !bookingComplete && !packPurchaseComplete && !showContactMessage;
 
   return (
     <Drawer open={open} onOpenChange={handleOpenChange} handleOnly>
@@ -715,6 +838,40 @@ const BookingDrawer = ({
               <ContactReceptionMessage serviceName={serviceDisplayName} />
             ) : showContactMessage && isVariantContactOnly ? (
               <ContactReceptionMessage serviceName={resolveDisplayName(activeVariant?.name || service.title)} />
+            ) : packPurchaseComplete && activeVariant ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.97 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6 py-4"
+              >
+                <div className="flex justify-center">
+                  <div className="w-16 h-16 rounded-full bg-primary/15 flex items-center justify-center">
+                    <Check className="h-8 w-8 text-primary" />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <h3 className="text-xl font-semibold text-foreground">Pack purchased</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {resolveDisplayName(activeVariant.name)} is on your Mindbody account.
+                    Book sessions on Rebase and we&apos;ll apply your pack credit.
+                  </p>
+                  {confirmedPayment?.amountGbp != null && (
+                    <p className="text-sm font-medium text-foreground">
+                      Charged £{confirmedPayment.amountGbp.toFixed(2)}
+                    </p>
+                  )}
+                </div>
+                <Button
+                  onClick={() => {
+                    resetBookingUi();
+                    clearPendingBooking();
+                    onClose();
+                  }}
+                  className="w-full"
+                >
+                  Done
+                </Button>
+              </motion.div>
             ) : bookingComplete && selectedSlot ? (
               <BookingConfirmationSuccess
                 details={{
@@ -807,8 +964,66 @@ const BookingDrawer = ({
                     </motion.div>
                   )}
 
+                  {/* ── Pack purchase ── */}
+                  {isPackFlow && currentStep === confirmStep && !showContactMessage && (
+                    <motion.div
+                      key="step-pack-purchase"
+                      initial={{ opacity: 0, x: 20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -20 }}
+                      transition={{ duration: 0.2 }}
+                      className="space-y-4"
+                    >
+                      <div className="bg-secondary/50 rounded-lg p-4 space-y-3 text-sm">
+                        <h3 className="font-semibold text-base">{displayTitle}</h3>
+                        {activeVariant?.packSessionCount ? (
+                          <p className="text-muted-foreground">
+                            {activeVariant.packSessionCount} sessions
+                          </p>
+                        ) : null}
+                        <div className="pt-3 border-t border-border">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Price</span>
+                            <span className="font-semibold">
+                              {displayPrice ?? 'Unavailable'}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <BookingConfirmActions
+                        onChangeTime={() => {
+                          if (hasVariants) {
+                            setSelectedVariant(null);
+                            setCurrentStep(1);
+                            return;
+                          }
+                          onClose();
+                        }}
+                        changeTimeLabel={hasVariants ? 'Change pack' : 'Close'}
+                        onConfirm={
+                          !isAuthenticated || bookingErrorRequiresSignIn
+                            ? startSignInForBooking
+                            : handleConfirmPackPurchase
+                        }
+                        isAuthenticated={isAuthenticated}
+                        isPending={isBooking}
+                        priceUnavailable={activeVariant?.price == null}
+                        bookingError={bookingError}
+                        bookingErrorRequiresSignIn={bookingErrorRequiresSignIn}
+                        bookingOutcomeUncertain={bookingOutcomeUncertain}
+                        onCreateAccount={startCreateAccountForBooking}
+                        checkoutSummary={appointmentCheckoutSummary}
+                        needsCardOnFile={needsCardOnFile}
+                        accountUrl={accountUrl}
+                        onContinueAfterCard={handleConfirmPackPurchase}
+                        cardSetupRetryHint={cardSetupRetryHint}
+                      />
+                    </motion.div>
+                  )}
+
                   {/* ── Date ── */}
-                  {currentStep === dateStep && !showContactMessage && (
+                  {!isPackFlow && currentStep === dateStep && !showContactMessage && (
                     <motion.div
                       key="step-date"
                       initial={{ opacity: 0, x: 20 }}
@@ -842,7 +1057,7 @@ const BookingDrawer = ({
                   )}
 
                   {/* ── Time ── */}
-                  {currentStep === timeStep && !showContactMessage && (
+                  {!isPackFlow && currentStep === timeStep && !showContactMessage && (
                     <motion.div
                       key="step-time"
                       initial={{ opacity: 0, x: 20 }}
@@ -868,7 +1083,7 @@ const BookingDrawer = ({
                   )}
 
                   {/* ── Confirm ── */}
-                  {currentStep === confirmStep && selectedSlot && !showContactMessage && (
+                  {!isPackFlow && currentStep === confirmStep && selectedSlot && !showContactMessage && (
                     <motion.div
                       key="step-confirm"
                       initial={{ opacity: 0, x: 20 }}

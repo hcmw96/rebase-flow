@@ -93,7 +93,7 @@ const Services = ({ onSelectService }: ServicesProps) => {
         price: isIvFirstConsult ? 0 : (service.price ?? MARKETING_DISPLAY_PRICES[canonicalName] ?? null),
         name: service.name,
         description: variantDesc,
-        contactOnly: isIvFirstConsult || isContactOnly || isPack,
+        contactOnly: isIvFirstConsult || isContactOnly,
         saleServiceId: service.saleServiceId ?? null,
         isPack,
         packSessionCount: service.packSessionCount ?? null,

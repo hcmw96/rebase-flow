@@ -43,7 +43,13 @@ export function usePurchaseContrastPass() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (productId: string) => {
+    mutationFn: async (
+      input: string | { productId: string; expectedPriceGbp?: number | null },
+    ) => {
+      const productId = typeof input === 'string' ? input : input.productId;
+      const expectedPriceGbp =
+        typeof input === 'string' ? undefined : input.expectedPriceGbp ?? undefined;
+
       const session = await refreshMbSession();
       if (!session?.sessionId) {
         throw new BookingMutationError('Please sign in with Mindbody to continue.', {
@@ -54,6 +60,7 @@ export function usePurchaseContrastPass() {
       const body = JSON.stringify({
         sessionId: session.sessionId,
         productId,
+        ...(typeof expectedPriceGbp === 'number' ? { expectedPriceGbp } : {}),
       });
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/mindbody-purchase-pass`, {

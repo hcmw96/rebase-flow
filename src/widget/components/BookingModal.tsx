@@ -18,11 +18,13 @@ type BookingStep = 'variant' | 'date' | 'time' | 'confirm' | 'success';
 export function BookingModal({ service, onClose }: BookingModalProps) {
   const { config, session, isAuthenticated, login } = useWidget();
   const hasVariants = service.variants.length > 1;
+  const initialVariant = hasVariants ? null : service.variants[0];
+  const initialIsPack = initialVariant?.isPack === true;
 
-  const [step, setStep] = useState<BookingStep>(hasVariants ? 'variant' : 'date');
-  const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(
-    hasVariants ? null : service.variants[0]
+  const [step, setStep] = useState<BookingStep>(
+    hasVariants ? 'variant' : initialIsPack ? 'confirm' : 'date',
   );
+  const [selectedVariant, setSelectedVariant] = useState<ServiceVariant | null>(initialVariant);
   const [selectedDate, setSelectedDate] = useState<Date | undefined>(undefined);
   const [selectedSlot, setSelectedSlot] = useState<AvailableItem | null>(null);
   const [availableSlots, setAvailableSlots] = useState<AvailableItem[]>([]);
@@ -44,9 +46,9 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const client = useMemo(() => createApiClient(config.apiUrl), [config.apiUrl]);
 
-  // Fetch availability when date changes
+  // Fetch availability when date changes (appointments only — not packs)
   useEffect(() => {
-    if (!selectedDate || !selectedVariant) return;
+    if (!selectedDate || !selectedVariant || selectedVariant.isPack) return;
 
     setIsLoadingSlots(true);
     setAvailableSlots([]);
@@ -70,7 +72,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
 
   const handleVariantSelect = (variant: ServiceVariant) => {
     setSelectedVariant(variant);
-    setStep('date');
+    setStep(variant.isPack ? 'confirm' : 'date');
   };
 
   const handleDateSelect = (date: Date | undefined) => {
@@ -96,7 +98,12 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
         setStep('date');
         break;
       case 'confirm':
-        setStep('time');
+        if (selectedVariant?.isPack) {
+          if (hasVariants) setStep('variant');
+          else onClose();
+        } else {
+          setStep('time');
+        }
         break;
       default:
         onClose();
@@ -109,26 +116,51 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
       return;
     }
 
-    if (!selectedSlot || !session || !selectedVariant || bookingInFlightRef.current || isBooking) return;
+    if (!session || !selectedVariant || bookingInFlightRef.current || isBooking) return;
+
+    const buyingPack = selectedVariant.isPack === true;
+    if (!buyingPack && !selectedSlot) return;
+    if (buyingPack && (selectedVariant.price == null || selectedVariant.price <= 0)) {
+      setError('Price unavailable for this pack. Please email reception@rebaserecovery.com.');
+      return;
+    }
 
     bookingInFlightRef.current = true;
     setIsBooking(true);
     setError(null);
 
     try {
-      await client.bookService({
-        sessionId: session.sessionId,
-        bookingType: 'appointment',
-        sessionTypeId: selectedSlot.sessionTypeId.toString(),
-        staffId: selectedSlot.staffId.toString(),
-        locationId: selectedSlot.locationId,
-        startDateTime: selectedSlot.startDateTime,
-        endDateTime: selectedSlot.endDateTime,
-        serviceName: selectedVariant.name,
-        idempotencyKey,
-        expectedPriceGbp: selectedVariant.price,
-        saleServiceId: selectedVariant.saleServiceId ?? null,
-      });
+      if (buyingPack) {
+        const res = await fetch(`${config.apiUrl}/functions/v1/mindbody-purchase-pass`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId: session.sessionId,
+            productId: selectedVariant.id,
+            expectedPriceGbp: selectedVariant.price,
+          }),
+        });
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(
+            (typeof body?.error === 'string' && body.error) || 'Failed to purchase pack.',
+          );
+        }
+      } else if (selectedSlot) {
+        await client.bookService({
+          sessionId: session.sessionId,
+          bookingType: 'appointment',
+          sessionTypeId: selectedSlot.sessionTypeId.toString(),
+          staffId: selectedSlot.staffId.toString(),
+          locationId: selectedSlot.locationId,
+          startDateTime: selectedSlot.startDateTime,
+          endDateTime: selectedSlot.endDateTime,
+          serviceName: selectedVariant.name,
+          idempotencyKey,
+          expectedPriceGbp: selectedVariant.price,
+          saleServiceId: selectedVariant.saleServiceId ?? null,
+        });
+      }
       setStep('success');
     } catch (err) {
       bookingInFlightRef.current = false;
@@ -240,9 +272,11 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
           )}
 
           {/* Confirmation */}
-          {step === 'confirm' && selectedSlot && (
+          {step === 'confirm' && selectedVariant && (selectedVariant.isPack || selectedSlot) && (
             <div className="space-y-6">
-              <h3 className="text-sm font-medium text-[hsl(35,8%,55%)] mb-4">Confirm Booking</h3>
+              <h3 className="text-sm font-medium text-[hsl(35,8%,55%)] mb-4">
+                {selectedVariant.isPack ? 'Confirm Purchase' : 'Confirm Booking'}
+              </h3>
               
               {/* Service Summary */}
               <div className="bg-[hsl(25,12%,15%)] rounded-xl p-4 space-y-3">
@@ -255,12 +289,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   <div>
                     <h4 className="font-medium text-[hsl(35,15%,88%)]">{selectedVariant?.name || service.baseName}</h4>
                     <div className="text-sm text-[hsl(35,8%,55%)] flex items-center gap-2">
-                      {displayDuration && <span>{displayDuration}</span>}
+                      {selectedVariant.isPack && selectedVariant.packSessionCount ? (
+                        <span>{selectedVariant.packSessionCount} sessions</span>
+                      ) : (
+                        displayDuration && <span>{displayDuration}</span>
+                      )}
                       <span className="font-medium text-[hsl(35,15%,88%)]">{displayPrice}</span>
                     </div>
                   </div>
                 </div>
                 
+                {selectedSlot && !selectedVariant.isPack && (
                 <div className="border-t border-[hsl(25,10%,20%)] pt-3 space-y-2">
                   <div className="flex items-center gap-3 text-sm text-[hsl(35,15%,88%)]">
                     <svg className="h-4 w-4 text-[hsl(35,8%,55%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -295,6 +334,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                     {selectedSlot.locationName}
                   </div>
                 </div>
+                )}
               </div>
 
               {error && (
@@ -312,11 +352,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               <div className="flex gap-3">
                 <button
                   type="button"
-                  onClick={() => setStep('time')}
+                  onClick={() =>
+                    selectedVariant.isPack
+                      ? hasVariants
+                        ? setStep('variant')
+                        : onClose()
+                      : setStep('time')
+                  }
                   disabled={isBooking}
                   className="flex-1 py-3 border border-[hsl(25,10%,25%)] text-[hsl(35,15%,88%)] font-medium rounded-xl hover:bg-[hsl(25,12%,18%)] transition-colors disabled:opacity-50"
                 >
-                  Change Time
+                  {selectedVariant.isPack ? (hasVariants ? 'Change pack' : 'Close') : 'Change Time'}
                 </button>
                 <button
                   type="button"
@@ -324,14 +370,22 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   disabled={isBooking}
                   className="flex-1 py-3 bg-[hsl(35,15%,75%)] text-[hsl(25,8%,8%)] font-semibold rounded-xl hover:bg-[hsl(35,15%,80%)] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isBooking ? 'Booking...' : isAuthenticated ? 'Confirm Booking' : 'Sign In to Book'}
+                  {isBooking
+                    ? selectedVariant.isPack
+                      ? 'Purchasing...'
+                      : 'Booking...'
+                    : isAuthenticated
+                      ? selectedVariant.isPack
+                        ? 'Purchase Pack'
+                        : 'Confirm Booking'
+                      : 'Sign In to Book'}
                 </button>
               </div>
             </div>
           )}
 
           {/* Success */}
-          {step === 'success' && selectedSlot && (
+          {step === 'success' && (selectedSlot || selectedVariant?.isPack) && (
             <div className="text-center space-y-6 py-4">
               <div className="flex justify-center">
                 <div className="w-16 h-16 rounded-full bg-green-500/10 flex items-center justify-center">
@@ -343,10 +397,17 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
               </div>
               
               <div>
-                <h3 className="text-xl font-semibold text-[hsl(35,15%,88%)]">Booking Confirmed!</h3>
-                <p className="text-[hsl(35,8%,55%)] mt-1">Your appointment has been booked successfully.</p>
+                <h3 className="text-xl font-semibold text-[hsl(35,15%,88%)]">
+                  {selectedVariant?.isPack ? 'Pack Purchased!' : 'Booking Confirmed!'}
+                </h3>
+                <p className="text-[hsl(35,8%,55%)] mt-1">
+                  {selectedVariant?.isPack
+                    ? 'Your pack is on your Mindbody account.'
+                    : 'Your appointment has been booked successfully.'}
+                </p>
               </div>
 
+              {selectedSlot && !selectedVariant?.isPack && (
               <div className="bg-[hsl(25,12%,15%)] rounded-xl p-4 text-left space-y-2">
                 <div className="flex items-center gap-3 text-sm text-[hsl(35,15%,88%)]">
                   <svg className="h-4 w-4 text-[hsl(35,8%,55%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -372,6 +433,7 @@ export function BookingModal({ service, onClose }: BookingModalProps) {
                   {selectedSlot.locationName}
                 </div>
               </div>
+              )}
 
               <button
                 onClick={onClose}
