@@ -45,6 +45,7 @@ import {
   pickSaleServiceForSession,
   type CheckoutResult,
 } from "../_shared/mindbodyCheckout.ts";
+import { buildAddAppointmentBody } from "../_shared/mindbodyAppointmentPayload.ts";
 import {
   appointmentSlotStillBookable,
   clientAlreadyBookedAppointment,
@@ -1029,17 +1030,13 @@ async function bookAppointmentWithPayment(
     blockMinutes,
   );
 
-  const appointmentBody: Record<string, unknown> = {
-    LocationId: locationId || 1,
-    StaffId: parseInt(staffId, 10),
-    SessionTypeId: parseInt(sessionTypeId, 10),
-    StartDateTime: startDateTime,
-    ApplyPayment: true,
-    SendConfirmationEmail: true,
-  };
-  if (resolvedEndDateTime) {
-    appointmentBody.EndDateTime = resolvedEndDateTime;
-  }
+  const appointmentBody = buildAddAppointmentBody({
+    locationId: locationId || 1,
+    staffId: parseInt(staffId, 10),
+    sessionTypeId: parseInt(sessionTypeId, 10),
+    startDateTime,
+    endDateTime: resolvedEndDateTime,
+  });
 
   const publicClientId = session.mindbody_client_id;
   let clientId = session.mindbody_site_client_id?.trim() || null;

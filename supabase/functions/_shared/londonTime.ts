@@ -84,7 +84,25 @@ export function parseMindbodyLocalDateTime(value: string): Date {
   return new Date(timestamp);
 }
 
+/**
+ * Format an instant for Mindbody Public API write bodies.
+ * Expects business-local wall time as yyyy-MM-ddTHH:mm:ss with no Z/offset.
+ * Strings with Z/offset are absolute; naive strings are London wall times
+ * (same rules as parseMindbodyLocalDateTime).
+ */
+export function toMindbodyLocal(d: Date | string): string {
+  const date = typeof d === "string" ? parseMindbodyLocalDateTime(d) : d;
+  if (Number.isNaN(date.getTime())) {
+    throw new Error(`Invalid datetime for Mindbody: ${String(d)}`);
+  }
+  const p = getLondonParts(date.getTime());
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${p.year}-${pad(p.month)}-${pad(p.day)}T${pad(p.hour)}:${pad(p.minute)}:${pad(p.second)}`;
+}
+
 export function toUtcIsoFromMindbody(value: string): string {
+  // READ path: Mindbody returns naive London local; convert to UTC ISO for the app.
+  // Do not invert this for writes — use toMindbodyLocal instead.
   return parseMindbodyLocalDateTime(value).toISOString();
 }
 

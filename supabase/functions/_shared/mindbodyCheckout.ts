@@ -1,3 +1,5 @@
+import { buildCheckoutAppointmentBookingRequest } from "./mindbodyAppointmentPayload.ts";
+
 export type SaleServiceRow = {
   Id?: number;
   Name?: string;
@@ -523,15 +525,13 @@ export async function checkoutAppointmentWithStoredCard(
     endDateTime?: string;
   },
 ): Promise<CheckoutResult> {
-  const appointmentRequest: Record<string, unknown> = {
-    StaffId: opts.staffId,
-    LocationId: opts.locationId,
-    SessionTypeId: opts.sessionTypeId,
-    StartDateTime: opts.startDateTime,
-  };
-  if (opts.endDateTime) {
-    appointmentRequest.EndDateTime = opts.endDateTime;
-  }
+  const appointmentRequest = buildCheckoutAppointmentBookingRequest({
+    staffId: opts.staffId,
+    locationId: opts.locationId,
+    sessionTypeId: opts.sessionTypeId,
+    startDateTime: opts.startDateTime,
+    endDateTime: opts.endDateTime,
+  });
 
   const result = await checkoutWithStoredCard(apiKey, siteId, bearerToken, {
     clientId: opts.clientId,
