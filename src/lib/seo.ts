@@ -1,5 +1,5 @@
 /** Canonical marketing site origin (SPA public routes). */
-export const SITE_URL = "https://rebase.echo.london";
+export const SITE_URL = "https://rebaserecovery.com";
 
 export const SITE_NAME = "Rebase Recovery";
 export const SITE_TAGLINE = "Rebase Recovery London";

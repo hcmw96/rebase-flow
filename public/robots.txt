@@ -19,4 +19,4 @@ Disallow: /auth
 Disallow: /login
 Disallow: /book/
 
-Sitemap: https://rebase.echo.london/sitemap.xml
+Sitemap: https://rebaserecovery.com/sitemap.xml

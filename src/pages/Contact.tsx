@@ -17,6 +17,7 @@ import {
 import { MapPin, Phone, Mail, Instagram } from "lucide-react";
 import SeoHead from "@/components/seo/SeoHead";
 import {
+  absoluteUrl,
   breadcrumbSchema,
   BUSINESS,
   faqPageSchema,
@@ -34,7 +35,7 @@ const CONTACT_DESCRIPTION =
 const contactSchema = {
   "@context": "https://schema.org",
   "@type": "ContactPage",
-  url: "https://rebase.echo.london/contact",
+  url: absoluteUrl("/contact"),
   name: "Contact Rebase Recovery",
   description: CONTACT_DESCRIPTION,
   mainEntity: {

@@ -31,8 +31,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useMyBookings } from '@/hooks/useMindbodyBookings';
 import { useClientMembership, type Membership } from '@/hooks/useMindbodyMembership';
 import { resolveTier, MEMBER_PERKS, clampMembershipAllowanceRemaining, type TierConfig } from '@/lib/membershipTiers';
-
-const SITE_URL = 'https://rebase-flow.lovable.app';
+import { SITE_URL } from '@/lib/seo';
 
 const QUICK_BOOK = [
   { label: 'Cryotherapy', icon: Snowflake, to: '/experiences' },
